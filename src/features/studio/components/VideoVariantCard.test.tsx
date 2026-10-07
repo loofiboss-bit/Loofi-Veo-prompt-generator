@@ -35,7 +35,7 @@ describe('VideoVariantCard', () => {
     const { user } = render(<VideoVariantCard variant={MOCK_VARIANT} primary onCopy={onCopy} />);
 
     await user.click(screen.getByRole('button', { name: /Copy prompt/i }));
-    expect(onCopy).toHaveBeenCalledWith(MOCK_VARIANT.copyPrompt, 'Prompt copied');
+    expect(onCopy).toHaveBeenCalledWith(MOCK_VARIANT.copyPrompt, 'Copied.');
   });
 
   it('collapses and expands on button click', async () => {

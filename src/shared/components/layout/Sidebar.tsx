@@ -57,7 +57,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenActivity,
   onOpenWorkspaceManager,
   onOpenDirector,
-  isApiConfigured = true,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userOverride, setUserOverride] = useState(false);
@@ -167,7 +166,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Current Project */}
       {!isCollapsed && currentProject && (
-        <div className="p-4 border-b border-slate-700/40 bg-slate-900/35">
+        <div
+          className="p-4 border-b border-slate-700/40"
+          style={{ background: 'var(--color-bg-secondary)' }}
+        >
           <div className="text-xs text-slate-500 mb-1">{t('sidebar.currentProject')}</div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -212,7 +214,10 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Items */}
-      <div className="p-2 border-t border-slate-700/40 bg-slate-900/35">
+      <div
+        className="p-2 border-t border-slate-700/40"
+        style={{ background: 'var(--color-bg-secondary)' }}
+      >
         <button
           type="button"
           onClick={handleToggleFocusMode}
@@ -230,11 +235,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </span>
           )}
         </button>
-        {!isApiConfigured && !isCollapsed && (
-          <p className="px-3 py-2 text-xs text-amber-300">
-            {t('sidebar.providerSetupRequired', 'Provider setup required in Settings')}
-          </p>
-        )}
       </div>
     </aside>
   );

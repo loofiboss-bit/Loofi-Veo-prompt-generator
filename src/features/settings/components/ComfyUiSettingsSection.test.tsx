@@ -13,19 +13,21 @@ describe('ComfyUiSettingsSection', () => {
   it('renders section title and toggle button', () => {
     render(<ComfyUiSettingsSection />);
 
-    expect(screen.getByText('Local ComfyUI GPU Engine')).toBeInTheDocument();
+    expect(screen.getByText('Experimental ComfyUI diagnostics')).toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', { name: /Enable ComfyUI Local GPU Engine/i }),
+      screen.getByRole('checkbox', { name: /Enable ComfyUI diagnostics/i }),
     ).toBeInTheDocument();
   });
 
   it('shows configuration inputs when ComfyUI is enabled', async () => {
     const { user } = render(<ComfyUiSettingsSection />);
 
-    const toggle = screen.getByRole('checkbox', { name: /Enable ComfyUI Local GPU Engine/i });
+    const toggle = screen.getByRole('checkbox', {
+      name: /Enable ComfyUI diagnostics/i,
+    });
     await user.click(toggle);
 
-    expect(screen.getByLabelText(/Enable ComfyUI Local GPU Engine/i)).toBeChecked();
+    expect(screen.getByLabelText(/Enable ComfyUI diagnostics/i)).toBeChecked();
     expect(screen.getByPlaceholderText('http://127.0.0.1:8188')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Test Connection/i })).toBeInTheDocument();
   });

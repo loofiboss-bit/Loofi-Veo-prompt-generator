@@ -5,8 +5,10 @@ import type {
   ProductionRun,
   Project,
   PromptArtifactV1,
+  PromptStudioHandoff,
   PromptState,
 } from '@core/types';
+import { mediaAssetService } from '@core/services/mediaAssetService';
 import { logger } from '@core/services/loggerService';
 import { continuityService } from '@core/services/continuityService';
 import { MODEL_CATALOG } from '@core/models/catalog';
@@ -18,6 +20,9 @@ export interface ProjectArchiveOptions {
   productionRuns?: ProductionRun[];
   productionBible?: ProductionBible;
   promptArtifacts?: PromptArtifactV1[];
+  handoffs?: PromptStudioHandoff[];
+  resolveAssetBlob?: (asset: Asset) => Promise<Blob | null>;
+  extraFiles?: Record<string, string>;
   migrationHistory?: { from: string; to: string; migratedAt: number; notes?: string[] }[];
 }
 
@@ -39,6 +44,7 @@ interface ProjectArchiveV11 {
   project: Project;
   assets: Asset[];
   promptArtifacts?: PromptArtifactV1[];
+  handoffs?: PromptStudioHandoff[];
   provenance: {
     productionRuns: ProductionRun[];
     productionBible: ProductionBible;
@@ -54,6 +60,17 @@ interface LegacyProjectArchive {
 }
 
 type ArchiveMigration = NonNullable<ProjectArchiveOptions['migrationHistory']>[number];
+
+const replaceMediaReferences = <T>(value: T, urls: Map<string, string>): T => {
+  const visit = (node: unknown): unknown => {
+    if (typeof node === 'string') return urls.get(node) ?? node;
+    if (Array.isArray(node)) return node.map(visit);
+    if (node && typeof node === 'object')
+      return Object.fromEntries(Object.entries(node).map(([key, item]) => [key, visit(item)]));
+    return node;
+  };
+  return visit(value) as T;
+};
 
 const stripLegacyContinuityProjections = (project: Project): Project => {
   const clone = structuredClone(project) as unknown as Record<string, unknown>;
@@ -177,32 +194,58 @@ export const exportProjectToZip = async (
   };
   const manifestAssets: BundleManifest['assets'] = [];
   const checksums: Record<string, string> = {};
+  const exportedPaths = new Set<string>();
 
   for (const asset of processedAssets) {
-    if (asset.data) {
-      const bytes = base64ToBytes(asset.data);
+    const storedBlob = asset.data
+      ? null
+      : await (options.resolveAssetBlob ?? resolveProjectAssetBlob)(asset);
+    if (asset.data || storedBlob) {
+      const bytes = asset.data
+        ? base64ToBytes(asset.data)
+        : base64ToBytes(await blobToBase64(storedBlob!));
       const filename = `${asset.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${extensionFor(asset.mimeType)}`;
       const archivePath = `assets/${filename}`;
+      if (exportedPaths.has(archivePath))
+        throw new Error(`Ambiguous archive media path: ${archivePath}`);
+      exportedPaths.add(archivePath);
       assetsFolder.file(filename, bytes);
       checksums[archivePath] = await sha256(bytes);
       manifestAssets.push({ id: asset.id, path: archivePath, sha256: checksums[archivePath] });
       asset.data = '';
       asset.url = archivePath;
+      delete asset.storageKey;
+      delete asset.proxyUrl;
     } else {
-      manifestAssets.push({ id: asset.id, portableReference: asset.storageKey ?? asset.url });
+      throw new Error(`Local media missing for complete project export: ${asset.name || asset.id}`);
     }
   }
 
   const archive: ProjectArchiveV11 = {
     schemaVersion: BUNDLE_SCHEMA_VERSION,
-    project: projectWithBible,
+    project: replaceMediaReferences(
+      projectWithBible,
+      new Map(globalAssets.map((asset, index) => [asset.url, processedAssets[index].url])),
+    ),
     assets: processedAssets,
     promptArtifacts: structuredClone(options.promptArtifacts ?? []),
+    handoffs: structuredClone(options.handoffs ?? []),
     provenance: {
       productionRuns: structuredClone(options.productionRuns ?? []),
       productionBible: structuredClone(normalizedBible.productionBible),
     },
   };
+  const pathMap = new Map(processedAssets.map((asset) => [asset.id, asset.url]));
+  archive.provenance.productionRuns = archive.provenance.productionRuns.map((run) => ({
+    ...run,
+    shots: run.shots.map((shot) => ({
+      ...shot,
+      takes: shot.takes.map((take) => ({
+        ...take,
+        localMediaUrl: pathMap.get(take.localMediaKey ?? '') ?? take.localMediaUrl,
+      })),
+    })),
+  }));
   const projectJson = JSON.stringify(archive, null, 2);
   checksums['project.json'] = await sha256(projectJson);
   const effectiveDates = Array.from(
@@ -231,6 +274,10 @@ export const exportProjectToZip = async (
     ],
   };
 
+  for (const [path, contents] of Object.entries(options.extraFiles ?? {})) {
+    zip.file(path, contents);
+    checksums[path] = await sha256(contents);
+  }
   zip.file('project.json', projectJson);
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
@@ -243,6 +290,7 @@ export const importProjectFromZip = async (
   assets: Asset[];
   provenance?: ProjectArchiveV11['provenance'];
   promptArtifacts?: PromptArtifactV1[];
+  handoffs?: PromptStudioHandoff[];
   migrationHistory?: BundleManifest['migrationHistory'];
 }> => {
   let zip: JSZip;
@@ -276,6 +324,7 @@ export const importProjectFromZip = async (
   const restoredAssets: Asset[] = [];
   for (const asset of Array.isArray(archive.assets) ? archive.assets : []) {
     if (typeof asset.url === 'string' && asset.url.startsWith('assets/')) {
+      if (asset.url.split('/').includes('..')) throw new Error('Invalid bundle asset path');
       const assetFile = zip.file(asset.url);
       if (!assetFile) throw new Error(`Project bundle asset missing: ${asset.url}`);
       const bytes = await assetFile.async('uint8array');
@@ -294,16 +343,24 @@ export const importProjectFromZip = async (
     }
   }
 
-  let restoredProject = archive.project;
+  if (!archive.project || typeof archive.project.id !== 'string')
+    throw new Error('Invalid project document');
+  const restoredUrls = new Map(
+    (archive.assets ?? []).map((asset, index) => [
+      asset.url,
+      restoredAssets[index]?.url ?? asset.url,
+    ]),
+  );
+  let restoredProject = replaceMediaReferences(archive.project, restoredUrls);
   let migrationHistory = manifest?.migrationHistory ?? [];
   if (manifest && manifest.schemaVersion < BUNDLE_SCHEMA_VERSION) {
-    const migrated = migrateHistoricalProject(archive.project, String(manifest.schemaVersion));
+    const migrated = migrateHistoricalProject(restoredProject, String(manifest.schemaVersion));
     restoredProject = migrated.project;
     migrationHistory = [...migrationHistory, ...migrated.migrations];
   }
   if (!manifest) {
     const sourceVersion = 'version' in archive ? String(archive.version).split('.')[0] : 'unknown';
-    const migrated = migrateHistoricalProject(archive.project, sourceVersion);
+    const migrated = migrateHistoricalProject(restoredProject, sourceVersion);
     restoredProject = migrated.project;
     migrationHistory = migrated.migrations;
     logger.info(`Imported legacy v${sourceVersion} project archive; migrated to v11.`);
@@ -328,10 +385,34 @@ export const importProjectFromZip = async (
   }
   return {
     project: restoredProject,
+    handoffs: 'handoffs' in archive ? structuredClone(archive.handoffs ?? []) : [],
     assets: restoredAssets,
-    provenance: 'provenance' in archive ? archive.provenance : undefined,
+    provenance:
+      'provenance' in archive
+        ? replaceMediaReferences(archive.provenance, restoredUrls)
+        : undefined,
     promptArtifacts:
       'promptArtifacts' in archive ? structuredClone(archive.promptArtifacts ?? []) : [],
     migrationHistory,
   };
 };
+
+/** Resolve only durable local media. Export must never contact a provider. */
+export async function resolveProjectAssetBlob(asset: Asset): Promise<Blob | null> {
+  const key = asset.storageKey ?? asset.url;
+  if (!key) return null;
+  const desktop = window.electron as unknown as
+    | {
+        readDesktopMedia?: (
+          key: string,
+        ) => Promise<{ bytes: ArrayBuffer; mimeType: string } | null>;
+      }
+    | undefined;
+  if (desktop?.readDesktopMedia) {
+    const record = await desktop.readDesktopMedia(key);
+    if (record) return new Blob([record.bytes], { type: record.mimeType });
+  }
+  return asset.storageKey
+    ? ((await mediaAssetService.getRecord(asset.storageKey))?.blob ?? null)
+    : null;
+}

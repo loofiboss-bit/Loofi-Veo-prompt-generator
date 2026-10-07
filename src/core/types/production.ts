@@ -144,6 +144,8 @@ export interface ProductionContinuityReview {
 
 export interface ProductionTake {
   id: string;
+  sourceArtifactId?: string;
+  sourceVariantIndex?: 0 | 1 | 2;
   taskId?: string;
   prompt: string;
   request: VeoGenerationRequest;
@@ -234,6 +236,9 @@ export interface ProductionRun {
   schemaVersion: 2 | 3;
   id: string;
   projectId: string;
+  sourceArtifactId?: string;
+  sourceHandoffId?: string;
+  sourceVariantIndex?: 0 | 1 | 2;
   title: string;
   status: ProductionRunStatus;
   brief: string;
@@ -255,6 +260,10 @@ export interface BuildProductionPlanInput {
   projectId: string;
   title: string;
   promptState: PromptState;
+  studioInput?: import('./promptArtifact').VideoPromptArtifactInput;
+  sourceArtifactId?: string;
+  sourceHandoffId?: string;
+  sourceVariantIndex?: 0 | 1 | 2;
   shots?: Shot[];
   assets?: Asset[];
   productionBible?: import('./continuity').ProductionBible;

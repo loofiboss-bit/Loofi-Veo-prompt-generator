@@ -76,7 +76,8 @@
     "split": "Veoセグメントに分割",
     "copyPack": "Creative Pack v2をコピー",
     "approveContinuityReview": "継続性レビューを承認",
-    "continuityReviewApproved": "継続性レビューを承認済み"
+    "continuityReviewApproved": "継続性レビューを承認済み",
+    "downloadOtio": "メディア付きOTIOをダウンロード"
   },
   "labels": {
     "idea": "制作アイデア",
@@ -105,7 +106,8 @@
     "revisionProposed": "修正案：{{prompt}}",
     "semanticReview": "承認済みGeminiセマンティックレビューを使用",
     "exportPreview": "Creative Pack v2プレビュー",
-    "continuityReviewCost": "任意のGeminiレビュー · 最大 ${{cost}}"
+    "continuityReviewCost": "任意のGeminiレビュー · 最大 ${{cost}}",
+    "fcpxmlExperimental": "FCPXML：実験的"
   },
   "empty": {
     "title": "最初の制作実行を作成",
@@ -203,6 +205,7 @@
     "continuityReviewRequired": "使用する前に任意のGemini継続性レビューを承認してください。",
     "continuityReviewNoTakes": "継続性レビューを承認する前にテイクを生成または保存してください。",
     "continuityReviewApproved": "このスナップショットの任意のGemini継続性レビューを承認しました。",
-    "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。"
+    "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。",
+    "otioReady": "OTIOバンドルの準備完了。"
   }
 }

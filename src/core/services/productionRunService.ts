@@ -1,5 +1,6 @@
 import { createStore, del, get, keys, set } from 'idb-keyval';
 
+import { mediaAssetService } from '@core/services/mediaAssetService';
 import { logger } from '@core/services/loggerService';
 import {
   VEO_PRICING_EFFECTIVE_DATE,
@@ -184,16 +185,47 @@ class ProductionRunService {
     if (needsNormalization(run)) {
       await set(`${RUN_PREFIX}${runId}`, normalized, RUN_STORE);
     }
-    return normalized;
+    return this.hydrateLocalMedia(normalized);
   }
 
   async getRunsForProject(projectId: string): Promise<ProductionRun[]> {
     const runKeys = (await keys(RUN_STORE)).filter((key) => String(key).startsWith(RUN_PREFIX));
     const runs = await Promise.all(runKeys.map((key) => get<ProductionRun>(key, RUN_STORE)));
-    return runs
-      .filter((run): run is ProductionRun => Boolean(run && run.projectId === projectId))
-      .map(normalizeRun)
-      .sort((left, right) => right.updatedAt - left.updatedAt);
+    const hydrated = await Promise.all(
+      runs
+        .filter((run): run is ProductionRun => Boolean(run && run.projectId === projectId))
+        .map((run) => this.hydrateLocalMedia(normalizeRun(run))),
+    );
+    return hydrated.sort((left, right) => right.updatedAt - left.updatedAt);
+  }
+
+  private async hydrateLocalMedia(run: ProductionRun): Promise<ProductionRun> {
+    const shots = await Promise.all(
+      run.shots.map(async (shot) => ({
+        ...shot,
+        takes: await Promise.all(
+          shot.takes.map(async (take) => {
+            if (!take.localMediaKey) return take;
+            try {
+              const desktop = await window.electron?.readDesktopMedia?.(take.localMediaKey);
+              const localMediaUrl =
+                desktop?.localUrl ??
+                (await mediaAssetService.getObjectUrl(take.localMediaKey)) ??
+                undefined;
+              return { ...take, localMediaUrl };
+            } catch (error) {
+              logger.warn(
+                'Local production media could not be reopened',
+                'ProductionRunService',
+                error,
+              );
+              return { ...take, localMediaUrl: undefined };
+            }
+          }),
+        ),
+      })),
+    );
+    return { ...run, shots };
   }
 
   async saveRun(run: ProductionRun): Promise<ProductionRun> {
@@ -653,6 +685,8 @@ class ProductionRunService {
 
       createdTake = {
         id: crypto.randomUUID(),
+        sourceArtifactId: run.sourceArtifactId,
+        sourceVariantIndex: run.sourceVariantIndex,
         prompt: shot.revisionPrompt || shot.prompt,
         request: {
           ...shot.generationRequest,

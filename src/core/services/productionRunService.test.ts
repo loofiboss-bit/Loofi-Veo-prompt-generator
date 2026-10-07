@@ -79,6 +79,24 @@ const makeRun = (): ProductionRun => ({
 });
 
 describe('productionRunService', () => {
+  it('hydrates durable take media on reopen without keeping stale blob URLs', async () => {
+    const run = makeRun();
+    run.shots[0].takes = [
+      {
+        id: 'persisted-take',
+        request: run.shots[0].generationRequest,
+        localMediaKey: 'media:take',
+        localMediaUrl: 'blob:stale',
+        status: 'complete',
+      } as never,
+    ];
+    records.set('production-run:' + run.id, run);
+    records.set('media:take', { blob: new Blob(['video'], { type: 'video/mp4' }) });
+    const reopened = await productionRunService.getRun(run.id);
+    expect(reopened?.shots[0].takes[0].localMediaUrl).not.toBe('blob:stale');
+    expect(reopened?.shots[0].takes[0].localMediaUrl).toMatch(/^blob:/);
+  });
+
   beforeEach(() => {
     records.clear();
     mockAssets.length = 0;

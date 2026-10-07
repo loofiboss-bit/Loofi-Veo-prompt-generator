@@ -1013,15 +1013,17 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             <button
               type="button"
               onClick={() => {
-                setShowFoleyPipeline(!showFoleyPipeline);
+                setShowFoleyPipeline(false);
                 setShowFilters(false);
                 setShowChromaKey(false);
                 setShowMixer(false);
                 setShowVFX(false);
               }}
+              disabled
+              title="Experimental: reviewed cues and durable audio are not qualified."
               className={`text-xs flex gap-1 ${showFoleyPipeline ? 'text-cyan-400' : 'text-slate-400'}`}
             >
-              <Icon name="audio" className="w-4 h-4" /> Foley & SFX
+              <Icon name="audio" className="w-4 h-4" /> Foley & SFX (Experimental)
             </button>
           </div>
         </div>

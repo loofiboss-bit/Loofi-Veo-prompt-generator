@@ -30,7 +30,7 @@ import {
 import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
-import { ComfyUiSettingsSection } from './components/ComfyUiSettingsSection';
+import { LabsPanel } from './components/LabsPanel';
 
 function isValidUrl(str: string): boolean {
   try {
@@ -63,14 +63,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
   const [activeTab, setActiveTab] = useState<SettingsTab>(
     isSettingsTab(initialTab) ? initialTab : 'general',
   );
-  const {
-    registryUrl,
-    promptGenerationProvider,
-    localLlmEndpoint,
-    localLlmModel,
-    enableExperimentalFeatures,
-    updateSettings,
-  } = useSettingsStore();
+  const { registryUrl, promptGenerationProvider, localLlmEndpoint, localLlmModel, updateSettings } =
+    useSettingsStore();
   const [localRegistryUrl, setLocalRegistryUrl] = useState(registryUrl ?? '');
   const [registryUrlError, setRegistryUrlError] = useState<string | null>(null);
   const isOllamaProvider = promptGenerationProvider === 'ollama';
@@ -490,7 +484,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
               </section>
 
               {/* Local ComfyUI GPU Engine */}
-              <ComfyUiSettingsSection />
 
               {/* Plugin Registry */}
               <section>
@@ -556,41 +549,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
                 </div>
               </section>
 
-              <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-                <h2 className="text-xl font-semibold text-slate-100">{t('labs', 'Labs')}</h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  {t(
-                    'labsDescription',
-                    'Experimental and collaboration features may change and are kept outside the primary creator workflow.',
-                  )}
-                </p>
-                <label
-                  htmlFor="enable-labs-features"
-                  className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-950/50 p-3"
-                >
-                  <span className="sr-only">Enable Labs features</span>
-                  <input
-                    id="enable-labs-features"
-                    type="checkbox"
-                    checked={enableExperimentalFeatures}
-                    onChange={(event) =>
-                      updateSettings({ enableExperimentalFeatures: event.target.checked })
-                    }
-                    className="mt-1 h-4 w-4 accent-blue-600"
-                  />
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-100">
-                      {t('enableLabs', 'Enable Labs features')}
-                    </span>
-                    <span className="mt-1 block text-xs text-slate-400">
-                      {t(
-                        'enableLabsDescription',
-                        'Labs never bypass provider approval, pricing, privacy, or local project safeguards.',
-                      )}
-                    </span>
-                  </span>
-                </label>
-              </section>
+              <LabsPanel />
             </div>
           )}
         </div>

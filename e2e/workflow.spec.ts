@@ -1,74 +1,52 @@
 import { test, expect } from '@playwright/test';
-import { dismissModals } from './helpers';
+import { dismissModals, blockExternalRequests } from './helpers';
 
-/**
- * Core workflow tests — verify prompt generation, history, and export flows.
- */
-test.describe('Prompt Generation Workflow', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('Copy-ready creator workflow', () => {
+  test('builds, edits and copies a local video prompt without provider traffic', async ({
+    page,
+    context,
+  }) => {
+    const requests = await blockExternalRequests(page);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto('/');
     await dismissModals(page);
+    await page.getByLabel(/^Core idea/).fill('A cinematic coastal city at dusk');
+    await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+    const output = page.getByLabel('Primary prompt', { exact: true });
+    await expect(output).toHaveValue(/coastal city/i);
+    await output.fill('Edited local prompt for a coastal city');
+    await page.getByRole('button', { name: 'Copy prompt', exact: true }).first().click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe('Edited local prompt for a coastal city');
+    expect(requests.filter((url) => /googleapis|suno|runway|kling/i.test(url))).toEqual([]);
   });
 
-  test('should type an idea and see character count update', async ({ page }) => {
-    const textarea = page.locator('textarea').first();
-    await textarea.fill('A golden sunset over misty mountains');
-    await expect(textarea).toHaveValue('A golden sunset over misty mountains');
-  });
-
-  test('should click generate button after entering an idea', async ({ page }) => {
-    const textarea = page.locator('textarea').first();
-    await textarea.fill('A cinematic drone shot of a coastal city at dusk');
-
-    const generateBtn = page.getByRole('button', { name: /generate|create prompt/i });
-    await expect(generateBtn).toBeVisible();
-    await generateBtn.click();
-
-    // After clicking, either output appears or a toast/error (no API key).
-    // We just verify the button was clickable and the app didn't crash.
-    await page.waitForTimeout(1_000);
-    await expect(page.getByRole('heading', { name: 'Generate', exact: true })).toBeVisible();
-  });
-
-  test('should toggle between target models', async ({ page }) => {
-    // Look for workflow toggle buttons (Flow/Veo / Veo API)
-    const modelToggle = page.locator(
-      'button:has-text("Flow"), button:has-text("Veo API"), [class*="model-toggle"], [class*="TargetModel"]',
-    );
-    if ((await modelToggle.count()) > 0) {
-      await modelToggle.first().click();
-      // Toggle should be interactive
-      await expect(modelToggle.first()).toBeVisible();
-    }
-  });
-
-  test('should collapse/expand sections', async ({ page }) => {
-    // Find collapsible section headers
-    const sectionHeader = page.locator(
-      '[class*="collapsible"] button, [class*="Collapsible"] button, button:has-text("Core Concept"), button:has-text("Step")',
-    );
-
-    if ((await sectionHeader.count()) > 0) {
-      const header = sectionHeader.first();
-      await header.click();
-      // Section should toggle
-      await expect(header).toBeVisible();
-    }
-  });
-
-  test('should reset the form', async ({ page }) => {
-    const textarea = page.locator('textarea').first();
-    await textarea.fill('Test content to reset');
-
-    const resetBtn = page.getByRole('button', { name: /reset|new|clear/i });
-    if ((await resetBtn.count()) > 0) {
-      await resetBtn.first().click();
-      // After reset, textarea should be empty or have default value
-      // Some resets may show a confirmation dialog
-      const confirmBtn = page.getByRole('button', { name: /confirm|yes|ok/i });
-      if ((await confirmBtn.count()) > 0) {
-        await confirmBtn.click();
-      }
-    }
+  for (const target of ['flow-veo', 'kling', 'runway-gen3', 'sora', 'luma-ray']) {
+    test(`${target} remains manual with no internal generation action`, async ({ page }) => {
+      await blockExternalRequests(page);
+      await page.goto('/');
+      await dismissModals(page);
+      await page.getByLabel(/^Target(?: |$)/).selectOption(target);
+      await page.getByLabel(/^Core idea/).fill('A red bicycle on a mountain road');
+      await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+      await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(/bicycle/i);
+      await expect(page.getByRole('button', { name: 'Generate in app', exact: true })).toHaveCount(
+        0,
+      );
+      await expect(
+        page.getByRole('button', { name: 'Copy handoff', exact: true }).first(),
+      ).toBeVisible();
+    });
+  }
+  test('Veo API exposes a separate approval-gated production handoff', async ({ page }) => {
+    const requests = await blockExternalRequests(page);
+    await page.goto('/');
+    await dismissModals(page);
+    await page.getByLabel(/^Target(?: |$)/).selectOption('veo-api');
+    await page.getByLabel(/^Core idea/).fill('A lone cyclist by the ocean');
+    await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Generate in app', exact: true })).toBeVisible();
+    expect(requests.filter((url) => /googleapis/i.test(url))).toEqual([]);
   });
 });

@@ -132,5 +132,11 @@
       "collaborateDescription": "Partager et collaborer sur le projet actuel"
     }
   },
-  "closeModal": "Fermer la fenêtre"
+  "closeModal": "Fermer la fenêtre",
+  "projects": {
+    "name": "Nom du projet",
+    "create": "Créer un projet",
+    "import": "Importer un projet",
+    "export": "Exporter le projet"
+  }
 }

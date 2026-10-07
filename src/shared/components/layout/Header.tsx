@@ -1,4 +1,5 @@
 import React, { memo, useState } from 'react';
+import { LAB_CAPABILITIES } from '@core/config/studioCapabilities';
 import Icon from '@shared/components/ui/Icon';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
 import { useTranslation } from 'react-i18next';
@@ -62,6 +63,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const { t } = useTranslation(['common', 'tutorial', 'tooltips']);
 
+  const lanAvailable = Boolean(LAB_CAPABILITIES.find((item) => item.id === 'lan')?.runnable);
   // Integrate Collab Hook
   const {
     isConnected,
@@ -130,6 +132,7 @@ const Header: React.FC<HeaderProps> = ({
             {!isConnected ? (
               <div className="flex items-center gap-1">
                 <button
+                  disabled={!lanAvailable}
                   onClick={() => {
                     if (onOpenWritersRoom) {
                       onOpenWritersRoom();
@@ -138,7 +141,7 @@ const Header: React.FC<HeaderProps> = ({
                     }
                   }}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-600/40 text-xs font-bold transition-all"
-                  title="Öppna Virtual Writers' Room & LAN Staging"
+                  title={t('studio:labs.lan')}
                 >
                   <Icon name="users" className="w-3.5 h-3.5" />
                   <span className={labelCls}>{t('common:inviteTeamButton')}</span>
@@ -147,6 +150,7 @@ const Header: React.FC<HeaderProps> = ({
             ) : (
               <div className="flex items-center gap-2 bg-indigo-900/30 border border-indigo-500/30 rounded-full px-2 py-1">
                 <button
+                  disabled={!lanAvailable}
                   onClick={onOpenWritersRoom}
                   className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                   title="Öppna Virtual Writers' Room & Deltagarvy"
@@ -181,7 +185,7 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   {t('common:goLiveButton')}
                 </button>
-                {onOpenWritersRoom && (
+                {onOpenWritersRoom && lanAvailable && (
                   <button
                     type="button"
                     onClick={() => {

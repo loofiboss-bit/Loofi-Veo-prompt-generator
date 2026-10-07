@@ -56,7 +56,7 @@ function fixture(responses = [0]) {
     },
     getMainWindow: () => null,
   });
-  return { handlers, submitted, dialogCount: () => dialogs };
+  return { handlers, submitted, jobs, dialogCount: () => dialogs };
 }
 
 test('issues approval metadata in main and requires native consent for every new paid job', async () => {
@@ -85,4 +85,22 @@ test('returns an existing durable job without asking for or spending another app
   assert.equal(replay.costApproval.approvalId, original.costApproval.approvalId);
   assert.equal(context.dialogCount(), 1);
   assert.equal(context.submitted.length, 1);
+});
+
+test('does not seek renewed paid consent for recovery without an operation identity', async () => {
+  const context = fixture([0]);
+  context.jobs.set('music-job-1', task({ status: 'RecoveryRequired' }));
+  assert.equal(await context.handlers.get('paid-job-retry')(null, 'music-job-1'), false);
+  assert.equal(context.dialogCount(), 0);
+});
+
+test('recovers known video media failures without authorizing another submission', async () => {
+  const context = fixture([0]);
+  context.jobs.set('video-job-1', {
+    id: 'video-job-1',
+    status: 'MediaAtRisk',
+    providerOperationName: 'operations/existing',
+  });
+  assert.equal(await context.handlers.get('paid-job-retry')(null, 'video-job-1'), true);
+  assert.equal(context.dialogCount(), 0);
 });

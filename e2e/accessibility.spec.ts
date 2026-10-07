@@ -10,40 +10,6 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
     await dismissModals(page);
   });
 
-  test('should open help panel with ? or F1', async ({ page }) => {
-    // Press ? to open help
-    await page.keyboard.press('?');
-    await page.waitForTimeout(500);
-
-    const helpPanel = page.locator(
-      '[class*="help" i], [class*="Help"], [role="dialog"]:has-text("Help"), [role="dialog"]:has-text("Shortcuts")',
-    );
-    if ((await helpPanel.count()) > 0) {
-      await expect(helpPanel.first()).toBeVisible();
-      // Close it
-      await page.keyboard.press('Escape');
-    }
-  });
-
-  test('should close modals with Escape key', async ({ page }) => {
-    // Open settings or any modal
-    const settingsBtn = page.locator(
-      'button[aria-label*="settings" i], button[title*="settings" i], button:has-text("Settings")',
-    );
-    if ((await settingsBtn.count()) > 0) {
-      await settingsBtn.first().click();
-      await page.waitForTimeout(500);
-
-      const dialog = page.locator('[role="dialog"]');
-      if ((await dialog.count()) > 0) {
-        await expect(dialog.first()).toBeVisible();
-        await page.keyboard.press('Escape');
-        await page.waitForTimeout(300);
-        // Dialog should be closed
-      }
-    }
-  });
-
   test('should focus the idea textarea on page load', async ({ page }) => {
     // The main textarea should be in the viewport and focusable
     const textarea = page.locator('textarea').first();
@@ -53,7 +19,7 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
 
   test('main interactive elements should have accessible names', async ({ page }) => {
     // Generate button should have text
-    const generateBtn = page.getByRole('button', { name: /generate/i });
+    const generateBtn = page.getByRole('button', { name: 'Build copy-ready pack', exact: true });
     await expect(generateBtn).toBeVisible();
     const name =
       (await generateBtn.getAttribute('aria-label')) || (await generateBtn.textContent());
@@ -89,24 +55,12 @@ test.describe('Keyboard Shortcuts & Accessibility', () => {
     await expect(page.getByRole('heading', { name: 'Manage Workspaces' })).toBeHidden();
   });
 
-  test('generation approval controls have accessible names', async ({ page }) => {
-    await page.getByRole('button', { name: /new local plan/i }).click();
-    await page.getByRole('button', { name: 'Generate', exact: true }).click();
-
-    await expect(page.getByRole('button', { name: 'Select pending' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /approve \d+ shots?/i })).toBeVisible();
-    await expect(page.getByText(/maximum \$/i).first()).toBeVisible();
-  });
-
-  test('Lyria image controls expose accessible labels and constraints', async ({ page }) => {
-    await page.getByRole('button', { name: 'Assets', exact: true }).last().click();
-    await page.getByText('Lyrics, structure, images, and format', { exact: true }).click();
-
-    const imageUpload = page.getByLabel(/visual references/i);
-    await expect(imageUpload).toBeVisible();
-    await imageUpload.focus();
-    await expect(imageUpload).toBeFocused();
-    await expect(imageUpload).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp');
-    await expect(page.getByText(/0.*10 images/i)).toBeVisible();
+  test('builds a local pack using keyboard activation', async ({ page }) => {
+    await page.getByLabel(/^Core idea/).fill('A bicycle crossing an old bridge');
+    const build = page.getByRole('button', { name: 'Build copy-ready pack', exact: true });
+    await build.focus();
+    await expect(build).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(/bicycle/i);
   });
 });

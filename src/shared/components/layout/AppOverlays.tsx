@@ -28,10 +28,8 @@ const SafeModeRecovery = React.lazy(() =>
 const CommandPalette = React.lazy(() =>
   import('./CommandPalette').then((module) => ({ default: module.CommandPalette })),
 );
-const AiCoDirectorWidget = React.lazy(() =>
-  import('@features/codirector').then((module) => ({ default: module.AiCoDirectorWidget })),
-);
 
+import { useSettingsStore } from '@core/store/useSettingsStore';
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
 
 export interface AppOverlaysProps {
@@ -82,6 +80,7 @@ export function AppOverlays({
   onExitSafeMode,
   commandPalette,
 }: AppOverlaysProps) {
+  const labsEnabled = useSettingsStore((state) => state.enableExperimentalFeatures);
   const [safeModeRecoveryDismissed, setSafeModeRecoveryDismissed] = React.useState(false);
   // Escape-key dismisses the most recent toast
   useEffect(() => {
@@ -127,16 +126,9 @@ export function AppOverlays({
             </div>
           }
         >
-          <ChatBot />
+          {labsEnabled ? <ChatBot /> : null}
         </Suspense>
       </ErrorBoundary>
-      {/* Multimodal AI Co-Director Studio Widget (v13.0) */}
-      <ErrorBoundary panelId="app-codirector-overlay">
-        <Suspense fallback={null}>
-          <AiCoDirectorWidget />
-        </Suspense>
-      </ErrorBoundary>
-
       {/* Onboarding Components */}
       <ErrorBoundary panelId="app-onboarding-overlays">
         <Suspense fallback={<ModalSkeleton />}>

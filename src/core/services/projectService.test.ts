@@ -71,6 +71,19 @@ describe('projectService', () => {
     mockListProjectMetadata.mockReset().mockResolvedValue([]);
   });
 
+  it('registers complete editor documents in the canonical inventory without changing IDs', async () => {
+    await projectService.registerDocument({
+      id: 'editor-project',
+      name: 'Editor project',
+      lastModified: 42,
+    });
+    expect(await projectService.getProject('editor-project')).toMatchObject({
+      id: 'editor-project',
+      name: 'Editor project',
+      modifiedAt: 42,
+    });
+  });
+
   // ─── createProject ────────────────────────────────────────────
   describe('createProject', () => {
     it('should create a project with the given name', async () => {

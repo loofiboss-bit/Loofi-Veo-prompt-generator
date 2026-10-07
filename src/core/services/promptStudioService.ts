@@ -54,6 +54,11 @@ export const normalizeVideoPromptInput = (
   endFrame: optionalTrim(input.endFrame),
   previousClip: optionalTrim(input.previousClip),
   referenceRoles: optionalTrim(input.referenceRoles),
+  firstFrameAssetId: optionalTrim(input.firstFrameAssetId),
+  lastFrameAssetId: optionalTrim(input.lastFrameAssetId),
+  referenceAssetIds: input.referenceAssetIds ? [...input.referenceAssetIds] : undefined,
+  extensionSourceTakeId: optionalTrim(input.extensionSourceTakeId),
+  extensionArtifact: input.extensionArtifact ? structuredClone(input.extensionArtifact) : undefined,
 });
 
 /** Normalize Suno-compatible input while retaining manual handoff notes. */
@@ -1016,11 +1021,14 @@ const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState => ({
   targetModel: input.target === 'veo-api' ? 'veo-api' : 'flow-veo',
   flowVeoOutputMode: input.mode === 'text-to-video' ? 'single-prompt' : 'flow-scene-pack',
   optimizeFor8Seconds: input.durationSeconds === 8,
+  resolution: '720p',
 });
 
 /** Map a Prompt Studio video brief into the existing production-run contract. */
-export const promptArtifactToProductionState = (input: VideoPromptArtifactInput): PromptState =>
-  toVideoPromptState(input);
+export const promptArtifactToProductionState = (input: VideoPromptArtifactInput): PromptState => {
+  if (input.target !== 'veo-api') throw new Error('This model uses a manual copy handoff.');
+  return toVideoPromptState(input);
+};
 
 const toSunoSettings = (input: MusicPromptArtifactInput): SunoSettings => ({
   topic: input.topic,

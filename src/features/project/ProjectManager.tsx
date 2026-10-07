@@ -13,14 +13,18 @@ import { useProjectManager } from '@shared/hooks/useProjectManager';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { useAppStore } from '@core/store/useAppStore'; // Access global assets
 import { logger } from '@core/services/loggerService';
-import { exportProjectToZip, importProjectFromZip } from '@core/utils/projectArchiver';
+import {
+  exportPortableProject,
+  importPortableProject,
+  hydrateProjectMedia,
+} from '@core/services/projectTransferService';
+import { projectDocumentService } from '@core/services/projectDocumentService';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
+import { useProjectStore } from '@core/store/useProjectStore';
 import EmptyState from '@shared/components/EmptyState';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import RangeInput from '@shared/components/ui/RangeInput';
 import { useTranslation } from 'react-i18next';
-import { useProductionRunStore } from '@core/store/useProductionRunStore';
-import { productionRunService } from '@core/services/productionRunService';
-import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
 
 interface ProjectManagerProps {
   isOpen: boolean;
@@ -55,6 +59,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   const { t } = useTranslation('project');
   const {
     projectList,
+    flushPersistence,
     createProject,
     saveProject: _saveProject,
     loadProject,
@@ -62,8 +67,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     exportProject: _exportJson,
   } = useProjectManager();
   const { locations } = useLocationStore();
-  const { assets, addAsset, productionBible, setProductionBible } = useAppStore(); // Access global assets
-  const productionRuns = useProductionRunStore((state) => state.runs);
+  const { productionBible } = useAppStore();
 
   const [projectName, setProjectName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -84,42 +88,60 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleSave = () => {
-    if (!projectName.trim()) {
-      addToast('Please enter a project name.', 'error');
-      return;
-    }
-    const project = createProject(
-      projectName,
-      currentPromptState,
-      currentCharacters,
-      locations,
-      currentDNAs,
-      currentStoryboard,
-      productionBible,
-    );
-    _onUpdateProjectMeta(project.id, project.name);
-    setProjectName('');
-    addToast('Project saved successfully.', 'success');
-  };
-
-  const handleLoad = (meta: ProjectMetadata) => {
-    if (confirm(t('projectManager.loadConfirm'))) {
-      const project = loadProject(meta.id);
-      if (project) {
-        onLoadProject(project);
-        onClose();
-        addToast(`Loaded project: ${project.name}`, 'success');
-      } else {
-        addToast('Failed to load project data.', 'error');
+  const handleSave = async () => {
+    try {
+      if (!(await usePromptStudioDraftStore.getState().flush()))
+        throw new Error('Save the current Studio draft before changing projects.');
+      if (!projectName.trim()) {
+        addToast('Please enter a project name.', 'error');
+        return;
       }
+      const project = createProject(
+        projectName,
+        currentPromptState,
+        currentCharacters,
+        locations,
+        currentDNAs,
+        currentStoryboard,
+        productionBible,
+      );
+      await flushPersistence();
+      _onUpdateProjectMeta(project.id, project.name);
+      setProjectName('');
+      addToast('Project saved successfully.', 'success');
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to save project.', 'error');
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm(t('projectManager.deleteConfirm'))) {
-      deleteProject(id);
-      addToast('Project deleted.', 'success');
+  const handleLoad = async (meta: ProjectMetadata) => {
+    try {
+      if (!(await usePromptStudioDraftStore.getState().flush()))
+        throw new Error('Save the current Studio draft before changing projects.');
+      if (confirm(t('projectManager.loadConfirm'))) {
+        const project = await projectDocumentService.load(meta.id);
+        if (project) {
+          await hydrateProjectMedia(project);
+          onLoadProject(project);
+          onClose();
+          addToast(`Loaded project: ${project.name}`, 'success');
+        } else {
+          addToast('Failed to load project data.', 'error');
+        }
+      }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to load project.', 'error');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      if (confirm(t('projectManager.deleteConfirm'))) {
+        await deleteProject(id);
+        addToast('Project deleted.', 'success');
+      }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete project.', 'error');
     }
   };
 
@@ -130,13 +152,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
       const project = loadProject(meta.id);
       if (!project) throw new Error('Project data not found');
 
-      // Filter assets used in this project is complex, for now we export ALL global assets
-      // to ensure nothing is missing. A smarter implementation would filter by usage.
-      const blob = await exportProjectToZip(project, assets, {
-        productionRuns: productionRuns.filter((run) => run.projectId === project.id),
-        productionBible,
-        promptArtifacts: await promptStudioHandoffService.listArtifacts(),
-      });
+      const blob = await exportPortableProject(project.id);
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -169,6 +185,8 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
     if (!confirm(`Restore the latest verified automatic backup for "${meta.name}"?`)) return;
     setIsProcessing(true);
     try {
+      if (!(await usePromptStudioDraftStore.getState().flush()))
+        throw new Error('Save the current Studio draft before changing projects.');
       const backups = await window.electron.listProjectBackups(meta.id);
       const latest = backups.find((backup) => !backup.corrupt);
       if (!latest) throw new Error('No valid automatic backup is available.');
@@ -200,55 +218,14 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
 
     setIsProcessing(true);
     try {
-      const {
-        project,
-        assets: restoredAssets,
-        provenance,
-        promptArtifacts,
-      } = await importProjectFromZip(file);
-      if (promptArtifacts?.length) {
-        await promptStudioHandoffService.saveArtifacts(promptArtifacts);
-      }
-
-      // 1. Save Project to LocalStorage
-      // We create a new project entry to avoid ID collisions with existing
-      const newName = `${project.name} (Restored)`;
-      const restoredCharacters = project.characterBank ?? [];
-      const restoredLocations = project.locationBank ?? [];
-      const restoredVisualDNA = project.visualDNA ?? [];
-      // We re-use createProject to handle the ID generation and meta list update
-      const restoredProject = createProject(
-        newName,
-        project.promptState,
-        restoredCharacters,
-        restoredLocations,
-        restoredVisualDNA,
-        project.storyboard,
-        project.productionBible,
-      );
-      if (project.productionBible) setProductionBible(project.productionBible);
-
-      for (const run of provenance?.productionRuns ?? []) {
-        await productionRunService.createRun({
-          ...run,
-          id: crypto.randomUUID(),
-          projectId: restoredProject.id,
-          title: `${run.title} (Restored)`,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      }
-
-      // 2. Merge Assets into Store (avoid duplicates by ID)
-      let addedCount = 0;
-      restoredAssets.forEach((asset) => {
-        if (!assets.some((existing) => existing.id === asset.id)) {
-          addAsset(asset);
-          addedCount++;
-        }
-      });
-
-      addToast(`Restored "${newName}" with ${addedCount} assets.`, 'success');
+      if (!(await usePromptStudioDraftStore.getState().flush()))
+        throw new Error('Save the current Studio draft before changing projects.');
+      const project = await importPortableProject(file);
+      await useProjectStore.getState().refreshProjects();
+      await useProjectStore.getState().setCurrentProject(project.id);
+      onLoadProject(project);
+      onClose();
+      addToast(`Restored "${project.name}".`, 'success');
 
       // Reset input
       if (fileInputRef.current) fileInputRef.current.value = '';

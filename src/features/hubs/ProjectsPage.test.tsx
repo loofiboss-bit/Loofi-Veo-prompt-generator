@@ -55,8 +55,15 @@ const projectDocument = {
 };
 
 vi.mock('@core/store/useProjectStore', () => ({
-  useProjectStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({ projects, currentProjectId: 'project-a', setCurrentProject }),
+  useProjectStore: Object.assign(
+    (selector: (state: Record<string, unknown>) => unknown) =>
+      selector({ projects, currentProjectId: 'project-a', setCurrentProject }),
+    { getState: () => ({ projects }) },
+  ),
+}));
+
+vi.mock('@core/services/projectTransferService', () => ({
+  hydrateProjectMedia: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@core/services/projectDocumentService', () => ({

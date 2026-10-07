@@ -76,7 +76,8 @@
     "split": "Split into Veo segments",
     "copyPack": "Copy Creative Pack v2",
     "approveContinuityReview": "Approve continuity review",
-    "continuityReviewApproved": "Continuity review approved"
+    "continuityReviewApproved": "Continuity review approved",
+    "downloadOtio": "Download OTIO with media"
   },
   "labels": {
     "idea": "Production idea",
@@ -105,7 +106,8 @@
     "revisionProposed": "Revision proposed: {{prompt}}",
     "semanticReview": "Use approved Gemini semantic review when reviewing a take",
     "exportPreview": "Creative Pack v2 preview",
-    "continuityReviewCost": "Optional Gemini review · maximum ${{cost}}"
+    "continuityReviewCost": "Optional Gemini review · maximum ${{cost}}",
+    "fcpxmlExperimental": "FCPXML: experimental"
   },
   "empty": {
     "title": "Create the first production run",
@@ -203,6 +205,7 @@
     "continuityReviewRequired": "Approve the optional Gemini continuity review before using it.",
     "continuityReviewNoTakes": "Generate or cache a take before approving a continuity review.",
     "continuityReviewApproved": "Optional Gemini continuity review approved for this snapshot.",
-    "longShot": "This {{duration}}s shot exceeds one Veo segment. Split it now, or generate eight seconds and use extension mode from a non-expired Veo take."
+    "longShot": "This {{duration}}s shot exceeds one Veo segment. Split it now, or generate eight seconds and use extension mode from a non-expired Veo take.",
+    "otioReady": "OTIO bundle ready."
   }
 }

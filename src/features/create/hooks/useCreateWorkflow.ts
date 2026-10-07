@@ -1,3 +1,9 @@
+import { projectDocumentService } from '@core/services/projectDocumentService';
+import {
+  exportProjectOtioBundle,
+  downloadProjectBlob,
+} from '@core/services/projectTransferService';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -444,7 +450,13 @@ export function useCreateWorkflow() {
       shots: useAppStore.getState().sbShots,
       productionRun: activeRun,
       productionBible: useAppStore.getState().productionBible ?? productionBible,
-      promptArtifacts: await promptStudioHandoffService.listArtifacts(),
+      promptArtifacts: await promptStudioHandoffService.listArtifacts(currentProjectId),
+      timeline: {
+        tracks: useAppStore.getState().tracks,
+        clips: useAppStore.getState().clips,
+        zoomLevel: useAppStore.getState().zoomLevel,
+        currentTime: useAppStore.getState().currentTime,
+      },
     });
     const text = creativePackExportService.exportCreativePack(pack, 'markdown');
     setExportPreview(text);
@@ -456,7 +468,27 @@ export function useCreateWorkflow() {
     }
   };
 
+  const handleExportOtio = async () => {
+    if (!activeRun) return;
+    try {
+      const document = useEditorSessionStore
+        .getState()
+        .captureCurrentProjectDocument({ id: currentProjectId, name: projectName });
+      await projectDocumentService.save(document);
+      const saved = await projectDocumentService.load(currentProjectId);
+      if (!saved) throw new Error('Saved project document is unavailable.');
+      downloadProjectBlob(
+        await exportProjectOtioBundle(saved, activeRun),
+        `${projectName}.otio.zip`,
+      );
+      setFeedback(t('messages.otioReady', 'OTIO package downloaded with local media.'));
+    } catch (failure) {
+      setFeedback(failure instanceof Error ? failure.message : 'OTIO export failed');
+    }
+  };
+
   return {
+    handleExportOtio,
     promptState,
     productionBible,
     setPromptState,
