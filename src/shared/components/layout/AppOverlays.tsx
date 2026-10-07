@@ -28,6 +28,9 @@ const SafeModeRecovery = React.lazy(() =>
 const CommandPalette = React.lazy(() =>
   import('./CommandPalette').then((module) => ({ default: module.CommandPalette })),
 );
+const AiCoDirectorWidget = React.lazy(() =>
+  import('@features/codirector').then((module) => ({ default: module.AiCoDirectorWidget })),
+);
 
 import { UpdateNotification } from '@features/settings/updates/components/UpdateNotification';
 
@@ -125,6 +128,12 @@ export function AppOverlays({
           }
         >
           <ChatBot />
+        </Suspense>
+      </ErrorBoundary>
+      {/* Multimodal AI Co-Director Studio Widget (v13.0) */}
+      <ErrorBoundary panelId="app-codirector-overlay">
+        <Suspense fallback={null}>
+          <AiCoDirectorWidget />
         </Suspense>
       </ErrorBoundary>
 
