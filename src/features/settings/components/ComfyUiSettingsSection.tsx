@@ -78,11 +78,15 @@ export function ComfyUiSettingsSection() {
       {comfyUiEnabled ? (
         <div className="space-y-4 pt-2 border-t border-slate-800/80">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
+            <label
+              htmlFor="comfyui-endpoint-input"
+              className="block text-xs font-medium text-slate-400 mb-1"
+            >
               ComfyUI Server Endpoint
             </label>
             <div className="flex gap-2">
               <input
+                id="comfyui-endpoint-input"
                 type="url"
                 value={endpoint}
                 onChange={(e) => setEndpoint(e.target.value)}
@@ -125,10 +129,14 @@ export function ComfyUiSettingsSection() {
           ) : null}
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
+            <label
+              htmlFor="comfyui-preset-select"
+              className="block text-xs font-medium text-slate-400 mb-1"
+            >
               Default Video Model Workflow
             </label>
             <select
+              id="comfyui-preset-select"
               value={preset}
               onChange={(e) => setPreset(e.target.value as ComfyUiWorkflowPreset)}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-slate-200 text-sm focus:border-cyan-400 focus:outline-none"

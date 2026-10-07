@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [13.0.0] - 2026-10-07
+
+### Added
+
+- Add Universal Model Transpiler Engine for multi-model cinematic prompt generation supporting Google Flow/Veo 3.1, Kling 1.5/2.0, Runway Gen-3/4, OpenAI Sora, and Luma Ray-2.
+- Add ComfyUI Local GPU Engine with zero-cost offline video rendering for Stable Video Diffusion (SVD-XT), HunyuanVideo, CogVideoX, and AnimateDiff with live VRAM and health inspection.
+- Add 3D WebGPU Staging & Generative Previz v2 with real-time Three.js viewport, optical lens simulation (16mm to 135mm + 2.39:1 anamorphic), calibrated apertures ($f/1.2$ to $f/16$), and ControlNet Depth/Normal/Wireframe map rendering.
+- Add Multimodal AI Co-Director powered by Gemini Live (`gemini-3.8-live`) with hands-free audio directing, waveform studio widget, and bidirectional camera/scene tool manipulation.
+- Add Automated Foley & SFX Audio Pipeline with multi-track detection (A2 Dialogue TTS, A3 Foley/SFX, A5 Room Tone), dynamic ducking keyframe automation (-14 dB attenuation), and offline synthetic WAV previz.
+- Add P2P Virtual Writers' Room for local network real-time collaboration over LAN/WebRTC without cloud servers, featuring creative production roles, copyable LAN pairing codes, synchronized activity feed, and AES-GCM data channel encryption.
+
 ## [12.0.0] - 2026-08-15
 
 ### Added
