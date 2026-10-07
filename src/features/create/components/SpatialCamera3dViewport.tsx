@@ -416,6 +416,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       </div>
 
       {/* Main 3D Canvas Viewport */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         className="relative aspect-video w-full overflow-hidden bg-black select-none cursor-grab active:cursor-grabbing"
         onMouseDown={handleMouseDown}
