@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### UI / Design
+
+- Modernize UI architecture with Pro Studio Glass design system:
+  - Add atmospheric studio canvas lighting with chromatic radial depth and subtle micro-grid mesh in `AppBackground`.
+  - Elevate navigation sidebar with frosted glass surfaces (`backdrop-blur-xl`), glowing active state indicators, and animated live project pulse dots.
+  - Upgrade production workflow navigation with connected stepper track, emerald completion badges, and live autosave status pulse.
+  - Polish studio action bars, buttons, and collapsible cards with tactile squircle radiuses, inner top highlights (`inset 0 1px 0`), and modern gradient shines.
+  - Refine custom slim scrollbars and introduce cohesive glass and elevation design tokens in `tokens.css`.
+
 ### Fixed
 
 - Keep COPR RPMs installable after bundled Sharp/libvips upgrades by filtering versioned

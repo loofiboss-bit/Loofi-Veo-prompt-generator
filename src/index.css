@@ -25,11 +25,11 @@ html {
 body {
   height: 100%;
   margin: 0;
-  background-color: #000000;
+  background-color: #030712;
   background-image:
-    radial-gradient(circle at 10% 20%, hsla(220, 50%, 15%, 0.6), transparent 40%),
-    radial-gradient(circle at 90% 80%, hsla(190, 60%, 10%, 0.5), transparent 45%),
-    radial-gradient(circle at 50% 50%, hsla(260, 40%, 12%, 0.4), transparent 60%);
+    radial-gradient(circle at 15% 15%, hsla(222, 65%, 15%, 0.75), transparent 45%),
+    radial-gradient(circle at 85% 85%, hsla(250, 55%, 13%, 0.65), transparent 50%),
+    radial-gradient(circle at 50% 40%, hsla(200, 70%, 10%, 0.45), transparent 60%);
   background-attachment: fixed;
   color: #e2e8f0;
   font-family:
@@ -37,6 +37,8 @@ body {
     system-ui,
     -apple-system,
     sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
@@ -44,23 +46,30 @@ body {
    CUSTOM SCROLLBAR
    ============================================ */
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(71, 85, 105, 0.6) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 5px;
-  border: 2px solid #0f172a;
+  background: rgba(71, 85, 105, 0.5);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: rgba(100, 116, 139, 0.8);
+  background-clip: content-box;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -70,6 +79,34 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ============================================
+   PRO STUDIO UTILITY CLASSES
+   ============================================ */
+
+.studio-glass {
+  background: var(--glass-bg-base);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-highlight-inner);
+}
+
+.studio-card {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-highlight-inner),
+    0 4px 20px -2px rgba(0, 0, 0, 0.25);
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.studio-card:hover {
+  border-color: var(--glass-border-highlight);
 }
 
 /* ============================================
