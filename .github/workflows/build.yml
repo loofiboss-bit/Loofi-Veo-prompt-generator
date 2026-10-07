@@ -445,7 +445,7 @@ jobs:
 
       - name: Generate CycloneDX SBOM, release manifest, and provenance
         run: |
-          npm sbom --package-lock-only --sbom-format cyclonedx > artifacts/sbom.cdx.json || npm sbom --sbom-format cyclonedx > artifacts/sbom.cdx.json
+          node scripts/generate-sbom.mjs artifacts/sbom.cdx.json
           test -s artifacts/sbom.cdx.json
           node scripts/generate-release-metadata.mjs artifacts
         env:
