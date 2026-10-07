@@ -43,7 +43,7 @@ const Button = memo(
       // Base styles
       const baseStyles = `
       inline-flex items-center justify-center gap-2
-      font-medium rounded-lg
+      font-medium rounded-xl
       transition-all duration-200
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
@@ -52,18 +52,21 @@ const Button = memo(
       // Variant styles
       const variantStyles = {
         primary: `
-        bg-gradient-to-r from-blue-600 to-blue-500
+        bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500
         text-white
-        hover:from-blue-700 hover:to-blue-600
+        hover:from-blue-500 hover:to-indigo-500
         focus-visible:ring-blue-500
-        shadow-sm hover:shadow-md
+        shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/30
+        active:scale-[0.98]
       `,
         secondary: `
-        bg-slate-700 dark:bg-slate-700
-        text-white
-        hover:bg-slate-600 dark:hover:bg-slate-600
-        focus-visible:ring-slate-500
-        border border-slate-600
+        bg-slate-800/80 backdrop-blur-sm
+        text-slate-100
+        hover:bg-slate-700/90
+        focus-visible:ring-slate-400
+        border border-slate-700/80 hover:border-slate-600
+        shadow-sm
+        active:scale-[0.98]
       `,
         tertiary: `
         bg-transparent
@@ -71,6 +74,7 @@ const Button = memo(
         hover:bg-slate-100 dark:hover:bg-slate-800
         focus-visible:ring-slate-500
         border border-slate-300 dark:border-slate-700
+        active:scale-[0.98]
       `,
         danger: `
         bg-gradient-to-r from-red-600 to-red-500
@@ -78,12 +82,14 @@ const Button = memo(
         hover:from-red-700 hover:to-red-600
         focus-visible:ring-red-500
         shadow-sm hover:shadow-md
+        active:scale-[0.98]
       `,
         ghost: `
         bg-transparent
         text-slate-700 dark:text-slate-300
         hover:bg-slate-100 dark:hover:bg-slate-800
         focus-visible:ring-slate-500
+        active:scale-[0.98]
       `,
       };
 

@@ -83,14 +83,16 @@ const ControlButton: React.FC<{
   dataTourId,
 }) => {
   const baseClasses =
-    'flex items-center space-x-1.5 px-2.5 py-1.5 text-[11px] sm:text-xs font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
+    'flex items-center space-x-1.5 px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap active:scale-95';
 
   const variantClasses = {
     primary:
-      'bg-cyan-600 text-white hover:bg-cyan-500 disabled:bg-cyan-600/50 shadow-md shadow-cyan-500/20',
-    secondary: 'bg-slate-700 text-slate-100 hover:bg-slate-600 disabled:bg-slate-700/50',
-    ghost: 'text-slate-200 hover:bg-slate-700/60 hover:text-white',
-    'dropdown-trigger': 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
+      'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 shadow-md shadow-blue-500/20',
+    secondary:
+      'bg-slate-800/80 backdrop-blur-sm text-slate-100 hover:bg-slate-700/80 border border-slate-700/80 disabled:opacity-50 shadow-sm',
+    ghost: 'text-slate-300 hover:bg-slate-800/60 hover:text-white transition-colors',
+    'dropdown-trigger':
+      'bg-slate-800/80 backdrop-blur-sm text-slate-200 hover:bg-slate-700/80 border border-slate-700/80 shadow-sm',
   };
 
   return (
@@ -380,18 +382,18 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
             </div>
           </div>
         ) : (
-          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between gap-3 shadow-inner">
+          <div className="bg-slate-900/60 backdrop-blur-md p-3 rounded-xl border border-slate-800/80 flex items-center justify-between gap-3 shadow-sm">
             <p className="text-xs text-slate-300 truncate font-mono" title={currentPromptText}>
-              <span className="font-semibold text-cyan-500">PROMPT: </span>
+              <span className="font-semibold text-cyan-400">PROMPT: </span>
               {currentPromptText}
             </p>
             <button
               onClick={handleCopy}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
               title={t('tooltips:copyButton')}
             >
               {copied ? (
-                <Icon name="check" className="w-3.5 h-3.5 text-green-400" />
+                <Icon name="check" className="w-3.5 h-3.5 text-emerald-400" />
               ) : (
                 <Icon name="copy" className="w-3.5 h-3.5" />
               )}
@@ -413,7 +415,7 @@ const ActionBar: React.FC<ActionBarProps> = (props) => {
             <button
               onClick={onGeneratePrompt}
               disabled={isLoading || Object.keys(errors).length > 0 || !promptState.idea}
-              className="flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-105 shadow-[0_0_8px_rgba(34,211,238,0.3)] hover:shadow-[0_0_18px_rgba(34,211,238,0.5)] w-full sm:w-auto"
+              className="flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:ring-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(37,99,235,0.35)] hover:shadow-[0_0_22px_rgba(34,211,238,0.5)] w-full sm:w-auto"
               title={t('tooltips:generateButton')}
               data-tutorial-id="generate-prompt-button"
               data-tour-id="generate-prompt-button"

@@ -138,40 +138,47 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
             className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getColorClass(currentWorkspace?.metadata.color)}`}
           />
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-slate-500 leading-tight">Workspace</div>
+            <div className="text-[11px] uppercase tracking-wider text-slate-500 leading-tight">
+              Workspace
+            </div>
             <div className="text-sm font-semibold text-slate-200 truncate">
               {currentWorkspace?.name ?? 'Default'}
             </div>
           </div>
           <Icon
             name="chevron-down"
-            className="w-4 h-4 text-slate-500 transition-transform rotate-180"
+            className="w-4 h-4 text-slate-400 transition-transform rotate-180"
           />
         </button>
       ) : (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
+          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-slate-800/60 transition-colors group border-b border-slate-800/60"
           aria-expanded="false"
           aria-haspopup="listbox"
           aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
         >
           <div
-            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${getColorClass(currentWorkspace?.metadata.color)}`}
+            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm ${getColorClass(currentWorkspace?.metadata.color)}`}
           />
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-slate-500 leading-tight">Workspace</div>
+            <div className="text-[11px] uppercase tracking-wider text-slate-500 leading-tight">
+              Workspace
+            </div>
             <div className="text-sm font-semibold text-slate-200 truncate">
               {currentWorkspace?.name ?? 'Default'}
             </div>
           </div>
-          <Icon name="chevron-down" className="w-4 h-4 text-slate-500 transition-transform" />
+          <Icon
+            name="chevron-down"
+            className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-transform"
+          />
         </button>
       )}
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1 mx-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-1.5 mx-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden ring-1 ring-white/10">
           {/* Workspace list */}
           <div className="max-h-48 overflow-y-auto py-1" role="listbox" aria-label="Workspaces">
             {workspaces.map((workspace) =>
@@ -181,19 +188,19 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
                   onClick={() => handleSwitch(workspace)}
                   role="option"
                   aria-selected="true"
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors bg-cyan-600/15 text-cyan-300"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors bg-blue-600/20 text-blue-200 font-medium border-l-2 border-blue-400"
                 >
                   <div
                     className={`w-2 h-2 rounded-full flex-shrink-0 ${getColorClass(workspace.metadata.color)}`}
                   />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium truncate block">{workspace.name}</span>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-sm font-semibold truncate block">{workspace.name}</span>
+                    <span className="text-xs text-blue-300/70">
                       {workspace.metadata.projectCount} project
                       {workspace.metadata.projectCount !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <Icon name="check" className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <Icon name="check" className="w-4 h-4 text-blue-400 flex-shrink-0" />
                 </button>
               ) : (
                 <button
@@ -201,7 +208,7 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
                   onClick={() => handleSwitch(workspace)}
                   role="option"
                   aria-selected="false"
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-slate-300 hover:bg-slate-700/50"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors text-slate-300 hover:bg-slate-800/70"
                 >
                   <div
                     className={`w-2 h-2 rounded-full flex-shrink-0 ${getColorClass(workspace.metadata.color)}`}
@@ -219,7 +226,7 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
           </div>
 
           {/* Divider */}
-          <div className="border-t border-slate-700" />
+          <div className="border-t border-slate-800/80" />
 
           {/* Create new workspace */}
           {isCreating ? (
