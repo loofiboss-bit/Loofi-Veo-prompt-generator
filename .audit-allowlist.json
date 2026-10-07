@@ -6,261 +6,363 @@
       "id": 1103308,
       "package": "jspdf",
       "justification": "jsPDF used only for local PDF export; no user-supplied HTML/untrusted input processed. Monitoring for upstream fix.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1107412,
       "package": "jspdf",
       "justification": "DoS risk accepted — local desktop app, no server-side exposure.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1112264,
       "package": "jspdf",
       "justification": "Path traversal not exploitable — app generates PDFs from internal data only.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1112801,
       "package": "jspdf",
       "justification": "AcroForm not used in our PDF exports. No user-controlled form fields.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1112802,
       "package": "jspdf",
       "justification": "BMP decoder not used — app does not process BMP images via jsPDF.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1112803,
       "package": "jspdf",
       "justification": "XMP metadata injection — app controls all metadata, no untrusted input.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1112804,
       "package": "jspdf",
       "justification": "Race condition in addJS — plugin not used in our export flow.",
-      "expires": "2026-05-14"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113309,
       "package": "jspdf",
       "justification": "PDF AcroForm injection advisory accepted short-term for local export-only flow; no untrusted form/script payloads are ingested.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113310,
       "package": "jspdf",
       "justification": "addJS object-injection advisory accepted short-term; addJS is not used in app-generated PDFs.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113324,
       "package": "jspdf",
       "justification": "GIF-dimension DoS advisory accepted short-term; app does not process untrusted GIF payloads for server-side workflows.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "minimatch",
       "justification": "ReDoS via repeated wildcards (GHSA-3ppc-4f35-3m26). Dev-only dependency — used by eslint, electron-builder, node-gyp at build time. Not in production bundle. Upstream fix requires minimatch >=10.2.1; blocked by eslint@9, electron-builder@26, and typescript-eslint@8 locking older versions.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "glob",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint, electron-builder).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "rimraf",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (gaxios → rimraf → glob).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "cacache",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (node-gyp → make-fetch-happen → cacache).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "make-fetch-happen",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (node-gyp).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "node-gyp",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (@electron/rebuild).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "filelist",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (jake → filelist).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "jake",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (ejs → jake).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "ejs",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (app-builder-lib → ejs).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "dir-compare",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (@electron/universal).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "ajv",
       "justification": "Transitive dep via eslint. Dev-only.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@eslint-community/eslint-utils",
       "justification": "Transitive dep via eslint. Dev-only.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@develar/schema-utils",
       "justification": "Transitive dep via app-builder-lib. Dev-only.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "dmg-builder",
       "justification": "Transitive dep via app-builder-lib. Dev-only.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@typescript-eslint/eslint-plugin",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@electron/asar",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (@electron/universal, app-builder-lib).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@electron/rebuild",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (app-builder-lib → @electron/rebuild → node-gyp).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@electron/universal",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (app-builder-lib → @electron/universal).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@eslint/config-array",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint → @eslint/config-array).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@eslint/eslintrc",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint → @eslint/eslintrc).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@typescript-eslint/parser",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint → @typescript-eslint/parser).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@typescript-eslint/typescript-estree",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint parser/utils chain).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@typescript-eslint/utils",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint → @typescript-eslint/utils).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "eslint",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only linter tool.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "typescript-eslint",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint typescript integration).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "app-builder-lib",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (electron-builder).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "electron-builder-squirrel-windows",
       "justification": "Transitive dev-only dependency in electron-builder Windows packaging chain.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "electron-winstaller",
       "justification": "Transitive dev-only dependency used only for Windows installer generation.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "temp",
       "justification": "Transitive dev-only dependency via electron-winstaller during packaging.",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "@typescript-eslint/type-utils",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (typescript-eslint type checking).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "eslint-plugin-jsx-a11y",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint a11y plugin).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "eslint-plugin-react",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (eslint react plugin).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
     },
     {
       "id": 1113371,
       "package": "gaxios",
       "justification": "Transitive dep of minimatch ReDoS advisory. Dev-only (gaxios → rimraf → glob).",
-      "expires": "2026-05-19"
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240100,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240101,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240103,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240104,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240105,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240107,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240108,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240109,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240111,
+      "package": "brace-expansion",
+      "justification": "Dev-only dependency in eslint/typescript-eslint/electron-builder build chain. Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "braces",
+      "justification": "Dev-only dependency in tailwindcss and lint-staged build tools. Not exposed to untrusted user input.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "chokidar",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "micromatch",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "fast-glob",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "lint-staged",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "postcss-nested",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "postcss-selector-parser",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1240992,
+      "package": "tailwindcss",
+      "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
+      "expires": "2027-05-19"
     }
   ],
-  "lastReviewed": "2026-02-19",
-  "reviewedBy": "loofitheboss"
+  "lastReviewed": "2026-10-07",
+  "reviewedBy": "loofi"
 }
