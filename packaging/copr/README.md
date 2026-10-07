@@ -15,7 +15,7 @@ provider integration.
 
 Electron and Sharp bundle their own runtime objects. Fedora's automatic ELF scanner can otherwise
 turn those internal objects into impossible host requirements. The spec therefore filters only
-`libc.musl-x86_64.so.1` and `libvips-cpp.so.8.18.3`; GTK, NSS, libsecret, X11, and other actual host
+`libc.musl-x86_64.so.1` and `libvips-cpp.so.*`; GTK, NSS, libsecret, X11, and other actual host
 requirements remain declared and visible to DNF.
 
 ## Enable and install
