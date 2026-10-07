@@ -21,6 +21,7 @@ export * from './otio';
 export * from './modelTranspiler';
 export * from './comfyUi';
 export * from './coDirector';
+export * from './audioPipeline';
 
 import type {
   BlockConnection,
@@ -517,6 +518,7 @@ export interface Shot {
     fontSize: number;
   };
   sfx?: SFXEvent[];
+  foleyCues?: string[];
   dialogue?: string;
   dialogueText?: string;
   lighting?: string;
