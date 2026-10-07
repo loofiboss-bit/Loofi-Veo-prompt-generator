@@ -2,9 +2,9 @@ name: Build and Release
 
 on:
   push:
-    branches: [main]
     tags:
       - 'v*'
+      - '!v*-beta*'
   workflow_dispatch:
 
 concurrency:
@@ -13,6 +13,10 @@ concurrency:
 
 permissions:
   contents: read
+
+# Renderer inference uses the browser runtime; desktop packages exclude ONNX Node binaries.
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
 
 jobs:
   prepare-release:
@@ -215,7 +219,7 @@ jobs:
           success=false
           for attempt in 1 2 3; do
             echo "=== Attempt $attempt ==="
-            if npm run dist -- --publish never; then
+            if npx electron-builder --publish never; then
               success=true
               break
             fi

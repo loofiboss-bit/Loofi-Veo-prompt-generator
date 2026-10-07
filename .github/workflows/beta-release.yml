@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+
 jobs:
   build:
     name: Build Beta on ${{ matrix.os }}

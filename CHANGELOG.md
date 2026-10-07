@@ -9,7 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [14.0.0] - 2026-10-07
+## [14.0.1] - 2026-10-07
+
+### CI
+
+- Run automatic desktop packaging only for release tags; use validation for main branch pushes.
+- Skip unused ONNX Node GPU downloads in CI; renderer inference keeps its browser runtime.
+- Check private POSIX media permissions only on platforms that expose POSIX permission bits;
+  preserve Windows checksum, atomic storage and packaged restart tests.
+- Package the already verified Vite output and remove the unused production build from dev-server
+  browser tests. Preserve the intentional build reproducibility check and all release smoke gates.
 
 ### Reliable Creator Studio
 

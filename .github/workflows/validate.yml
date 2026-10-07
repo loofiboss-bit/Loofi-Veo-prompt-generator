@@ -1,6 +1,8 @@
 name: Validate
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -20,6 +22,10 @@ concurrency:
 
 permissions:
   contents: read
+
+# Tests mock browser inference and do not require optional ONNX Node GPU downloads.
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
 
 jobs:
   validate:
@@ -118,9 +124,6 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
-      - name: Build application
-        run: npm run build
 
       - name: Run full Chromium E2E and enforce Creator Studio performance budgets
         run: npx playwright test --project=chromium
