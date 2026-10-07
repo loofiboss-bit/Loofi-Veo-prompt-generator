@@ -18,6 +18,7 @@ export * from './spatialCamera';
 export * from './screenplay';
 export * from './animatic';
 export * from './otio';
+export * from './modelTranspiler';
 
 import type {
   BlockConnection,

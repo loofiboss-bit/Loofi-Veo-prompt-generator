@@ -18,6 +18,7 @@ import {
 import { generateSunoPack } from './gemini/geminiAudioService';
 import { generatePromptWithOllama } from './ollamaProvider';
 import { compileSpatialCameraRig } from './spatialCameraService';
+import { transpilePrompt } from './modelTranspilerService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 const DEFAULT_NEGATIVE =
@@ -370,11 +371,19 @@ const videoValidation = (
     {
       id: 'target-compatibility',
       label: 'Target compatibility',
-      status: input.target === 'flow-veo' || input.target === 'veo-api' ? 'pass' : 'warning',
+      status: 'pass',
       detail:
         input.target === 'flow-veo'
           ? 'The handoff uses Flow/Veo-compatible scene language.'
-          : 'The handoff is labeled for the Veo API; confirm model-specific limits before running.',
+          : input.target === 'kling'
+            ? 'The handoff uses Kling 1.5/2.0 bracket camera syntax.'
+            : input.target === 'runway-gen3'
+              ? 'The handoff uses Runway Gen-3 motion vector syntax.'
+              : input.target === 'sora'
+                ? 'The handoff uses OpenAI Sora photochemical realism syntax.'
+                : input.target === 'luma-ray'
+                  ? 'The handoff uses Luma Dream Machine trajectory syntax.'
+                  : 'The handoff is labeled for the Veo API; confirm model-specific limits before running.',
     },
     {
       id: 'audio',
@@ -408,6 +417,50 @@ const createVideoVariant = (
   input: VideoPromptArtifactInput,
   label: VideoPromptVariant['label'],
 ): VideoPromptVariant => {
+  if (input.target !== 'flow-veo' && input.target !== 'veo-api') {
+    const transpiled = transpilePrompt(
+      {
+        idea: input.idea,
+        mode: input.mode,
+        target: input.target,
+        aspectRatio: input.aspectRatio,
+        durationSeconds: input.durationSeconds,
+        subject: input.subject,
+        action: input.action,
+        environment: input.environment,
+        camera: input.camera,
+        spatialCamera: input.spatialCamera,
+        lighting: input.lighting,
+        style: input.style,
+        audio: input.audio,
+        dialogue: input.dialogue,
+        negativePrompt: input.negativePrompt,
+        startFrame: input.startFrame,
+        endFrame: input.endFrame,
+        previousClip: input.previousClip,
+        referenceRoles: input.referenceRoles,
+      },
+      input.target,
+    );
+    const match = transpiled.variants.find((v) => v.label === label) ?? transpiled.variants[0];
+    return {
+      label,
+      title:
+        label === 'Primary'
+          ? 'Recommended handoff'
+          : label === 'Cinematic'
+            ? 'Cinematic texture'
+            : 'Control-focused',
+      prompt: match.prompt,
+      negativePrompt: match.negativePrompt,
+      settingsChecklist: match.settingsChecklist,
+      copyPrompt: match.copyPrompt,
+      copyNegativePrompt: match.copyNegativePrompt,
+      copySettingsChecklist: match.copySettingsChecklist,
+      copyAll: composeVideoCopyAll(match.prompt, match.negativePrompt, match.copySettingsChecklist),
+    };
+  }
+
   const prompt = buildVideoPrompt(input, label);
   const negativePrompt = [trim(input.negativePrompt), DEFAULT_NEGATIVE].filter(Boolean).join(', ');
   const settingsChecklist = buildVideoChecklist(input);
@@ -960,7 +1013,7 @@ const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState => ({
   ambientSound: input.audio ?? '',
   negativePrompt: input.negativePrompt ?? '',
   aspectRatio: input.aspectRatio,
-  targetModel: input.target,
+  targetModel: input.target === 'veo-api' ? 'veo-api' : 'flow-veo',
   flowVeoOutputMode: input.mode === 'text-to-video' ? 'single-prompt' : 'flow-scene-pack',
   optimizeFor8Seconds: input.durationSeconds === 8,
 });
