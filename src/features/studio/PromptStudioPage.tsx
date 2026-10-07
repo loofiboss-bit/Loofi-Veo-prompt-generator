@@ -609,6 +609,10 @@ export function PromptStudioPage() {
                   <SpatialCameraDirector
                     rig={video.spatialCamera ?? DEFAULT_SPATIAL_CAMERA_RIG}
                     onChange={(rig) => updateVideo('spatialCamera', rig)}
+                    onAddReferenceImage={(_dataUrl, name) => {
+                      const prefix = video.referenceRoles ? `${video.referenceRoles}, ` : '';
+                      updateVideo('referenceRoles', `${prefix}depth_map=${name}`);
+                    }}
                   />
                 )}
                 <div className="grid gap-4 sm:grid-cols-2">

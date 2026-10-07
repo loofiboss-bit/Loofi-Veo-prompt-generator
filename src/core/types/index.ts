@@ -34,6 +34,7 @@ import type { FlowVeoOutputMode, VideoTarget } from './flowVeo';
 import type { SunoExportMode } from './suno';
 import type { ProductionBible } from './continuity';
 import type { VeoExecutionInputs, VeoGenerationRequest } from './production';
+import type { SpatialCameraRig } from './spatialCamera';
 
 export type Language = 'en' | 'sv' | 'es' | 'fr' | 'de';
 
@@ -531,6 +532,7 @@ export interface Shot {
   cameraEffect?: CameraEffect;
 
   motionConfig?: MotionConfig;
+  spatialCamera?: SpatialCameraRig;
   overlays?: TextOverlay[];
   poseUrl?: string;
   sourceType?: 'generated' | 'stock';
