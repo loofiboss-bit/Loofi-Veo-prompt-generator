@@ -131,6 +131,8 @@ export function AppRuntime() {
     setIsCommentPanelOpen,
     isRoleManagerOpen,
     setIsRoleManagerOpen,
+    isWritersRoomOpen,
+    setIsWritersRoomOpen,
   } = useAppCollaborationState();
 
   // ---------- Local state ----------
@@ -647,6 +649,8 @@ export function AppRuntime() {
       onCloseCommentPanel: () => setIsCommentPanelOpen(false),
       isRoleManagerOpen,
       onCloseRoleManager: () => setIsRoleManagerOpen(false),
+      isWritersRoomOpen,
+      onCloseWritersRoom: () => setIsWritersRoomOpen(false),
       currentProjectId,
       currentProjectName,
     }),
@@ -661,6 +665,8 @@ export function AppRuntime() {
       setIsCommentPanelOpen,
       isRoleManagerOpen,
       setIsRoleManagerOpen,
+      isWritersRoomOpen,
+      setIsWritersRoomOpen,
       currentProjectId,
       currentProjectName,
     ],
@@ -761,6 +767,7 @@ export function AppRuntime() {
           onOpenSeriesBible: () => openModal('isSeriesBibleOpen'),
           onOpenVariablesPanel: () => openModal('isVariablesPanelOpen'),
           onOpenScriptStudio: () => openStudioSafely('script'),
+          onOpenWritersRoom: () => setIsWritersRoomOpen(true),
           currentProjectName,
         }}
         promptWorkspaceProps={{

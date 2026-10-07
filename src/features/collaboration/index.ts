@@ -5,3 +5,4 @@ export { ShareDialog } from './ShareDialog';
 export { ConflictResolutionPanel } from './ConflictResolutionPanel';
 export { RoleManager } from './RoleManager';
 export { ProfileSetup } from './ProfileSetup';
+export { WritersRoomModal } from './WritersRoomModal';

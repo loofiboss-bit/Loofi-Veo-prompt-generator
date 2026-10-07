@@ -14,6 +14,8 @@ export interface AppCollaborationState {
   setIsCommentPanelOpen: (open: boolean) => void;
   isRoleManagerOpen: boolean;
   setIsRoleManagerOpen: (open: boolean) => void;
+  isWritersRoomOpen: boolean;
+  setIsWritersRoomOpen: (open: boolean) => void;
 }
 
 export function useAppCollaborationState(): AppCollaborationState {
@@ -23,6 +25,7 @@ export function useAppCollaborationState(): AppCollaborationState {
   const [isProfileSetupOpen, setIsProfileSetupOpen] = useState(false);
   const [isCommentPanelOpen, setIsCommentPanelOpen] = useState(false);
   const [isRoleManagerOpen, setIsRoleManagerOpen] = useState(false);
+  const [isWritersRoomOpen, setIsWritersRoomOpen] = useState(false);
   const collabStatus = useCollaborationStore((s) => s.connectionStatus);
   const collabCurrentUser = useCollaborationStore((s) => s.currentUser);
 
@@ -44,5 +47,7 @@ export function useAppCollaborationState(): AppCollaborationState {
     setIsCommentPanelOpen,
     isRoleManagerOpen,
     setIsRoleManagerOpen,
+    isWritersRoomOpen,
+    setIsWritersRoomOpen,
   };
 }

@@ -22,6 +22,7 @@ export * from './modelTranspiler';
 export * from './comfyUi';
 export * from './coDirector';
 export * from './audioPipeline';
+export * from './writersRoom';
 
 import type {
   BlockConnection,
