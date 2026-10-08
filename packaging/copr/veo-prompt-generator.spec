@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        14.0.1
+Version:        14.1.0
 Release:        2%{?dist}
 Summary:        Local-first Loofi Creator Studio for Flow/Veo prompts and Suno lyrics
 License:        MIT

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { createPromptStudioDraft } from './promptStudioDraftService';
+import { studioRevisionSnapshot } from './studioRevisionService';
 import { INITIAL_STATE } from '@core/constants';
 import type { ProductionRun, Shot } from '@core/types';
 import { compileVideoPromptArtifact } from './promptStudioService';
@@ -21,6 +23,28 @@ const shot: Shot = {
 };
 
 describe('creativePackExportService', () => {
+  it('exports additive revision history in schema 5 without sharing mutable snapshots', () => {
+    const revision = {
+      schemaVersion: 1 as const,
+      id: 'revision',
+      projectId: 'a',
+      createdAt: '2026-10-08',
+      reason: 'save',
+      snapshot: studioRevisionSnapshot(createPromptStudioDraft('a')),
+    };
+    const pack = creativePackExportService.buildCreativePack({
+      projectId: 'a',
+      promptState: INITIAL_STATE,
+      studioRevisions: [revision],
+    });
+    revision.snapshot.video.idea = 'Later edit';
+    expect(pack.schemaVersion).toBe(5);
+    expect(pack.studioRevisions?.[0].snapshot.video.idea).toBe('');
+    expect(
+      JSON.parse(creativePackExportService.exportCreativePack(pack, 'json')).studioRevisions,
+    ).toHaveLength(1);
+    expect(migrateCreativePack(pack).studioRevisions).toEqual(pack.studioRevisions);
+  });
   it('builds one project-aligned Flow/Veo, Veo API, Suno, and timeline pack', () => {
     const pack = creativePackExportService.buildCreativePack({
       projectId: 'project-1',

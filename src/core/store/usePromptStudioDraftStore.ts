@@ -5,12 +5,31 @@ import type {
   PromptStudioDraftV1,
   VideoPromptArtifactInput,
 } from '@core/types';
+import type { StudioRevisionV1 } from '@core/types/studioRevision';
+import { studioRevisionService } from '@core/services/studioRevisionService';
 import { promptStudioDraftService } from '@core/services/promptStudioDraftService';
 
 interface PromptStudioDraftStore {
   draft: PromptStudioDraftV1 | null;
   status: 'loading' | 'saving' | 'saved' | 'error';
   error: string | null;
+  checkpoint: (reason: string) => Promise<boolean>;
+  restoreRevision: (revision: StudioRevisionV1) => Promise<boolean>;
+  applyDraft: (
+    changes: Partial<
+      Pick<
+        PromptStudioDraftV1,
+        | 'mode'
+        | 'video'
+        | 'music'
+        | 'artifact'
+        | 'artifacts'
+        | 'selectedVariant'
+        | 'selectedVariants'
+        | 'lockedSections'
+      >
+    >,
+  ) => void;
   hydrate: (projectId: string) => Promise<boolean>;
   flush: (projectId?: string) => Promise<boolean>;
   updateVideo: (updates: Partial<VideoPromptArtifactInput>) => void;
@@ -51,6 +70,40 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
     draft: null,
     status: 'loading',
     error: null,
+    applyDraft: (changes) => update(changes),
+    checkpoint: async (reason) => {
+      if (!(await get().flush())) return false;
+      const draft = get().draft;
+      if (!draft || get().status === 'loading') return false;
+      try {
+        await studioRevisionService.checkpoint(draft, reason);
+        // A checkpoint is safe for destructive follow-up only while its input is current.
+        return get().draft === draft;
+      } catch (error) {
+        set({ status: 'error', error: error instanceof Error ? error.message : String(error) });
+        return false;
+      }
+    },
+    restoreRevision: async (revision) => {
+      if (!(await get().flush())) return false;
+      const draft = get().draft;
+      if (!draft || get().status === 'loading') return false;
+      set({ status: 'loading', error: null });
+      saving = (async () => {
+        try {
+          const restored = await studioRevisionService.restore(draft, revision);
+          dirty = false;
+          set({ draft: restored, status: 'saved', error: null });
+          return true;
+        } catch (error) {
+          set({ status: 'error', error: error instanceof Error ? error.message : String(error) });
+          return false;
+        }
+      })();
+      const result = await saving;
+      saving = null;
+      return result;
+    },
     hydrate: async (projectId) => {
       if (get().draft?.projectId === projectId) return true;
       const version = ++hydrateVersion;

@@ -50,6 +50,8 @@ $HOME/
 # Playwright
 /test-results/
 /playwright-report/
+/.playwright-cli/
+/output/playwright/
 /blob-report/
 /playwright/.cache/
 

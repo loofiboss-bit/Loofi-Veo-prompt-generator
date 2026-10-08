@@ -298,3 +298,17 @@ export async function duplicateTemplate(id: string): Promise<UserTemplate | null
     return null;
   }
 }
+
+/** Strict read for Studio: storage failures must not masquerade as an empty library. */
+export async function getUserTemplatesStrict(): Promise<UserTemplate[]> {
+  try {
+    const ids = (await get<string[]>(TEMPLATE_LIST_KEY)) ?? [];
+    const templates = await Promise.all(
+      ids.map((id) => get<UserTemplate>(`${TEMPLATE_PREFIX}${id}`)),
+    );
+    return templates.filter((template): template is UserTemplate => Boolean(template));
+  } catch (error) {
+    logger.error('Failed to load legacy Studio templates', error);
+    throw error;
+  }
+}

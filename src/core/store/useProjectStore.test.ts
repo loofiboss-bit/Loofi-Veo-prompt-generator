@@ -35,8 +35,10 @@ const {
 
 // Mock idb-keyval (used by persist middleware)
 vi.mock('idb-keyval', () => ({
+  createStore: vi.fn(() => ({})),
   get: vi.fn(() => Promise.resolve(undefined)),
   set: vi.fn(() => Promise.resolve()),
+  del: vi.fn(() => Promise.resolve()),
 }));
 
 // Mock projectService

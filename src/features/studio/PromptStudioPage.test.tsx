@@ -6,13 +6,20 @@ import { useProductionRunStore } from '@core/store/useProductionRunStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useAppStore } from '@core/store/useAppStore';
-import { compileVideoPromptArtifact } from '@core/services/promptStudioService';
+import { studioRevisionService } from '@core/services/studioRevisionService';
+import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
+import { editStudioVariant } from '@core/services/promptStudioEditingService';
+import {
+  compileMusicPromptArtifact,
+  compileVideoPromptArtifact,
+} from '@core/services/promptStudioService';
 import type { PromptArtifactV1 } from '@core/types';
 import { PromptStudioPage } from './PromptStudioPage';
 
 const mocks = vi.hoisted(() => ({
   db: new Map<string, unknown>(),
   optimize: vi.fn(),
+  optimizeMusic: vi.fn(),
   key: vi.fn(),
 }));
 vi.mock('idb-keyval', () => ({
@@ -24,15 +31,22 @@ vi.mock('idb-keyval', () => ({
   del: async (key: string, store = 'default') => {
     mocks.db.delete(`${store}:${key}`);
   },
+  update: async (key: string, updater: (value: unknown) => unknown) => {
+    mocks.db.set(`default:${key}`, structuredClone(updater(mocks.db.get(`default:${key}`))));
+  },
   keys: async () => [],
   clear: async () => mocks.db.clear(),
 }));
 vi.mock('@core/services/promptStudioService', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@core/services/promptStudioService')>()),
   optimizeVideoPromptArtifact: mocks.optimize,
+  optimizeMusicPromptArtifact: mocks.optimizeMusic,
 }));
 vi.mock('@core/services/apiKeyService', () => ({ hasApiKeyAsync: mocks.key }));
-vi.mock('@core/services/templateManager', () => ({ getUserTemplates: async () => [] }));
+vi.mock('@core/services/templateManager', () => ({
+  getUserTemplates: async () => [],
+  getUserTemplatesStrict: async () => [],
+}));
 
 async function openStudio() {
   const result = render(<PromptStudioPage />);
@@ -55,6 +69,7 @@ describe('PromptStudioPage durable copy desk', () => {
     await usePromptStudioDraftStore.getState().flush();
     mocks.db.clear();
     mocks.optimize.mockReset();
+    mocks.optimizeMusic.mockReset();
     mocks.key.mockReset().mockResolvedValue(true);
     localStorage.clear();
     await i18n.changeLanguage('en');
@@ -76,6 +91,32 @@ describe('PromptStudioPage durable copy desk', () => {
       configurable: true,
       value: { writeText: clipboard },
     });
+
+  it('preserves keyboard focus when an earlier hydration finishes late', async () => {
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const hydrate = usePromptStudioDraftStore.getState().hydrate;
+    vi.spyOn(usePromptStudioDraftStore.getState(), 'hydrate').mockImplementation(async (id) => {
+      const ok = await hydrate(id);
+      await pending;
+      return ok;
+    });
+    const { user } = await openStudio();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'A bicycle crosses a bridge' },
+    });
+    const build = screen.getByRole('button', { name: 'Build copy-ready pack' });
+    build.focus();
+    await act(async () => finish());
+    expect(build).toHaveFocus();
+    await user.keyboard('{Enter}');
+    const prompt = (await screen.findByRole('textbox', {
+      name: 'Primary prompt',
+    })) as HTMLTextAreaElement;
+    expect(prompt.value).toContain('bicycle');
+  });
 
   it('focuses the idea and displays one selected editable variant with synchronized copy fields', async () => {
     const { user } = await openStudio();
@@ -114,7 +155,7 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue('Edited output');
   });
 
-  it.each(['flow-veo', 'kling', 'runway-gen3', 'sora', 'luma-ray'])(
+  it.each(['flow-veo', 'kling', 'runway-gen3', 'sora', 'luma-ray', 'wan-video', 'minimax-hailuo'])(
     'keeps %s a manual copy handoff',
     async (target) => {
       const open = vi.spyOn(window, 'open').mockImplementation(() => null);
@@ -140,7 +181,7 @@ describe('PromptStudioPage durable copy desk', () => {
     );
     await buildPack(user);
     expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
-    expect(screen.getByText('Image-to-video requires a first frame.')).toBeInTheDocument();
+    expect(screen.getAllByText('Image-to-video requires a first frame.').length).toBeGreaterThan(0);
     await act(async () => {
       useAppStore.setState({
         assets: [
@@ -162,7 +203,7 @@ describe('PromptStudioPage durable copy desk', () => {
     await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
     await screen.findByRole('textbox', { name: 'Primary prompt' });
     expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
-    expect(screen.getByText('Veo API supports 4, 6 or 8 seconds.')).toBeInTheDocument();
+    expect(screen.getAllByText('Veo API supports 4, 6 or 8 seconds.').length).toBeGreaterThan(0);
   });
 
   it('ignores a completed AI request after the user changes input', async () => {
@@ -296,5 +337,240 @@ describe('PromptStudioPage durable copy desk', () => {
     await user.click(screen.getByRole('button', { name: 'Copy & Open Suno' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Clipboard blocked');
     expect(open).not.toHaveBeenCalled();
+  });
+  it('previews AI changes and preserves the current edit until explicit acceptance', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Primary prompt' }), {
+      target: { value: 'My own exact edit' },
+    });
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.optimize.mockResolvedValue(editStudioVariant(source, 0, { prompt: 'Proposed AI edit' }));
+    await user.click(screen.getByRole('button', { name: 'Enhance with AI' }));
+    await screen.findByRole('region', { name: 'Review AI changes' });
+    expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+      'My own exact edit',
+    );
+    await user.click(screen.getByRole('button', { name: 'Accept changes' }));
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+        'Proposed AI edit',
+      ),
+    );
+    const versions = await studioRevisionService.list('studio-test');
+    expect(
+      versions.some(
+        (item) =>
+          (item.snapshot.artifact?.primary as { prompt?: string })?.prompt === 'My own exact edit',
+      ),
+    ).toBe(true);
+  });
+
+  it('opens the rights declarations without changing settings automatically', async () => {
+    const { user } = await openStudio();
+    await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.type(await screen.findByRole('textbox', { name: 'Song idea / story' }), 'Home');
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    await screen.findByRole('textbox', { name: 'Primary lyrics' });
+    const original = usePromptStudioDraftStore.getState().draft!.music.rightsChecklist;
+    const issue = screen.getByText('Rights-safe handoff').closest('div')!.parentElement!;
+    await user.click(within(issue).getByRole('button', { name: 'Open control' }));
+    await waitFor(() =>
+      expect(screen.getByRole('checkbox', { name: 'Original or licensed lyrics' })).toHaveFocus(),
+    );
+    expect(usePromptStudioDraftStore.getState().draft!.music.rightsChecklist).toEqual(original);
+  });
+
+  it('discards a previous project history response after switching projects', async () => {
+    let resolve!: (artifacts: PromptArtifactV1[]) => void;
+    const pending = new Promise<PromptArtifactV1[]>((done) => {
+      resolve = done;
+    });
+    const old = {
+      ...compileVideoPromptArtifact({
+        idea: 'Private previous project',
+        target: 'flow-veo',
+        mode: 'text-to-video',
+        durationSeconds: 8,
+        aspectRatio: '16:9',
+      }),
+      id: 'old-artifact',
+      projectId: 'studio-test',
+    };
+    vi.spyOn(promptStudioHandoffService, 'listArtifacts').mockImplementation(async (id) =>
+      id === 'studio-test' ? pending : [],
+    );
+    const { user } = await openStudio();
+    await act(async () => {
+      useProjectStore.setState({ currentProjectId: 'new-project' });
+    });
+    await waitFor(() =>
+      expect(usePromptStudioDraftStore.getState().draft?.projectId).toBe('new-project'),
+    );
+    await act(async () => {
+      resolve([old]);
+    });
+    await user.click(screen.getByText('Templates and history', { exact: true }));
+    expect(screen.queryByRole('option', { name: old.primary.label })).toBeNull();
+    expect(usePromptStudioDraftStore.getState().draft?.artifact).toBeNull();
+  });
+
+  it('rejects an AI proposal without changing the draft or adding an AI revision', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.optimize.mockResolvedValue(editStudioVariant(source, 0, { prompt: 'Rejected edit' }));
+    await user.click(screen.getByRole('button', { name: 'Enhance with AI' }));
+    await screen.findByRole('button', { name: 'Reject changes' });
+    await user.click(screen.getByRole('button', { name: 'Reject changes' }));
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(source);
+    expect(
+      (await studioRevisionService.list('studio-test')).some((item) => item.reason === 'ai'),
+    ).toBe(false);
+  });
+
+  it('invalidates an already displayed proposal after an edit', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.optimize.mockResolvedValue(editStudioVariant(source, 0, { prompt: 'Stale proposal' }));
+    await user.click(screen.getByRole('button', { name: 'Enhance with AI' }));
+    await screen.findByRole('button', { name: 'Accept changes' });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Primary prompt' }), {
+      target: { value: 'Newer user edit' },
+    });
+    expect(screen.queryByRole('button', { name: 'Accept changes' })).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue('Newer user edit');
+  });
+
+  it.each(['edit', 'project'])('discards a late AI response after a %s change', async (change) => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    let resolve!: (artifact: PromptArtifactV1) => void;
+    mocks.optimize.mockReturnValue(
+      new Promise<PromptArtifactV1>((done) => {
+        resolve = done;
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Enhance with AI' }));
+    await waitFor(() => expect(mocks.optimize).toHaveBeenCalled());
+    if (change === 'edit') {
+      fireEvent.change(screen.getByRole('textbox', { name: 'Primary prompt' }), {
+        target: { value: 'Newer manual edit' },
+      });
+    } else {
+      await act(async () => {
+        useProjectStore.setState({ currentProjectId: 'other-project' });
+      });
+      await waitFor(() =>
+        expect(usePromptStudioDraftStore.getState().draft?.projectId).toBe('other-project'),
+      );
+    }
+    await act(async () => {
+      resolve(editStudioVariant(source, 0, { prompt: 'Late response' }));
+    });
+    expect(screen.queryByRole('button', { name: 'Accept changes' })).toBeNull();
+    if (change === 'edit')
+      expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+        'Newer manual edit',
+      );
+    else expect(usePromptStudioDraftStore.getState().draft?.artifact).toBeNull();
+  });
+
+  it('reviews a section rewrite before changing lyrics', async () => {
+    const { user } = await openStudio();
+    await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.type(await screen.findByRole('textbox', { name: 'Song idea / story' }), 'Home');
+    await user.click(screen.getByText('Music details and original lyrics', { exact: true }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your lyrics (optional)' }), {
+      target: { value: '[Verse]\nOriginal verse\n\n[Chorus]\nOriginal hook' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    await screen.findByRole('textbox', { name: 'Primary lyrics' });
+    const original = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.optimizeMusic.mockResolvedValue(
+      compileMusicPromptArtifact({
+        topic: 'Home',
+        language: 'English',
+        lyrics: '[Verse]\nIgnored verse\n\n[Chorus]\nRewritten hook',
+      }),
+    );
+    await user.click(screen.getByText('Revise lyrics with AI', { exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Rewrite section' }));
+    await screen.findByRole('button', { name: 'Accept changes' });
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(original);
+    await user.click(screen.getByRole('button', { name: 'Accept changes' }));
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('textbox', { name: 'Primary lyrics' }) as HTMLTextAreaElement).value,
+      ).toContain('Rewritten hook'),
+    );
+    expect(
+      (screen.getByRole('textbox', { name: 'Primary lyrics' }) as HTMLTextAreaElement).value,
+    ).toContain('Original verse');
+  });
+
+  it('checkpoints edited alternatives before selecting a new target', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    await user.click(screen.getByRole('button', { name: 'Cinematic' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cinematic prompt' }), {
+      target: { value: 'Keep my cinematic edit' },
+    });
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'wan-video');
+    await waitFor(() =>
+      expect(usePromptStudioDraftStore.getState().draft!.video.target).toBe('wan-video'),
+    );
+    const versions = await studioRevisionService.list('studio-test');
+    const previous = versions.find((item) => item.reason === 'target');
+    expect(previous?.snapshot.selectedVariant).toBe(1);
+    expect(previous?.snapshot.artifact?.alternatives[0]).toMatchObject({
+      prompt: 'Keep my cinematic edit',
+    });
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toBeNull();
+  });
+
+  it('keeps the current pack when a required checkpoint fails', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    vi.spyOn(usePromptStudioDraftStore.getState(), 'checkpoint').mockResolvedValue(false);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'sora');
+    await screen.findByRole('alert');
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(source);
+    expect(usePromptStudioDraftStore.getState().draft!.video.target).toBe('flow-veo');
+  });
+
+  it('preserves locked lyrics exactly through proposal review and acceptance', async () => {
+    const { user } = await openStudio();
+    await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.type(await screen.findByRole('textbox', { name: 'Song idea / story' }), 'Home');
+    await user.click(screen.getByText('Music details and original lyrics', { exact: true }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Your lyrics (optional)' }), {
+      target: { value: '[Verse]\nOld verse\n\n[Chorus]\nMy locked chorus\n' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    await screen.findByRole('textbox', { name: 'Primary lyrics' });
+    await user.click(screen.getByText('Revise lyrics with AI', { exact: true }));
+    await user.click(screen.getByRole('checkbox', { name: 'Lock this section' }));
+    const original = usePromptStudioDraftStore.getState().draft!.artifact!;
+    const locked = (original.primary as { lyrics: string }).lyrics.split('[Chorus]')[1];
+    mocks.optimizeMusic.mockResolvedValue(
+      compileMusicPromptArtifact({
+        topic: 'Home',
+        language: 'English',
+        lyrics: '[Verse]\nNew verse\n\n[Chorus]\nAI changed chorus',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Enhance with AI' }));
+    await screen.findByRole('button', { name: 'Accept changes' });
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(original);
+    await user.click(screen.getByRole('button', { name: 'Accept changes' }));
+    await waitFor(() => expect(usePromptStudioDraftStore.getState().status).toBe('saved'));
+    const accepted = usePromptStudioDraftStore.getState().draft!;
+    for (const variant of [accepted.artifact!.primary, ...accepted.artifact!.alternatives])
+      expect((variant as { lyrics: string }).lyrics.split('[Chorus]')[1]).toBe(locked);
+    expect(accepted.lockedSections).toContain('[Chorus]');
   });
 });

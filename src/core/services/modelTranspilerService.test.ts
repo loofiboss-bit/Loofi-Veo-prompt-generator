@@ -112,6 +112,39 @@ describe('modelTranspilerService', () => {
     });
   });
 
+  describe('Wan 2.1 Target', () => {
+    it('formats dense CLIP/T5 optical prompt directives with Prime lens indicators', () => {
+      const result = transpilePrompt(BASE_INPUT, 'wan-video');
+      expect(result.target).toBe('wan-video');
+      expect(result.targetDisplayName).toBe('Wan 2.1 (T2V & I2V 14B/1.3B)');
+
+      const primary = result.variants[0];
+      expect(primary.prompt).toContain('deliberate push in cinematic move');
+      expect(primary.prompt).toContain('35mm cinematic prime lens');
+      expect(primary.prompt).toContain('rich optical volumetric depth');
+      expect(primary.negativePrompt).toContain('deformed face');
+      expect(primary.negativePrompt).toContain('bad hands');
+      expect(primary.settingsChecklist.some((item) => item.includes('CLIP/T5'))).toBe(true);
+    });
+  });
+
+  describe('Minimax / Hailuo Video 01 Target', () => {
+    it('formats action-focused framing with smooth dynamic cadence', () => {
+      const result = transpilePrompt(BASE_INPUT, 'minimax-hailuo');
+      expect(result.target).toBe('minimax-hailuo');
+      expect(result.targetDisplayName).toBe('Minimax / Hailuo Video 01');
+
+      const primary = result.variants[0];
+      expect(primary.prompt).toContain('dynamic push in framing');
+      expect(primary.prompt).toContain('smooth cinematic action cadence');
+      expect(primary.negativePrompt).toContain('jerky motion');
+      expect(primary.negativePrompt).toContain('morphing artifacts');
+      expect(primary.settingsChecklist.some((item) => item.includes('organic human action'))).toBe(
+        true,
+      );
+    });
+  });
+
   describe('Image-to-Video Mode', () => {
     it('compiles motion-only directives without redescribing the static image', () => {
       const imageInput: UniversalPromptInput = {

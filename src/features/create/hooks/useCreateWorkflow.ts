@@ -1,3 +1,4 @@
+import { studioRevisionService } from '@core/services/studioRevisionService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
 import {
   exportProjectOtioBundle,
@@ -451,6 +452,7 @@ export function useCreateWorkflow() {
       productionRun: activeRun,
       productionBible: useAppStore.getState().productionBible ?? productionBible,
       promptArtifacts: await promptStudioHandoffService.listArtifacts(currentProjectId),
+      studioRevisions: await studioRevisionService.list(currentProjectId),
       timeline: {
         tracks: useAppStore.getState().tracks,
         clips: useAppStore.getState().clips,

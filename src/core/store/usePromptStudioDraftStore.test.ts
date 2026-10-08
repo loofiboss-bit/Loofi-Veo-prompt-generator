@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { StudioRevisionV1 } from '@core/types/studioRevision';
 import type { PromptArtifactV1, PromptStudioDraftV1 } from '@core/types';
 
-const mocks = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  load: vi.fn(),
+  save: vi.fn(),
+  checkpoint: vi.fn(),
+  restore: vi.fn(),
+}));
+vi.mock('@core/services/studioRevisionService', () => ({ studioRevisionService: mocks }));
 vi.mock('@core/services/promptStudioDraftService', () => ({ promptStudioDraftService: mocks }));
 const draft = (projectId: string): PromptStudioDraftV1 => ({
   schemaVersion: 1,
@@ -29,6 +36,7 @@ describe('project-owned Studio drafts', () => {
     vi.useFakeTimers();
     mocks.load.mockImplementation(async (id: string) => draft(id));
     mocks.save.mockResolvedValue(undefined);
+    mocks.checkpoint.mockResolvedValue(undefined);
   });
   afterEach(() => vi.useRealTimers());
   it('debounces edits at 500 ms and persists video, music, variants and locks', async () => {
@@ -102,6 +110,50 @@ describe('project-owned Studio drafts', () => {
       draft: { projectId: 'a', video: { idea: 'Unsaved' } },
     });
     expect(mocks.load).toHaveBeenCalledTimes(1);
+  });
+  it('blocks destructive follow-up on failed checkpoints and retains the draft', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    store.getState().updateVideo({ idea: 'Keep edited pack' });
+    mocks.checkpoint.mockRejectedValue(new Error('Quota exceeded'));
+    expect(await store.getState().checkpoint('before-rebuild')).toBe(false);
+    expect(store.getState().error).toBe('Quota exceeded');
+    expect(store.getState().draft?.video.idea).toBe('Keep edited pack');
+  });
+  it('restores one atomic draft and keeps unsaved content on restore failure', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    store.getState().updateVideo({ idea: 'Before restore' });
+    const restored = {
+      ...draft('a'),
+      video: { ...draft('a').video, idea: 'Old version' },
+      revision: 2,
+    };
+    mocks.restore.mockResolvedValueOnce(restored);
+    const revision = { schemaVersion: 1, projectId: 'a', id: 'old' } as StudioRevisionV1;
+    expect(await store.getState().restoreRevision(revision)).toBe(true);
+    expect(store.getState().draft).toBe(restored);
+    store.getState().updateVideo({ idea: 'Keep on failure' });
+    mocks.restore.mockRejectedValueOnce(new Error('Disk full'));
+    expect(await store.getState().restoreRevision(revision)).toBe(false);
+    expect(store.getState().draft?.video.idea).toBe('Keep on failure');
+    expect(store.getState().error).toBe('Disk full');
+  });
+  it('rejects a checkpoint whose input changed while persistence was pending', async () => {
+    let finish!: () => void;
+    mocks.checkpoint.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    const checkpoint = store.getState().checkpoint('before-ai');
+    await vi.waitFor(() => expect(mocks.checkpoint).toHaveBeenCalled());
+    store.getState().updateVideo({ idea: 'New input' });
+    finish();
+    expect(await checkpoint).toBe(false);
   });
   it('waits for edits made during a save before completing a flush', async () => {
     let finish!: () => void;

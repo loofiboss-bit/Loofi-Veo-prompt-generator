@@ -843,3 +843,35 @@
     align-items: flex-start;
   }
 }
+
+/* Studio revisions and review reuse the workspace's theme and responsive typography. */
+.studio-proposal {
+  padding: 16px;
+  border: 1px solid var(--color-border-focus);
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+  display: grid;
+  gap: 12px;
+}
+.studio-output-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.studio-diff {
+  font: 12px/1.6 monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.studio-diff-add,
+.studio-diff-modify {
+  background: color-mix(in srgb, var(--color-primary-500) 12%, transparent);
+}
+.studio-diff-remove {
+  text-decoration: line-through;
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+}
+.studio-comparison {
+  min-width: 0;
+}
