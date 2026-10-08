@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Refresh reviewed Fedora and Ubuntu generation-approval visual baselines for the scene-specific
+  next action; keep screenshot comparison thresholds and CI gates unchanged.
 - Keep mobile timeline panels in document flow so playback tools remain reachable.
 - Preserve edited timeline clips when opening playback, export storyboard dialogue independently
   of the scene video, and retain the selected production run when changing workflow steps.
