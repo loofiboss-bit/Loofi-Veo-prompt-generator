@@ -9,10 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [14.1.0] - 2026-10-08
+
+### UI / Design
+
+- Modernize UI architecture with Pro Studio Glass design system:
+  - Add atmospheric studio canvas lighting with chromatic radial depth and subtle micro-grid mesh in `AppBackground`.
+  - Elevate navigation sidebar with frosted glass surfaces (`backdrop-blur-xl`), glowing active state indicators, and animated live project pulse dots.
+  - Upgrade production workflow navigation with connected stepper track, emerald completion badges, and live autosave status pulse.
+  - Polish studio action bars, buttons, and collapsible cards with tactile squircle radiuses, inner top highlights (`inset 0 1px 0`), and modern gradient shines.
+  - Refine custom slim scrollbars and introduce cohesive glass and elevation design tokens in `tokens.css`.
+
 ### Fixed
 
 - Keep COPR RPMs installable after bundled Sharp/libvips upgrades by filtering versioned
   private runtime requirements instead of one historical libvips version.
+
+### CI
+
+- Run Chromium E2E in the versioned Playwright Noble container used to qualify Ubuntu visual
+  baselines, preserving strict screenshot assertions across hosted runner font changes.
+
+### Added
+
+- Finish Model Arena for all eight Studio video targets, sharing the canonical compiler and full input,
+  with exact copy packages, accessible keyboard navigation, themes and localized feedback.
+- Add project-owned Studio revisions for both workspaces, comparison, explicit save, durable checkpoints
+  before replacements, deduplication and atomic restore with a fresh request epoch.
+- Preview AI enhancement and lyric rewrites before acceptance; preserve locked sections and reject stale proposals.
+- Add complete local video/music Studio templates with search, target filtering, preview, CRUD and
+  a read-only adapter for legacy video templates. Cross-project templates exclude media and provider handles.
+- Preserve revisions and revision-only media through portable project export/import and Creative Pack schema 5.
+- Gate Studio translation keys and placeholders across all five existing languages.
+
+### Fixed
+
+- Include Wan and Hailuo consistently in video input types, compilation and Studio persistence.
+- Revalidate all variants after edits; distinguish provider constraints, writing advice and unconfirmed compatibility.
+- Preserve quoted dialogue and canonical copy-field serialization when editing variants.
+- Keep previous variant edits visible after brief changes until a checkpointed rebuild replaces them.
+- Respect right-to-left workspace margins so the Arabic sidebar cannot cover Studio controls.
+- Preserve keyboard focus when a delayed draft hydration completes after selecting another control.
 
 ## [14.0.1] - 2026-10-07
 

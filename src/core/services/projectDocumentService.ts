@@ -104,6 +104,14 @@ class ProjectDocumentService {
     ) {
       snapshot.studioDraft = existing.studioDraft;
     }
+    // Editor snapshots may predate a Studio checkpoint; append-only history must survive.
+    if (existing?.studioRevisions) {
+      const known = new Set(existing.studioRevisions.map((revision) => revision.id));
+      snapshot.studioRevisions = [
+        ...existing.studioRevisions,
+        ...(project.studioRevisions ?? []).filter((revision) => !known.has(revision.id)),
+      ];
+    }
     const result = await safeSet(
       projectStorageKey(project.id),
       snapshot,

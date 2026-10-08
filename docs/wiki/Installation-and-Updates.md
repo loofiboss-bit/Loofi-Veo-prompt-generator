@@ -1,6 +1,6 @@
 # Installation and Updates
 
-Loofi Creator Studio v13.0.0 qualifies desktop packages for Windows 11 / 10 x64 and Fedora 44 x86_64. Windows packages provide an NSIS installer and a portable executable; Fedora packages provide a GitHub RPM, AppImage, and Fedora COPR repository channel. macOS is not a production-supported target.
+Loofi Creator Studio v14.1.0 qualifies desktop packages for Windows 11 / 10 x64 and Fedora 44 x86_64. Windows packages provide an NSIS installer and a portable executable; Fedora packages provide a GitHub RPM, AppImage, and Fedora COPR repository channel. macOS is not a production-supported target.
 
 ## Verification & Trust Boundary
 

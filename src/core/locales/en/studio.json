@@ -133,5 +133,219 @@
     "foley": "Reviewed cues, durable audio and playback are not qualified.",
     "fcpxml": "External editor import is not qualified."
   },
-  "musicDetails": "Music details and original lyrics"
+  "musicDetails": "Music details and original lyrics",
+  "arenaOpen": "Compare in Arena",
+  "arenaTitle": "Model Comparison Arena",
+  "arenaDescription": "Compare prompt packages from the same brief. This comparison does not rate generated video quality.",
+  "close": "Close",
+  "active": "Active",
+  "copyError": "Copy failed. Try again or select and copy the text manually.",
+  "selectError": "Target selection failed. Your current draft is preserved.",
+  "selected": "Selected",
+  "useTarget": "Use Target",
+  "handoffManual": "Manual copy handoff",
+  "handoffInternal": "Internal generation requires approval",
+  "prompt": "Prompt",
+  "negative": "Negative prompt",
+  "settings": "Settings",
+  "validationAction": "Open control",
+  "validationVariant": "Variant {{number}}",
+  "validationSource": "Source",
+  "evidenceDocumented": "Documented constraint",
+  "evidenceHeuristic": "Writing guidance",
+  "evidenceUnknown": "Compatibility unconfirmed",
+  "validationStatus": {
+    "pass": "Ready",
+    "warning": "Review",
+    "blocked": "Blocked"
+  },
+  "revision": {
+    "title": "Versions and comparison",
+    "description": "Save and restore project versions of both workspaces. Restore keeps a version of your current work.",
+    "save": "Save version",
+    "choose": "Compare a saved version",
+    "empty": "No saved versions yet.",
+    "restore": "Restore as new version",
+    "saved": "Version saved.",
+    "restored": "Version restored. Your previous work is retained.",
+    "templateApplied": "Template applied. Build a new pack.",
+    "wait": "Wait for the current save to finish.",
+    "stale": "The draft changed. Review the current version and try again.",
+    "review": "Review AI changes",
+    "reviewDescription": "Your draft stays unchanged until you accept. Review all three variants below.",
+    "proposalReady": "AI proposal ready for review.",
+    "accept": "Accept changes",
+    "reject": "Reject changes",
+    "rejected": "Proposal rejected. Your draft is unchanged.",
+    "selection": "Selected variant",
+    "locks": "Locked sections",
+    "diffLegend": "+ Added · − Removed · Unmarked text is unchanged",
+    "changed": "Changed",
+    "unchanged": "Unchanged",
+    "reasons": {
+      "manual": "Saved version",
+      "rebuild": "Before rebuild",
+      "target": "Before model change",
+      "template": "Before template",
+      "ai": "Before AI acceptance",
+      "history": "Before opening history",
+      "before-restore": "Before restore",
+      "restore": "Restored version"
+    },
+    "outdated": "The brief changed. Build a new pack to update the output. Your previous edits are kept until then."
+  },
+  "templateLibrary": {
+    "title": "Studio template library",
+    "description": "Reuse complete inputs across projects. Templates stay local.",
+    "name": "Template name",
+    "details": "Description",
+    "save": "Save current inputs as template",
+    "search": "Search templates",
+    "target": "Filter by target",
+    "allTargets": "All targets",
+    "empty": "No templates match this workspace and search.",
+    "preview": "Preview",
+    "apply": "Apply template",
+    "update": "Replace with current inputs",
+    "delete": "Delete template",
+    "legacy": "Legacy video template (read-only)",
+    "mediaNotice": "Choose images and clips again in this project. Templates do not include media or provider handles.",
+    "loadFailed": "Could not load templates. Retry to read your local library.",
+    "operationFailed": "The template action failed. Review your draft and retry.",
+    "saved": "Template saved.",
+    "updated": "Template updated.",
+    "deleted": "Template deleted.",
+    "applied": "Template applied. Build a new pack from these inputs.",
+    "retry": "Retry",
+    "close": "Close preview"
+  },
+  "validation": {
+    "clarity": {
+      "label": "Clear idea",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Add a scene or outcome before optimizing.",
+        "blocked": "Add a scene or outcome before optimizing."
+      }
+    },
+    "target-compatibility": {
+      "label": "Target compatibility",
+      "detail": {
+        "pass": "The request passes the internal Veo capability checks.",
+        "warning": "Compatibility is unconfirmed. Verify the concrete model, mode, duration and references in the destination.",
+        "blocked": "Resolve the internal generation requirements below."
+      }
+    },
+    "mode": {
+      "label": "Reference context",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Supply the images or source clip required by the selected mode in the destination.",
+        "blocked": "Supply the images or source clip required by the selected mode in the destination."
+      }
+    },
+    "text": {
+      "label": "Prompt text",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Add prompt text to this variant.",
+        "blocked": "Add prompt text to this variant."
+      }
+    },
+    "single-scene": {
+      "label": "One scene per clip",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Consider splitting chained events into separate clips. This is writing guidance.",
+        "blocked": "Consider splitting chained events into separate clips. This is writing guidance."
+      }
+    },
+    "motion-recipe": {
+      "label": "Motion direction",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Describe the movement wanted from the source image. This is writing guidance.",
+        "blocked": "Describe the movement wanted from the source image. This is writing guidance."
+      }
+    },
+    "topic": {
+      "label": "Song idea",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Add a song idea before generating lyrics.",
+        "blocked": "Add a song idea before generating lyrics."
+      }
+    },
+    "language": {
+      "label": "Lyrics language",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Choose the language for the lyrics.",
+        "blocked": "Choose the language for the lyrics."
+      }
+    },
+    "rights": {
+      "label": "Rights-safe handoff",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Confirm original or licensed lyrics and avoid real-artist imitation before publishing.",
+        "blocked": "Confirm original or licensed lyrics and avoid real-artist imitation before publishing."
+      }
+    },
+    "lyrics": {
+      "label": "Lyrics structure",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Use section tags or an explicit [Instrumental] marker for arrangement control.",
+        "blocked": "Use section tags or an explicit [Instrumental] marker for arrangement control."
+      }
+    },
+    "style": {
+      "label": "Style of Music",
+      "detail": {
+        "pass": "The required content is present.",
+        "warning": "Keep the style concise and separate from lyrics; 200 characters is writing guidance.",
+        "blocked": "Keep the style concise and separate from lyrics; 200 characters is writing guidance."
+      }
+    }
+  },
+  "arenaCopy": "Copy prompt package",
+  "providerValidation": {
+    "label": "Internal generation requirement",
+    "prompt": "Prompt is required.",
+    "resolution": "The selected model does not support this resolution.",
+    "mode": "The selected model does not support this input mode.",
+    "firstFrame": "Image-to-video requires a first frame.",
+    "bothFrames": "Interpolation requires both first and last frames.",
+    "lastRequiresFirst": "A last frame can only be used with a first frame.",
+    "maximumReferences": "Veo accepts at most three reference images.",
+    "minimumReferences": "Reference-image mode requires at least one reference image.",
+    "referenceDuration": "Reference-image generation requires an eight-second duration.",
+    "resolutionDuration": "1080p and 4K generation require an eight-second duration.",
+    "extensionSource": "Extension requires a previous Veo provider artifact.",
+    "extensionExpired": "The provider artifact has expired and cannot be extended.",
+    "extensionResolution": "Veo extensions are limited to 720p.",
+    "incompatible": "Frame, reference-image, and extension inputs cannot be combined.",
+    "duration": "Veo API supports 4, 6 or 8 seconds."
+  },
+  "inputLabels": {
+    "yes": "Yes",
+    "no": "No",
+    "styleInfluence": "Style influence",
+    "referenceRoles": "Reference roles",
+    "rights": "Rights declarations",
+    "ownsOrLicensedLyrics": "Original or licensed lyrics",
+    "hasVoiceConsent": "Voice consent",
+    "hasTrainingReferenceRights": "Reference rights",
+    "avoidsArtistImitation": "Avoid artist imitation",
+    "lens": "Lens",
+    "aperture": "Aperture",
+    "shutterAngle": "Shutter angle",
+    "heightLevel": "Camera height",
+    "trajectory": "Camera trajectory",
+    "trajectorySpeed": "Movement speed",
+    "rollAngleDegrees": "Roll angle",
+    "spatialGrid": "Spatial placement",
+    "customDirectives": "Camera notes"
+  }
 }

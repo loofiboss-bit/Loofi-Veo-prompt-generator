@@ -1,4 +1,6 @@
 import JSZip from 'jszip';
+import { createPromptStudioDraft } from './promptStudioDraftService';
+import { studioRevisionSnapshot } from './studioRevisionService';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Asset, Project, ProductionRun, PromptArtifactV1 } from '@core/types';
 
@@ -131,6 +133,38 @@ describe('portable project transfer', () => {
     network.mockRestore();
   });
 
+  it('includes revision-only media and remaps revision and nested project identities', async () => {
+    const draft = createPromptStudioDraft('a');
+    draft.video.referenceAssetIds = ['a-video'];
+    const document = {
+      ...project,
+      storyboard: {
+        ...project.storyboard,
+        shots: [],
+        timeline: { ...project.storyboard.timeline, clips: [] },
+      },
+      studioRevisions: [
+        {
+          schemaVersion: 1 as const,
+          id: 'revision-a',
+          projectId: 'a',
+          createdAt: '2026-10-08',
+          reason: 'save',
+          snapshot: studioRevisionSnapshot(draft),
+        },
+      ],
+    };
+    const blob = await buildPortableProjectBundle(document);
+    state.assets = [];
+    const restored = await importPortableProject(
+      new File([await blob.arrayBuffer()], 'revision.loofi-project'),
+    );
+    expect(restored.studioRevisions?.[0].projectId).toBe('imported-project');
+    expect(restored.studioRevisions?.[0].id).not.toBe('revision-a');
+    expect(restored.studioRevisions?.[0].snapshot.video.referenceAssetIds).toEqual([
+      state.assets[0].id,
+    ]);
+  });
   it('fails explicitly if referenced local media is missing', async () => {
     state.blobs.clear();
     await expect(buildPortableProjectBundle(project)).rejects.toThrow('Local media missing');

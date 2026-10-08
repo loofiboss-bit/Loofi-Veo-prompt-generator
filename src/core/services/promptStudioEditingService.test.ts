@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MusicPromptVariant, VideoPromptVariant } from '@core/types';
-import { compileMusicPromptArtifact, compileVideoPromptArtifact } from './promptStudioService';
+import {
+  compileMusicPromptArtifact,
+  compileVideoPromptArtifact,
+  validatePromptArtifact,
+} from './promptStudioService';
 import {
   editStudioVariant,
   preserveLockedLyricSections,
@@ -38,10 +42,11 @@ describe('Studio variant editing', () => {
       copyNegativePrompt: 'no signage',
     });
     expect((edited.alternatives[0] as VideoPromptVariant).copyAll).toContain(
-      'Negative prompt:\nno signage',
+      'Negative prompt: no signage',
     );
     expect(artifact.provenance.source).toBe('compiler');
     expect(edited.provenance.source).toBe('editor');
+    expect(validatePromptArtifact(edited)).toEqual([]);
   });
   it('synchronizes selected music style and lyrics copy text without changing other variants', () => {
     const artifact = compileMusicPromptArtifact({ topic: 'Home', language: 'Swedish', lyrics });

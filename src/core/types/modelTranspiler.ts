@@ -8,7 +8,14 @@
 import type { SpatialCameraRig } from './spatialCamera';
 import type { VideoPromptMode } from './promptArtifact';
 
-export type UniversalVideoTarget = 'flow-veo' | 'kling' | 'runway-gen3' | 'sora' | 'luma-ray';
+export type UniversalVideoTarget =
+  | 'flow-veo'
+  | 'kling'
+  | 'runway-gen3'
+  | 'sora'
+  | 'luma-ray'
+  | 'wan-video'
+  | 'minimax-hailuo';
 
 export interface UniversalPromptInput {
   idea: string;
@@ -63,5 +70,7 @@ export interface TargetModelProfile {
     | 'bracket-tags'
     | 'motion-vector'
     | 'photochemical'
-    | 'anchor-trajectory';
+    | 'anchor-trajectory'
+    | 'clip-t5-dense'
+    | 'dynamic-cinematic';
 }

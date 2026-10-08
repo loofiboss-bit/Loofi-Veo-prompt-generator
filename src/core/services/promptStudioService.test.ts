@@ -53,7 +53,7 @@ describe('promptStudioService', () => {
     expect(validatePromptArtifact(artifact)).toEqual([]);
   });
 
-  it('formats dialogue without quotation marks', () => {
+  it('formats dialogue as speaker direction without banning quotes', () => {
     const artifact = compileVideoPromptArtifact({
       idea: 'A quiet conversation in a studio',
       mode: 'text-to-video',
@@ -67,7 +67,7 @@ describe('promptStudioService', () => {
       'the speaker says: My name is Clara.',
     );
     expect((artifact.primary as VideoPromptVariant).prompt).not.toContain('"');
-    expect(artifact.validation.find((check) => check.id === 'dialogue')?.status).toBe('pass');
+    expect(validatePromptArtifact(artifact)).toEqual([]);
   });
 
   it('creates exactly three Suno-ready variants and section tags', () => {
@@ -193,7 +193,14 @@ describe('promptStudioService', () => {
   });
 
   it('compiles universal targets (kling, runway, sora, luma) into valid artifacts with model-specific syntax', () => {
-    const targets = ['kling', 'runway-gen3', 'sora', 'luma-ray'] as const;
+    const targets = [
+      'kling',
+      'runway-gen3',
+      'sora',
+      'luma-ray',
+      'wan-video',
+      'minimax-hailuo',
+    ] as const;
 
     for (const target of targets) {
       const artifact = compileVideoPromptArtifact({
@@ -209,7 +216,12 @@ describe('promptStudioService', () => {
       expect((artifact.primary as VideoPromptVariant).prompt).toBeDefined();
       expect(artifact.alternatives).toHaveLength(2);
       expect(validatePromptArtifact(artifact)).toEqual([]);
-      expect(artifact.validation.find((c) => c.id === 'target-compatibility')?.status).toBe('pass');
+      expect(artifact.validation.find((c) => c.id === 'target-compatibility')?.status).toBe(
+        'warning',
+      );
+      expect(artifact.validation.find((c) => c.id === 'target-compatibility')?.evidence).toBe(
+        'unknown',
+      );
     }
   });
 });

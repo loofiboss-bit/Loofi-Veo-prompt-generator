@@ -90,13 +90,18 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex flex-wrap justify-between items-center gap-y-4">
         <div className={`flex items-center ${isCompact ? 'gap-2' : 'gap-4'}`}>
           <div
-            className="flex items-center space-x-2 p-2 bg-slate-800/50 rounded-lg"
+            className="flex items-center space-x-2 px-3 py-1.5 bg-slate-900/60 backdrop-blur-sm border border-slate-800/80 rounded-full shadow-sm"
             title={isTabSyncConnected ? t('common:syncActiveTitle') : t('common:syncInactiveTitle')}
           >
-            <span
-              className={`w-3 h-3 rounded-full ${isTabSyncConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}
-            ></span>
-            <span className="text-xs text-slate-300 select-none hidden sm:inline">
+            <span className="relative flex h-2 w-2">
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isTabSyncConnected ? 'bg-emerald-400 opacity-60' : 'bg-red-400 opacity-60'}`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${isTabSyncConnected ? 'bg-emerald-500' : 'bg-red-500'}`}
+              />
+            </span>
+            <span className="text-xs text-slate-300 font-medium select-none hidden sm:inline">
               {isTabSyncConnected ? t('common:liveSyncLabel') : t('common:offlineLabel')}
             </span>
           </div>
@@ -106,16 +111,16 @@ const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenProjectManager}
               data-tour-id="project-indicator"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-sm transition-all shadow-sm ${
                 currentProjectName
-                  ? 'bg-cyan-900/20 border-cyan-500/30 text-cyan-100 hover:bg-cyan-900/40'
-                  : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  ? 'bg-blue-950/30 border-blue-500/30 text-blue-100 hover:bg-blue-900/40 hover:border-blue-400/50'
+                  : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 hover:border-slate-700'
               }`}
               title={t('common:manageProjectsTitle')}
             >
               <Icon
                 name="folder"
-                className={`w-4 h-4 ${currentProjectName ? 'text-cyan-400' : 'text-slate-500'}`}
+                className={`w-4 h-4 ${currentProjectName ? 'text-blue-400' : 'text-slate-500'}`}
               />
               <span className="text-xs font-semibold max-w-[150px] truncate">
                 {currentProjectName || t('common:unsavedProject')}

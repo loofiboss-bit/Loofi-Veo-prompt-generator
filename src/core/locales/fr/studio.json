@@ -133,5 +133,219 @@
     "foley": "Repères révisés, audio persistant et lecture non vérifiés.",
     "fcpxml": "Importation dans un éditeur externe non vérifiée."
   },
-  "musicDetails": "Détails musicaux et paroles originales"
+  "musicDetails": "Détails musicaux et paroles originales",
+  "arenaOpen": "Comparer dans Arena",
+  "arenaTitle": "Comparaison des modèles",
+  "arenaDescription": "Comparez les prompts issus du même brief. Cette comparaison ne mesure pas la qualité des vidéos générées.",
+  "close": "Fermer",
+  "active": "Actif",
+  "copyError": "La copie a échoué. Réessayez ou sélectionnez et copiez le texte manuellement.",
+  "selectError": "La sélection a échoué. Votre brouillon actuel est conservé.",
+  "selected": "Sélectionné",
+  "useTarget": "Utiliser ce modèle",
+  "handoffManual": "Transfert par copie manuelle",
+  "handoffInternal": "La génération interne nécessite une approbation",
+  "prompt": "Prompt",
+  "negative": "Prompt négatif",
+  "settings": "Paramètres",
+  "validationAction": "Ouvrir le champ",
+  "validationVariant": "Variante {{number}}",
+  "validationSource": "Source",
+  "evidenceDocumented": "Contrainte documentée",
+  "evidenceHeuristic": "Conseil de rédaction",
+  "evidenceUnknown": "Compatibilité non confirmée",
+  "validationStatus": {
+    "pass": "Prêt",
+    "warning": "À vérifier",
+    "blocked": "Bloqué"
+  },
+  "revision": {
+    "title": "Versions et comparaison",
+    "description": "Enregistrez et restaurez les deux espaces du projet. La restauration conserve une version du travail actuel.",
+    "save": "Enregistrer une version",
+    "choose": "Comparer une version enregistrée",
+    "empty": "Aucune version enregistrée.",
+    "restore": "Restaurer comme nouvelle version",
+    "saved": "Version enregistrée.",
+    "restored": "Version restaurée. Votre travail précédent est conservé.",
+    "templateApplied": "Modèle appliqué. Créez un nouveau pack.",
+    "wait": "Attendez la fin de l’enregistrement.",
+    "stale": "Le brouillon a changé. Vérifiez la version actuelle et réessayez.",
+    "review": "Vérifier les modifications IA",
+    "reviewDescription": "Le brouillon reste inchangé jusqu’à votre acceptation. Vérifiez les trois variantes.",
+    "proposalReady": "Proposition IA prête à vérifier.",
+    "accept": "Accepter les modifications",
+    "reject": "Rejeter les modifications",
+    "rejected": "Proposition rejetée. Votre brouillon reste inchangé.",
+    "selection": "Variante sélectionnée",
+    "locks": "Sections verrouillées",
+    "diffLegend": "+ Ajouté · − Supprimé · Le texte sans marque est inchangé",
+    "changed": "Modifié",
+    "unchanged": "Inchangé",
+    "reasons": {
+      "manual": "Version enregistrée",
+      "rebuild": "Avant recompilation",
+      "target": "Avant changement de modèle",
+      "template": "Avant application du modèle",
+      "ai": "Avant acceptation de l’IA",
+      "history": "Avant ouverture de l’historique",
+      "before-restore": "Avant restauration",
+      "restore": "Version restaurée"
+    },
+    "outdated": "Le brief a changé. Créez un nouveau pack pour actualiser le résultat. Vos modifications précédentes sont conservées."
+  },
+  "templateLibrary": {
+    "title": "Bibliothèque de modèles Studio",
+    "description": "Réutilisez les saisies complètes entre projets. Les modèles restent locaux.",
+    "name": "Nom du modèle",
+    "details": "Description",
+    "save": "Enregistrer les saisies comme modèle",
+    "search": "Rechercher des modèles",
+    "target": "Filtrer par cible",
+    "allTargets": "Toutes les cibles",
+    "empty": "Aucun modèle ne correspond à cet espace et à cette recherche.",
+    "preview": "Aperçu",
+    "apply": "Appliquer le modèle",
+    "update": "Remplacer par les saisies actuelles",
+    "delete": "Supprimer le modèle",
+    "legacy": "Ancien modèle vidéo (lecture seule)",
+    "mediaNotice": "Sélectionnez à nouveau les images et clips. Les modèles ne contiennent ni médias ni identifiants du fournisseur.",
+    "loadFailed": "Impossible de charger les modèles. Réessayez.",
+    "operationFailed": "L’action sur le modèle a échoué. Vérifiez le brouillon et réessayez.",
+    "saved": "Modèle enregistré.",
+    "updated": "Modèle mis à jour.",
+    "deleted": "Modèle supprimé.",
+    "applied": "Modèle appliqué. Créez un nouveau pack à partir de ces saisies.",
+    "retry": "Réessayer",
+    "close": "Fermer l’aperçu"
+  },
+  "validation": {
+    "clarity": {
+      "label": "Idée claire",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Ajoutez une scène ou un résultat avant l’optimisation.",
+        "blocked": "Ajoutez une scène ou un résultat avant l’optimisation."
+      }
+    },
+    "target-compatibility": {
+      "label": "Compatibilité de la cible",
+      "detail": {
+        "pass": "La demande respecte les contrôles internes de Veo.",
+        "warning": "Compatibilité non confirmée. Vérifiez le modèle, le mode, la durée et les références dans la destination.",
+        "blocked": "Résolvez les exigences de génération ci-dessous."
+      }
+    },
+    "mode": {
+      "label": "Contexte des références",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Fournissez les images ou le clip requis par ce mode dans la destination.",
+        "blocked": "Fournissez les images ou le clip requis par ce mode dans la destination."
+      }
+    },
+    "text": {
+      "label": "Texte du prompt",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Ajoutez du texte à cette variante.",
+        "blocked": "Ajoutez du texte à cette variante."
+      }
+    },
+    "single-scene": {
+      "label": "Une scène par clip",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Envisagez de séparer les événements en clips. Il s’agit d’un conseil de rédaction.",
+        "blocked": "Envisagez de séparer les événements en clips. Il s’agit d’un conseil de rédaction."
+      }
+    },
+    "motion-recipe": {
+      "label": "Direction du mouvement",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Décrivez le mouvement souhaité à partir de l’image. Il s’agit d’un conseil de rédaction.",
+        "blocked": "Décrivez le mouvement souhaité à partir de l’image. Il s’agit d’un conseil de rédaction."
+      }
+    },
+    "topic": {
+      "label": "Idée de chanson",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Ajoutez une idée avant de générer les paroles.",
+        "blocked": "Ajoutez une idée avant de générer les paroles."
+      }
+    },
+    "language": {
+      "label": "Langue des paroles",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Choisissez la langue des paroles.",
+        "blocked": "Choisissez la langue des paroles."
+      }
+    },
+    "rights": {
+      "label": "Transfert respectant les droits",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Vérifiez les droits des paroles et évitez l’imitation d’artistes avant publication.",
+        "blocked": "Vérifiez les droits des paroles et évitez l’imitation d’artistes avant publication."
+      }
+    },
+    "lyrics": {
+      "label": "Structure des paroles",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Utilisez des balises de section ou [Instrumental] pour guider l’arrangement.",
+        "blocked": "Utilisez des balises de section ou [Instrumental] pour guider l’arrangement."
+      }
+    },
+    "style": {
+      "label": "Style musical",
+      "detail": {
+        "pass": "Le contenu requis est présent.",
+        "warning": "Gardez le style concis et distinct des paroles ; 200 caractères est un conseil.",
+        "blocked": "Gardez le style concis et distinct des paroles ; 200 caractères est un conseil."
+      }
+    }
+  },
+  "arenaCopy": "Copier le pack",
+  "providerValidation": {
+    "label": "Exigence de génération interne",
+    "prompt": "Un prompt est requis.",
+    "resolution": "Le modèle ne prend pas en charge cette résolution.",
+    "mode": "Le modèle ne prend pas en charge ce mode d’entrée.",
+    "firstFrame": "Image vers vidéo nécessite une première image.",
+    "bothFrames": "L’interpolation nécessite une première et une dernière image.",
+    "lastRequiresFirst": "Une dernière image nécessite une première image.",
+    "maximumReferences": "Veo accepte au maximum trois images de référence.",
+    "minimumReferences": "Le mode de référence nécessite au moins une image.",
+    "referenceDuration": "La génération avec références nécessite huit secondes.",
+    "resolutionDuration": "La génération 1080p et 4K nécessite huit secondes.",
+    "extensionSource": "L’extension nécessite un résultat Veo précédent.",
+    "extensionExpired": "Le résultat du fournisseur a expiré et ne peut pas être prolongé.",
+    "extensionResolution": "Les extensions Veo sont limitées à 720p.",
+    "incompatible": "Les images, références et extensions ne peuvent pas être combinées.",
+    "duration": "Veo API prend en charge 4, 6 ou 8 secondes."
+  },
+  "inputLabels": {
+    "yes": "Oui",
+    "no": "Non",
+    "styleInfluence": "Influence du style",
+    "referenceRoles": "Rôles des références",
+    "rights": "Déclarations de droits",
+    "ownsOrLicensedLyrics": "Paroles originales ou sous licence",
+    "hasVoiceConsent": "Consentement vocal",
+    "hasTrainingReferenceRights": "Droits des références",
+    "avoidsArtistImitation": "Éviter l’imitation d’artistes",
+    "lens": "Objectif",
+    "aperture": "Ouverture",
+    "shutterAngle": "Angle d’obturation",
+    "heightLevel": "Hauteur de caméra",
+    "trajectory": "Trajectoire de caméra",
+    "trajectorySpeed": "Vitesse du mouvement",
+    "rollAngleDegrees": "Angle de roulis",
+    "spatialGrid": "Placement spatial",
+    "customDirectives": "Notes de caméra"
+  }
 }

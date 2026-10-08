@@ -15,6 +15,8 @@ export type PromptArtifactTarget =
   | 'runway-gen3'
   | 'sora'
   | 'luma-ray'
+  | 'wan-video'
+  | 'minimax-hailuo'
   | 'suno';
 
 export type VideoPromptMode =
@@ -28,11 +30,24 @@ export type PromptArtifactProvider = 'local' | 'gemini' | 'ollama';
 
 export type PromptValidationStatus = 'pass' | 'warning' | 'blocked';
 
+export interface PromptValidationAction {
+  field:
+    | keyof VideoPromptArtifactInput
+    | keyof MusicPromptArtifactInput
+    | 'styleOfMusic'
+    | 'variant';
+  variantIndex?: 0 | 1 | 2;
+}
+
 export interface PromptValidationCheck {
   id: string;
   label: string;
   status: PromptValidationStatus;
   detail: string;
+  evidence?: 'documented' | 'heuristic' | 'unknown';
+  action?: PromptValidationAction;
+  sourceUrl?: string;
+  verifiedDate?: string;
 }
 
 export interface PromptArtifactProvenance {
@@ -70,10 +85,7 @@ import type { SpatialCameraRig } from './spatialCamera';
 export interface VideoPromptArtifactInput {
   idea: string;
   mode: VideoPromptMode;
-  target: Extract<
-    PromptArtifactTarget,
-    'flow-veo' | 'veo-api' | 'kling' | 'runway-gen3' | 'sora' | 'luma-ray'
-  >;
+  target: Exclude<PromptArtifactTarget, 'suno'>;
   aspectRatio: '16:9' | '9:16';
   durationSeconds: 4 | 6 | 8 | 10;
   subject?: string;

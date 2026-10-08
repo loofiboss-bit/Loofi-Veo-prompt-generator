@@ -1,5 +1,18 @@
 # Release Notes
 
+## v14.1.0 — Prompt Quality & Safe Iteration
+
+- Compare exact prompt packages across eight video targets with Model Arena.
+- Follow actionable validation after compilation, enhancement and manual edits.
+- Review AI proposals before accepting changes; locked lyrics remain exact.
+- Compare and restore durable project revisions for both Studio workspaces.
+- Reuse complete local video/music templates with safe cross-project media handling.
+- Use the Pro Studio Glass interface with translated review surfaces and corrected Arabic layout.
+
+[Download v14.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0).
+The tag workflow qualifies Windows/Linux packages before publication. Physical desktop and paid
+provider qualification remain separate; see [release process](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/blob/main/docs/RELEASE.md).
+
 ## v13.0.0 — Universal Model Transpiler & Modular Studio Architecture
 
 v13 expands Loofi Creator Studio from Google Flow/Veo specialization into an open, universal AI video production suite:

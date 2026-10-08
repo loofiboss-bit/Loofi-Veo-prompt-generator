@@ -6,8 +6,9 @@
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 Local-first desktop workspace for individual creators: idea → editable prompt pack → manual
-handoff or approved production → portable result. Version 14 focuses on durable drafts, safe
-recovery, portable projects and an easier workspace.
+handoff or approved production → portable result. v14.1.0 adds
+model comparison, actionable validation, reviewed AI changes, project revisions and reusable Studio templates.
+The installers below are published by the tag workflow after package qualification.
 
 ## Start here
 
@@ -28,10 +29,10 @@ schemas are preserved. Legacy routes `/director`, `/composer`, and `/optimize` r
 
 Describe your idea, choose the target, mode, duration and references, then select **Build copy-ready
 pack**. Compilation runs locally. Each pack has three editable variants with synchronized copy
-fields. History and reusable templates are available in Studio. Scene details and handoff notes
+fields. Project history, version comparison and a complete local template library are available in Studio. Scene details and handoff notes
 expand when needed.
 
-Video targets Flow, Kling, Runway, Sora and Luma use manual copy handoffs. Suno uses **Copy Style**,
+Video targets Flow, Kling, Runway, Sora, Luma, Wan and Hailuo use manual copy handoffs. Suno uses **Copy Style**,
 **Copy Lyrics**, **Copy All**, or **Copy & Open Suno**; it has no automated provider integration.
 Only **Veo API** exposes an internal production handoff, with supported request combinations checked
 before creating a plan. A plan does not submit a paid request: review its cost and approve it in
@@ -44,6 +45,26 @@ locks. Late AI responses are ignored after input changes.
 Drafts, variant edits and section locks autosave after 500 ms to the active project document.
 **Saving**, **Saved**, and **Not saved** report the real persistence result; memory fallback cannot
 claim a durable save. Project switching waits for pending draft writes.
+
+## New in v14.1.0
+
+- **Compare in Arena** compiles all eight video targets from the same brief with the same compiler
+  as Studio. Copy packages match Studio exactly; this is a prompt comparison, not a video-quality benchmark.
+- **Readiness checks** distinguish documented constraints, writing advice and unconfirmed compatibility.
+  Checks update after editing any variant; **Open control** selects the affected field or variant.
+  Quoted dialogue is preserved. Manual copy remains available; internal Veo requests remain approval-gated.
+- **Versions and comparison** saves both workspaces, outputs, variant selection and lyric locks in the
+  project. Restore saves the current work before creating a restored version. Identical snapshots are deduplicated.
+- AI enhancement and section rewriting propose changes for **Accept changes** or **Reject changes**.
+  The draft stays unchanged until acceptance, locked sections stay byte-identical, and edits invalidate pending proposals.
+- **Studio template library** saves complete video or music inputs for reuse between projects, with
+  search, target filtering, preview, update and delete. Re-select images and clips in each project.
+  Older video templates remain available as read-only entries.
+
+Changing brief inputs keeps the previous output visible until rebuilding. Rebuild, model change,
+template application, AI acceptance and restore require a durable checkpoint first; a storage failure
+blocks replacement. Project archives retain revisions and their referenced local media. Creative Pack
+schema 5 supports revisions without changing the documented project schema 11 or existing storage keys.
 
 ## Portable projects and production
 
@@ -76,19 +97,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v14.0.1
+## Install v14.1.0
 
-Download the [v14.0.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.0.1)
+Download the [v14.1.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.0.1-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.0.1-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.1.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.1.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -101,14 +122,14 @@ sudo dnf install veo-prompt-generator
 The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
 publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
 checks `SHA256SUMS.txt` before COPR builds the package. The current package is
-`14.0.1-1.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
+`14.1.0-2.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
 already installed.
 
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.AppImage
 ```
 
 ## Development

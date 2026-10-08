@@ -1,10 +1,13 @@
 import type { UniversalVideoTarget } from '@core/types/modelTranspiler';
 import { TARGET_MODEL_PROFILES } from '@core/services/modelTranspilerService';
+import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 import { useTranslation } from 'react-i18next';
 
 interface UniversalTargetSelectorProps {
   value: string;
-  onChange: (value: UniversalVideoTarget) => void;
+  onChange: (
+    value: import('@core/types/promptArtifact').VideoPromptArtifactInput['target'],
+  ) => void | Promise<void>;
 }
 
 export function UniversalTargetSelector({ value, onChange }: UniversalTargetSelectorProps) {
@@ -12,22 +15,34 @@ export function UniversalTargetSelector({ value, onChange }: UniversalTargetSele
   const currentTarget = (
     value in TARGET_MODEL_PROFILES ? value : 'flow-veo'
   ) as UniversalVideoTarget;
-  const profile = TARGET_MODEL_PROFILES[currentTarget];
+  const profile = value === 'veo-api' ? undefined : TARGET_MODEL_PROFILES[currentTarget];
 
   return (
     <div className="space-y-1">
       <select
         aria-label={t('target')}
         value={value}
-        onChange={(event) => onChange(event.target.value as UniversalVideoTarget)}
-        className="w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400"
+        onChange={(event) =>
+          void onChange(
+            event.target
+              .value as import('@core/types/promptArtifact').VideoPromptArtifactInput['target'],
+          )
+        }
+        data-studio-field="target"
+        className="w-full rounded-xl border px-3 py-3 text-sm outline-none transition focus:border-cyan-400"
+        style={{
+          background: 'var(--color-bg-secondary)',
+          color: 'var(--color-text-primary)',
+          borderColor: 'var(--color-border-primary)',
+        }}
       >
-        <option value="flow-veo">Google Flow / Veo 3.1 (Default)</option>
-        <option value="kling">Kling 1.5 / 2.0 (Bracket Tags)</option>
-        <option value="runway-gen3">Runway Gen-3 / Gen-4 (Motion Vectors)</option>
-        <option value="sora">OpenAI Sora (Photochemical Realism)</option>
-        <option value="luma-ray">Luma Dream Machine Ray-2 (Trajectory Anchors)</option>
-        <option value="veo-api">Veo API (Raw Direct)</option>
+        {Object.entries(STUDIO_CAPABILITIES)
+          .filter(([target]) => target !== 'suno')
+          .map(([target, capability]) => (
+            <option key={target} value={target}>
+              {capability.label}
+            </option>
+          ))}
       </select>
       {profile ? (
         <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
