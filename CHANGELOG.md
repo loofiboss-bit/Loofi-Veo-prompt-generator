@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Match repository banner, logo and badges to the application dark theme: navy/slate surfaces
+  with the default blue accent and cyan highlights.
+
+- Refresh the README with a cinematic banner, the existing app identity, download links, real
+  Prompt Studio and production screenshots, plus live GitHub stars, forks and release-asset counters.
+- Update the wiki for v14.1.0 with guided navigation and prompt quality, iteration and recovery
+  documentation; distinguish supported workflows from disabled Labs integrations.
+
 ## [14.1.0] - 2026-10-08
 
 ### UI / Design
