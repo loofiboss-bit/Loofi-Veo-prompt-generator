@@ -16,11 +16,11 @@ jobs:
       - name: Install isolated build prerequisites
         run: sudo apt-get update && sudo apt-get install -y build-essential cmake ninja-build pkg-config git curl xz-utils python3-venv wine64
       - name: Build exact Linux FFmpeg and archive corresponding sources
-        run: scripts/build-media-runtime-linux.sh
+        run: bash scripts/build-media-runtime-linux.sh
       - name: Prepare pinned Windows cross-toolchain and its runtime sources
-        run: scripts/prepare-windows-toolchain.sh
+        run: bash scripts/prepare-windows-toolchain.sh
       - name: Build exact Windows FFmpeg from sources
-        run: scripts/build-media-runtime-windows.sh
+        run: bash scripts/build-media-runtime-windows.sh
       - name: Check source manifests and binary integrity
         run: node scripts/check-media-runtime.mjs
       - name: Install application test dependencies

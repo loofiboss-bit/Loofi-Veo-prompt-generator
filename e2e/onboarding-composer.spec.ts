@@ -6,6 +6,7 @@ test.describe('Local first-run onboarding', () => {
     await blockExternalRequests(page);
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Start creating', exact: true })).toBeVisible();
+    await page.getByRole('radio', { name: 'Use my own idea or media' }).check();
     await page.getByRole('button', { name: 'Start creating', exact: true }).click();
     await expect(page.getByLabel(/^Core idea/)).toBeVisible();
     await page.getByLabel(/^Core idea/).fill('A local sunrise scene');

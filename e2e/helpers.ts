@@ -52,9 +52,8 @@ async function dismissModals(page: Page, options: { waitForPrompt?: boolean } = 
   }
   await clickFirstVisible(page, page.getByRole('button', { name: /skip tour/i }));
   if (waitForPrompt) {
-    if (new URL(page.url()).hash.startsWith('#/start')) {
-      await page.goto('/#/studio');
-    }
+    // Navigate explicitly: the default Start redirect may still be pending after reload.
+    await page.goto('/#/studio');
     await page.getByLabel(/^Core idea/).waitFor({ state: 'visible', timeout: 15_000 });
   }
 }

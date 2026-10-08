@@ -78,6 +78,11 @@ jobs:
           name: creator-media-runtime
           path: packaging/media-runtime
 
+      # Artifact transport preserves bytes but normalizes file permissions.
+      - name: Restore Linux rendering executable permissions
+        if: runner.os == 'Linux'
+        run: chmod +x packaging/media-runtime/linux-x64/ffmpeg packaging/media-runtime/linux-x64/ffprobe
+
       - name: Verify packaged rendering runtime and corresponding sources
         run: node scripts/check-media-runtime.mjs
 

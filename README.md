@@ -20,7 +20,7 @@
 
 [![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1410)
+[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1500)
 [![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
@@ -172,19 +172,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v14.2.1
+## Install v15.0.0
 
-Download the [v14.2.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.1)
+Download the [v15.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.2.1-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.2.1-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-15.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-15.0.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -203,17 +203,17 @@ already installed.
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.AppImage
 ```
 
-## v15 development: from an idea to a video
+## v15: from an idea to a video
 
 See the [local verification report and demonstration](docs/CREATOR_V15_VERIFICATION.md) for real rendered files, five AI-driven scenarios and platform qualification boundaries.
 
-The development workspace adds Start, twelve local recipes, three reusable offline examples,
-My style, captions and a desktop video/publication-package export workflow. This is **unreleased**;
-the stable downloads above remain v14.2.1. Native export requires a reviewed rendering bundle for
+Creator Studio adds Start, twelve local recipes, three reusable offline examples,
+My style, captions and a desktop video/publication-package export workflow. Native export includes
+a reviewed rendering bundle for
 the running platform, with no startup download or separate system FFmpeg requirement.
 
 - [Export your first offline video](docs/guides/FIRST_OFFLINE_VIDEO.md)
