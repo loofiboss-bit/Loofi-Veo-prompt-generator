@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [14.2.0] - 2026-10-08
+
 ### Added
 
 - Import local video results for manual Studio targets with frozen source variants, durable media,

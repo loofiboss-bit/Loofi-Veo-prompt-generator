@@ -1,5 +1,18 @@
 # Release Notes
 
+## v14.2.0 — Connected Creator Flow
+
+- Navigate a responsive workbench with shared navigation and contextual asset access.
+- Follow scene-specific next actions and recover known jobs without a second generation order.
+- Read local, AI and combined findings; confirm manual review before accepting local-only results.
+- Import external videos with immutable prompt snapshots and content-bound manual review.
+- Export the selected video/audio timeline with relative media and provenance as an OTIO delivery.
+- Preserve full project backup, stored formats, older accepted takes and approval rules.
+
+[Download v14.2.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.0)
+for Windows and Linux. See [creator-flow contracts](../CREATOR_FLOW.md) and the
+[release process](../RELEASE.md) for qualification boundaries.
+
 ## v14.1.0 — Prompt Quality & Safe Iteration
 
 - Compare exact prompt packages across eight video targets with Model Arena.
