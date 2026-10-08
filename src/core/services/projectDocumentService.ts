@@ -98,6 +98,13 @@ class ProjectDocumentService {
   private async saveNow(project: Project): Promise<PersistenceResult> {
     const existing = await this.load(project.id);
     const snapshot: Project = { ...existing, ...project };
+    // Delivery controls can save while an older editor snapshot is still pending.
+    if (
+      existing?.creatorDelivery &&
+      existing.creatorDelivery.revision > (project.creatorDelivery?.revision ?? -1)
+    ) {
+      snapshot.creatorDelivery = existing.creatorDelivery;
+    }
     if (
       existing?.studioDraft &&
       existing.studioDraft.revision > (project.studioDraft?.revision ?? -1)

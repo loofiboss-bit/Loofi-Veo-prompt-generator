@@ -4,30 +4,20 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v14.2.1 Connected Creator Flow
+## v15.0.0 Creator Delivery
 
-v14.2 connects imported and generated video results to their source prompt, review and selected
-edit. It includes the responsive workbench, shared scene readiness and next actions, protected
-job recovery, explicit local/AI review sources, manual confirmation and selected-media OTIO delivery.
-External imports create no provider operations or cost approvals. Persisted formats stay compatible.
-The v14.2.0 candidate remained unpublished after outdated screenshot and packaged-test fixtures
-failed qualification. v14.2.1 uses playable local media and the semantic main landmark without
-moving the earlier tag.
+v15 adds offline short-video creation and delivery: Start, twelve recipes, three original CC0
+example projects, local style snapshots, captions, verified H.264/AAC MP4 rendering and publication
+ZIP packages. Bundled source-built FFmpeg resources support Linux and Windows without a separate
+system FFmpeg installation or startup download. Existing project and archive formats remain compatible.
 
-The durable v14 workflow remains:
-
-- Versioned video/music drafts, editable variants and text locks survive navigation and restart.
-- Uncertain paid submissions require recovery; known operations resume without a second order.
-- Model targets, references and provenance survive handoff; external targets use manual copy.
-- Project archives include verified media and full documents, with safe imported approvals.
-- OTIO reflects actual timeline tracks and selected takes; FCPXML remains experimental.
-- A short local start and a compact translated workspace use both theme palettes.
-- Incomplete capabilities are default-off Labs experiments with unsupported actions disabled.
+See [delivery contracts](CREATOR_DELIVERY.md) and [local verification](CREATOR_V15_VERIFICATION.md).
+Optional Gemini proposals remain approval-gated; social publication is a manual handoff.
 
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v14.2.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.1)
+[v15.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -35,20 +25,18 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-14.2.1-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-14.2.1-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-15.0.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-15.0.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.
 Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
 
-Pre-publication verification on PR 61: 4,228 Vitest tests, 101 native tests and 99 Chromium tests
-passed, with the package-only browser test skipped until the canonical package build. All six visual
-tests passed on Fedora and Ubuntu uses the matching Playwright Noble container. Screenshot
-thresholds and performance budgets remain enabled.
-See [creator-flow contracts and verification](CREATOR_FLOW.md) for the current workflow boundaries.
+Local implementation evidence records 4,270 unit/integration tests and 115 desktop tests, plus
+five AI-driven workflow scenarios and an isolated packaged Linux export. The current PR and tag
+workflow must pass independently; these counts do not certify human onboarding or physical platforms.
 
 ## Local release gates
 

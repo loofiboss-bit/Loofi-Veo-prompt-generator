@@ -1,0 +1,29 @@
+{
+  "title": "Inställningar",
+  "general": "Allmänt",
+  "updates": "Uppdateringar",
+  "desktop": "Desktop",
+  "plugins": "Tillägg",
+  "marketplace": "Marknadsplats",
+  "language": "Språk",
+  "languageDescription": "Välj önskat gränssnittsspråk.",
+  "theme": "Tema",
+  "themeDescription": "Välj utseendeläge.",
+  "accentColor": "Accentfärg",
+  "accentColorDescription": "Välj önskad accentfärg.",
+  "darkMode": "Mörkt",
+  "lightMode": "Ljust",
+  "apiConfiguration": "API-konfiguration",
+  "pluginRegistryUrl": "URL för tilläggsregister",
+  "save": "Spara",
+  "presets": {
+    "default": "Standard (blå)",
+    "midnight": "Midnatt",
+    "ocean": "Hav",
+    "forest": "Skog",
+    "sunset": "Solnedgång",
+    "amethyst": "Ametist"
+  },
+  "backToWorkspace": "Tillbaka till arbetsytan",
+  "category": "Inställningskategori"
+}

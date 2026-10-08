@@ -14,6 +14,7 @@ import type {
   PromptArtifactV1,
   TimelineState,
   StudioRevisionV1,
+  CreatorDeliveryV1,
 } from '@core/types';
 import {
   buildFlowVeoScenePack,
@@ -50,6 +51,7 @@ export interface CreativePack {
   timelineShots: CreativePackTimelineShot[];
   promptArtifacts?: PromptArtifactV1[];
   studioRevisions?: StudioRevisionV1[];
+  creatorDelivery?: CreatorDeliveryV1;
   productionBible?: ProductionBible;
   otioTimeline?: OtioTimeline;
   productionRun?: {
@@ -119,6 +121,7 @@ interface BuildCreativePackInput {
   productionBible?: ProductionBible;
   promptArtifacts?: PromptArtifactV1[];
   studioRevisions?: StudioRevisionV1[];
+  creatorDelivery?: CreatorDeliveryV1;
 }
 
 const buildSunoSettings = (state: PromptState, scenePack: FlowVeoScenePack): SunoSettings => {
@@ -179,6 +182,7 @@ class CreativePackExportService {
     productionBible,
     promptArtifacts = [],
     studioRevisions,
+    creatorDelivery,
   }: BuildCreativePackInput): CreativePack {
     const scenePack = buildFlowVeoScenePack(promptState, {
       mode: promptState.flowVeoOutputMode ?? 'flow-scene-pack',
@@ -206,6 +210,7 @@ class CreativePackExportService {
       timelineShots: mapTimelineShots(shots),
       promptArtifacts: structuredClone(promptArtifacts),
       ...(studioRevisions ? { studioRevisions: structuredClone(studioRevisions) } : {}),
+      ...(creatorDelivery ? { creatorDelivery: structuredClone(creatorDelivery) } : {}),
       productionBible,
       otioTimeline: buildOtioTimeline({
         projectName: scenePack.title,

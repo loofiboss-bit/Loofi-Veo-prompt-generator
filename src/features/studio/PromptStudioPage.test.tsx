@@ -57,7 +57,9 @@ async function buildPack(
   user: ReturnType<typeof render>['user'],
   idea = 'A courier crosses a rainy street',
 ) {
-  await user.type(screen.getByRole('textbox', { name: 'Core idea' }), idea);
+  // Seed the fixture atomically; browser scenarios cover the actual editing interaction.
+  const field = screen.getByRole('textbox', { name: 'Core idea' }) as HTMLTextAreaElement;
+  fireEvent.change(field, { target: { value: field.value + idea } });
   await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
   await screen.findByRole('textbox', { name: 'Primary prompt' });
   await waitFor(() => expect(usePromptStudioDraftStore.getState().status).toBe('saved'));

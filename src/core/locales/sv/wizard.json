@@ -1,0 +1,25 @@
+{
+  "title": "Snabbguide",
+  "step1Title": "Vad är motivet?",
+  "step1Placeholder": "t.ex. En futuristisk bil",
+  "step2Title": "Vilken är stämningen?",
+  "step3Title": "Välj en visuell stil",
+  "step4Title": "Var utspelar det sig?",
+  "step4Placeholder": "t.ex. På en neonbelyst motorväg",
+  "back": "Tillbaka",
+  "next": "Nästa",
+  "generating": "Skapar...",
+  "magicGenerate": "Skapa prompt",
+  "moods": {
+    "dark": "Mörk",
+    "happy": "Glad",
+    "tense": "Spänd",
+    "peaceful": "Fridfull"
+  },
+  "styles": {
+    "realistic": "Realistisk",
+    "anime": "Anime",
+    "cinematic": "Filmisk",
+    "3d": "3D"
+  }
+}

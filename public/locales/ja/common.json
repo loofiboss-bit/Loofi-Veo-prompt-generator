@@ -80,7 +80,8 @@
     "collapseSidebar": "サイドバーを折りたたむ",
     "collaborate": "コラボ",
     "comments": "コメント",
-    "roles": "ロール管理"
+    "roles": "ロール管理",
+    "start": "スタート"
   },
   "commandPalette": {
     "title": "コマンドパレット",

@@ -1,0 +1,27 @@
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/creator-fonts/NotoSans.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Serif';
+  src: url('/creator-fonts/NotoSerif.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/creator-fonts/NotoSansArabic.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Noto Sans CJK JP';
+  src: url('/creator-fonts/NotoSansCJK.ttc') format('collection');
+  font-weight: 100 900;
+  font-display: swap;
+}

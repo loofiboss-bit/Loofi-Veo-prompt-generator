@@ -44,11 +44,16 @@ async function dismissModals(page: Page, options: { waitForPrompt?: boolean } = 
   if (!hasSeenWelcome) {
     const start = page.getByRole('button', { name: 'Start creating', exact: true });
     await start.waitFor({ state: 'visible', timeout: 15_000 });
+    if (waitForPrompt) {
+      await page.getByRole('radio', { name: 'Use my own idea or media' }).check();
+    }
     await start.click();
     await start.waitFor({ state: 'hidden' });
   }
   await clickFirstVisible(page, page.getByRole('button', { name: /skip tour/i }));
   if (waitForPrompt) {
+    // Navigate explicitly: the default Start redirect may still be pending after reload.
+    await page.goto('/#/studio');
     await page.getByLabel(/^Core idea/).waitFor({ state: 'visible', timeout: 15_000 });
   }
 }

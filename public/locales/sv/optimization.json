@@ -1,0 +1,87 @@
+{
+  "panel": {
+    "title": "Optimera",
+    "subtitle": "AI-förslag för att förbättra ditt projekt",
+    "close": "Stäng optimeringspanelen",
+    "openShortcut": "Ctrl+Shift+O"
+  },
+  "suggestions": {
+    "title": "Promptförslag",
+    "empty": "Inga förslag tillgängliga. Börja skriva för att få AI-respons.",
+    "analyzing": "Analyserar din prompt...",
+    "accept": "Godkänn förslag",
+    "dismiss": "Avvisa förslag",
+    "applyAll": "Använd alla förslag",
+    "offline": "Offlineläge — använder lokal analys",
+    "categories": {
+      "style": "Stil",
+      "camera": "Kamera",
+      "lighting": "Ljussättning",
+      "specificity": "Precision",
+      "syntax": "Syntax"
+    }
+  },
+  "quality": {
+    "title": "Kvalitetspoäng",
+    "score": "{{score}} / 10",
+    "tiers": {
+      "excellent": "Utmärkt",
+      "good": "Bra",
+      "fair": "Acceptabelt",
+      "needsWork": "Behöver förbättras"
+    },
+    "dimensions": {
+      "specificity": "Precision",
+      "style": "Visuell stil",
+      "camera": "Kameraarbete",
+      "lighting": "Ljussättning",
+      "length": "Promptlängd",
+      "syntax": "Syntaxkvalitet"
+    }
+  },
+  "cost": {
+    "title": "Kostnadsuppskattning",
+    "estimated": "Uppskattad kostnad",
+    "perGeneration": "per generering",
+    "model": "Modell",
+    "tradeoff": "Kvalitet kontra kostnad",
+    "optimizeBudget": "Optimera för budget"
+  },
+  "narrative": {
+    "title": "Berättelsens sammanhang",
+    "noIssues": "Inga problem hittades — din sekvens ser bra ut!",
+    "issues": {
+      "missing-transition": "Överväg att lägga till en övergång",
+      "pacing": "Förslag om tempo",
+      "character-jump": "Anteckning om karaktärskontinuitet",
+      "duplicate-theme": "Liknande tema hittat"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Förslag"
+    }
+  },
+  "preset": {
+    "title": "Rekommenderad förinställning",
+    "confidence": "Säkerhet i bedömningen",
+    "reasoning": "Varför denna förinställning",
+    "apply": "Använd förinställning",
+    "override": "Använd en annan förinställning",
+    "optimizedFor": "Optimerat för {{useCase}}"
+  },
+  "history": {
+    "title": "Optimeringshistorik",
+    "empty": "Ingen optimeringshistorik ännu",
+    "accepted": "Godkänt",
+    "dismissed": "Avvisat",
+    "modified": "Ändrat"
+  },
+  "aria": {
+    "panel": "Optimeringsförslag",
+    "suggestionList": "Förslag för att förbättra prompten",
+    "qualityScore": "Kvalitetspoäng {{score}} av 10",
+    "costEstimate": "Uppskattad kostnad {{cost}} USD",
+    "narrativeIssue": "{{severity}} — {{description}}",
+    "presetConfidence": "Säkerhet i rekommendationen {{confidence}} procent"
+  }
+}

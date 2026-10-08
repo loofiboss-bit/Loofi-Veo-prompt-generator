@@ -22,6 +22,8 @@ const { registerProviderIpc } = require('./ipc/provider-ipc.cjs');
 const { registerPaidJobsIpc } = require('./ipc/paid-jobs-ipc.cjs');
 const { registerUpdateIpc } = require('./ipc/update-ipc.cjs');
 const { KEYTAR_SERVICE, registerCredentialsIpc } = require('./ipc/credentials-ipc.cjs');
+const { CreatorRenderEngine } = require('./creator-render.cjs');
+const { registerCreatorRenderIpc } = require('./ipc/creator-render-ipc.cjs');
 const { registerMediaIpc } = require('./ipc/media-ipc.cjs');
 const { registerProjectIpc } = require('./ipc/project-ipc.cjs');
 const { registerDiagnosticsIpc } = require('./ipc/diagnostics-ipc.cjs');
@@ -54,6 +56,7 @@ let mainWindow;
 let paidJobEngine;
 let desktopMediaStore;
 let projectBackupStore;
+let creatorRenderEngine;
 const isSmokeTest = process.argv.includes('--smoke-test');
 const PROJECT_ROOT_FILE = 'project-root.json';
 
@@ -431,6 +434,13 @@ registerMediaIpc({
   getApiKey: () => keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'),
 });
 
+registerCreatorRenderIpc({
+  ipcMain,
+  getEngine: () => creatorRenderEngine,
+  dialog,
+  getMainWindow: () => mainWindow,
+});
+
 registerProjectIpc({
   ipcMain,
   dialog,
@@ -456,7 +466,7 @@ registerDiagnosticsIpc({
   getMainWindow: () => mainWindow,
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Configure native crash reporter (opt-in endpoint, local collection always active)
   crashReporter.start({
     productName: 'Loofi Creator Studio',
@@ -481,6 +491,21 @@ app.whenReady().then(() => {
     },
   });
   projectBackupStore = new ProjectBackupStore(path.join(projectRoot, 'backups'), 5);
+  creatorRenderEngine = new CreatorRenderEngine({
+    root: path.join(app.getPath('userData'), 'creator-render-jobs'),
+    runtimeRoot: app.isPackaged
+      ? path.join(process.resourcesPath, 'media-runtime')
+      : path.join(__dirname, '..', 'packaging', 'media-runtime'),
+    fontsRoot: app.isPackaged
+      ? path.join(process.resourcesPath, 'creator-fonts')
+      : path.join(__dirname, '..', 'public', 'creator-fonts'),
+    getMediaStore: () => desktopMediaStore,
+    onUpdate: (job) => {
+      if (mainWindow && !mainWindow.isDestroyed())
+        mainWindow.webContents.send('timeline-render-update', job);
+    },
+  });
+  await creatorRenderEngine.initialize();
   createWindow();
   void paidJobEngine.resumeAll();
 

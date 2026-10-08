@@ -3,6 +3,8 @@ release
 node_modules
 coverage
 .cache
+packaging/media-runtime/linux-x64
+packaging/media-runtime/win32-x64
 .mypy_cache
 package-lock.json
 *.min.js

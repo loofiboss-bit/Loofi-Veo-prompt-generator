@@ -17,6 +17,8 @@ import {
 } from '@core/services/projectTransferService';
 import { TimelineExportRecovery } from '@shared/components/TimelineExportRecovery';
 
+import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { CreatorDeliveryPanel } from '@features/delivery/CreatorDeliveryPanel';
 import TimelinePlayer from './TimelinePlayer';
 
 export const TimelinePage: React.FC = () => {
@@ -89,6 +91,9 @@ export const TimelinePage: React.FC = () => {
   const navigate = useNavigate();
   const navigationState = location.state as { returnToStudio?: 'story' } | null;
   const shots = useAppStore((state) => state.sbShots);
+  const hasTimelineMedia = useAppStore((state) =>
+    state.clips.some((clip) => clip.type === 'video' || clip.type === 'image'),
+  );
   const playableShots = shots.filter((shot) => shot.generatedVideoUrl);
   const shouldReturnToStoryboard = navigationState?.returnToStudio === 'story';
 
@@ -101,7 +106,7 @@ export const TimelinePage: React.FC = () => {
     navigate(ROUTES.HOME);
   };
 
-  if (playableShots.length === 0) {
+  if (playableShots.length === 0 && !hasTimelineMedia) {
     return (
       <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
         <header className="creator-page-header mx-auto mb-4 max-w-6xl border-b border-slate-800 pb-4">
@@ -149,6 +154,9 @@ export const TimelinePage: React.FC = () => {
         )}
         <TimelineExportRecovery missingMedia={missingMedia} onRelink={handleRelink} />
       </header>
+      <ErrorBoundary panelId="creator-delivery">
+        <CreatorDeliveryPanel />
+      </ErrorBoundary>
       <TimelinePlayer embedded shots={shots} onClose={handleExitTimeline} />
     </section>
   );
