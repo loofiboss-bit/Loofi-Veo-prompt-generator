@@ -58,8 +58,16 @@ rejection. `git diff --check` passed.
 Both exact runtime manifests and corresponding media-library sources pass the packaging gate.
 Windows binaries rendered a real 1080×1920, 30 fps H.264/AAC clip with Swedish, Arabic and Japanese
 subtitles under Wine. Its streams, duration and rendered frame were inspected. Physical Windows
-installation and the full Windows desktop workflow remain separate CI/platform qualifications. No public package, Git tag, commit or remote release was created.
-The local version is 15.0.0 development; the README retains the published 14.2.1 download link.
+installation and the full Windows desktop workflow remain separate CI/platform qualifications. These observations predate publication. The v15.0.0 release is qualified independently through
+the canonical GitHub tag workflow and Fedora COPR readback; consult GitHub Releases for public status.
+
+## v15 release preparation
+
+The release candidate corrects Start navigation in onboarding/browser helpers and refreshes all
+twelve reviewed Fedora/Ubuntu visual baselines for the new sidebar and Swedish settings option.
+Seven focused Chromium tests passed in a normal comparison run without snapshot updates.
+Runtime workflows invoke builders through Bash and restore Linux executable permissions after
+artifact transport. Fresh remote CI and canonical tag qualification establish public release status.
 
 ## Demonstration assets
 

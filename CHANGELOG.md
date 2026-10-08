@@ -7,7 +7,7 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [15.0.0] - Unreleased
+## [15.0.0] - 2026-10-08
 
 ### Added — v15 Creator Delivery
 
@@ -36,12 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve optional creator delivery data and media references through project saves and portable
   import/export without changing project schema 11, Creative Pack 5, or existing storage identities.
 - Require reviewed platform-specific FFmpeg/ffprobe bundles, checksums, licenses and corresponding
-  dependency sources for distribution; retain the published v14.2.1 download path until release.
+  dependency sources for distribution.
+
+### Fixed — v15 Release Qualification
+
+- Align onboarding and visual navigation tests with Start and refresh reviewed sidebar baselines.
+- Invoke runtime build scripts through Bash and restore Linux executable permissions after
+  artifact download before integrity checks and desktop packaging.
 
 ### Qualification — v15 Creator Delivery
 
-- This entry describes unreleased implementation. Physical Windows operation, public package
-  availability and human onboarding speed are separate claims requiring their own evidence.
+- The canonical tag workflow qualifies Windows/Linux packages before publication. Physical
+  desktop operation and human onboarding speed require separate evidence.
 - Five AI-assisted workflow scenarios replace the proposed human trial for this implementation;
   they do not establish a four-of-five human completion rate or a five-minute onboarding result.
 
