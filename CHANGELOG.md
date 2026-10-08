@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [14.2.0] - 2026-10-08
+## [14.2.1] - 2026-10-08
 
 ### Added
 
@@ -37,6 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Open the asset drawer from reference and editing controls instead of a global floating trigger.
 
 ### Fixed
+
+- Check the semantic main landmark in packaged Electron tests, including its uniqueness,
+  while retaining provider-bridge, restart and protected-recovery assertions.
+- Seed release comparison screenshots with a decoder-readable local video and verify its duration;
+  the former provider-data placeholder is correctly rejected by scene readiness.
 
 - Refresh reviewed Fedora and Ubuntu generation-approval visual baselines for the scene-specific
   next action; keep screenshot comparison thresholds and CI gates unchanged.
