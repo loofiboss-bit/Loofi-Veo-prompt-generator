@@ -87,7 +87,21 @@
     "collapseSidebar": "Contraer barra lateral",
     "collaborate": "Colaborar",
     "comments": "Comentarios",
-    "roles": "Roles"
+    "roles": "Roles",
+    "groups": {
+      "create": "Crear",
+      "library": "Biblioteca",
+      "followup": "Seguimiento",
+      "settings": "Navegación"
+    },
+    "navigation": "Navegación principal",
+    "quickNavigation": "Navegación rápida",
+    "noProject": "Ningún proyecto seleccionado",
+    "workspaceContent": "Contenido del espacio de trabajo",
+    "openNavigation": "Abrir navegación",
+    "closeNavigation": "Cerrar navegación",
+    "focusMode": "Modo de enfoque",
+    "exitFocus": "Salir del modo de enfoque"
   },
   "activity": {
     "queueEyebrow": "Trabajo duradero",
@@ -137,6 +151,21 @@
     "name": "Nombre del proyecto",
     "create": "Crear proyecto",
     "import": "Importar proyecto",
-    "export": "Exportar proyecto"
+    "export": "Exportar proyecto",
+    "actions": "Acciones del proyecto"
+  },
+  "assets": {
+    "continuityProfiles": "Perfiles de continuidad",
+    "browseLibrary": "Explorar recursos del proyecto",
+    "closeLibrary": "Cerrar biblioteca de recursos",
+    "libraryTitle": "Biblioteca de recursos"
+  },
+  "timeline": {
+    "title": "Línea de tiempo",
+    "description": "Organiza y previsualiza el guion gráfico del proyecto actual.",
+    "emptyTitle": "Tu línea de tiempo está vacía",
+    "emptyDescription": "Añade escenas en Producción para empezar a editar el guion gráfico.",
+    "backToStoryboard": "Volver al guion gráfico",
+    "backToStudio": "Volver a Prompt Studio"
   }
 }

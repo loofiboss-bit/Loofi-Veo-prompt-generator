@@ -4,7 +4,8 @@ import { render, screen, waitFor } from '@/test-utils';
 
 import { ActivityPage } from './ActivityPage';
 
-const { cancel, list, onUpdate, retry, subscribe, unsubscribe } = vi.hoisted(() => ({
+const { cancel, recover, list, onUpdate, retry, subscribe, unsubscribe } = vi.hoisted(() => ({
+  recover: vi.fn().mockResolvedValue(true),
   cancel: vi.fn().mockResolvedValue(true),
   list: vi.fn(),
   onUpdate: { current: undefined as undefined | ((job: Record<string, unknown>) => void) },
@@ -14,7 +15,7 @@ const { cancel, list, onUpdate, retry, subscribe, unsubscribe } = vi.hoisted(() 
 }));
 
 vi.mock('@core/services/paidJobService', () => ({
-  paidJobService: { cancel, list, retry, subscribe },
+  paidJobService: { cancel, recover, list, retry, subscribe },
 }));
 
 vi.mock('@core/store/useGenerationQueueStore', () => ({
@@ -105,5 +106,52 @@ describe('ActivityPage', () => {
     expect(await screen.findByText('Recovered video')).toBeVisible();
     unmount();
     expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+  it('recovers linked scene jobs through the scoped bridge and links back to the scene', async () => {
+    list.mockResolvedValue([
+      {
+        id: 'video-job',
+        status: 'MediaAtRisk',
+        providerOperationName: 'operations/known',
+        productionRunId: 'run-1',
+        productionShotId: 3,
+        productionTakeId: 'take-1',
+        prompt: 'Scene result',
+        settings: {},
+        timestamp: 3,
+      },
+    ]);
+    const { user } = render(<ActivityPage />);
+    await user.click(await screen.findByRole('button', { name: 'Check job / fetch result again' }));
+    expect(recover).toHaveBeenCalledWith({
+      id: 'video-job',
+      runId: 'run-1',
+      shotId: 3,
+      takeId: 'take-1',
+    });
+    expect(retry).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', { name: 'Open production scene' })).toHaveAttribute(
+      'href',
+      '/create?run=run-1&shot=3',
+    );
+  });
+  it('offers no automatic resubmission for ambiguous scene jobs', async () => {
+    list.mockResolvedValue([
+      {
+        id: 'video-job',
+        status: 'RecoveryRequired',
+        productionRunId: 'run-1',
+        productionShotId: 3,
+        productionTakeId: 'take-1',
+        prompt: 'Uncertain scene',
+        settings: {},
+        timestamp: 3,
+      },
+    ]);
+    render(<ActivityPage />);
+    await screen.findByText('Uncertain scene');
+    expect(screen.getByText(/Submission outcome is uncertain/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Check job / fetch result again' })).toBeNull();
   });
 });

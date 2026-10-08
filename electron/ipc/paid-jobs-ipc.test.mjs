@@ -104,3 +104,22 @@ test('recovers known video media failures without authorizing another submission
   assert.equal(await context.handlers.get('paid-job-retry')(null, 'video-job-1'), true);
   assert.equal(context.dialogCount(), 0);
 });
+
+test('scoped recovery refuses ambiguous or unrelated jobs without paid approval', async () => {
+  const context = fixture([0]);
+  const identity = { id: 'video-job', runId: 'run', shotId: 1, takeId: 'take' };
+  context.jobs.set(identity.id, {
+    id: identity.id,
+    status: 'RecoveryRequired',
+    productionRunId: 'run',
+    productionShotId: 1,
+    productionTakeId: 'take',
+  });
+  const recover = context.handlers.get('paid-job-recover');
+  assert.equal(await recover(null, identity), false);
+  context.jobs.get(identity.id).providerOperationName = 'operations/existing';
+  assert.equal(await recover(null, { ...identity, takeId: 'other' }), false);
+  assert.equal(await recover(null, identity), true);
+  assert.equal(context.dialogCount(), 0);
+  assert.equal(context.submitted.length, 0);
+});

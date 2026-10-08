@@ -347,5 +347,34 @@
     "rollAngleDegrees": "Ángulo de inclinación",
     "spatialGrid": "Posición espacial",
     "customDirectives": "Notas de cámara"
+  },
+  "editView": "Editar",
+  "resultView": "Resultado",
+  "workspaceView": "Vista del espacio de trabajo",
+  "copyOptions": "Opciones de copia",
+  "libraryTabs": {
+    "templates": "Plantillas",
+    "history": "Paquetes anteriores",
+    "revisions": "Revisiones"
+  },
+  "externalResults": {
+    "title": "Resultados de vídeo externos",
+    "import": "Importar resultado de esta variante",
+    "importing": "Importando vídeo…",
+    "empty": "Todavía no hay resultados importados.",
+    "source": "Prompt original",
+    "notes": "Notas de revisión",
+    "confirm": "Confirmar revisión manual",
+    "confirmed": "Revisión manual confirmada",
+    "scene": "Escena del guion gráfico",
+    "newScene": "Crear una escena nueva",
+    "useTimeline": "Usar en la línea de tiempo",
+    "pending": "Guardando resultado…",
+    "unavailable": "Este vídeo local no está disponible. Elige otro y vuelve a revisarlo.",
+    "duration": "{{seconds}} segundos",
+    "error": "No se pudo guardar el resultado.",
+    "relink": "Volver a vincular en Recursos",
+    "refresh": "Actualizar medios locales",
+    "replace": "Elegir vídeo de sustitución"
   }
 }

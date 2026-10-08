@@ -112,6 +112,16 @@ class ProjectDocumentService {
         ...(project.studioRevisions ?? []).filter((revision) => !known.has(revision.id)),
       ];
     }
+    // Result imports/reviews can finish after an editor captured its snapshot.
+    // Preserve those additions and the newest revision of each result.
+    if (existing?.studioResults) {
+      const results = new Map(existing.studioResults.map((result) => [result.id, result]));
+      for (const result of project.studioResults ?? []) {
+        const previous = results.get(result.id);
+        if (!previous || result.updatedAt > previous.updatedAt) results.set(result.id, result);
+      }
+      snapshot.studioResults = [...results.values()];
+    }
     const result = await safeSet(
       projectStorageKey(project.id),
       snapshot,

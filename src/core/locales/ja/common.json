@@ -87,7 +87,21 @@
     "collapseSidebar": "サイドバーを折りたたむ",
     "collaborate": "コラボ",
     "comments": "コメント",
-    "roles": "ロール管理"
+    "roles": "ロール管理",
+    "groups": {
+      "create": "作成",
+      "library": "ライブラリ",
+      "followup": "進捗確認",
+      "settings": "ナビゲーション"
+    },
+    "navigation": "メインナビゲーション",
+    "quickNavigation": "クイックナビゲーション",
+    "noProject": "プロジェクトが選択されていません",
+    "workspaceContent": "ワークスペースの内容",
+    "openNavigation": "ナビゲーションを開く",
+    "closeNavigation": "ナビゲーションを閉じる",
+    "focusMode": "集中モード",
+    "exitFocus": "集中モードを終了"
   },
   "activity": {
     "queueEyebrow": "永続ジョブ",
@@ -137,6 +151,21 @@
     "name": "プロジェクト名",
     "create": "プロジェクトを作成",
     "import": "プロジェクトをインポート",
-    "export": "プロジェクトをエクスポート"
+    "export": "プロジェクトをエクスポート",
+    "actions": "プロジェクトの操作"
+  },
+  "assets": {
+    "continuityProfiles": "継続性プロファイル",
+    "browseLibrary": "プロジェクトの素材を参照",
+    "closeLibrary": "素材ライブラリを閉じる",
+    "libraryTitle": "素材ライブラリ"
+  },
+  "timeline": {
+    "title": "タイムライン",
+    "description": "現在のプロジェクトのストーリーボードを並べ替えてプレビューします。",
+    "emptyTitle": "タイムラインは空です",
+    "emptyDescription": "制作画面でシーンを追加して、ストーリーボードの編集を始めましょう。",
+    "backToStoryboard": "ストーリーボードに戻る",
+    "backToStudio": "Prompt Studioに戻る"
   }
 }

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { paidJobService } from '@core/services/paidJobService';
@@ -31,15 +32,28 @@ const mergeDurableJobs = (current: PaidJobTask[], incoming: PaidJobTask[]): Paid
 };
 
 export function ActivityPage() {
+  const [params] = useSearchParams();
+  const requestedJob = params.get('job');
+  const focusedJob = useRef<string | null>(null);
   const { t } = useTranslation('common');
+  const { t: flow } = useTranslation('create');
   const queueItems = useGenerationQueueStore((state) => state.items);
   const activeCount = useGenerationQueueStore((state) => state.activeCount);
   const pendingCount = useGenerationQueueStore((state) => state.pendingCount);
   const cancelQueueItem = useGenerationQueueStore((state) => state.cancel);
   const retryQueueItem = useGenerationQueueStore((state) => state.retry);
   const [durableJobs, setDurableJobs] = useState<PaidJobTask[]>([]);
+  const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!requestedJob || focusedJob.current === requestedJob) return;
+    const card = document.getElementById(`paid-job-${requestedJob}`);
+    if (card) {
+      card.focus();
+      focusedJob.current = requestedJob;
+    }
+  }, [requestedJob, durableJobs]);
 
   const refreshDurableJobs = useCallback(async () => {
     try {
@@ -77,23 +91,25 @@ export function ActivityPage() {
     try {
       const changed = await paidJobService[action](id);
       if (changed) await refreshDurableJobs();
+    } catch (failure) {
+      setActionError(failure instanceof Error ? failure.message : flow('flow.recoveryUnavailable'));
     } finally {
       setPendingActionId(null);
     }
   };
 
   return (
-    <main id="main-content" className="min-h-full bg-slate-950 px-6 py-8 text-slate-100">
+    <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <header className="border-b border-slate-800 pb-5">
+        <header className="creator-page-header border-b border-slate-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-300">
             {t('activity.queueEyebrow')}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold">{t('sidebar.activity')}</h1>
+          <h1 className="mt-1 text-lg font-semibold">{t('sidebar.activity')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('activity.consolidatedDescription')}</p>
         </header>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
           {[
             [t('activity.localRunning'), activeCount],
             [t('activity.localQueued'), pendingCount],
@@ -102,19 +118,19 @@ export function ActivityPage() {
           ].map(([label, value]) => (
             <div
               key={String(label)}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+              className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
             >
               <p className="text-sm text-slate-400">{label}</p>
-              <p className="mt-1 text-2xl font-semibold text-blue-300">{value}</p>
+              <p className="mt-1 text-lg font-semibold text-blue-300">{value}</p>
             </div>
           ))}
         </div>
 
-        <section aria-labelledby="local-queue-heading" className="mt-8">
+        <section aria-labelledby="local-queue-heading" className="mt-6">
           <h2 id="local-queue-heading" className="text-lg font-semibold">
             {t('activity.localQueue')}
           </h2>
-          <div className="mt-3 space-y-3" aria-live="polite" aria-relevant="additions text">
+          <div className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions text">
             {queueItems.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-700 p-6 text-slate-400">
                 {t('activity.noLocalQueue')}
@@ -123,7 +139,7 @@ export function ActivityPage() {
               queueItems.map((item) => (
                 <article
                   key={item.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+                  className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -161,16 +177,21 @@ export function ActivityPage() {
           </div>
         </section>
 
-        <section aria-labelledby="durable-jobs-heading" className="mt-8">
+        <section aria-labelledby="durable-jobs-heading" className="mt-6">
           <h2 id="durable-jobs-heading" className="text-lg font-semibold">
             {t('activity.durableJobs')}
           </h2>
+          {actionError && (
+            <p role="alert" className="mt-3 text-sm text-amber-300">
+              {actionError}
+            </p>
+          )}
           {loadError && (
             <p role="alert" className="mt-3 rounded-xl border border-amber-700 p-4 text-amber-200">
               {t('activity.loadFailed')}
             </p>
           )}
-          <div className="mt-3 space-y-3" aria-live="polite" aria-relevant="additions text">
+          <div className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions text">
             {durableJobs.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-700 p-6 text-slate-400">
                 {t('activity.noDurableJobs')}
@@ -180,11 +201,24 @@ export function ActivityPage() {
                 const isMusic = 'jobKind' in job && job.jobKind === 'music';
                 const canCancel =
                   ACTIVE_DURABLE_STATUSES.has(job.status) || job.status === 'Queued';
-                const canRetry = job.status === 'Error';
+                const videoJob =
+                  'productionRunId' in job &&
+                  job.productionRunId &&
+                  job.productionShotId !== undefined &&
+                  job.productionTakeId
+                    ? job
+                    : null;
+                const canRecover =
+                  videoJob &&
+                  videoJob.providerOperationName &&
+                  ATTENTION_DURABLE_STATUSES.has(job.status);
+                const canRetry = !videoJob && job.status === 'Error';
                 return (
                   <article
+                    id={`paid-job-${job.id}`}
+                    tabIndex={-1}
                     key={job.id}
-                    className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+                    className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0">
@@ -196,7 +230,22 @@ export function ActivityPage() {
                       <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
                     </div>
                     {job.error && <p className="mt-2 text-sm text-amber-300">{job.error}</p>}
-                    {(canCancel || canRetry) && (
+                    {videoJob && (
+                      <Link
+                        to={`/create?run=${encodeURIComponent(videoJob.productionRunId!)}&shot=${videoJob.productionShotId}`}
+                        className="mt-2 inline-block text-sm text-blue-300 underline"
+                      >
+                        {flow('flow.production')}
+                      </Link>
+                    )}
+                    {videoJob &&
+                      job.status === 'RecoveryRequired' &&
+                      !videoJob.providerOperationName && (
+                        <p className="mt-2 text-xs text-amber-300">
+                          {flow('flow.recoveryAmbiguous')}
+                        </p>
+                      )}
+                    {(canCancel || canRetry || canRecover) && (
                       <div className="mt-3 flex gap-2">
                         {canCancel && (
                           <button
@@ -206,6 +255,27 @@ export function ActivityPage() {
                             onClick={() => void runDurableAction('cancel', job.id)}
                           >
                             {t('activity.cancel')}
+                          </button>
+                        )}
+                        {canRecover && (
+                          <button
+                            type="button"
+                            disabled={pendingActionId === job.id}
+                            className="rounded bg-blue-600 px-3 py-1.5 text-sm disabled:opacity-50"
+                            onClick={() => {
+                              setPendingActionId(job.id);
+                              void paidJobService
+                                .recover({
+                                  id: job.id,
+                                  runId: videoJob!.productionRunId!,
+                                  shotId: videoJob!.productionShotId!,
+                                  takeId: videoJob!.productionTakeId!,
+                                })
+                                .then(() => refreshDurableJobs())
+                                .finally(() => setPendingActionId(null));
+                            }}
+                          >
+                            {flow('flow.recoveryCheck')}
                           </button>
                         )}
                         {canRetry && (
@@ -227,6 +297,6 @@ export function ActivityPage() {
           </div>
         </section>
       </div>
-    </main>
+    </section>
   );
 }

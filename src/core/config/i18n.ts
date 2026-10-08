@@ -194,7 +194,8 @@ i18n
     react: {
       useSuspense: false, // Avoid Suspense for translations (instant EN)
     },
-  });
+  })
+  .then(() => restoreAppLanguage());
 
 /** Languages that use right-to-left text direction. */
 export const RTL_LANGUAGES: ReadonlySet<string> = new Set(['ar', 'he', 'fa', 'ur']);
@@ -213,6 +214,22 @@ export async function changeAppLanguage(lang: SupportedLanguage): Promise<void> 
   }
   const dir = RTL_LANGUAGES.has(lang) ? 'rtl' : 'ltr';
   document.documentElement.dir = dir;
+  document.documentElement.lang = lang;
+  await i18n.changeLanguage(lang);
+}
+
+/** Restore the detected language's lazy resources after reopening the application. */
+export async function restoreAppLanguage(): Promise<void> {
+  const detected = i18n.language;
+  const language = detected?.split('-')[0];
+  if (!SUPPORTED_LANGUAGES.includes(language as SupportedLanguage)) return;
+  const lang = language as SupportedLanguage;
+  const bundle = await loadLanguageBundle(lang);
+  // A user may select a different language while this startup load is pending.
+  if (i18n.language !== detected) return;
+  for (const [namespace, resources] of Object.entries(bundle))
+    i18n.addResourceBundle(lang, namespace, resources, true, true);
+  document.documentElement.dir = RTL_LANGUAGES.has(lang) ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
   await i18n.changeLanguage(lang);
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ProductionRun } from '@core/types';
+import { productionReadiness } from '@core/services/productionReadinessService';
+import type { Asset, ProductionRun } from '@core/types';
 
 export const PRODUCTION_STEPS = [
   { id: 'brief', label: 'Brief' },
@@ -14,7 +15,11 @@ export type ProductionStepId = (typeof PRODUCTION_STEPS)[number]['id'];
 
 const storageKey = (projectId: string) => `production-workflow-step:${projectId}`;
 
-export function useProductionWorkflow(projectId: string, run: ProductionRun | null) {
+export function useProductionWorkflow(
+  projectId: string,
+  run: ProductionRun | null,
+  assets?: Asset[],
+) {
   const [currentStep, setCurrentStepState] = useState<ProductionStepId>('brief');
 
   useEffect(() => {
@@ -31,23 +36,7 @@ export function useProductionWorkflow(projectId: string, run: ProductionRun | nu
     localStorage.setItem(storageKey(projectId), step);
   };
 
-  const completion = useMemo<Record<ProductionStepId, boolean>>(() => {
-    const shots = run?.shots ?? [];
-    const hasAssets =
-      (run?.assetIds.length ?? 0) > 0 ||
-      shots.every((shot) => shot.generationRequest.mode === 'text-to-video');
-    return {
-      brief: Boolean(run?.brief.trim()),
-      scenes: shots.length > 0,
-      assets: Boolean(run && hasAssets),
-      generate: shots.length > 0 && shots.every((shot) => shot.takes.length > 0),
-      review:
-        shots.length > 0 && shots.every((shot) => shot.takes.some((take) => Boolean(take.review))),
-      export:
-        run?.status === 'complete' ||
-        (shots.length > 0 && shots.every((shot) => shot.status === 'accepted')),
-    };
-  }, [run]);
+  const { completion, nextAction } = useMemo(() => productionReadiness(run, assets), [run, assets]);
 
   const currentIndex = PRODUCTION_STEPS.findIndex((step) => step.id === currentStep);
   const goNext = () => {
@@ -59,5 +48,5 @@ export function useProductionWorkflow(projectId: string, run: ProductionRun | nu
     setCurrentStep(previous.id);
   };
 
-  return { currentStep, setCurrentStep, completion, currentIndex, goNext, goBack };
+  return { nextAction, currentStep, setCurrentStep, completion, currentIndex, goNext, goBack };
 }

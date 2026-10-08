@@ -1,3 +1,9 @@
+import { Link } from 'react-router';
+import {
+  isReviewEvidenceCurrent,
+  isTakeReviewCurrent,
+  shotReadiness,
+} from '@core/services/productionReadinessService';
 import { useTranslation } from 'react-i18next';
 
 import { veoGenerationService } from '@core/services/veoGenerationService';
@@ -22,22 +28,43 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
     <section className="space-y-4" aria-label={t('labels.productionShots')}>
       {activeRun.shots.map((shot) => {
         const latestTake = shot.takes.at(-1);
-        const reviewIsCurrent =
-          !latestTake?.review ||
-          !shot.continuitySnapshot?.snapshotHash ||
-          latestTake.review.continuitySnapshotHash === shot.continuitySnapshot.snapshotHash;
+        const reviewIsCurrent = Boolean(latestTake && isTakeReviewCurrent(shot, latestTake));
+        const evidenceIsCurrent = Boolean(latestTake && isReviewEvidenceCurrent(shot, latestTake));
+        const readiness = shotReadiness(shot, workflow.imageAssets);
         const displayTakes = shot.takes.map((take) => {
-          const takeReviewIsCurrent =
-            !take.review ||
-            !shot.continuitySnapshot?.snapshotHash ||
-            take.review.continuitySnapshotHash === shot.continuitySnapshot.snapshotHash;
-          return takeReviewIsCurrent ? take : { ...take, review: undefined };
+          const current = isTakeReviewCurrent(shot, take);
+          return current
+            ? take
+            : {
+                ...take,
+                manualReview: undefined,
+                review: isReviewEvidenceCurrent(shot, take) ? take.review : undefined,
+              };
         });
+        const job = workflow.durableJobs.find(
+          (item) =>
+            item.id === latestTake?.taskId &&
+            'productionRunId' in item &&
+            item.productionRunId === activeRun.id &&
+            item.productionShotId === shot.id &&
+            item.productionTakeId === latestTake?.id,
+        );
+        const canRecover =
+          job &&
+          'providerOperationName' in job &&
+          job.providerOperationName &&
+          ['Error', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status);
         const issues = veoGenerationService.validateRequest(shot.generationRequest);
-        const canGenerate = shot.status === 'approved' && issues.length === 0;
+        const canGenerate =
+          shot.status === 'approved' && issues.length === 0 && readiness.references;
 
         return (
-          <article key={shot.id} className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+          <article
+            id={`production-shot-${shot.id}`}
+            tabIndex={-1}
+            key={shot.id}
+            className="rounded-xl border border-slate-800 bg-slate-900/70 p-4"
+          >
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex min-w-0 gap-3">
                 {activeStep === 'generate' && (
@@ -60,6 +87,11 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                       ${veoGenerationService.estimateCost(shot.generationRequest).toFixed(2)}
                     </span>
                   </div>
+                  {readiness.kind && (
+                    <p className="mt-2 text-xs text-amber-300">
+                      {t('flow.nextAction')}: {t(`flow.${readiness.kind}`)}
+                    </p>
+                  )}
                   <p className="mt-2 text-sm text-slate-300">{shot.prompt}</p>
                   <p className="mt-1 text-xs text-slate-500">
                     {t('labels.camera', { camera: shot.camera })}
@@ -67,6 +99,34 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
+                {latestTake && canRecover && (
+                  <button
+                    type="button"
+                    disabled={workflow.recoveringJobId !== null}
+                    onClick={() => void workflow.handleRecoverJob(shot, latestTake)}
+                    className="rounded-md bg-blue-600 px-3 py-2 text-xs disabled:opacity-50"
+                  >
+                    {t('flow.recoveryCheck')}
+                  </button>
+                )}
+                {latestTake && ['failed', 'recovery-required'].includes(latestTake.status) && (
+                  <button
+                    type="button"
+                    onClick={() => void workflow.handlePrepareRetake(shot, latestTake, false)}
+                    className="rounded-md bg-amber-600 px-3 py-2 text-xs"
+                  >
+                    {t('actions.prepareRetake')}
+                  </button>
+                )}
+                {job && (
+                  <Link
+                    to={`/activity?job=${encodeURIComponent(job.id)}`}
+                    className="rounded-md border border-slate-700 px-3 py-2 text-xs"
+                  >
+                    {t('flow.activity')}
+                  </Link>
+                )}
+
                 {activeStep === 'generate' && canGenerate && (
                   <button
                     type="button"
@@ -79,7 +139,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                 {activeStep === 'review' &&
                   latestTake &&
                   ['complete', 'media-at-risk'].includes(latestTake.status) &&
-                  (!latestTake.review || !reviewIsCurrent) && (
+                  (!latestTake.review || !evidenceIsCurrent) && (
                     <button
                       type="button"
                       onClick={() => void workflow.handleReview(shot, latestTake)}
@@ -101,11 +161,12 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                   )}
                 {activeStep === 'review' &&
                   latestTake?.review &&
-                  reviewIsCurrent &&
+                  evidenceIsCurrent &&
                   latestTake.status !== 'accepted' && (
                     <>
                       <button
                         type="button"
+                        disabled={!reviewIsCurrent}
                         onClick={() => void workflow.handleAccept(shot, latestTake)}
                         className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold hover:bg-emerald-500"
                       >
@@ -161,6 +222,9 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
               <div className="mt-3">
                 <TakeCompare
                   takes={displayTakes}
+                  onManualReview={(take, notes) =>
+                    void workflow.handleManualReview(shot, take, notes)
+                  }
                   onKeep={(take) => void workflow.handleAccept(shot, take)}
                   onReject={(take) => void workflow.handleReject(shot, take)}
                   onRevise={(take, notes) =>
@@ -191,11 +255,19 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                     ? ` · ${latestTake.providerArtifact.operationName}`
                     : ''}
                 </p>
+                {job && <p className="mt-1">{job.status}</p>}
+                {job &&
+                  !('providerOperationName' in job && job.providerOperationName) &&
+                  job.status === 'RecoveryRequired' && (
+                    <p className="mt-1 text-amber-300">{t('flow.recoveryAmbiguous')}</p>
+                  )}
                 {latestTake.error && <p className="mt-1 text-amber-300">{latestTake.error}</p>}
-                {latestTake.review && reviewIsCurrent && (
+                {latestTake.review && evidenceIsCurrent && (
                   <div className="mt-2">
                     <p className="font-semibold text-slate-200">
-                      {t('labels.reviewScore', { score: latestTake.review.overallScore })}
+                      {latestTake.review.source === 'local'
+                        ? t('flow.localChecks')
+                        : t('labels.reviewScore', { score: latestTake.review.overallScore })}
                     </p>
                     {latestTake.review.proposedRevisionPrompt && (
                       <p className="mt-1 text-slate-400">
@@ -206,7 +278,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                     )}
                   </div>
                 )}
-                {latestTake.review && !reviewIsCurrent && (
+                {latestTake.review && !evidenceIsCurrent && (
                   <p className="mt-2 text-amber-300">
                     {t(
                       'messages.reviewStale',

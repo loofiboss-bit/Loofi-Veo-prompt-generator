@@ -17,11 +17,13 @@
   "pluginRegistryUrl": "URL del Registro de Plugins",
   "save": "Guardar",
   "presets": {
-    "default": "Predeterminado (Cian)",
+    "default": "Predeterminado (Azul)",
     "midnight": "Medianoche",
     "ocean": "Océano",
     "forest": "Bosque",
     "sunset": "Atardecer",
     "amethyst": "Amatista"
-  }
+  },
+  "backToWorkspace": "Volver al espacio de trabajo",
+  "category": "Categoría de ajustes"
 }

@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('electron', {
   submitPaidJob: (task) => ipcRenderer.invoke('paid-job-submit', task),
   listPaidJobs: () => ipcRenderer.invoke('paid-job-list'),
   cancelPaidJob: (id) => ipcRenderer.invoke('paid-job-cancel', id),
+  recoverPaidJob: (context) => ipcRenderer.invoke('paid-job-recover', context),
   retryPaidJob: (id) => ipcRenderer.invoke('paid-job-retry', id),
   onPaidJobUpdate: (callback) => {
     const listener = (_event, job) => callback(job);

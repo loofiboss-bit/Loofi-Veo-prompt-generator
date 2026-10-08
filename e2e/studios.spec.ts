@@ -9,6 +9,7 @@ test.describe('Studio modes', () => {
     await page.getByRole('button', { name: 'Music & Lyrics', exact: true }).click();
     await page.getByLabel('Song idea / story', { exact: true }).fill('A song about the sea');
     await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+    await page.getByText('Copy options', { exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Copy lyrics', exact: true }).first(),
     ).toBeVisible();

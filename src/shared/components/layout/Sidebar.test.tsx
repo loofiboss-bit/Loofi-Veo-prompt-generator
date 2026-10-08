@@ -125,7 +125,7 @@ describe('Sidebar', () => {
     expect(nav).toBeInTheDocument();
     // All nav buttons should be rendered inside the nav
     const buttons = nav.querySelectorAll('button');
-    expect(buttons).toHaveLength(7);
+    expect(buttons).toHaveLength(6);
   });
 
   it('renders Prompt Studio and the advanced production destinations', () => {
@@ -137,7 +137,7 @@ describe('Sidebar', () => {
     expect(nav).toHaveTextContent('Assets');
     expect(nav).toHaveTextContent('Timeline');
     expect(nav).toHaveTextContent('Activity');
-    expect(nav).toHaveTextContent('Settings');
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
   });
 
   it('opens Prompt Studio from the primary navigation item', async () => {
@@ -172,8 +172,7 @@ describe('Sidebar', () => {
   it('calls onOpenSettings when settings button is clicked', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
-    const nav = screen.getByRole('navigation');
-    const settingsBtn = Array.from(nav.querySelectorAll('button')).at(-1)!;
+    const settingsBtn = screen.getByRole('button', { name: 'Settings' });
     await user.click(settingsBtn);
     expect(props.onOpenSettings).toHaveBeenCalledOnce();
   });

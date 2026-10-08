@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import Icon from '@shared/components/ui/Icon';
+import { TimelineExportRecovery } from '@shared/components/TimelineExportRecovery';
 import type { ProductionStepId } from '@features/production/hooks/useProductionWorkflow';
 import type { CreateWorkflowController } from '../hooks/useCreateWorkflow';
 
@@ -79,6 +80,12 @@ export function ReviewExportStep({ activeStep, workflow }: ReviewExportStepProps
           </>
         )}
       </div>
+      {activeStep === 'export' && (
+        <TimelineExportRecovery
+          missingMedia={workflow.exportMissingMedia}
+          onRelink={workflow.handleRelinkExportMedia}
+        />
+      )}
       {activeStep === 'export' && workflow.exportPreview && (
         <textarea
           aria-label={t('labels.exportPreview')}

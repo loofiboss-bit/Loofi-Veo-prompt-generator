@@ -89,4 +89,17 @@ describe('i18n Configuration', () => {
     const { changeAppLanguage } = await import('@core/config/i18n');
     expect(typeof changeAppLanguage).toBe('function');
   });
+  it('restores lazy Studio resources and direction for the detected language after reopening', async () => {
+    const { i18n, restoreAppLanguage, changeAppLanguage } = await import('@core/config/i18n');
+    try {
+      await i18n.changeLanguage('ar');
+      i18n.removeResourceBundle('ar', 'studio');
+      await restoreAppLanguage();
+      expect(i18n.t('externalResults.title', { ns: 'studio' })).toBe('نتائج فيديو خارجية');
+      expect(document.documentElement.lang).toBe('ar');
+      expect(document.documentElement.dir).toBe('rtl');
+    } finally {
+      await changeAppLanguage('en');
+    }
+  });
 });

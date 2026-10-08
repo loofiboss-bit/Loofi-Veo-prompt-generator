@@ -87,7 +87,21 @@
     "collapseSidebar": "طي الشريط الجانبي",
     "collaborate": "تعاون",
     "comments": "التعليقات",
-    "roles": "الأدوار"
+    "roles": "الأدوار",
+    "groups": {
+      "create": "إنشاء",
+      "library": "المكتبة",
+      "followup": "المتابعة",
+      "settings": "التنقل"
+    },
+    "navigation": "التنقل الرئيسي",
+    "quickNavigation": "التنقل السريع",
+    "noProject": "لم يتم تحديد مشروع",
+    "workspaceContent": "محتوى مساحة العمل",
+    "openNavigation": "فتح التنقل",
+    "closeNavigation": "إغلاق التنقل",
+    "focusMode": "وضع التركيز",
+    "exitFocus": "الخروج من وضع التركيز"
   },
   "activity": {
     "queueEyebrow": "عمل دائم",
@@ -137,6 +151,21 @@
     "name": "اسم المشروع",
     "create": "إنشاء مشروع",
     "import": "استيراد مشروع",
-    "export": "تصدير المشروع"
+    "export": "تصدير المشروع",
+    "actions": "إجراءات المشروع"
+  },
+  "assets": {
+    "continuityProfiles": "ملفات الاستمرارية",
+    "browseLibrary": "تصفح أصول المشروع",
+    "closeLibrary": "إغلاق مكتبة الأصول",
+    "libraryTitle": "مكتبة الأصول"
+  },
+  "timeline": {
+    "title": "الخط الزمني",
+    "description": "رتّب لوحة القصة للمشروع الحالي وعاينها.",
+    "emptyTitle": "الخط الزمني فارغ",
+    "emptyDescription": "أضف مشاهد في الإنتاج لبدء تحرير لوحة القصة.",
+    "backToStoryboard": "العودة إلى لوحة القصة",
+    "backToStudio": "العودة إلى استوديو المطالبات"
   }
 }

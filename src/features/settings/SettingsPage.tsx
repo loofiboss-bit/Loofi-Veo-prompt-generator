@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@core/config/routes';
 import { useViewport } from '@shared/hooks/useViewport';
@@ -57,6 +57,15 @@ function isSettingsTab(value: string | null): value is SettingsTab {
 export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) => {
   const { t, i18n } = useTranslation('settings');
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = (location.state as { returnTo?: unknown } | null)?.returnTo;
+  const returnPath =
+    typeof returnTo === 'string' &&
+    returnTo.startsWith('/') &&
+    !returnTo.startsWith('//') &&
+    returnTo.split('?')[0] !== ROUTES.SETTINGS
+      ? returnTo
+      : ROUTES.STUDIO;
   const [searchParams, setSearchParams] = useSearchParams();
   const { isCompact } = useViewport();
   const initialTab = searchParams.get('tab');
@@ -151,18 +160,18 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
       nextParams.set('tab', tab);
     }
 
-    setSearchParams(nextParams, { replace: true });
+    setSearchParams(nextParams, { replace: true, state: location.state });
   };
 
   return (
-    <div className={`${embedded ? '' : 'p-6'} min-h-full`}>
+    <div className={`creator-settings ${embedded ? '' : 'p-6'} min-h-full`}>
       {/* Header with back navigation */}
       {!embedded && (
         <div className="flex items-center gap-4 mb-8">
           <button
-            onClick={() => navigate(ROUTES.HOME)}
+            onClick={() => navigate(returnPath)}
             className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            aria-label="Back to prompt builder"
+            aria-label={t('backToWorkspace', 'Back to workspace')}
           >
             <Icon name="arrow-left" className="w-5 h-5" />
           </button>
@@ -170,9 +179,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
         </div>
       )}
 
-      <div className={`flex flex-col lg:flex-row gap-6 ${isCompact ? 'max-w-full' : 'max-w-6xl'}`}>
+      <div
+        className={`creator-settings-layout flex flex-col lg:flex-row gap-6 ${isCompact ? 'max-w-full' : 'max-w-6xl'}`}
+      >
         {/* Tab sidebar */}
-        <nav className="flex lg:flex-col gap-1 lg:w-48 overflow-x-auto lg:overflow-visible">
+        <label className="creator-settings-category-select lg:hidden text-sm text-slate-400">
+          {t('category', 'Settings category')}
+          <select
+            aria-label={t('category', 'Settings category')}
+            value={activeTab}
+            onChange={(event) => handleTabChange(event.target.value as SettingsTab)}
+            className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-slate-100"
+          >
+            {tabs.map((tab) => (
+              <option key={tab.key} value={tab.key}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <nav
+          aria-label={t('category', 'Settings category')}
+          className="creator-settings-category-nav hidden lg:flex lg:flex-col gap-1 lg:w-48"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -190,7 +219,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
         </nav>
 
         {/* Content area */}
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
+        <div className="min-w-0 flex-1 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
           {activeTab === 'general' && (
             <div className="space-y-8">
               <section className="rounded-xl border border-slate-700 bg-slate-950/50 p-4">

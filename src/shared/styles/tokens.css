@@ -875,3 +875,366 @@
 .studio-comparison {
   min-width: 0;
 }
+
+/* Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: DESIGN.md
+ * Existing typography and user accent are retained. P5 H5 E4 S5 R5 V4.
+ */
+:root {
+  --color-action-bg: var(--color-accent-700);
+  --color-on-accent: #ffffff;
+  --color-action-hover: var(--color-accent-800);
+  --color-selection-bg: color-mix(in srgb, var(--color-accent-600) 12%, var(--color-bg-primary));
+  --color-accent-text: var(--color-accent-700);
+  --color-border-focus: var(--color-accent-700);
+  --color-drawer-backdrop: rgb(15 23 42 / 35%);
+}
+[data-theme='dark'] {
+  --color-accent-text: var(--color-accent-300);
+  --color-border-focus: var(--color-accent-300);
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+}
+.creator-background,
+.creator-shell,
+.creator-page,
+.creator-settings {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+.creator-shell {
+  font-family: var(--font-family-sans);
+}
+.creator-shell ::selection {
+  color: var(--color-text-primary);
+  background: var(--color-selection-bg);
+}
+.creator-shell :is(h1, h2, h3) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-style: normal;
+  background-image: none;
+}
+.creator-shell :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 3px;
+}
+.creator-context-row {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  min-height: var(--button-height-lg);
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-primary);
+}
+.creator-sidebar {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.creator-sidebar :is(button, [class*='bg-gradient']) {
+  background-image: none;
+  box-shadow: none;
+  transition: var(--transition-colors);
+}
+.creator-sidebar button[aria-current='page'] {
+  background: var(--color-selection-bg);
+  border-color: var(--color-border-focus);
+  color: var(--color-text-primary);
+}
+.creator-sidebar button[aria-current='page'] svg {
+  color: var(--color-accent-text);
+}
+.creator-sidebar button:hover {
+  background: var(--color-bg-hover);
+}
+.creator-sidebar [class*='shadow-'] {
+  box-shadow: none;
+}
+.creator-sidebar [class*='animate-ping'] {
+  display: none;
+}
+.creator-shell :is(.text-slate-100, .text-slate-200, .text-slate-300) {
+  color: var(--color-text-primary);
+}
+.creator-shell :is(.text-slate-400, .text-slate-500, .text-slate-600) {
+  color: var(--color-text-secondary);
+}
+.creator-shell :is(.bg-slate-950, .bg-slate-950\/70, .bg-slate-900\/50) {
+  background-color: var(--color-bg-primary);
+}
+.creator-shell :is(.bg-slate-900, .bg-slate-800, .bg-slate-900\/80) {
+  background-color: var(--color-bg-secondary);
+}
+.creator-shell :is(.border-slate-700, .border-slate-800, .border-slate-800\/60) {
+  border-color: var(--color-border-primary);
+}
+.creator-shell :is(.text-blue-200, .text-blue-300, .text-blue-400, .text-cyan-400) {
+  color: var(--color-accent-text);
+}
+.creator-shell :is(.bg-blue-600, .bg-cyan-700),
+.creator-shell .studio-primary,
+.creator-shell .studio-toolbar button[aria-pressed='true'],
+.creator-shell .studio-view-tabs button[aria-pressed='true'] {
+  color: var(--color-on-accent);
+  background: var(--color-action-bg);
+  border-color: var(--color-action-bg);
+}
+.creator-shell :is(.bg-blue-600, .bg-cyan-700):hover,
+.creator-shell .studio-primary:hover {
+  background: var(--color-action-hover);
+}
+.creator-page-header {
+  padding-block: var(--spacing-4);
+  border-color: var(--color-border-primary);
+}
+.creator-page-header h1 {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+}
+.creator-page-header p {
+  max-width: 70ch;
+}
+.creator-toolbar {
+  align-items: center;
+  gap: var(--spacing-3);
+}
+.creator-page :is(input, select, textarea),
+.creator-settings :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-secondary);
+}
+.creator-workflow-nav {
+  background: var(--color-bg-primary);
+}
+.creator-page :is(button, a) {
+  transition: var(--transition-colors);
+}
+.creator-page button[aria-current='step'],
+.creator-page button[aria-current='true'],
+.creator-assets-tabs button[aria-selected='true'] {
+  color: var(--color-accent-text);
+  background: var(--color-selection-bg);
+  border-color: var(--color-border-focus);
+}
+.creator-run-summary {
+  border-color: var(--color-border-primary);
+  background: var(--color-bg-secondary);
+}
+.creator-activity-row {
+  padding: var(--spacing-3) var(--spacing-4);
+}
+.creator-assets-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border-primary);
+  padding-bottom: var(--spacing-3);
+}
+.creator-settings button,
+.creator-context-row button {
+  min-height: var(--button-height-sm);
+}
+.creator-settings nav {
+  flex-shrink: 0;
+}
+
+/* Available content width determines Studio layout, independently of sidebar width. */
+.studio-workspace {
+  padding: var(--spacing-6);
+}
+.studio-heading {
+  align-items: flex-start;
+  margin-bottom: var(--spacing-4);
+}
+.studio-heading h1 {
+  font-size: var(--font-size-2xl);
+}
+.studio-heading p {
+  max-width: 70ch;
+}
+.studio-columns {
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-5);
+}
+.studio-workspace[data-layout='split'] .studio-columns {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+}
+.studio-workspace[data-layout='split'] .studio-output {
+  border-top: 0;
+  border-inline-start: 1px solid var(--color-border-primary);
+  padding-top: 0;
+  padding-inline-start: var(--spacing-6);
+}
+.studio-workspace[data-layout='tabs'] .studio-columns {
+  grid-template-columns: minmax(0, 1fr);
+}
+.studio-workspace[data-layout='tabs'] .studio-output {
+  border: 0;
+  padding: 0;
+}
+.studio-columns > [hidden],
+.studio-library-panel[hidden],
+.creator-page [hidden],
+.creator-assets-drawer[hidden] {
+  display: none;
+}
+.studio-brief,
+.studio-output,
+.studio-output-content {
+  gap: var(--spacing-3);
+}
+.studio-workspace textarea {
+  line-height: var(--line-height-normal);
+}
+.studio-workspace button {
+  min-height: var(--button-height-sm);
+  transition: var(--transition-colors);
+}
+.studio-view-tabs,
+.studio-library-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+.studio-view-tabs {
+  margin-top: var(--spacing-3);
+}
+.studio-library-tabs {
+  padding-block: var(--spacing-3);
+}
+.studio-library-tabs button[aria-selected='true'],
+.studio-library-tabs button[aria-pressed='true'] {
+  background: var(--color-selection-bg);
+  color: var(--color-accent-text);
+  border-color: var(--color-border-focus);
+}
+.studio-library {
+  border-top: 1px solid var(--color-border-primary);
+  padding-top: var(--spacing-3);
+}
+.studio-library > summary {
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.studio-library-panel {
+  min-width: 0;
+}
+.studio-copy-menu {
+  position: relative;
+}
+.studio-copy-menu > summary {
+  cursor: pointer;
+  list-style-position: inside;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  background: var(--color-bg-secondary);
+}
+.studio-copy-menu[open] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+.studio-copy-menu[open] > summary {
+  width: 100%;
+}
+.studio-save-status {
+  flex-shrink: 0;
+  padding-top: var(--spacing-1);
+}
+.studio-diff {
+  font-family: var(--font-family-mono);
+}
+.creator-assets-drawer {
+  width: min(24rem, 100%);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-inline-start: 1px solid var(--color-border-secondary);
+  box-shadow: var(--shadow-md);
+}
+.creator-assets-drawer :is(button, input, select) {
+  color: var(--color-text-primary);
+}
+.creator-assets-drawer :is(.bg-slate-900, .bg-slate-800, .bg-slate-700) {
+  background: var(--color-bg-secondary);
+}
+.creator-assets-drawer :is(.text-slate-100, .text-slate-200, .text-slate-300) {
+  color: var(--color-text-primary);
+}
+.creator-assets-drawer :is(.text-slate-400, .text-slate-500, .text-slate-600) {
+  color: var(--color-text-secondary);
+}
+@media (max-width: 639px) {
+  .studio-workspace {
+    padding: var(--spacing-4);
+  }
+  .studio-heading {
+    gap: var(--spacing-2);
+  }
+  .studio-heading p {
+    font-size: var(--font-size-xs);
+  }
+  .studio-heading h1 {
+    font-size: var(--font-size-xl);
+  }
+  .studio-toolbar > span {
+    margin-inline-start: 0;
+    width: 100%;
+  }
+  .creator-page,
+  .creator-settings {
+    padding-inline: var(--spacing-4);
+  }
+  .creator-toolbar > input {
+    width: 100%;
+  }
+  .creator-shell :is(button, a, summary) {
+    overflow-wrap: normal;
+  }
+}
+
+.creator-settings a {
+  overflow-wrap: anywhere;
+}
+
+/* Category navigation responds to usable space, including zoomed workspaces. */
+.creator-settings {
+  container-type: inline-size;
+}
+.creator-settings .creator-settings-layout {
+  flex-direction: column;
+}
+.creator-settings .creator-settings-category-select {
+  display: block;
+}
+.creator-settings .creator-settings-category-nav {
+  display: none;
+}
+@container (min-width: 800px) {
+  .creator-settings .creator-settings-layout {
+    flex-direction: row;
+  }
+  .creator-settings .creator-settings-category-select {
+    display: none;
+  }
+  .creator-settings .creator-settings-category-nav {
+    display: flex;
+    flex-direction: column;
+    width: 12rem;
+    flex-shrink: 0;
+  }
+}

@@ -263,22 +263,24 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
   };
 
   return (
-    <div className="flex h-full flex-col bg-slate-950 select-none">
-      <div className="flex h-10 items-center justify-between border-b border-slate-700 bg-slate-900 px-4">
-        <div className="flex items-center gap-4">
+    <div className="flex h-full min-w-0 flex-col bg-slate-950 select-none">
+      <div className="flex min-h-10 min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-700 bg-slate-900 px-3 py-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="font-mono text-xs text-cyan-400">{formatTime(currentTime)}</span>
           <div className="flex rounded-lg bg-slate-800 p-0.5">
             <button
               onClick={() => setActiveTool('select')}
               className={`rounded p-1 ${activeTool === 'select' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              title="Select Tool (V)"
+              title="Select tool"
+              aria-label="Select tool"
             >
               <Icon name="move" className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setActiveTool('razor')}
               className={`rounded p-1 ${activeTool === 'razor' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-              title="Razor Tool (C)"
+              title="Razor tool"
+              aria-label="Razor tool"
             >
               <Icon name="scissors" className="h-3.5 w-3.5" />
             </button>

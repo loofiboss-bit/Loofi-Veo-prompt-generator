@@ -171,6 +171,9 @@ export interface ProductionTake {
   localMediaKey?: string;
   localMediaUrl?: string;
   mediaRiskWaived?: boolean;
+  reviewInvalidated?: boolean;
+  reviewContextIdentity?: string;
+  manualReview?: { contextIdentity: string; confirmedAt: number; notes: string };
   review?: ShotReviewResult;
   continuitySnapshot?: ContinuitySnapshot;
   continuityReport?: ContinuityReport;
