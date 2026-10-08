@@ -1,5 +1,5 @@
 import type { PromptArtifactV1, VideoPromptVariant, MusicPromptVariant } from '@core/types';
-import { optimizeMusicPromptArtifact } from './promptStudioService';
+import { optimizeMusicPromptArtifact, revalidatePromptArtifact } from './promptStudioService';
 
 export type StudioVariantEdits = Partial<Pick<VideoPromptVariant, 'prompt' | 'negativePrompt'>> &
   Partial<Pick<MusicPromptVariant, 'lyrics' | 'styleOfMusic'>>;
@@ -17,11 +17,10 @@ export function editStudioVariant(
     video.copyNegativePrompt = video.negativePrompt;
     video.copySettingsChecklist = video.settingsChecklist.join('\n');
     video.copyAll =
-      'Prompt:\n' +
       video.prompt +
-      '\n\nNegative prompt:\n' +
+      '\n\nNegative prompt: ' +
       video.negativePrompt +
-      '\n\nSettings checklist:\n' +
+      '\n\n' +
       video.copySettingsChecklist;
   } else {
     const music = variant as MusicPromptVariant;
@@ -38,12 +37,12 @@ export function editStudioVariant(
       music.productionNotes.join('\n');
   }
   variants[index] = variant;
-  return {
+  return revalidatePromptArtifact({
     ...artifact,
     primary: variants[0],
     alternatives: [variants[1], variants[2]],
     provenance: { ...artifact.provenance, source: 'editor' },
-  };
+  });
 }
 
 /** Reapply locked source blocks after a whole-pack optimization. */

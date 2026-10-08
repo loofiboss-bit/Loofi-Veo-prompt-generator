@@ -32,6 +32,8 @@ test.describe('Creator Studio visual regression', () => {
       'Canonical visual baselines are captured with Linux desktop Chromium.',
     );
     await page.setViewportSize({ width: 1440, height: 900 });
+    // Keep revision and checkpoint timestamps stable while browser timers continue running.
+    await page.clock.setFixedTime(new Date('2026-08-01T12:00:00Z'));
     await page.goto('/');
     await page.evaluate(async () => {
       window.localStorage.clear();

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="${LOOFI_COPR_VERSION:-14.0.1}"
+version="${LOOFI_COPR_VERSION:-14.1.0}"
 resultdir="${COPR_RESULTDIR:-.}"
 base_url="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v${version}"
 spec_ref="${LOOFI_COPR_SPEC_REF:-main}"

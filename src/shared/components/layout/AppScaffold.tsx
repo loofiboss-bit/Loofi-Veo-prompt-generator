@@ -74,7 +74,7 @@ export function AppScaffold({
 
       <div
         id="main-content"
-        className="relative z-10 h-full overflow-y-auto overflow-x-hidden ml-0 lg:ml-[var(--sidebar-width)] transition-all duration-300"
+        className="relative z-10 h-full overflow-y-auto overflow-x-hidden ms-0 lg:ms-[var(--sidebar-width)] transition-all duration-300"
       >
         <ErrorBoundary panelId="app-routes">
           <Outlet />

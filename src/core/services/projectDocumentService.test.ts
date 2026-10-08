@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { INITIAL_STATE } from '@core/constants';
+import { studioRevisionSnapshot } from './studioRevisionService';
 import { createPromptStudioDraft } from './promptStudioDraftService';
 import type { Project } from '@core/types';
 
@@ -59,6 +60,19 @@ describe('projectDocumentService persistence', () => {
     mocks.get.mockResolvedValue({ ...project, futureExtension: { preserved: true } });
     await projectDocumentService.save(project);
     expect(mocks.set.mock.calls[0][1]).toMatchObject({ futureExtension: { preserved: true } });
+  });
+  it('retains checkpoints when an editor saves a stale history snapshot', async () => {
+    const revision = {
+      schemaVersion: 1 as const,
+      id: 'revision-a',
+      projectId: 'a',
+      createdAt: '2026-10-08',
+      reason: 'save',
+      snapshot: studioRevisionSnapshot(createPromptStudioDraft('a')),
+    };
+    mocks.get.mockResolvedValue({ ...project, studioRevisions: [revision] });
+    await projectDocumentService.save({ ...project, studioRevisions: [] });
+    expect(mocks.set.mock.calls[0][1].studioRevisions).toEqual([revision]);
   });
   it('serializes draft patches with editor saves and keeps the newest draft revision', async () => {
     let stored = { ...project, composer: { gridSize: 20 } } as Project;

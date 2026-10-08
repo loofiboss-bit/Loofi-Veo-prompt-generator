@@ -16,14 +16,20 @@ const input: VideoPromptArtifactInput = {
 };
 
 describe('Studio execution capabilities', () => {
-  it.each(['flow-veo', 'kling', 'runway-gen3', 'sora', 'luma-ray', 'suno'] as const)(
-    'keeps %s manual and prevents an internal provider request',
-    (target) => {
-      expect(STUDIO_CAPABILITIES[target].handoff).toBe('manual');
-      if (target !== 'suno')
-        expect(() => studioVideoRequest({ ...input, target })).toThrow(/manual copy/);
-    },
-  );
+  it.each([
+    'flow-veo',
+    'kling',
+    'runway-gen3',
+    'sora',
+    'luma-ray',
+    'wan-video',
+    'minimax-hailuo',
+    'suno',
+  ] as const)('keeps %s manual and prevents an internal provider request', (target) => {
+    expect(STUDIO_CAPABILITIES[target].handoff).toBe('manual');
+    if (target !== 'suno')
+      expect(() => studioVideoRequest({ ...input, target })).toThrow(/manual copy/);
+  });
   it.each([4, 6, 8] as const)(
     'preserves supported duration %s and request settings',
     (durationSeconds) => {

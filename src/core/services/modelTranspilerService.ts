@@ -65,6 +65,24 @@ export const TARGET_MODEL_PROFILES: Record<UniversalVideoTarget, TargetModelProf
     supportedAspectRatios: ['16:9', '9:16', '1:1', '2.39:1'],
     cameraDirectiveStyle: 'anchor-trajectory',
   },
+  'wan-video': {
+    id: 'wan-video',
+    displayName: 'Wan 2.1 (T2V & I2V 14B/1.3B)',
+    vendor: 'Wan-Video Open-Weights',
+    syntaxFlavor: 'Dense CLIP/T5 Tokens & Photorealistic Texture',
+    maxRecommendedDuration: 10,
+    supportedAspectRatios: ['16:9', '9:16', '1:1', '2.39:1'],
+    cameraDirectiveStyle: 'clip-t5-dense',
+  },
+  'minimax-hailuo': {
+    id: 'minimax-hailuo',
+    displayName: 'Minimax / Hailuo Video 01',
+    vendor: 'Minimax AI',
+    syntaxFlavor: 'Cinematic Action Cadence & Dynamic Fluidity',
+    maxRecommendedDuration: 6,
+    supportedAspectRatios: ['16:9', '9:16', '1:1'],
+    cameraDirectiveStyle: 'dynamic-cinematic',
+  },
 };
 
 const cleanSentence = (value?: string): string => {
@@ -112,6 +130,21 @@ const formatCameraForTarget = (
         ? `Smooth ${input.spatialCamera.trajectory.replace(/-/g, ' ')} trajectory`
         : (userCam ?? 'steady camera progression');
       return `${trajectory}, consistent depth of field and fluid perspective shifts`;
+    }
+    case 'wan-video': {
+      const move = input.spatialCamera?.trajectory
+        ? `deliberate ${input.spatialCamera.trajectory.replace(/-/g, ' ')} cinematic move`
+        : (userCam ?? 'stable cinematic tracking');
+      const lens = input.spatialCamera?.lens
+        ? `, shot on sharp ${input.spatialCamera.lens.replace(/-/g, ' ')} prime lens`
+        : '';
+      return `${move}${lens}, rich optical volumetric depth, zero jitter`;
+    }
+    case 'minimax-hailuo': {
+      const move = input.spatialCamera?.trajectory
+        ? `dynamic ${input.spatialCamera.trajectory.replace(/-/g, ' ')} framing`
+        : (userCam ?? 'fluid tracking shot');
+      return `${move}, smooth cinematic action cadence and authentic spatial movement`;
     }
     case 'flow-veo':
     default: {
@@ -168,6 +201,26 @@ const formatNegativePromptForTarget = (
       'flickering',
       'extra limbs',
     ],
+    'wan-video': [
+      'low resolution',
+      'ugly',
+      'distorted',
+      'noisy',
+      'oversaturated',
+      'deformed face',
+      'bad hands',
+      'cartoonish',
+      'jitter',
+    ],
+    'minimax-hailuo': [
+      'blur',
+      'jerky motion',
+      'morphing artifacts',
+      'missing limbs',
+      'plastic skin',
+      'distorted background',
+      'stutter',
+    ],
   };
 
   const defaults = modelArtifactNegatives[target] ?? modelArtifactNegatives['flow-veo'];
@@ -205,6 +258,15 @@ const buildTargetSettingsChecklist = (
   } else if (target === 'luma-ray') {
     list.push(
       'Anchor the start and end trajectory clearly for smooth Dream Machine interpolation.',
+    );
+  } else if (target === 'wan-video') {
+    list.push(
+      'Use dense descriptive nouns and explicit lighting angles for Wan 2.1 CLIP/T5 text encoders.',
+    );
+    list.push('Fully compatible with local ComfyUI FP8/GGUF workflows.');
+  } else if (target === 'minimax-hailuo') {
+    list.push(
+      'Focus on organic human action, facial dynamics, and cinematic lighting contrast in Hailuo Video 01.',
     );
   } else {
     list.push('Keep one primary scene and action for highest visual fidelity in Veo.');

@@ -31,6 +31,7 @@ export function MusicVariantCard({
             <span>{t('musicStyle')}</span>
             <textarea
               readOnly={!onStyleChange}
+              data-studio-field="styleOfMusic"
               value={variant.styleOfMusic}
               onChange={(e) => onStyleChange?.(e.target.value)}
               aria-label={variant.label + ' style'}
@@ -41,6 +42,7 @@ export function MusicVariantCard({
             <span>{t('lyrics')}</span>
             <textarea
               readOnly={!onLyricsChange}
+              data-studio-field="lyrics"
               value={variant.lyrics}
               onChange={(e) => onLyricsChange?.(e.target.value)}
               aria-label={variant.label + ' lyrics'}

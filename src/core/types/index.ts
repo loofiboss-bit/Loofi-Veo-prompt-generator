@@ -13,6 +13,9 @@ export * from './registry';
 export * from './optimization';
 export * from './promptArtifact';
 export * from './promptStudioDraft';
+export * from './studioRevision';
+export * from './studioTemplate';
+import type { StudioRevisionV1 } from './studioRevision';
 import type { PromptStudioDraftV1 } from './promptStudioDraft';
 export * from './production';
 export * from './suno';
@@ -377,6 +380,7 @@ export interface ProjectMetadata {
 export interface Project {
   [key: string]: unknown;
   studioDraft?: PromptStudioDraftV1;
+  studioRevisions?: StudioRevisionV1[];
   id: string;
   name: string;
   lastModified: number;
