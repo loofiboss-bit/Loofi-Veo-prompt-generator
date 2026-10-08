@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
+import { NAVIGATION_DESTINATIONS } from '@core/config/navigation';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useStore } from 'zustand';
@@ -433,8 +434,27 @@ export function AppRuntime() {
     [navigate, location.pathname, openStudioSafely],
   );
 
+  const openSettingsPage = useCallback(
+    (search = '') => {
+      const state =
+        location.pathname === ROUTES.SETTINGS
+          ? location.state
+          : { returnTo: `${location.pathname}${location.search}` };
+      navigate(`${ROUTES.SETTINGS}${search}`, { state });
+    },
+    [location.pathname, location.search, location.state, navigate],
+  );
+
   const commandPaletteCommands = useMemo<CommandPaletteCommand[]>(
     () => [
+      ...NAVIGATION_DESTINATIONS.map((destination) => ({
+        id: `navigate-${destination.id}`,
+        label: t(`common:${destination.labelKey}`, destination.label),
+        group: t(`common:sidebar.groups.${destination.group ?? 'settings'}`, 'Navigation'),
+        keywords: [destination.id, destination.label],
+        action: () =>
+          destination.id === 'settings' ? openSettingsPage() : navigate(destination.path),
+      })),
       {
         id: 'open-search',
         label: t('commandPalette.commands.search', 'Open Search'),
@@ -442,7 +462,6 @@ export function AppRuntime() {
           'commandPalette.commands.searchDescription',
           'Find prompts, templates, and history',
         ),
-        shortcut: 'Ctrl+F',
         group: t('commandPalette.groups.navigation', 'Navigation'),
         keywords: ['find', 'lookup', 'discover'],
         action: () => openModal('isSearchOpen'),
@@ -470,17 +489,6 @@ export function AppRuntime() {
         action: () => openModal('isTemplatesOpen'),
       },
       {
-        id: 'open-project-manager',
-        label: t('commandPalette.commands.projects', 'Open Project Manager'),
-        description: t(
-          'commandPalette.commands.projectsDescription',
-          'Switch, load, and manage projects',
-        ),
-        group: t('commandPalette.groups.workspace', 'Workspace'),
-        keywords: ['workspace', 'switch', 'manage'],
-        action: () => openModal('isProjectManagerOpen'),
-      },
-      {
         id: 'open-plugins',
         label: t('commandPalette.commands.plugins', 'Open Plugins'),
         description: t(
@@ -489,19 +497,7 @@ export function AppRuntime() {
         ),
         group: t('commandPalette.groups.workspace', 'Workspace'),
         keywords: ['extensions', 'addons', 'marketplace'],
-        action: () => navigate(`${ROUTES.SETTINGS}?tab=plugins`),
-      },
-      {
-        id: 'open-settings',
-        label: t('commandPalette.commands.settings', 'Open Settings'),
-        description: t(
-          'commandPalette.commands.settingsDescription',
-          'Configure app preferences and integrations',
-        ),
-        shortcut: 'Ctrl+,',
-        group: t('commandPalette.groups.navigation', 'Navigation'),
-        keywords: ['preferences', 'config', 'options'],
-        action: () => navigate(ROUTES.SETTINGS),
+        action: () => openSettingsPage('?tab=plugins'),
       },
       {
         id: 'open-help',
@@ -510,7 +506,7 @@ export function AppRuntime() {
           'commandPalette.commands.helpDescription',
           'Show keyboard shortcuts and guidance',
         ),
-        shortcut: '?',
+        shortcut: 'F1',
         group: t('commandPalette.groups.navigation', 'Navigation'),
         keywords: ['guide', 'shortcuts', 'support'],
         action: () => openHelpPanel(),
@@ -538,25 +534,6 @@ export function AppRuntime() {
         action: () => navigate(ROUTES.OPTIMIZE),
       },
       {
-        id: 'open-director',
-        label: t('commandPalette.commands.director', 'Open Create workspace'),
-        description: t(
-          'commandPalette.commands.directorDescription',
-          'Plan, approve, generate, review, and export a production run',
-        ),
-        group: t('commandPalette.groups.creation', 'Creation'),
-        keywords: ['production', 'veo', 'review', 'approval'],
-        action: () => navigate(ROUTES.CREATE),
-      },
-      {
-        id: 'open-prompt-studio',
-        label: 'Open Prompt Studio',
-        description: 'Create copy-ready Flow/Veo prompts or Suno lyrics packs',
-        group: t('commandPalette.groups.creation', 'Creation'),
-        keywords: ['prompt', 'lyrics', 'suno', 'flow', 'veo', 'copy'],
-        action: () => navigate(ROUTES.STUDIO),
-      },
-      {
         id: 'open-collaboration',
         label: t('commandPalette.commands.collaborate', 'Open Collaboration'),
         description: t(
@@ -568,7 +545,7 @@ export function AppRuntime() {
         action: () => setIsShareDialogOpen(true),
       },
     ],
-    [openModal, navigate, openHelpPanel, setIsShareDialogOpen, t],
+    [openModal, navigate, openSettingsPage, openHelpPanel, setIsShareDialogOpen, t],
   );
 
   const handleSetIsEditing = useCallback(
@@ -711,6 +688,7 @@ export function AppRuntime() {
   return (
     <PromptLogicProvider value={promptLogic}>
       <AppScaffold
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         skipToContentLabel={t('common:skipToContent', 'Skip to main content')}
         pathname={location.pathname}
         isChildRoute={isChildRoute}
@@ -722,8 +700,8 @@ export function AppRuntime() {
           onOpenActivity: () => navigate(ROUTES.ACTIVITY),
           onOpenHistory: () => openModal('isHistoryOpen'),
           onOpenTemplates: () => openModal('isTemplatesOpen'),
-          onOpenSettings: () => navigate(ROUTES.SETTINGS),
-          onOpenPlugins: () => navigate(`${ROUTES.SETTINGS}?tab=plugins`),
+          onOpenSettings: () => openSettingsPage(),
+          onOpenPlugins: () => openSettingsPage('?tab=plugins'),
           onOpenDiagnostics: () => diagnosticsStore.openPanel(),
           onOpenBatchGenerator: () => setIsBatchModalOpen(true),
           onOpenJobsPanel: () => setIsJobsPanelOpen(true),

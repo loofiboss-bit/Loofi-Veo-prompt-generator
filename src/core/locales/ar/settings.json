@@ -7,5 +7,10 @@
   "darkMode": "الوضع الداكن",
   "lightMode": "الوضع الفاتح",
   "accessibility": "إمكانية الوصول",
-  "about": "حول"
+  "about": "حول",
+  "backToWorkspace": "العودة إلى مساحة العمل",
+  "category": "فئة الإعدادات",
+  "presets": {
+    "default": "الافتراضي (أزرق)"
+  }
 }

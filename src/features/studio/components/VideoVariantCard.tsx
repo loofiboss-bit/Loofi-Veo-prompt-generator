@@ -59,13 +59,18 @@ export function VideoVariantCard({
             >
               {t('copyPrompt')}
             </button>
-            <button onClick={() => onCopy(variant.copyAll, t('copied'))}>{t('copyHandoff')}</button>
-            <button onClick={() => onCopy(variant.copyNegativePrompt, t('copied'))}>
-              {t('copyNegative')}
-            </button>
-            <button onClick={() => onCopy(variant.copySettingsChecklist, t('copied'))}>
-              {t('copyChecklist')}
-            </button>
+            <details className="studio-copy-menu">
+              <summary>{t('copyOptions')}</summary>
+              <button onClick={() => onCopy(variant.copyAll, t('copied'))}>
+                {t('copyHandoff')}
+              </button>
+              <button onClick={() => onCopy(variant.copyNegativePrompt, t('copied'))}>
+                {t('copyNegative')}
+              </button>
+              <button onClick={() => onCopy(variant.copySettingsChecklist, t('copied'))}>
+                {t('copyChecklist')}
+              </button>
+            </details>
             {onHandoff ? <button onClick={onHandoff}>{t('generateInApp')}</button> : null}
           </div>
         </div>

@@ -17,11 +17,13 @@
   "pluginRegistryUrl": "プラグインレジストリURL",
   "save": "保存",
   "presets": {
-    "default": "デフォルト（シアン）",
+    "default": "標準（ブルー）",
     "midnight": "ミッドナイト",
     "ocean": "オーシャン",
     "forest": "フォレスト",
     "sunset": "サンセット",
     "amethyst": "アメジスト"
-  }
+  },
+  "backToWorkspace": "ワークスペースに戻る",
+  "category": "設定カテゴリ"
 }

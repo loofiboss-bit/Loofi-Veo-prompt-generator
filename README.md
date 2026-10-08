@@ -80,6 +80,17 @@ schemas are preserved. Legacy routes `/director`, `/composer`, and `/optimize` r
 
 ## Prompt Studio
 
+The workbench keeps the idea, basic settings and **Build copy-ready pack** together. Expand
+**Templates and history** for Templates, Previous packs and Revisions; scene and music details
+remain optional. Wide workspaces show editor and output side by side. Narrow workspaces use
+**Editor / Result**, switching to Result when a pack is built. **Copy prompt** is the main action;
+**Copy options** contains the other output formats.
+
+The sidebar groups creation, libraries and follow-up. **Quick navigation** (Ctrl/Cmd+K) reaches
+the same seven workspaces. Settings returns to the workspace you came from. Assets starts with
+the media library; continuity profiles have their own tab. Reference and timeline controls open
+the contextual asset drawer. See [the workbench design contract](DESIGN.md).
+
 Describe your idea, choose the target, mode, duration and references, then select **Build copy-ready
 pack**. Compilation runs locally. Each pack has three editable variants with synchronized copy
 fields. Project history, version comparison and a complete local template library are available in Studio. Scene details and handoff notes

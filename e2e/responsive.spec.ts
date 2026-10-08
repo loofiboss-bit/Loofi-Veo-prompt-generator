@@ -101,6 +101,8 @@ test.describe('Responsive Layout', () => {
       await page.evaluate((zoom) => {
         document.documentElement.style.zoom = String(zoom);
       }, scale);
+      if (await page.getByRole('button', { name: 'Editor', exact: true }).isVisible())
+        await page.getByRole('button', { name: 'Editor', exact: true }).click();
       await page.getByLabel(/^Core idea/).fill('A small local scene');
       const build = page.getByRole('button', { name: 'Build copy-ready pack', exact: true });
       await build.scrollIntoViewIfNeeded();

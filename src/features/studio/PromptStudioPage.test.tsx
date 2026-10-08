@@ -85,6 +85,7 @@ describe('PromptStudioPage durable copy desk', () => {
   afterEach(async () => {
     await usePromptStudioDraftStore.getState().flush();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
   const installClipboard = () =>
     Object.defineProperty(navigator, 'clipboard', {
@@ -116,6 +117,117 @@ describe('PromptStudioPage durable copy desk', () => {
       name: 'Primary prompt',
     })) as HTMLTextAreaElement;
     expect(prompt.value).toContain('bicycle');
+  });
+
+  it('uses available workspace width and preserves content across editor/result navigation', async () => {
+    let resize!: ResizeObserverCallback;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const { user, container } = await openStudio();
+    const measure = (width: number) =>
+      act(() => resize([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver));
+    measure(959);
+    expect(container.querySelector('.studio-workspace')).toHaveAttribute('data-layout', 'tabs');
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('textbox', { name: 'Primary prompt' })).toBeNull();
+    await buildPack(user, 'Retained narrow workspace idea');
+    expect(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('textbox', { name: 'Core idea' })).toBeNull();
+    await waitFor(() => expect(container.querySelector('.studio-output')).toHaveFocus());
+    await user.click(screen.getByRole('button', { name: 'Cinematic' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cinematic prompt' }), {
+      target: { value: 'Retained edited variant' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Editor' }));
+    expect(screen.getByRole('textbox', { name: 'Core idea' })).toHaveValue(
+      'Retained narrow workspace idea',
+    );
+    await user.click(screen.getByRole('button', { name: 'Result' }));
+    expect(screen.getByRole('textbox', { name: 'Cinematic prompt' })).toHaveValue(
+      'Retained edited variant',
+    );
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.optimize.mockResolvedValue(editStudioVariant(source, 1, { prompt: 'Reviewed proposal' }));
+    await user.click(screen.getByRole('button', { name: 'Editor' }));
+    await user.click(screen.getByRole('button', { name: 'Enhance with AI' }));
+    await screen.findByRole('button', { name: 'Accept changes' });
+    expect(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(container.querySelector('.studio-output')).toHaveFocus());
+    await user.click(screen.getByRole('button', { name: 'Reject changes' }));
+    act(() => usePromptStudioDraftStore.setState({ status: 'loading' }));
+    expect(container.querySelector('.studio-workspace')).toHaveAttribute('aria-busy', 'true');
+    act(() => usePromptStudioDraftStore.setState({ status: 'saved' }));
+    measure(960);
+    expect(container.querySelector('.studio-workspace')).toHaveAttribute('data-layout', 'split');
+    expect(screen.getByRole('textbox', { name: 'Core idea' })).toHaveValue(
+      'Retained narrow workspace idea',
+    );
+    expect(screen.queryByRole('button', { name: 'Editor' })).toBeNull();
+  });
+
+  it('keeps the focused editor or result visible when a split workspace becomes tabbed', async () => {
+    let resize!: ResizeObserverCallback;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const { user, container } = await openStudio();
+    const measure = (width: number) =>
+      act(() => resize([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver));
+    measure(1536);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'Preserved idea on resize' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    const prompt = await screen.findByRole('textbox', { name: 'Primary prompt' });
+    await waitFor(() => expect(usePromptStudioDraftStore.getState().status).toBe('saved'));
+    const artifact = usePromptStudioDraftStore.getState().draft!.artifact;
+    const idea = screen.getByRole('textbox', { name: 'Core idea' });
+    idea.focus();
+    measure(865);
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-pressed', 'true');
+    expect(idea).toHaveFocus();
+    expect(idea).toBeVisible();
+    expect(idea).toHaveValue('Preserved idea on resize');
+    expect(container.querySelector('.studio-output')).toHaveAttribute('hidden');
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(artifact);
+    measure(1536);
+    prompt.focus();
+    measure(865);
+    expect(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-pressed', 'true');
+    expect(prompt).toHaveFocus();
+    expect(prompt).toBeVisible();
+    expect(container.querySelector('.studio-columns > .studio-brief')).toHaveAttribute('hidden');
+  });
+
+  it('keeps primary build before advanced details and groups library controls into three views', async () => {
+    const { user, container } = await openStudio();
+    const build = screen.getByRole('button', { name: 'Build copy-ready pack' });
+    const advanced = screen.getByText('Scene details', { exact: true });
+    expect(build.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await user.click(screen.getByText('Templates and history', { exact: true }));
+    expect(screen.getByRole('button', { name: 'Templates' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Previous packs' }));
+    expect(container.querySelector('.studio-library-panel:not([hidden]) select')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Revisions' }));
+    expect(container.querySelectorAll('.studio-library-panel:not([hidden])')).toHaveLength(1);
   });
 
   it('focuses the idea and displays one selected editable variant with synchronized copy fields', async () => {
@@ -367,17 +479,32 @@ describe('PromptStudioPage durable copy desk', () => {
   });
 
   it('opens the rights declarations without changing settings automatically', async () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private callback: ResizeObserverCallback) {}
+        observe() {
+          this.callback(
+            [{ contentRect: { width: 600 } } as ResizeObserverEntry],
+            {} as ResizeObserver,
+          );
+        }
+        disconnect() {}
+      },
+    );
     const { user } = await openStudio();
     await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
     await user.type(await screen.findByRole('textbox', { name: 'Song idea / story' }), 'Home');
     await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
     await screen.findByRole('textbox', { name: 'Primary lyrics' });
     const original = usePromptStudioDraftStore.getState().draft!.music.rightsChecklist;
+    await user.click(screen.getByText('Readiness checks', { exact: true }));
     const issue = screen.getByText('Rights-safe handoff').closest('div')!.parentElement!;
     await user.click(within(issue).getByRole('button', { name: 'Open control' }));
     await waitFor(() =>
       expect(screen.getByRole('checkbox', { name: 'Original or licensed lyrics' })).toHaveFocus(),
     );
+    expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-pressed', 'true');
     expect(usePromptStudioDraftStore.getState().draft!.music.rightsChecklist).toEqual(original);
   });
 

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@shared/components/ui';
 import { ConfirmDialog } from '@shared/components/ui/ConfirmDialog';
 import { useToastManager } from '@shared/hooks/useToastManager';
@@ -11,12 +12,37 @@ import { extractLastFrame } from '@core/utils/videoUtils';
 import { prepareOutpaint } from '@core/services/imageEditService';
 import { logger } from '@core/services/loggerService';
 
-const AssetLibrary: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface AssetLibraryProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const AssetLibrary: React.FC<AssetLibraryProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation('common');
+  const closeRef = useRef<HTMLButtonElement>(null);
   const { assets, addAsset, updateAsset, removeAsset, sbShots, setSbShots } = useAppStore();
   const { addToast } = useToastManager();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingDeleteAsset, setPendingDeleteAsset] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus();
+    return () => {
+      if (trigger?.isConnected) trigger.focus();
+    };
+  }, [isOpen]);
+  useEffect(() => {
+    if (!isOpen) {
+      setPendingDeleteAsset(null);
+      return;
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.defaultPrevented && !pendingDeleteAsset) onClose();
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isOpen, onClose, pendingDeleteAsset]);
 
   // Tab & Bin State
   const [activeSection, setActiveSection] = useState<'uploads' | 'stock'>('uploads');
@@ -271,29 +297,23 @@ const AssetLibrary: React.FC = () => {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`fixed top-1/2 right-0 transform -translate-y-1/2 z-[45] flex items-center justify-center w-10 h-14 bg-slate-900 border-l border-t border-b border-slate-700 rounded-l-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-all shadow-lg ${isOpen ? 'translate-x-0' : ''}`}
-        title="Asset Library"
-      >
-        <Icon
-          name={isOpen ? 'chevron-down' : 'folder'}
-          className={`w-5 h-5 ${isOpen ? '-rotate-90' : ''}`}
-        />
-      </button>
-
       <div
-        className={`fixed top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-l border-slate-700 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        hidden={!isOpen}
+        role="region"
+        aria-label={t('assets.libraryTitle', 'Asset library')}
+        className="creator-assets-drawer fixed top-0 end-0 h-full z-50 flex flex-col"
       >
         {/* Header */}
         <div className="p-4 border-b border-slate-700 bg-slate-900">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <Icon name="folder" className="w-4 h-4 text-cyan-400" />
-              Asset Library
+              {t('assets.libraryTitle', 'Asset library')}
             </h3>
             <button
-              onClick={() => setIsOpen(false)}
+              ref={closeRef}
+              onClick={onClose}
+              aria-label={t('assets.closeLibrary', 'Close asset library')}
               className="text-slate-500 hover:text-white transition-colors"
             >
               <Icon name="cancel" className="w-5 h-5" />

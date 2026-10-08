@@ -107,26 +107,23 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
     return WORKSPACE_COLORS[color || DEFAULT_COLOR] || WORKSPACE_COLORS[DEFAULT_COLOR];
   };
 
-  // Collapsed mode: just show color dot
-  if (isCollapsed) {
-    return (
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-center p-2"
-        title={currentWorkspace?.name ?? 'Workspaces'}
-        aria-label={`Current workspace: ${currentWorkspace?.name ?? 'None'}`}
-      >
-        <div
-          className={`w-3 h-3 rounded-full ${getColorClass(currentWorkspace?.metadata.color)}`}
-        />
-      </button>
-    );
-  }
-
   return (
     <div ref={dropdownRef} className="relative">
       {/* Trigger */}
-      {isOpen ? (
+      {isCollapsed ? (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex justify-center p-3"
+          title={currentWorkspace?.name ?? 'Workspaces'}
+          aria-label={`Switch workspace. Current: ${currentWorkspace?.name ?? 'None'}`}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+        >
+          <div
+            className={`w-3 h-3 rounded-full ${getColorClass(currentWorkspace?.metadata.color)}`}
+          />
+        </button>
+      ) : isOpen ? (
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-slate-800/50 transition-colors group"
@@ -178,7 +175,9 @@ export function WorkspaceSwitcher({ isCollapsed = false, onOpenManager }: Worksp
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 mx-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden ring-1 ring-white/10">
+        <div
+          className={`absolute ${isCollapsed ? 'start-full top-0 w-60' : 'start-0 end-0 top-full'} mt-1.5 mx-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden ring-1 ring-white/10`}
+        >
           {/* Workspace list */}
           <div className="max-h-48 overflow-y-auto py-1" role="listbox" aria-label="Workspaces">
             {workspaces.map((workspace) =>

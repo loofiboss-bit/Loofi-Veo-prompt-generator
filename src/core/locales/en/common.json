@@ -88,7 +88,21 @@
     "collapseSidebar": "Collapse sidebar",
     "collaborate": "Collaborate",
     "comments": "Comments",
-    "roles": "Roles"
+    "roles": "Roles",
+    "groups": {
+      "create": "Create",
+      "library": "Library",
+      "followup": "Follow-up",
+      "settings": "Navigation"
+    },
+    "navigation": "Main navigation",
+    "quickNavigation": "Quick navigation",
+    "noProject": "No project selected",
+    "workspaceContent": "Workspace content",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation",
+    "focusMode": "Focus Mode",
+    "exitFocus": "Exit Focus Mode"
   },
   "activity": {
     "queueEyebrow": "Durable work",
@@ -140,6 +154,21 @@
     "name": "Project name",
     "create": "Create project",
     "import": "Import project",
-    "export": "Export project"
+    "export": "Export project",
+    "actions": "Project actions"
+  },
+  "assets": {
+    "continuityProfiles": "Continuity profiles",
+    "browseLibrary": "Browse project assets",
+    "closeLibrary": "Close asset library",
+    "libraryTitle": "Asset library"
+  },
+  "timeline": {
+    "title": "Timeline",
+    "description": "Arrange and preview the current project storyboard.",
+    "emptyTitle": "Your timeline is empty",
+    "emptyDescription": "Add scenes in Production to start editing your storyboard.",
+    "backToStoryboard": "Back to storyboard",
+    "backToStudio": "Back to Prompt Studio"
   }
 }

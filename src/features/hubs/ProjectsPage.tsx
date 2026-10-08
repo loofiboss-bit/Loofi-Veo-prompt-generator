@@ -89,13 +89,13 @@ export function ProjectsPage() {
   };
 
   return (
-    <main id="main-content" className="min-h-full bg-slate-950 px-6 py-8 text-slate-100">
+    <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <header className="border-b border-slate-800 pb-5">
+        <header className="creator-page-header border-b border-slate-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-300">
             {t('projects.libraryEyebrow', 'Project library')}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold">{t('sidebar.projects', 'Projects')}</h1>
+          <h1 className="mt-1 text-2xl font-semibold">{t('sidebar.projects', 'Projects')}</h1>
           <p className="mt-2 text-sm text-slate-400">
             {t(
               'projects.consolidatedDescription',
@@ -103,12 +103,16 @@ export function ProjectsPage() {
             )}
           </p>
         </header>
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div
+          role="group"
+          aria-label={t('projects.actions', 'Project actions')}
+          className="creator-toolbar mt-4 flex flex-wrap items-center gap-2"
+        >
           <input
             aria-label={t('projects.name', 'Project name')}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="rounded border border-slate-700 bg-slate-900 px-3 py-2"
+            className="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 sm:max-w-sm"
           />
           <button
             disabled={busy || !name.trim()}
@@ -148,13 +152,13 @@ export function ProjectsPage() {
             </p>
           ) : (
             projects.map((project) => (
-              <div key={project.id} className="flex gap-3">
+              <div key={project.id} className="flex flex-wrap gap-2">
                 <button
                   disabled={busy}
                   type="button"
                   aria-current={project.id === currentProjectId ? 'true' : undefined}
                   onClick={() => void run(() => openProject(project.id))}
-                  className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-left hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  className={`min-w-0 flex-1 rounded-lg border bg-slate-900 p-4 text-left hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${project.id === currentProjectId ? 'border-blue-400' : 'border-slate-800'}`}
                 >
                   <span className="font-semibold">{project.name}</span>
                   <span className="mt-1 block text-xs text-slate-400">
@@ -186,6 +190,6 @@ export function ProjectsPage() {
           )}
         </section>
       </div>
-    </main>
+    </section>
   );
 }

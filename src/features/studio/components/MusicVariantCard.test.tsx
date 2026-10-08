@@ -15,8 +15,8 @@ const MOCK_MUSIC_VARIANT: MusicPromptVariant = {
 };
 
 describe('MusicVariantCard', () => {
-  it('renders music title, style, lyrics, and copy buttons', () => {
-    render(
+  it('renders music title, style, lyrics, and copy buttons', async () => {
+    const { user } = render(
       <MusicVariantCard
         variant={MOCK_MUSIC_VARIANT}
         primary
@@ -28,6 +28,9 @@ describe('MusicVariantCard', () => {
     expect(screen.getByText('Neon Odyssey')).toBeInTheDocument();
     expect(screen.getByDisplayValue(/synthwave, energetic/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/Driving in the night/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Copy prompt/i })).toBeInTheDocument();
+    expect(screen.getByText('Copy options').closest('details')).not.toHaveAttribute('open');
+    await user.click(screen.getByText('Copy options'));
     expect(screen.getByRole('button', { name: /Copy style/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy lyrics/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy all/i })).toBeInTheDocument();
@@ -39,6 +42,9 @@ describe('MusicVariantCard', () => {
       <MusicVariantCard variant={MOCK_MUSIC_VARIANT} primary onCopy={onCopy} />,
     );
 
+    await user.click(screen.getByRole('button', { name: /Copy prompt/i }));
+    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyStyle, 'Copied.');
+    await user.click(screen.getByText('Copy options'));
     await user.click(screen.getByRole('button', { name: /Copy style/i }));
     expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyStyle, 'Copied.');
 

@@ -347,5 +347,14 @@
     "rollAngleDegrees": "Angle de roulis",
     "spatialGrid": "Placement spatial",
     "customDirectives": "Notes de caméra"
+  },
+  "editView": "Éditer",
+  "resultView": "Résultat",
+  "workspaceView": "Vue de l’espace de travail",
+  "copyOptions": "Options de copie",
+  "libraryTabs": {
+    "templates": "Modèles",
+    "history": "Packs précédents",
+    "revisions": "Révisions"
   }
 }

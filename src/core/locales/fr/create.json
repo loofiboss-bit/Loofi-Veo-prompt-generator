@@ -1,7 +1,7 @@
 {
   "brand": "Loofi Creator Studio",
-  "title": "Créer",
-  "description": "Brief, scènes, ressources, génération, révision et export partagent un même contexte de projet enregistré automatiquement.",
+  "title": "Espace de production",
+  "description": "Planifiez les scènes, ajoutez des références, approuvez la génération, vérifiez et exportez.",
   "workflowLabel": "Flux de création",
   "help": "Aide du flux",
   "autosaved": "Enregistré automatiquement · point sûr {{time}}",
@@ -207,5 +207,11 @@
     "continuityReviewApproved": "Révision de continuité Gemini facultative approuvée pour cet instantané.",
     "longShot": "Cette prise de {{duration}} s dépasse un segment Veo. Divisez-la ou générez huit secondes puis utilisez l’extension depuis une prise Veo non expirée.",
     "otioReady": "Archive OTIO prête."
+  },
+  "saveStatus": {
+    "failed": "Impossible de charger ou sauvegarder le plan de production.",
+    "loading": "Chargement des plans de production…",
+    "savedPlan": "Plan de production enregistré · {{time}}",
+    "noPlan": "Aucun plan de production enregistré"
   }
 }

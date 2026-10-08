@@ -10,7 +10,9 @@ export function StudioRevisionHistory({
   disabled,
   onSave,
   onRestore,
+  embedded = false,
 }: {
+  embedded?: boolean;
   draft: PromptStudioDraftV1;
   refreshKey: number;
   disabled: boolean;
@@ -53,9 +55,10 @@ export function StudioRevisionHistory({
       setError(cause instanceof Error ? cause.message : t('actionError'));
     }
   };
+  const Container = embedded ? 'div' : 'details';
   return (
-    <details className="studio-details">
-      <summary>{t('revision.title')}</summary>
+    <Container className="studio-details">
+      {!embedded ? <summary>{t('revision.title')}</summary> : null}
       <p className="studio-hint">{t('revision.description')}</p>
       {error ? (
         <div role="alert" className="studio-notice">
@@ -92,6 +95,6 @@ export function StudioRevisionHistory({
           </button>
         </>
       ) : null}
-    </details>
+    </Container>
   );
 }

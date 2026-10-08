@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Reorganize Creator Studio as a calm workbench with grouped navigation, shared sidebar widths,
+  a visible Quick navigation entry and consistent themes and saved accents.
+- Keep Studio's idea, basic settings and build actions together; move templates, previous packs
+  and revisions to a secondary library. Use Editor/Result views below 960 px of available content.
+- Make Copy prompt the primary result action, with secondary formats in Copy options; expose
+  blocking checks and reveal the affected control for validation recovery.
+- Compact Production's six-step workflow and report its persisted plan state accurately. Start
+  Assets with the media library, separate continuity profiles, and embed Timeline within navigation.
+- Open the asset drawer from reference and editing controls instead of a global floating trigger.
+
+### Fixed
+
+- Prevent collapsed navigation from covering controls or leaving unused sidebar space.
+- Restore workspace selection in collapsed navigation and return from Settings to the originating
+  workspace. Give canonical routes one main landmark and reliable heading and drawer focus.
+
 ### Documentation
 
 - Match repository banner, logo and badges to the application dark theme: navy/slate surfaces

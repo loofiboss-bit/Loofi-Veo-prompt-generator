@@ -83,17 +83,17 @@ export function ActivityPage() {
   };
 
   return (
-    <main id="main-content" className="min-h-full bg-slate-950 px-6 py-8 text-slate-100">
+    <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <header className="border-b border-slate-800 pb-5">
+        <header className="creator-page-header border-b border-slate-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-300">
             {t('activity.queueEyebrow')}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold">{t('sidebar.activity')}</h1>
+          <h1 className="mt-1 text-lg font-semibold">{t('sidebar.activity')}</h1>
           <p className="mt-2 text-sm text-slate-400">{t('activity.consolidatedDescription')}</p>
         </header>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
           {[
             [t('activity.localRunning'), activeCount],
             [t('activity.localQueued'), pendingCount],
@@ -102,19 +102,19 @@ export function ActivityPage() {
           ].map(([label, value]) => (
             <div
               key={String(label)}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+              className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
             >
               <p className="text-sm text-slate-400">{label}</p>
-              <p className="mt-1 text-2xl font-semibold text-blue-300">{value}</p>
+              <p className="mt-1 text-lg font-semibold text-blue-300">{value}</p>
             </div>
           ))}
         </div>
 
-        <section aria-labelledby="local-queue-heading" className="mt-8">
+        <section aria-labelledby="local-queue-heading" className="mt-6">
           <h2 id="local-queue-heading" className="text-lg font-semibold">
             {t('activity.localQueue')}
           </h2>
-          <div className="mt-3 space-y-3" aria-live="polite" aria-relevant="additions text">
+          <div className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions text">
             {queueItems.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-700 p-6 text-slate-400">
                 {t('activity.noLocalQueue')}
@@ -123,7 +123,7 @@ export function ActivityPage() {
               queueItems.map((item) => (
                 <article
                   key={item.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+                  className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -161,7 +161,7 @@ export function ActivityPage() {
           </div>
         </section>
 
-        <section aria-labelledby="durable-jobs-heading" className="mt-8">
+        <section aria-labelledby="durable-jobs-heading" className="mt-6">
           <h2 id="durable-jobs-heading" className="text-lg font-semibold">
             {t('activity.durableJobs')}
           </h2>
@@ -170,7 +170,7 @@ export function ActivityPage() {
               {t('activity.loadFailed')}
             </p>
           )}
-          <div className="mt-3 space-y-3" aria-live="polite" aria-relevant="additions text">
+          <div className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions text">
             {durableJobs.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-700 p-6 text-slate-400">
                 {t('activity.noDurableJobs')}
@@ -184,7 +184,7 @@ export function ActivityPage() {
                 return (
                   <article
                     key={job.id}
-                    className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+                    className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0">
@@ -227,6 +227,6 @@ export function ActivityPage() {
           </div>
         </section>
       </div>
-    </main>
+    </section>
   );
 }

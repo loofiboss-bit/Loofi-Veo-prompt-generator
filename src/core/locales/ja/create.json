@@ -1,7 +1,7 @@
 {
   "brand": "Loofi Creator Studio",
-  "title": "作成",
-  "description": "概要、シーン、素材、生成、レビュー、書き出しを、自動保存される1つのプロジェクトで管理します。",
+  "title": "制作",
+  "description": "シーンを計画し、参照を追加して、生成を承認し、確認して書き出します。",
   "workflowLabel": "作成ワークフロー",
   "help": "ワークフローのヘルプ",
   "autosaved": "自動保存済み · 安全なチェックポイント {{time}}",
@@ -207,5 +207,11 @@
     "continuityReviewApproved": "このスナップショットの任意のGemini継続性レビューを承認しました。",
     "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。",
     "otioReady": "OTIOバンドルの準備完了。"
+  },
+  "saveStatus": {
+    "failed": "制作プランを読み込みまたは保存できませんでした。",
+    "loading": "制作プランを読み込み中…",
+    "savedPlan": "保存済みの制作プラン · {{time}}",
+    "noPlan": "保存済みの制作プランはありません"
   }
 }

@@ -347,5 +347,14 @@
     "rollAngleDegrees": "Ángulo de inclinación",
     "spatialGrid": "Posición espacial",
     "customDirectives": "Notas de cámara"
+  },
+  "editView": "Editar",
+  "resultView": "Resultado",
+  "workspaceView": "Vista del espacio de trabajo",
+  "copyOptions": "Opciones de copia",
+  "libraryTabs": {
+    "templates": "Plantillas",
+    "history": "Paquetes anteriores",
+    "revisions": "Revisiones"
   }
 }

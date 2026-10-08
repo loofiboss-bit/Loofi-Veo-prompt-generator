@@ -32,10 +32,11 @@ for (const [language, label, strings, common] of [
     await expect(page.locator('[data-studio-variant] textarea').first()).toHaveValue(/quiet lake/);
     await expect(page.getByRole('button', { name: strings.build, exact: true })).toBeEnabled();
 
-    await page.getByText(strings.revision.title, { exact: true }).click();
+    await page.locator('.studio-library > summary').click();
+    await page.getByRole('button', { name: strings.libraryTabs.revisions, exact: true }).click();
     await page.getByRole('button', { name: strings.revision.save, exact: true }).click();
     await expect(page.getByText(strings.revision.saved, { exact: true })).toBeVisible();
-    await page.getByText(strings.templateLibrary.title, { exact: true }).first().click();
+    await page.getByRole('button', { name: strings.libraryTabs.templates, exact: true }).click();
     await expect(page.getByLabel(strings.templateLibrary.name, { exact: true })).toBeVisible();
 
     const trigger = page.getByRole('button', { name: strings.arenaOpen, exact: true });

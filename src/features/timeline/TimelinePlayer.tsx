@@ -1,6 +1,8 @@
 import React, { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Shot, VideoFilters, ChromaKeyConfig, DirectExportFailureReason } from '@core/types';
 import Icon from '@shared/components/ui/Icon';
+import { useTranslation } from 'react-i18next';
+import { openAssetLibrary } from '@shared/utils/assetLibraryEvents';
 
 /** Window augmentation for vendor-prefixed APIs */
 declare global {
@@ -46,6 +48,7 @@ const AudioPipelinePanel = React.lazy(() => import('./components/AudioPipelinePa
 interface TimelinePlayerProps {
   shots: Shot[];
   onClose: () => void;
+  embedded?: boolean;
   bgMusicUrl?: string | null;
   ambienceUrl?: string | null;
 }
@@ -64,9 +67,11 @@ const DEFAULT_CHROMA_CONFIG: ChromaKeyConfig = {
 const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   shots,
   onClose,
+  embedded = false,
   bgMusicUrl,
   ambienceUrl,
 }) => {
+  const { t } = useTranslation('common');
   // Filter shots to only include those with videos
   const playlist = React.useMemo(() => shots.filter((s) => s.generatedVideoUrl), [shots]);
 
@@ -718,20 +723,38 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   if (playlist.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex flex-col animate-fade-in-up">
+    <div
+      className={
+        embedded
+          ? 'relative flex min-h-[640px] h-[calc(100dvh-9rem)] flex-col bg-black'
+          : 'fixed inset-0 bg-black z-[100] flex flex-col'
+      }
+    >
       {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop crossOrigin="anonymous" />}
       {ambienceUrl && <audio ref={ambienceRef} src={ambienceUrl} loop />}
 
       {/* Header Overlay */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-none h-20">
+      <div
+        style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+        className="absolute top-0 left-0 right-0 p-3 flex flex-wrap justify-between items-center gap-2 z-20 pointer-events-none min-h-20"
+      >
         <div className="pointer-events-auto">
-          <h2 className="text-white font-bold text-lg drop-shadow-md">NLE Timeline</h2>
-          <p className="text-slate-300 text-xs drop-shadow-md">
+          <h2 className="text-slate-100 font-semibold text-lg">NLE Timeline</h2>
+          <p className="text-slate-300 text-xs">
             Clip {currentIndex + 1} of {playlist.length}
           </p>
         </div>
-        <div className="flex gap-3 pointer-events-auto">
+        <div className="flex flex-wrap gap-2 pointer-events-auto">
           <HistoryControls />
+          {embedded && (
+            <button
+              type="button"
+              onClick={openAssetLibrary}
+              className="rounded-md border border-slate-700 px-3 py-2 text-xs text-slate-200"
+            >
+              {t('assets.browseLibrary', 'Browse project assets')}
+            </button>
+          )}
 
           <button
             type="button"
@@ -750,7 +773,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           <button
             type="button"
             onClick={handleOpenExportModal}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-full text-xs shadow-lg"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-full text-xs"
           >
             <Icon name="download" className="w-4 h-4" />
             Export
@@ -769,7 +792,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
       {/* Panels */}
       {showFilters && (
-        <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
+        <div className="absolute top-24 inset-x-3 ms-auto max-w-md z-30">
           <Suspense fallback={<ModalSkeleton />}>
             <FilterControls
               filters={filters}
@@ -791,7 +814,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {showVFX && (
-        <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
+        <div className="absolute top-24 inset-x-3 ms-auto max-w-md z-30">
           <Suspense fallback={<ModalSkeleton />}>
             <VFXPanel
               filters={filters}
@@ -814,7 +837,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {showChromaKey && (
-        <div className="absolute top-24 right-4 z-30 animate-fade-in-up origin-top-right">
+        <div className="absolute top-24 inset-x-3 ms-auto max-w-md z-30">
           <Suspense fallback={<ModalSkeleton />}>
             <ChromaKeyPanel
               config={effectiveChromaConfig}
@@ -827,7 +850,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {showMixer && (
-        <div className="absolute bottom-[40%] right-4 z-40">
+        <div className="absolute bottom-[40%] inset-x-3 ms-auto max-w-md z-40">
           <Suspense fallback={<ModalSkeleton />}>
             <AudioMixer
               volumes={audioMix}
@@ -893,7 +916,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
               onClick={handleCanvasClick}
             />
             {isPickingColor && (
-              <div className="absolute top-4 bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 animate-pulse pointer-events-none">
+              <div className="absolute top-4 bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-md border border-white/20 pointer-events-none">
                 Click background to key out
               </div>
             )}
@@ -919,7 +942,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
       {/* Timeline Area */}
       <div className="h-[40%] bg-slate-900 border-t border-slate-800 flex flex-col z-20 relative">
-        <div className="h-10 bg-slate-850 flex items-center px-4 border-b border-slate-700 justify-between">
+        <div className="min-h-10 shrink-0 min-w-0 bg-slate-850 flex flex-wrap items-center gap-3 px-3 py-2 border-b border-slate-700 justify-between">
           <div className="flex gap-2">
             <button
               type="button"
@@ -950,7 +973,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
               <Icon name="chevron-down" className="w-5 h-5 -rotate-90" />
             </button>
           </div>
-          <div className="flex gap-4">
+          <div className="flex min-w-0 flex-1 basis-[22rem] flex-wrap justify-end gap-x-3 gap-y-2">
             <button
               type="button"
               onClick={() => setShowInspector(!showInspector)}

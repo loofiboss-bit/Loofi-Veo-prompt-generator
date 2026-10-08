@@ -4,17 +4,20 @@
  * v1.3.0 - Workflow Integration
  */
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Icon from '@shared/components/ui/Icon';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import { IconName } from '@core/types';
 import { WorkspaceSwitcher } from '@features/workspace/WorkspaceSwitcher';
-import { useViewport } from '@shared/hooks/useViewport';
+import { NAVIGATION_DESTINATIONS } from '@core/config/navigation';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 interface SidebarProps {
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  onNavigated?: () => void;
   onNavigate: (section: string) => void;
   activeSection?: string;
   onOpenProject: () => void;
@@ -49,6 +52,9 @@ interface SidebarItem {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
+  onNavigated,
   onNavigate,
   activeSection,
   onOpenProject,
@@ -58,92 +64,85 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenWorkspaceManager,
   onOpenDirector,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [userOverride, setUserOverride] = useState(false);
-  const { isCompact } = useViewport();
+  const [localCollapsed, setLocalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed ?? localCollapsed;
   const { t } = useTranslation('common');
   const { currentProjectId, projects } = useProjectStore();
   const queueActiveCount = useGenerationQueueStore((s) => s.activeCount);
   const queuePendingCount = useGenerationQueueStore((s) => s.pendingCount);
   const { focusMode, updateSettings } = useSettingsStore();
   const handleToggleFocusMode = () => updateSettings({ focusMode: !focusMode });
-
-  // Auto-collapse on compact viewports unless user manually expanded
-  useEffect(() => {
-    if (!userOverride) {
-      setIsCollapsed(isCompact);
-    }
-  }, [isCompact, userOverride]);
-
-  // Reset override when viewport changes category
-  useEffect(() => {
-    setUserOverride(false);
-  }, [isCompact]);
-
   const handleToggleCollapse = () => {
-    setUserOverride(true);
-    setIsCollapsed((prev) => !prev);
+    if (onToggleCollapse) onToggleCollapse();
+    else setLocalCollapsed((previous) => !previous);
   };
 
   const currentProject = projects.find((p) => p.id === currentProjectId);
 
-  const navItems: SidebarItem[] = [
-    {
-      id: 'studio',
-      label: t('sidebar.promptStudio', 'Prompt Studio'),
-      icon: 'sparkles',
-      onClick: () => onNavigate('studio'),
+  const navItems: SidebarItem[] = NAVIGATION_DESTINATIONS.map((destination) => ({
+    id: destination.id,
+    label: t(destination.labelKey, destination.label),
+    icon: destination.icon,
+    onClick: () => {
+      switch (destination.id) {
+        case 'projects':
+          onOpenProject();
+          break;
+        case 'assets':
+          onOpenAssets?.();
+          break;
+        case 'activity':
+          onOpenActivity?.();
+          break;
+        case 'settings':
+          onOpenSettings();
+          break;
+        case 'create':
+          onOpenDirector?.();
+          break;
+        default:
+          onNavigate(destination.id);
+      }
     },
-    {
-      id: 'create',
-      label: t('sidebar.production', 'Production'),
-      icon: 'video',
-      onClick: () => onOpenDirector?.(),
-    },
-    {
-      id: 'projects',
-      label: t('sidebar.projects'),
-      icon: 'folder',
-      onClick: onOpenProject,
-      badge: projects.length,
-    },
-    {
-      id: 'assets',
-      label: t('sidebar.assets', 'Assets'),
-      icon: 'image',
-      onClick: () => onOpenAssets?.(),
-    },
-    {
-      id: 'timeline',
-      label: t('sidebar.timeline'),
-      icon: 'timeline',
-      onClick: () => onNavigate('timeline'),
-    },
-    {
-      id: 'activity',
-      label: t('sidebar.activity', 'Activity'),
-      icon: 'clock',
-      onClick: () => onOpenActivity?.(),
-      badge: queueActiveCount + queuePendingCount || undefined,
-    },
-    {
-      id: 'settings',
-      label: t('sidebar.settings'),
-      icon: 'settings',
-      onClick: onOpenSettings,
-    },
-  ];
+    badge:
+      destination.id === 'projects'
+        ? projects.length
+        : destination.id === 'activity'
+          ? queueActiveCount + queuePendingCount || undefined
+          : undefined,
+  }));
+  const renderItem = (item: SidebarItem) => (
+    <button
+      key={item.id}
+      onClick={() => {
+        item.onClick();
+        onNavigated?.();
+      }}
+      aria-label={item.label}
+      aria-current={activeSection === item.id ? 'page' : undefined}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm ${activeSection === item.id ? 'border-blue-500/30 bg-blue-500/10 text-blue-300' : 'border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'}`}
+      title={isCollapsed ? item.label : undefined}
+    >
+      <Icon name={item.icon as IconName} className="w-5 h-5 flex-shrink-0" />
+      {!isCollapsed && (
+        <>
+          <span className="flex-1 text-left font-medium">{item.label}</span>
+          {!!item.badge && <span className="text-xs">{item.badge}</span>}
+        </>
+      )}
+    </button>
+  );
 
   return (
     <aside
-      className="fixed start-0 top-0 h-full bg-slate-950/85 backdrop-blur-xl border-e border-slate-800/60 shadow-2xl transition-all duration-300 z-40 flex flex-col"
+      className="creator-sidebar fixed start-0 top-0 h-full bg-slate-950 border-e border-slate-800/60 z-40 flex flex-col"
       style={{ width: isCollapsed ? 'var(--sidebar-width-collapsed)' : 'var(--sidebar-width)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800/60">
         {!isCollapsed && (
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 shadow-md shadow-blue-500/25 border border-white/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 border border-white/10 flex items-center justify-center">
               <Icon name="video" className="w-4.5 h-4.5 text-white" />
             </div>
             <span className="font-bold text-slate-100 tracking-tight text-sm">
@@ -154,6 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={handleToggleCollapse}
           className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 border border-transparent hover:border-slate-700/50 transition-all"
+          aria-label={isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
           title={isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
         >
           <Icon name={isCollapsed ? 'menu' : 'cancel'} className="w-5 h-5" />
@@ -177,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <div className="relative flex h-2 w-2 items-center justify-center flex-shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60" />
+              <span className="hidden" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
             </div>
             <span className="text-sm font-semibold text-slate-200 truncate">
@@ -191,44 +191,31 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-2" data-tour-id="app-sidebar-nav">
-        <div className="space-y-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={item.onClick}
-              className={`relative group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                activeSection === item.id
-                  ? 'bg-gradient-to-r from-blue-600/20 via-indigo-600/15 to-transparent text-blue-100 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.12)]'
-                  : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 border border-transparent hover:border-slate-700/40'
-              }`}
-              title={isCollapsed ? item.label : undefined}
-            >
-              {activeSection === item.id && (
-                <span
-                  className="absolute start-0 top-2 bottom-2 w-1 rounded-e-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"
-                  aria-hidden="true"
-                />
-              )}
-              <Icon
-                name={item.icon as IconName}
-                className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-105 ${activeSection === item.id ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`}
-              />
-              {!isCollapsed && (
-                <>
-                  <span className="flex-1 text-left text-sm font-medium">{item.label}</span>
-                  {item.badge !== undefined && item.badge > 0 && (
-                    <span className="px-2 py-0.5 bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-semibold rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                </>
-              )}
-            </button>
-          ))}
-        </div>
+      <nav
+        className="flex-1 overflow-y-auto p-2"
+        data-tour-id="app-sidebar-nav"
+        aria-label={t('sidebar.navigation', 'Main navigation')}
+      >
+        {(['create', 'library', 'followup'] as const).map((group) => (
+          <div key={group} className="mb-3">
+            {!isCollapsed && (
+              <div className="px-3 py-1 text-xs font-medium text-slate-500">
+                {t(`sidebar.groups.${group}`)}
+              </div>
+            )}
+            {navItems
+              .filter(
+                (item) =>
+                  NAVIGATION_DESTINATIONS.find((destination) => destination.id === item.id)
+                    ?.group === group,
+              )
+              .map(renderItem)}
+          </div>
+        ))}
       </nav>
+      <div className="p-2 border-t border-slate-800/60">
+        {navItems.filter((item) => item.id === 'settings').map(renderItem)}
+      </div>
 
       {/* Bottom Items */}
       <div
@@ -243,7 +230,16 @@ const Sidebar: React.FC<SidebarProps> = ({
               ? 'bg-blue-600/25 text-blue-200 border border-blue-500/40 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent'
           }`}
-          title={focusMode ? 'Exit Focus Mode' : 'Enter Focus Mode — hide advanced panels'}
+          aria-label={
+            focusMode
+              ? t('sidebar.exitFocus', 'Exit Focus Mode')
+              : t('sidebar.focusMode', 'Focus Mode')
+          }
+          title={
+            focusMode
+              ? t('sidebar.exitFocus', 'Exit Focus Mode')
+              : t('sidebar.focusMode', 'Focus Mode')
+          }
         >
           <Icon
             name="zap"
