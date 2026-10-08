@@ -133,5 +133,219 @@
     "foley": "Las señales revisadas, el audio persistente y la reproducción no están verificados.",
     "fcpxml": "La importación en editores externos no está verificada."
   },
-  "musicDetails": "Detalles musicales y letras originales"
+  "musicDetails": "Detalles musicales y letras originales",
+  "arenaOpen": "Comparar en Arena",
+  "arenaTitle": "Arena de comparación de modelos",
+  "arenaDescription": "Compara paquetes del mismo concepto. Esta comparación no evalúa la calidad del vídeo generado.",
+  "close": "Cerrar",
+  "active": "Activo",
+  "copyError": "Error al copiar. Reintenta o selecciona el texto y cópialo manualmente.",
+  "selectError": "No se pudo seleccionar el destino. Se conserva el borrador actual.",
+  "selected": "Seleccionado",
+  "useTarget": "Usar destino",
+  "handoffManual": "Entrega mediante copia manual",
+  "handoffInternal": "La generación interna requiere aprobación",
+  "prompt": "Prompt",
+  "negative": "Prompt negativo",
+  "settings": "Ajustes",
+  "validationAction": "Abrir control",
+  "validationVariant": "Variante {{number}}",
+  "validationSource": "Fuente",
+  "evidenceDocumented": "Restricción documentada",
+  "evidenceHeuristic": "Consejo de redacción",
+  "evidenceUnknown": "Compatibilidad sin confirmar",
+  "validationStatus": {
+    "pass": "Listo",
+    "warning": "Revisar",
+    "blocked": "Bloqueado"
+  },
+  "revision": {
+    "title": "Versiones y comparación",
+    "description": "Guarda y restaura versiones de ambos espacios. La restauración conserva una versión del trabajo actual.",
+    "save": "Guardar versión",
+    "choose": "Comparar una versión guardada",
+    "empty": "Aún no hay versiones guardadas.",
+    "restore": "Restaurar como nueva versión",
+    "saved": "Versión guardada.",
+    "restored": "Versión restaurada. Se conserva el trabajo anterior.",
+    "templateApplied": "Plantilla aplicada. Crea un paquete nuevo.",
+    "wait": "Espera a que termine el guardado.",
+    "stale": "El borrador cambió. Revisa la versión actual y reintenta.",
+    "review": "Revisar cambios de IA",
+    "reviewDescription": "El borrador no cambia hasta que aceptes. Revisa las tres variantes.",
+    "proposalReady": "Propuesta de IA lista para revisar.",
+    "accept": "Aceptar cambios",
+    "reject": "Rechazar cambios",
+    "rejected": "Propuesta rechazada. El borrador no cambió.",
+    "selection": "Variante seleccionada",
+    "locks": "Secciones bloqueadas",
+    "diffLegend": "+ Añadido · − Eliminado · El texto sin marca no cambió",
+    "changed": "Modificado",
+    "unchanged": "Sin cambios",
+    "reasons": {
+      "manual": "Versión guardada",
+      "rebuild": "Antes de reconstruir",
+      "target": "Antes de cambiar modelo",
+      "template": "Antes de aplicar plantilla",
+      "ai": "Antes de aceptar IA",
+      "history": "Antes de abrir historial",
+      "before-restore": "Antes de restaurar",
+      "restore": "Versión restaurada"
+    },
+    "outdated": "El concepto cambió. Crea un paquete nuevo para actualizarlo. Se conservan las ediciones anteriores."
+  },
+  "templateLibrary": {
+    "title": "Biblioteca de plantillas de Studio",
+    "description": "Reutiliza entradas completas entre proyectos. Las plantillas se guardan localmente.",
+    "name": "Nombre de plantilla",
+    "details": "Descripción",
+    "save": "Guardar entradas como plantilla",
+    "search": "Buscar plantillas",
+    "target": "Filtrar por destino",
+    "allTargets": "Todos los destinos",
+    "empty": "No hay plantillas para este espacio y búsqueda.",
+    "preview": "Vista previa",
+    "apply": "Aplicar plantilla",
+    "update": "Reemplazar con entradas actuales",
+    "delete": "Eliminar plantilla",
+    "legacy": "Plantilla de vídeo antigua (solo lectura)",
+    "mediaNotice": "Selecciona imágenes y clips de nuevo. Las plantillas no incluyen archivos ni identificadores del proveedor.",
+    "loadFailed": "No se pudieron cargar las plantillas. Reintenta.",
+    "operationFailed": "Falló la acción de plantilla. Revisa el borrador y reintenta.",
+    "saved": "Plantilla guardada.",
+    "updated": "Plantilla actualizada.",
+    "deleted": "Plantilla eliminada.",
+    "applied": "Plantilla aplicada. Crea un paquete con estas entradas.",
+    "retry": "Reintentar",
+    "close": "Cerrar vista previa"
+  },
+  "validation": {
+    "clarity": {
+      "label": "Idea clara",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Añade una escena o resultado antes de optimizar.",
+        "blocked": "Añade una escena o resultado antes de optimizar."
+      }
+    },
+    "target-compatibility": {
+      "label": "Compatibilidad del destino",
+      "detail": {
+        "pass": "La solicitud supera las comprobaciones internas de Veo.",
+        "warning": "Compatibilidad sin confirmar. Verifica el modelo, modo, duración y referencias en el destino.",
+        "blocked": "Resuelve los requisitos de generación indicados abajo."
+      }
+    },
+    "mode": {
+      "label": "Contexto de referencias",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Añade las imágenes o el clip requeridos por el modo en el destino.",
+        "blocked": "Añade las imágenes o el clip requeridos por el modo en el destino."
+      }
+    },
+    "text": {
+      "label": "Texto del prompt",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Añade texto a esta variante.",
+        "blocked": "Añade texto a esta variante."
+      }
+    },
+    "single-scene": {
+      "label": "Una escena por clip",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Considera separar los eventos en clips. Es un consejo de redacción.",
+        "blocked": "Considera separar los eventos en clips. Es un consejo de redacción."
+      }
+    },
+    "motion-recipe": {
+      "label": "Dirección del movimiento",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Describe el movimiento deseado de la imagen. Es un consejo de redacción.",
+        "blocked": "Describe el movimiento deseado de la imagen. Es un consejo de redacción."
+      }
+    },
+    "topic": {
+      "label": "Idea de canción",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Añade una idea antes de generar letras.",
+        "blocked": "Añade una idea antes de generar letras."
+      }
+    },
+    "language": {
+      "label": "Idioma de letras",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Elige el idioma de las letras.",
+        "blocked": "Elige el idioma de las letras."
+      }
+    },
+    "rights": {
+      "label": "Entrega con derechos revisados",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Confirma letras originales o con licencia y evita imitar artistas antes de publicar.",
+        "blocked": "Confirma letras originales o con licencia y evita imitar artistas antes de publicar."
+      }
+    },
+    "lyrics": {
+      "label": "Estructura de letras",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Usa etiquetas de sección o [Instrumental] para controlar el arreglo.",
+        "blocked": "Usa etiquetas de sección o [Instrumental] para controlar el arreglo."
+      }
+    },
+    "style": {
+      "label": "Estilo musical",
+      "detail": {
+        "pass": "El contenido necesario está presente.",
+        "warning": "Mantén el estilo breve y separado de las letras; 200 caracteres es una recomendación.",
+        "blocked": "Mantén el estilo breve y separado de las letras; 200 caracteres es una recomendación."
+      }
+    }
+  },
+  "arenaCopy": "Copiar paquete",
+  "providerValidation": {
+    "label": "Requisito de generación interna",
+    "prompt": "Se requiere un prompt.",
+    "resolution": "El modelo no admite esta resolución.",
+    "mode": "El modelo no admite este modo de entrada.",
+    "firstFrame": "Imagen a vídeo requiere un fotograma inicial.",
+    "bothFrames": "La interpolación requiere fotogramas inicial y final.",
+    "lastRequiresFirst": "El fotograma final requiere un fotograma inicial.",
+    "maximumReferences": "Veo admite hasta tres imágenes de referencia.",
+    "minimumReferences": "El modo de referencias requiere al menos una imagen.",
+    "referenceDuration": "La generación con referencias requiere ocho segundos.",
+    "resolutionDuration": "La generación 1080p y 4K requiere ocho segundos.",
+    "extensionSource": "La extensión requiere un resultado anterior de Veo.",
+    "extensionExpired": "El resultado del proveedor caducó y no se puede extender.",
+    "extensionResolution": "Las extensiones Veo se limitan a 720p.",
+    "incompatible": "No se pueden combinar fotogramas, referencias y extensiones.",
+    "duration": "Veo API admite 4, 6 u 8 segundos."
+  },
+  "inputLabels": {
+    "yes": "Sí",
+    "no": "No",
+    "styleInfluence": "Influencia del estilo",
+    "referenceRoles": "Funciones de referencias",
+    "rights": "Declaraciones de derechos",
+    "ownsOrLicensedLyrics": "Letras originales o con licencia",
+    "hasVoiceConsent": "Consentimiento de voz",
+    "hasTrainingReferenceRights": "Derechos de referencias",
+    "avoidsArtistImitation": "Evitar imitación de artistas",
+    "lens": "Lente",
+    "aperture": "Apertura",
+    "shutterAngle": "Ángulo de obturación",
+    "heightLevel": "Altura de cámara",
+    "trajectory": "Trayectoria de cámara",
+    "trajectorySpeed": "Velocidad de movimiento",
+    "rollAngleDegrees": "Ángulo de inclinación",
+    "spatialGrid": "Posición espacial",
+    "customDirectives": "Notas de cámara"
+  }
 }

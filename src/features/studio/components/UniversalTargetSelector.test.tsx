@@ -7,11 +7,14 @@ describe('UniversalTargetSelector', () => {
     render(<UniversalTargetSelector value="flow-veo" onChange={vi.fn()} />);
 
     expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Google Flow \/ Veo 3.1/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Kling 1.5 \/ 2.0/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Runway Gen-3 \/ Gen-4/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Google Flow \/ Veo/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^Kling$/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^Runway$/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /OpenAI Sora/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Luma Dream Machine/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^Luma$/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Wan 2.1' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Minimax / Hailuo' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Veo API' })).toBeInTheDocument();
     expect(screen.getByText('Google DeepMind')).toBeInTheDocument();
   });
 

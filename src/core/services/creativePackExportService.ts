@@ -13,6 +13,7 @@ import type {
   ContinuityOverrideRecord,
   PromptArtifactV1,
   TimelineState,
+  StudioRevisionV1,
 } from '@core/types';
 import {
   buildFlowVeoScenePack,
@@ -48,6 +49,7 @@ export interface CreativePack {
   musicBridge: ReturnType<typeof createSunoBriefFromFlowVeo>;
   timelineShots: CreativePackTimelineShot[];
   promptArtifacts?: PromptArtifactV1[];
+  studioRevisions?: StudioRevisionV1[];
   productionBible?: ProductionBible;
   otioTimeline?: OtioTimeline;
   productionRun?: {
@@ -116,6 +118,7 @@ interface BuildCreativePackInput {
   productionRun?: ProductionRun | null;
   productionBible?: ProductionBible;
   promptArtifacts?: PromptArtifactV1[];
+  studioRevisions?: StudioRevisionV1[];
 }
 
 const buildSunoSettings = (state: PromptState, scenePack: FlowVeoScenePack): SunoSettings => {
@@ -175,6 +178,7 @@ class CreativePackExportService {
     mediaPaths,
     productionBible,
     promptArtifacts = [],
+    studioRevisions,
   }: BuildCreativePackInput): CreativePack {
     const scenePack = buildFlowVeoScenePack(promptState, {
       mode: promptState.flowVeoOutputMode ?? 'flow-scene-pack',
@@ -201,6 +205,7 @@ class CreativePackExportService {
       musicBridge: createSunoBriefFromFlowVeo(scenePack),
       timelineShots: mapTimelineShots(shots),
       promptArtifacts: structuredClone(promptArtifacts),
+      ...(studioRevisions ? { studioRevisions: structuredClone(studioRevisions) } : {}),
       productionBible,
       otioTimeline: buildOtioTimeline({
         projectName: scenePack.title,

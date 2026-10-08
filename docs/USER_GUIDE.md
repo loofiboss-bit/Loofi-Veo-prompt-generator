@@ -74,3 +74,37 @@ Enter or Space to activate actions. Interface languages match the registered Eng
 French, Japanese and Arabic catalogs; lyrics language is a separate creative setting.
 
 For implementation contracts and qualification limits, see [V14_IMPLEMENTATION.md](V14_IMPLEMENTATION.md).
+
+## Studio iteration in v14.1.0
+
+Use **Compare in Arena** to compare local prompt packages for the eight Studio video targets.
+The preview and copy action use the same compiler as **Build copy-ready pack**. Confirm the actual
+model version, supported controls and duration in each manual destination. Only Veo API supports an
+internal production handoff, and paid generation still requires cost approval in Production.
+
+Open **Readiness checks** after building or editing a pack. Each variant is checked separately.
+Documented constraints can block internal generation; writing advice and unconfirmed compatibility
+are clearly distinguished. **Open control** selects the relevant field or variant without changing its value.
+Quoted dialogue is supported. You can still copy a manual pack while reviewing warnings.
+
+**Enhance with AI** and **Rewrite section** show proposed differences. Review all three variants and
+choose **Accept changes** or **Reject changes**. Your existing draft stays unchanged until acceptance.
+Locked lyric sections are preserved exactly. Changing the draft or switching project invalidates the proposal.
+
+Open **Versions and comparison** and select **Save version** to keep a project snapshot. Choose a
+saved version to compare it with the draft, then use **Restore as new version** to restore both video
+and music inputs, outputs, selections and lyric locks. Restore preserves a version of your current work.
+Rebuild, model change, template application and AI acceptance also checkpoint before replacing work.
+Identical adjacent snapshots do not add duplicates. Storage failures block replacements; keep the window
+open and retry saving. Brief edits keep the old pack visible until you build a replacement.
+
+Open **Studio template library** to name and save complete inputs. Search or filter templates,
+preview one, then apply it and build a new pack. Video and music entries stay in their own workspace.
+Saved music inputs include original lyrics and locks. Select images and clips again in every project;
+templates exclude project media IDs and provider handles. Updating a template replaces its input with
+the current workspace's input. Legacy video templates are read-only.
+
+Revisions travel with `.loofi-project` archives, including local media referenced only by an older
+version. Import remaps IDs and retains the existing revocation of active cost approvals. Templates
+are a global local library and are not part of a project archive. No new provider integration or Labs
+capability is activated by this release.

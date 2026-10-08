@@ -4,7 +4,6 @@ import type {
   MusicPromptVariant,
   PromptArtifactProvider,
   PromptArtifactV1,
-  PromptValidationCheck,
   VideoPromptArtifactInput,
   VideoPromptVariant,
   VideoPromptMode,
@@ -19,6 +18,7 @@ import { generateSunoPack } from './gemini/geminiAudioService';
 import { generatePromptWithOllama } from './ollamaProvider';
 import { compileSpatialCameraRig } from './spatialCameraService';
 import { transpilePrompt } from './modelTranspilerService';
+import { validateStudioVideo, validateStudioMusic } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 const DEFAULT_NEGATIVE =
@@ -221,8 +221,6 @@ const defaultOptimizer: PromptArtifactOptimizer = {
   },
 };
 
-const withoutQuotes = (value: string): string => value.replace(/[“”"]+/g, '').trim();
-
 const normalizeMode = (mode: VideoPromptMode): VideoPromptMode => mode;
 
 const formatModeInstruction = (input: VideoPromptArtifactInput): string => {
@@ -253,7 +251,7 @@ const buildVideoPrompt = (
   const lighting = sentence(input.lighting);
   const style = sentence(input.style);
   const audio = sentence(input.audio);
-  const dialogue = withoutQuotes(trim(input.dialogue));
+  const dialogue = trim(input.dialogue);
   const instruction = formatModeInstruction(input);
 
   if (input.mode === 'image-to-video') {
@@ -315,108 +313,7 @@ const buildVideoChecklist = (input: VideoPromptArtifactInput): string[] => {
 const composeVideoCopyAll = (prompt: string, negativePrompt: string, settings: string): string =>
   `${prompt}\n\nNegative prompt: ${negativePrompt}\n\n${settings}`;
 
-const videoValidation = (
-  input: VideoPromptArtifactInput,
-  variants: VideoPromptVariant[],
-): PromptValidationCheck[] => {
-  const prompt = variants[0]?.prompt ?? '';
-  const hasIdea = Boolean(trim(input.idea));
-  const hasSingleSceneSignal = !/\bthen\b|\bafter that\b|\bfinally\b/i.test(prompt);
-  const hasDialogueFormat = !/[“”"]/.test(prompt);
-  const hasModeContext =
-    input.mode !== 'first-last-frames' || Boolean(trim(input.startFrame) && trim(input.endFrame));
-  const hasReferences = input.mode !== 'ingredients' || Boolean(trim(input.referenceRoles));
-  const hasAudioDirection = Boolean(trim(input.audio) || trim(input.dialogue));
-  const isMotionOnly =
-    input.mode !== 'image-to-video' ||
-    /\b(subject|camera|environment) motion:/i.test(prompt) ||
-    /motion only/i.test(prompt);
-
-  return [
-    {
-      id: 'clarity',
-      label: 'Clear idea',
-      status: hasIdea ? 'pass' : 'blocked',
-      detail: hasIdea
-        ? 'The prompt has a concrete creative starting point.'
-        : 'Add a scene or outcome before optimizing.',
-    },
-    {
-      id: 'single-scene',
-      label: 'One scene per clip',
-      status: hasSingleSceneSignal ? 'pass' : 'warning',
-      detail: hasSingleSceneSignal
-        ? 'The output stays focused on one clip-sized moment.'
-        : 'Split chained events into separate clips for more reliable results.',
-    },
-    {
-      id: 'dialogue',
-      label: 'Dialogue format',
-      status: hasDialogueFormat ? 'pass' : 'blocked',
-      detail: hasDialogueFormat
-        ? 'Dialogue uses colon-based direction instead of quotation marks.'
-        : 'Remove quotation marks so the model is less likely to render text on screen.',
-    },
-    {
-      id: 'mode',
-      label: 'Mode recipe',
-      status: hasModeContext ? 'pass' : 'warning',
-      detail: hasModeContext
-        ? 'The mode has the context needed for a useful handoff.'
-        : 'Add both a start and end frame to describe the intended transition.',
-    },
-    {
-      id: 'references',
-      label: 'Reference roles',
-      status: hasReferences ? 'pass' : 'warning',
-      detail: hasReferences
-        ? 'Reference usage is explicit.'
-        : 'Name the role of each ingredient so references do not conflict.',
-    },
-    {
-      id: 'target-compatibility',
-      label: 'Target compatibility',
-      status: 'pass',
-      detail:
-        input.target === 'flow-veo'
-          ? 'The handoff uses Flow/Veo-compatible scene language.'
-          : input.target === 'kling'
-            ? 'The handoff uses Kling 1.5/2.0 bracket camera syntax.'
-            : input.target === 'runway-gen3'
-              ? 'The handoff uses Runway Gen-3 motion vector syntax.'
-              : input.target === 'sora'
-                ? 'The handoff uses OpenAI Sora photochemical realism syntax.'
-                : input.target === 'luma-ray'
-                  ? 'The handoff uses Luma Dream Machine trajectory syntax.'
-                  : 'The handoff is labeled for the Veo API; confirm model-specific limits before running.',
-    },
-    {
-      id: 'audio',
-      label: 'Audio / dialogue',
-      status: hasAudioDirection ? 'pass' : 'warning',
-      detail: hasAudioDirection
-        ? 'Audio or dialogue is separated from visual direction.'
-        : 'Add audio or dialogue when the soundscape matters to the shot.',
-    },
-    {
-      id: 'motion-recipe',
-      label: 'Motion-only recipe',
-      status: isMotionOnly ? 'pass' : 'blocked',
-      detail: isMotionOnly
-        ? 'The selected recipe is explicit about motion.'
-        : 'Image-to-video must describe camera, subject, or environment motion only.',
-    },
-    {
-      id: 'length',
-      label: 'Length compatibility',
-      status: input.durationSeconds === 10 && input.target === 'veo-api' ? 'warning' : 'pass',
-      detail:
-        input.durationSeconds === 10 && input.target === 'veo-api'
-          ? 'Confirm that the selected Veo API model supports a 10-second clip.'
-          : `${input.durationSeconds}s is represented explicitly in the handoff checklist.`,
-    },
-  ];
-};
+const videoValidation = validateStudioVideo;
 
 const createVideoVariant = (
   input: VideoPromptArtifactInput,
@@ -731,11 +628,6 @@ export const validatePromptArtifact = (artifact: PromptArtifactV1): string[] => 
       )
     )
       errors.push('Video copy fields must match the visible variant text.');
-    if (
-      variants.some((variant) => typeof variant.prompt === 'string' && /[“”"]/.test(variant.prompt))
-    ) {
-      errors.push('Video dialogue must use colon-based direction without quotation marks.');
-    }
   } else {
     const variants = [
       artifact.primary,
@@ -837,56 +729,7 @@ export const compileMusicPromptArtifact = (
     provider,
     source,
   );
-  const hasTopic = Boolean(trim(normalizedInput.topic));
-  const validation: PromptValidationCheck[] = [
-    {
-      id: 'topic',
-      label: 'Song idea',
-      status: hasTopic ? 'pass' : 'blocked',
-      detail: hasTopic
-        ? 'The song has a concrete emotional or narrative seed.'
-        : 'Add a song idea before generating lyrics.',
-    },
-    {
-      id: 'sections',
-      label: 'Section tags',
-      status:
-        normalizedInput.instrumental || /\[[^\]]+\]/.test(primary.lyrics) ? 'pass' : 'warning',
-      detail: normalizedInput.instrumental
-        ? 'Instrumental output is explicitly marked.'
-        : 'Suno receives explicit section tags for arrangement control.',
-    },
-    {
-      id: 'language',
-      label: 'Lyrics language',
-      status: trim(normalizedInput.language) ? 'pass' : 'warning',
-      detail: trim(normalizedInput.language)
-        ? `Lyrics follow ${normalizedInput.language}.`
-        : 'Choose the language for the lyrics.',
-    },
-    {
-      id: 'style-separation',
-      label: 'Style / Lyrics separation',
-      status: primary.styleOfMusic.length <= 200 ? 'pass' : 'warning',
-      detail: 'Style of Music stays concise and tag-oriented while lyrics carry narrative detail.',
-    },
-    {
-      id: 'rights',
-      label: 'Rights-safe handoff',
-      status:
-        normalizedInput.rightsChecklist?.avoidsArtistImitation === false
-          ? 'blocked'
-          : normalizedInput.instrumental || normalizedInput.rightsChecklist?.ownsOrLicensedLyrics
-            ? 'pass'
-            : 'warning',
-      detail:
-        normalizedInput.rightsChecklist?.avoidsArtistImitation === false
-          ? 'Remove real-artist imitation before using this handoff.'
-          : normalizedInput.instrumental || normalizedInput.rightsChecklist?.ownsOrLicensedLyrics
-            ? 'Use original/licensed lyrics and descriptive terms instead of real artist imitation.'
-            : 'Confirm that lyrics are original or licensed before publishing.',
-    },
-  ];
+  const validation = validateStudioMusic(normalizedInput, [primary, ...alternatives]);
   return {
     schemaVersion: 1,
     id,
@@ -1109,7 +952,7 @@ export const optimizeVideoPromptArtifact = async (
     const optimized: PromptArtifactV1 = {
       ...local,
       primary: (() => {
-        const prompt = withoutQuotes(result.prompt.trim());
+        const prompt = result.prompt.trim();
         const copySettingsChecklist = primary.copySettingsChecklist;
         return {
           ...primary,
@@ -1126,17 +969,17 @@ export const optimizeVideoPromptArtifact = async (
         generatedAt: new Date().toISOString(),
       },
     };
-    optimized.validation = videoValidation(input, [
-      optimized.primary as VideoPromptVariant,
-      ...optimized.alternatives,
-    ] as VideoPromptVariant[]);
+    optimized.validation = videoValidation(
+      local.input as VideoPromptArtifactInput,
+      [optimized.primary as VideoPromptVariant, ...optimized.alternatives] as VideoPromptVariant[],
+    );
     const validationErrors = validatePromptArtifact(optimized);
     if (validationErrors.length) {
       throw new Error(
         `The video optimizer returned an invalid artifact: ${validationErrors.join(' ')}`,
       );
     }
-    return optimized;
+    return revalidatePromptArtifact(optimized);
   }
   return local;
 };
@@ -1178,7 +1021,27 @@ export const optimizeMusicPromptArtifact = async (
         `The music optimizer returned an invalid artifact: ${validationErrors.join(' ')}`,
       );
     }
-    return optimized;
+    return revalidatePromptArtifact(optimized);
   }
   return local;
+};
+
+/** Recalculate guidance from the current text, including every edited alternative. */
+export const revalidatePromptArtifact = (artifact: PromptArtifactV1): PromptArtifactV1 => {
+  if (artifact.kind === 'video') {
+    return {
+      ...artifact,
+      validation: validateStudioVideo(
+        artifact.input as VideoPromptArtifactInput,
+        [artifact.primary, ...artifact.alternatives] as VideoPromptVariant[],
+      ),
+    };
+  }
+  return {
+    ...artifact,
+    validation: validateStudioMusic(
+      artifact.input as MusicPromptArtifactInput,
+      [artifact.primary, ...artifact.alternatives] as MusicPromptVariant[],
+    ),
+  };
 };

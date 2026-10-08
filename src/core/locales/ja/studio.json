@@ -133,5 +133,219 @@
     "foley": "編集したキュー、音声の保存と再生は未検証です。",
     "fcpxml": "外部編集ソフトへの読み込みは未検証です。"
   },
-  "musicDetails": "音楽の詳細とオリジナル歌詞"
+  "musicDetails": "音楽の詳細とオリジナル歌詞",
+  "arenaOpen": "Arenaで比較",
+  "arenaTitle": "モデル比較",
+  "arenaDescription": "同じ企画から作成したプロンプトを比較します。生成動画の品質を評価するものではありません。",
+  "close": "閉じる",
+  "active": "使用中",
+  "copyError": "コピーできませんでした。再試行するか、テキストを選択して手動でコピーしてください。",
+  "selectError": "対象の選択に失敗しました。現在の下書きは保持されています。",
+  "selected": "選択済み",
+  "useTarget": "この対象を使用",
+  "handoffManual": "手動コピーで受け渡し",
+  "handoffInternal": "アプリ内生成には承認が必要",
+  "prompt": "プロンプト",
+  "negative": "ネガティブプロンプト",
+  "settings": "設定",
+  "validationAction": "該当項目を開く",
+  "validationVariant": "バリエーション {{number}}",
+  "validationSource": "出典",
+  "evidenceDocumented": "文書化された制限",
+  "evidenceHeuristic": "文章作成の助言",
+  "evidenceUnknown": "互換性は未確認",
+  "validationStatus": {
+    "pass": "準備完了",
+    "warning": "確認が必要",
+    "blocked": "ブロック中"
+  },
+  "revision": {
+    "title": "バージョンと比較",
+    "description": "両ワークスペースのバージョンを保存・復元できます。復元時には現在の内容も保存されます。",
+    "save": "バージョンを保存",
+    "choose": "保存済みバージョンと比較",
+    "empty": "保存済みバージョンはありません。",
+    "restore": "新しいバージョンとして復元",
+    "saved": "バージョンを保存しました。",
+    "restored": "復元しました。直前の内容も保持されています。",
+    "templateApplied": "テンプレートを適用しました。新しいパックを作成してください。",
+    "wait": "現在の保存が完了するまでお待ちください。",
+    "stale": "下書きが変更されました。現在の内容を確認して再試行してください。",
+    "review": "AIの変更を確認",
+    "reviewDescription": "承認するまで下書きは変更されません。3つのバリエーションを確認してください。",
+    "proposalReady": "AIの提案を確認できます。",
+    "accept": "変更を承認",
+    "reject": "変更を拒否",
+    "rejected": "提案を拒否しました。下書きは変更されていません。",
+    "selection": "選択中のバリエーション",
+    "locks": "ロック中のセクション",
+    "diffLegend": "+ 追加 · − 削除 · 印のないテキストは変更なし",
+    "changed": "変更あり",
+    "unchanged": "変更なし",
+    "reasons": {
+      "manual": "手動保存",
+      "rebuild": "再作成前",
+      "target": "モデル変更前",
+      "template": "テンプレート適用前",
+      "ai": "AIの変更承認前",
+      "history": "履歴を開く前",
+      "before-restore": "復元前",
+      "restore": "復元したバージョン"
+    },
+    "outdated": "企画が変更されました。新しいパックで出力を更新してください。それまでは以前の編集が保持されます。"
+  },
+  "templateLibrary": {
+    "title": "Studioテンプレートライブラリ",
+    "description": "入力内容全体をプロジェクト間で再利用できます。テンプレートはローカルに保存されます。",
+    "name": "テンプレート名",
+    "details": "説明",
+    "save": "現在の入力をテンプレートとして保存",
+    "search": "テンプレートを検索",
+    "target": "対象で絞り込む",
+    "allTargets": "すべての対象",
+    "empty": "このワークスペースと検索条件に一致するテンプレートはありません。",
+    "preview": "プレビュー",
+    "apply": "テンプレートを適用",
+    "update": "現在の入力で置き換える",
+    "delete": "テンプレートを削除",
+    "legacy": "旧形式の動画テンプレート（読み取り専用）",
+    "mediaNotice": "このプロジェクトで画像とクリップを選び直してください。メディアやプロバイダー識別子は含まれません。",
+    "loadFailed": "テンプレートを読み込めませんでした。再試行してください。",
+    "operationFailed": "テンプレート操作に失敗しました。下書きを確認して再試行してください。",
+    "saved": "テンプレートを保存しました。",
+    "updated": "テンプレートを更新しました。",
+    "deleted": "テンプレートを削除しました。",
+    "applied": "テンプレートを適用しました。この入力から新しいパックを作成してください。",
+    "retry": "再試行",
+    "close": "プレビューを閉じる"
+  },
+  "validation": {
+    "clarity": {
+      "label": "明確なアイデア",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "最適化前にシーンや成果を入力してください。",
+        "blocked": "最適化前にシーンや成果を入力してください。"
+      }
+    },
+    "target-compatibility": {
+      "label": "対象の互換性",
+      "detail": {
+        "pass": "内部のVeo機能チェックに合格しています。",
+        "warning": "互換性は未確認です。対象サービスでモデル、モード、長さ、参照を確認してください。",
+        "blocked": "以下のアプリ内生成の要件を解決してください。"
+      }
+    },
+    "mode": {
+      "label": "参照の情報",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "選択したモードに必要な画像や元クリップを対象サービスで指定してください。",
+        "blocked": "選択したモードに必要な画像や元クリップを対象サービスで指定してください。"
+      }
+    },
+    "text": {
+      "label": "プロンプト本文",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "このバリエーションにプロンプトを入力してください。",
+        "blocked": "このバリエーションにプロンプトを入力してください。"
+      }
+    },
+    "single-scene": {
+      "label": "1クリップに1シーン",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "連続する出来事を別々のクリップに分けることを検討してください。文章作成の助言です。",
+        "blocked": "連続する出来事を別々のクリップに分けることを検討してください。文章作成の助言です。"
+      }
+    },
+    "motion-recipe": {
+      "label": "動きの指示",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "元画像からどのように動かすかを記述してください。文章作成の助言です。",
+        "blocked": "元画像からどのように動かすかを記述してください。文章作成の助言です。"
+      }
+    },
+    "topic": {
+      "label": "曲のアイデア",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "歌詞を生成する前に曲のアイデアを入力してください。",
+        "blocked": "歌詞を生成する前に曲のアイデアを入力してください。"
+      }
+    },
+    "language": {
+      "label": "歌詞の言語",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "歌詞の言語を選択してください。",
+        "blocked": "歌詞の言語を選択してください。"
+      }
+    },
+    "rights": {
+      "label": "権利を確認した受け渡し",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "公開前に歌詞がオリジナルまたは使用許諾済みであることを確認し、実在アーティストの模倣を避けてください。",
+        "blocked": "公開前に歌詞がオリジナルまたは使用許諾済みであることを確認し、実在アーティストの模倣を避けてください。"
+      }
+    },
+    "lyrics": {
+      "label": "歌詞の構成",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "構成を指定するにはセクションタグまたは[Instrumental]を使用してください。",
+        "blocked": "構成を指定するにはセクションタグまたは[Instrumental]を使用してください。"
+      }
+    },
+    "style": {
+      "label": "音楽のスタイル",
+      "detail": {
+        "pass": "必要な内容が入力されています。",
+        "warning": "スタイルは歌詞と分けて簡潔に記述してください。200文字は文章作成の目安です。",
+        "blocked": "スタイルは歌詞と分けて簡潔に記述してください。200文字は文章作成の目安です。"
+      }
+    }
+  },
+  "arenaCopy": "プロンプトパックをコピー",
+  "providerValidation": {
+    "label": "アプリ内生成の要件",
+    "prompt": "プロンプトが必要です。",
+    "resolution": "選択したモデルはこの解像度に対応していません。",
+    "mode": "選択したモデルはこの入力モードに対応していません。",
+    "firstFrame": "画像から動画への生成には開始フレームが必要です。",
+    "bothFrames": "補間には開始フレームと終了フレームが必要です。",
+    "lastRequiresFirst": "終了フレームには開始フレームが必要です。",
+    "maximumReferences": "Veoの参照画像は最大3枚です。",
+    "minimumReferences": "参照画像モードには少なくとも1枚の画像が必要です。",
+    "referenceDuration": "参照画像での生成には8秒の長さが必要です。",
+    "resolutionDuration": "1080pと4Kでの生成には8秒の長さが必要です。",
+    "extensionSource": "延長には以前のVeo生成結果が必要です。",
+    "extensionExpired": "生成結果の有効期限が切れているため延長できません。",
+    "extensionResolution": "Veoの延長は720pに限定されています。",
+    "incompatible": "フレーム、参照画像、延長の入力は併用できません。",
+    "duration": "Veo APIは4秒、6秒、8秒に対応しています。"
+  },
+  "inputLabels": {
+    "yes": "はい",
+    "no": "いいえ",
+    "styleInfluence": "スタイルの影響",
+    "referenceRoles": "参照の役割",
+    "rights": "権利の確認",
+    "ownsOrLicensedLyrics": "オリジナルまたは許諾済みの歌詞",
+    "hasVoiceConsent": "音声使用への同意",
+    "hasTrainingReferenceRights": "参照素材の権利",
+    "avoidsArtistImitation": "アーティストの模倣を避ける",
+    "lens": "レンズ",
+    "aperture": "絞り",
+    "shutterAngle": "シャッター角度",
+    "heightLevel": "カメラの高さ",
+    "trajectory": "カメラの軌道",
+    "trajectorySpeed": "移動速度",
+    "rollAngleDegrees": "ロール角度",
+    "spatialGrid": "空間配置",
+    "customDirectives": "カメラの補足"
+  }
 }

@@ -2,7 +2,9 @@ import type {
   PromptArtifactTarget,
   VideoPromptArtifactInput,
   VeoGenerationRequest,
+  VeoCapabilityIssue,
 } from '@core/types';
+import { getModel } from '@core/models/catalog';
 import { veoGenerationService } from '@core/services/veoGenerationService';
 
 export interface StudioCapability {
@@ -17,6 +19,8 @@ export const STUDIO_CAPABILITIES: Record<PromptArtifactTarget, StudioCapability>
   'runway-gen3': { handoff: 'manual', label: 'Runway' },
   sora: { handoff: 'manual', label: 'OpenAI Sora' },
   'luma-ray': { handoff: 'manual', label: 'Luma' },
+  'wan-video': { handoff: 'manual', label: 'Wan 2.1' },
+  'minimax-hailuo': { handoff: 'manual', label: 'Minimax / Hailuo' },
   suno: { handoff: 'manual', label: 'Suno' },
 };
 
@@ -59,10 +63,7 @@ export const LAB_CAPABILITIES = [
   },
 ] as const;
 
-export function studioVideoRequest(input: VideoPromptArtifactInput): VeoGenerationRequest {
-  if (input.target !== 'veo-api') throw new Error('This target uses a manual copy handoff.');
-  if (![4, 6, 8].includes(input.durationSeconds))
-    throw new Error('Veo API supports 4, 6 or 8 seconds.');
+function buildStudioVideoRequest(input: VideoPromptArtifactInput): VeoGenerationRequest {
   const modes = {
     'text-to-video': 'text-to-video',
     'image-to-video': 'image-to-video',
@@ -84,9 +85,36 @@ export function studioVideoRequest(input: VideoPromptArtifactInput): VeoGenerati
     extensionSourceTakeId: input.extensionSourceTakeId,
     extensionArtifact: input.extensionArtifact,
   };
-  const issues = veoGenerationService.validateRequest(request);
-  if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
   return request;
+}
+
+/** Shared with guidance; executing a request still uses the provider's fail-closed validator. */
+export function studioVideoRequestIssues(
+  input: VideoPromptArtifactInput,
+): Array<Omit<VeoCapabilityIssue, 'code'> & { code: string }> {
+  if (input.target !== 'veo-api') return [];
+  const request = buildStudioVideoRequest(input);
+  const issues: Array<Omit<VeoCapabilityIssue, 'code'> & { code: string }> =
+    veoGenerationService.validateRequest(request);
+  if (
+    !getModel(request.modelId)?.capabilities.supportedDurationsSeconds?.includes(
+      input.durationSeconds,
+    )
+  ) {
+    issues.unshift({
+      code: 'duration-unsupported',
+      field: 'durationSeconds',
+      message: 'Veo API supports 4, 6 or 8 seconds.',
+    });
+  }
+  return issues;
+}
+
+export function studioVideoRequest(input: VideoPromptArtifactInput): VeoGenerationRequest {
+  if (input.target !== 'veo-api') throw new Error('This target uses a manual copy handoff.');
+  const issues = studioVideoRequestIssues(input);
+  if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
+  return buildStudioVideoRequest(input);
 }
 
 export function studioGenerationBlocker(input: VideoPromptArtifactInput): string | null {

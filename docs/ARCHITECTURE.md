@@ -126,6 +126,10 @@ Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to
 - **Archive Versioning**:
   - `.loofi-project`: Bundle Schema 11 with backward compatibility for v5–v10.
   - Creative Pack: Schema 5 with OpenTimelineIO `Timeline.1` and FCPXML 1.11 payloads.
+  - Both schemas accept optional `studioRevisions: StudioRevisionV1[]`. Each schema-1 revision contains `id`, `projectId`, `createdAt`, `reason`, and a complete Studio `snapshot`. The snapshot retains both workspaces, their input, cached prompt artifacts, selected variants and lyrics locks, excluding live persistence counters. Portable project transfer collects revision-only media references and remaps nested identities.
+  - Complete global templates use the separate `studio-templates-v1` library and the discriminated schema-1 `StudioTemplateV1` video/music contract. They retain reusable input and music locks; video media IDs, file paths and provider artifacts are removed on both save and application. Existing video templates are adapted read-only.
+
+Studio revisions use the canonical project document service's serialized writes. A checkpoint must complete before a rebuild, target change, template application, accepted AI proposal or restore. Restoring commits both the current and restored snapshots in one document update. Autosave continues between checkpoints. AI proposals carry their originating project and draft revision; a newer edit invalidates the proposal before it can replace a draft. Existing schema versions, prompt artifact contracts and storage keys remain supported; additions are optional and document saves preserve unknown fields.
 
 ---
 
