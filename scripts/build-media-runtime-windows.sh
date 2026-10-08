@@ -18,8 +18,10 @@ sha256sum -c <<'HASHES'
 6949dcde27d41cebad1fd741fcafc36d55a1020d2d872d4a6eb3914caabbada2  fribidi-1.0.17.tar.xz
 d07a007327277708a2a73ae437887cdbaf282937f6d03ca5467723e9099af586  harfbuzz-14.6.0.tar.xz
 2dca25c0e0c837ddf00b52011b3f82cac1e4ddd3ad018227806b0c2288864acc  libass-0.17.5.tar.xz
-0a6b84ddd551815909d3102687276e5b0fa31f3d1becffa9b9d4fe592506d756  x264-0480cb05.tar.xz
 HASHES
+# Verify pinned source bytes independently of the host XZ encoder/thread mode.
+x264_source_hash=$(xz -dc "$source_root/x264-0480cb05.tar.xz" | sha256sum | cut -d ' ' -f 1)
+[[ "$x264_source_hash" == c41b6486dd855b99fd69a27fa81639d5fd8f098a064385d1c160b9a9b4cccde9 ]]
 for archive in ffmpeg-9.0.2 freetype-2.14.1 fribidi-1.0.17 harfbuzz-14.6.0 libass-0.17.5 x264-0480cb05; do
   tar -xf "$source_root/$archive.tar.xz" -C "$work_root"
 done

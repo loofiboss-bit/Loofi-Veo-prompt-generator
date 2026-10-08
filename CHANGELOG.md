@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Align onboarding and visual navigation tests with Start and refresh reviewed sidebar baselines.
 - Invoke runtime build scripts through Bash and restore Linux executable permissions after
   artifact download before integrity checks and desktop packaging.
+- Verify pinned x264 source bytes independently of host-specific XZ compression output.
 
 ### Qualification — v15 Creator Delivery
 

@@ -42,6 +42,9 @@ git -C "$build_root/x264" checkout --quiet 0480cb05fa188d37ae87e8f4fd8f1aea3711f
 if [[ ! -f "$build_root/sources/x264-0480cb05.tar.xz" ]]; then
   git -C "$build_root/x264" archive --format=tar --prefix=x264/ HEAD | xz > "$build_root/sources/x264-0480cb05.tar.xz"
 fi
+# XZ versions/thread modes encode identical source tar bytes differently.
+x264_source_hash=$(xz -dc "$build_root/sources/x264-0480cb05.tar.xz" | sha256sum | cut -d ' ' -f 1)
+[[ "$x264_source_hash" == c41b6486dd855b99fd69a27fa81639d5fd8f098a064385d1c160b9a9b4cccde9 ]]
 for name in ffmpeg-9.0.2 freetype-2.14.1 fribidi-1.0.17 harfbuzz-14.6.0 libass-0.17.5; do
   [[ -d "$build_root/$name" ]] || tar -xf "$build_root/sources/$name.tar.xz" -C "$build_root"
 done
