@@ -1,36 +1,37 @@
-# Video Prompt Studio & Universal Model Transpiler
+# Video Prompt Studio
 
-Prompt Studio is the primary copy-first creation workspace in Loofi Creator Studio v13.0.0. Located at `/` and `/studio`, it provides instant model-tailored prompt compilation across leading AI video generators.
+Prompt Studio (`/` or `/studio`) is the copy-first creation workspace. It compiles an idea into three
+editable, model-tailored variants locally: **Recommended Primary**, **Cinematic** and **Control-focused**.
 
-## Supported Model Targets & Grammar
+## Choose a destination
 
-1. **Google Flow / Veo 3.1**:
-   - Naturalistic, scene-first descriptive language.
-   - Explicit cinematic lens specifications (e.g., 35mm, 85mm anamorphic) and lighting attributes.
-   - Restrained negative prompts to prevent token clipping.
-2. **Kling 1.5 / 2.0**:
-   - Structured camera bracket directives (e.g. `[camera: slow pan left, cinematic tracking]`).
-   - Dynamic motion weighting and atmospheric cues.
-3. **Runway Gen-3 / Gen-4**:
-   - Action-first syntax with directional motion vectors.
-   - High-coherence subject locks and explicit camera speed indicators.
-4. **OpenAI Sora**:
-   - Rich continuous narrative flow describing physical realism, motion cadence, and photochemical film grain.
-5. **Luma Dream Machine Ray-2**:
-   - Trajectory anchors, transition clarity, and keyframe perspective shifts.
+Select the target before building. Flow, Kling, Runway, Sora and Luma are manual destinations:
+copy a package and use the destination's own submission controls. Check its concrete model version,
+limits and supported settings; broad target labels are not provider compatibility guarantees.
 
-## Core Prompt Modes
+**Veo API** is the internal production target. **Generate in app** prepares a plan with the selected
+variant and references. Production must validate it and receive explicit cost approval before submission.
+Unsupported combinations are blocked before submitting, rather than routed silently to a different model.
 
-- **Text-to-video**: Subject, visible action, environment, camera, lighting, and ambient sound cues.
-- **Image-to-video**: Strictly motion-only descriptors (camera and subject movement) without restating static image contents.
-- **First/last frames**: The desired bridge action connecting two reference frames.
-- **Ingredients/references**: Explicit role assignments (character, wardrobe, location, style).
-- **Extend**: Next narrative progression preserving continuity from the preceding shot.
+## Choose a recipe
 
-## 3D Spatial Optics
+| Recipe                 | Describe                                                 | References                                             |
+| ---------------------- | -------------------------------------------------------- | ------------------------------------------------------ |
+| Text-to-video          | Subject, action, environment, camera, lighting and sound | Optional direction                                     |
+| Image-to-video         | Subject and camera motion from an existing image         | Local source image                                     |
+| First/last frames      | The action bridging two frames                           | Both local frame images                                |
+| Ingredients/references | Roles and continuity for each reference                  | Selected local images                                  |
+| Extend                 | What happens next while preserving continuity            | Real provider artifact required for internal extension |
 
-- Cinema focal lengths: 16mm, 24mm, 35mm, 50mm, 85mm, 135mm, and 2.39:1 Anamorphic.
-- Calibrated apertures: $f/1.2$ to $f/16$ for precise depth-of-field simulation.
-- 3D camera trajectory compilation: Dolly Push-in/Pull-out, Pan, Tilt, Crane Ascension, 360° Orbit, Vertigo Dolly-Zoom, FPV Drone Dive, Dutch Track, and Steadicam Follow.
+Local PNG, JPEG and WebP images can be imported or selected from existing project images.
+**Scene details** contains additional direction controls. Camera and lens descriptions guide the
+prompt; they do not guarantee that a destination will reproduce an exact optical simulation.
 
-Each compile produces three deterministic variants: **Recommended Primary**, **Cinematic**, and **Control-focused**, with byte-identical copy fields, negative prompts, and settings checklists.
+## Build and refine
+
+Select **Build copy-ready pack**, edit a variant and inspect **Readiness checks**. Use
+**Compare in Arena** to inspect packages for all eight Studio targets. AI enhancement remains an
+explicit provider action with proposal review before acceptance.
+
+For durable versions and reusable inputs, see [Prompt Quality and Iteration](Prompt-Quality-and-Iteration.md).
+For a first scene, see [Quick Start](Quick-Start.md) and [Prompting Guide](Prompting-Guide.md).
