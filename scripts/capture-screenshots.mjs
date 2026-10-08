@@ -4,6 +4,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
+import { creatorVideo } from '../e2e/fixtures/creatorVideo.ts';
 
 const root = process.cwd();
 const outDir = path.join(root, 'assets', 'screenshots');
@@ -119,7 +120,13 @@ const allShots = [
       await createLocalRun(page, 'Brief');
       const runId = await page.getByLabel('Production run').inputValue();
       await page.evaluate(
-        async ({ runId }) => {
+        async ({ runId, videoBase64 }) => {
+          const { mediaAssetService } = await import('/src/core/services/mediaAssetService.ts');
+          const bytes = Uint8Array.from(atob(videoBase64), (character) => character.charCodeAt(0));
+          await mediaAssetService.storeBlob(
+            'screenshot-review-video',
+            new Blob([bytes], { type: 'video/webm' }),
+          );
           const db = await new Promise((resolve, reject) => {
             const request = indexedDB.open('veo-production-runs');
             request.onsuccess = () => resolve(request.result);
@@ -142,7 +149,7 @@ const allShots = [
                 apiSurface: 'google-ai-v1beta',
                 modelLifecycleSnapshot: 'preview',
                 priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
-                providerMediaUri: 'data:video/mp4;base64,AAAA',
+                localMediaKey: 'screenshot-review-video',
                 review: {
                   id: `review-${index}`,
                   shotId: shot.id,
@@ -151,6 +158,7 @@ const allShots = [
                   dimensions: [],
                   findings: [],
                   source: 'local',
+                  continuitySnapshotHash: shot.continuitySnapshot?.snapshotHash,
                   createdAt: Date.now(),
                 },
                 createdAt: Date.now(),
@@ -163,7 +171,7 @@ const allShots = [
           });
           db.close();
         },
-        { runId },
+        { runId, videoBase64: creatorVideo.toString('base64') },
       );
       await page.reload({ waitUntil: 'networkidle' });
       await page.waitForTimeout(1_000);
@@ -173,6 +181,20 @@ const allShots = [
       const comparison = page.getByLabel('A/B take comparison');
       try {
         await comparison.waitFor({ state: 'visible', timeout: 10_000 });
+        await page.waitForFunction(
+          () => {
+            const videos = document.querySelectorAll('[aria-label="A/B take comparison"] video');
+            return (
+              videos.length === 2 &&
+              [...videos].every(
+                (video) =>
+                  video.readyState >= 2 && Number.isFinite(video.duration) && video.duration > 0,
+              )
+            );
+          },
+          null,
+          { timeout: 10_000 },
+        );
       } catch {
         const state = await page.evaluate(
           async ({ runId }) => {
