@@ -1,6 +1,6 @@
 # Connected creator flow
 
-These contracts apply to Loofi Creator Studio v14.2.0. Public availability and package qualification
+These contracts apply to Loofi Creator Studio v14.2.1. Public availability and package qualification
 are verified through the [release process](RELEASE.md).
 
 ## Studio results

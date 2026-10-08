@@ -1,6 +1,6 @@
 # Release Notes
 
-## v14.2.0 — Connected Creator Flow
+## v14.2.1 — Connected Creator Flow
 
 - Navigate a responsive workbench with shared navigation and contextual asset access.
 - Follow scene-specific next actions and recover known jobs without a second generation order.
@@ -9,7 +9,7 @@
 - Export the selected video/audio timeline with relative media and provenance as an OTIO delivery.
 - Preserve full project backup, stored formats, older accepted takes and approval rules.
 
-[Download v14.2.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.0)
+[Download v14.2.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.1)
 for Windows and Linux. See [creator-flow contracts](../CREATOR_FLOW.md) and the
 [release process](../RELEASE.md) for qualification boundaries.
 

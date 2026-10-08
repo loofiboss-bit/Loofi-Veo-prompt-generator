@@ -83,7 +83,8 @@ test('packaged Electron boots with a narrow bridge and restores interrupted jobs
     let window = await app.firstWindow();
     await window.evaluate(() => localStorage.setItem('hasSeenWelcome', 'true'));
     await window.reload({ waitUntil: 'domcontentloaded' });
-    await expect(window.locator('main')).toBeVisible({ timeout: 20_000 });
+    await expect(window.getByRole('main')).toHaveCount(1);
+    await expect(window.getByRole('main')).toBeVisible({ timeout: 20_000 });
     const runtimeEvidence = await window.evaluate(async () => ({
       platform: window.electron?.platform,
       canExecuteProvider: typeof window.electron?.executeProvider === 'function',
@@ -129,7 +130,8 @@ test('packaged Electron boots with a narrow bridge and restores interrupted jobs
     await app.close();
     app = await launch();
     window = await app.firstWindow();
-    await expect(window.locator('main')).toBeVisible({ timeout: 20_000 });
+    await expect(window.getByRole('main')).toHaveCount(1);
+    await expect(window.getByRole('main')).toBeVisible({ timeout: 20_000 });
     await window.evaluate(() => {
       window.location.hash = '/activity';
     });
