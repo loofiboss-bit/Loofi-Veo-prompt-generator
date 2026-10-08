@@ -1,62 +1,46 @@
 # Production Workflow
 
-The **Production** workflow (`/create`) provides an end-to-end, approval-gated pipeline for multi-shot cinematic projects. It guides creators through six structured stages:
+**Production** (`/create`) connects local planning to approval-gated generation, review and export.
 
 ```text
-1. Brief  ──>  2. Scenes  ──>  3. Assets  ──>  4. Generate  ──>  5. Review  ──>  6. Export
+Brief → Scenes → Assets → Generate → Review → Export
 ```
 
----
+## Plan the production
 
-## Step 1: Brief & Screenplay Ingestion
+Define the brief and organize the scenes. Add local references and bind characters, locations,
+props and looks in [Assets and Continuity](Assets-and-Continuity.md). Verify required images and
+continuity locks before preparing a request.
 
-- Define project title, target platform, aspect ratio, duration goals, and narrative themes.
-- **Screenplay Breakdown Engine**: Ingest raw screenplay files in **Fountain** (`.fountain`) or Markdown format. The parser automatically extracts:
-  - Scene headers (`INT./EXT.`, Time, Location)
-  - Action sequences
-  - Character speaking roles and dialogue lines
-  - Foley sound effect cues
-- **Director Style Presets**: Apply signature aesthetic styling (Denis Villeneuve, Wes Anderson, Christopher Nolan, David Fincher, Cyberpunk Neon Noir).
+Studio's **Generate in app** creates a local plan for **Veo API**. It does not submit or bill a
+provider. Flow, Kling, Runway, Sora and Luma retain manual handoffs; Suno uses manual Custom Mode
+copy actions. Official Lyria music generation follows its own approved provider workflow.
 
----
+## Approve a supported request
 
-## Step 2: Scenes & 3D Previz Staging
+In **Generate**, review the selected prompt, model, duration, references and sourced maximum charge.
+The application validates capability and request constraints before submission. Unknown or stale
+pricing blocks paid execution. Approval is tied to the request; changed input needs a new approval.
 
-- Organize shots into a sequential timeline.
-- **3D WebGPU Viewport**: Position cameras in a 3D environment, configure focal length (16mm–135mm + 2.39:1 Anamorphic) and aperture ($f/1.2$ to $f/16$), and select 3D motion trajectories.
-- **Previz Animatic Player**: Simulate 2D camera movement (zooms, pans, whip dissolves) and preview cut pacing aligned to musical BPM grids.
-- **Scratch Dialogue**: Use local Web Speech API synthesis for instant voiceover playback during animatics.
+ComfyUI rendering, Live Co-Director audio, multi-device LAN collaboration and Foley generation are
+incomplete and disabled. Labs is off by default and does not activate those actions.
 
----
+## Recover before retrying
 
-## Step 3: Assets & Continuity
+If submission may have occurred, the job enters **RecoveryRequired**. The provider may already
+have accepted it. Ordinary retry cannot submit another order. Known operation IDs resume polling or
+download; persistent jobs reconcile after restart. Completion requires verified local media.
 
-- Bind characters, locations, and props to canonical **Production Bible v2** profiles.
-- Verify 4-angle turnaround matrices and calculate reference hash fingerprints.
-- Ensure all required reference assets are locally available before proceeding to generation.
+See [Troubleshooting and Diagnostics](Troubleshooting-and-Diagnostics.md).
 
----
+## Review and export
 
-## Step 4: Generation & Routing
+Compare takes and keep, reject or revise them. Optional AI review and paid retakes require their own
+explicit approval. Accepted local media can be placed on the timeline.
 
-- Choose compute execution:
-  - **Cloud AI Video (Google Veo 3.1)**: Requires explicit cost approval. Sourced exact or upper-bound pricing is calculated and re-verified by Electron main.
-  - **Local GPU Video (ComfyUI)**: Zero-cost, fully private rendering on local RTX hardware supporting SVD-XT, HunyuanVideo, CogVideoX, and AnimateDiff.
-  - **Music & Audio (Lyria 3 Pro / Suno)**: Orchestrate multi-track audio generation.
-- **Fail-Closed Safety**: Any ambiguous, stale, or zero-cost assumed cloud request is rejected immediately.
+**Download OTIO with media** describes actual tracks, gaps, clip ranges and selected or accepted
+takes. **FCPXML: experimental** requires qualification in your editor. `.loofi-project` schema 11
+archives preserve the document, referenced media, revisions and provenance with checksums.
 
----
-
-## Step 5: Review & Take Comparison
-
-- Compare takes using side-by-side A/B player comparison.
-- Inspect **Perceptual Hash Drift (dHash)** scores to verify character and wardrobe consistency against Bible reference sheets.
-- Mark takes as **Accepted**, **Rejected**, or **Candidate for Promotion**.
-
----
-
-## Step 6: Export & NLE Interchange
-
-- Package the finished project into **Creative Pack Schema 5**.
-- Export native **OpenTimelineIO (`Timeline.1`)** and **FCPXML 1.11** multi-track sequences (V1/V2 video, A1/A2/A3 audio, clip markers) for DaVinci Resolve, Final Cut Pro, and Adobe Premiere Pro.
-- Export portable `.loofi-project` Schema 11 archives with full migration history and cryptographic checksums.
+See [Review and Revision](Review-and-Revision.md), [Export and NLE Handoff](Export-and-NLE-Handoff.md)
+and [Project Backup and Restore](Project-Backup-and-Restore.md).

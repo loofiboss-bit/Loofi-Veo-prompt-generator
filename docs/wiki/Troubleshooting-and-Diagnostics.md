@@ -1,38 +1,30 @@
 # Troubleshooting and Diagnostics
 
-Loofi Creator Studio provides comprehensive built-in diagnostics to inspect application state, local GPU connectivity, media health, and recovery options.
+Use **Settings → Diagnostics** and Activity to inspect runtime, provider, media and durable-job
+state. Record the visible error and current application version before changing settings.
 
----
+## Diagnose without losing the draft
 
-## 1. Built-in Diagnostics Panel
+- Check whether the project says **Saving**, **Saved** or **Not saved**.
+- Keep the window open if saving fails and retry before replacing work.
+- Inspect local media health and missing-file errors before exporting a project.
+- Use provider diagnostics only for the provider action you intend to perform.
 
-Navigate to **Settings → Diagnostics** or open **Diagnostics Hub**:
+ComfyUI connection diagnostics are a Labs feature available on demand. A successful connection
+check does not qualify GPU rendering: ComfyUI rendering, Live audio, LAN collaboration and Foley
+generation remain incomplete and disabled.
 
-- **Environment & Versions**: Reports Node.js, Electron runtime, Chromium version, operating system, and architecture.
-- **Provider Status**: Checks connectivity to Gemini API, Vertex AI, Ollama, and local ComfyUI.
-- **Local GPU Status**: Queries VRAM consumption, GPU device model, and loaded ComfyUI checkpoints.
-- **Media Catalog Health**: Verifies SHA-256 checksums across all local video takes and audio stems.
-- **Durable Paid Job State**: Inspects durable queue items (`Submitting`, `Generating`, `Complete`, `RecoveryRequired`).
+## Ambiguous paid submissions
 
----
+A timeout or crash after submission may have occurred produces **RecoveryRequired**. Do not place
+a duplicate order. Known operation IDs resume polling or download, and restart reconciles persistent
+jobs. Completion requires verified local media. Cancelling locally does not prove provider billing
+was cancelled.
 
-## 2. Safe Mode & Crash Recovery
+## Report a useful issue
 
-If the application detects an unhandled crash loop:
+Include the application version, operating system, steps to reproduce, visible status and relevant
+sanitized diagnostic output. Remove keys, authorization headers, URL credentials, private prompts
+and account data before sharing. See [Privacy and Local Storage](Privacy-and-Local-Storage.md).
 
-- **Safe Mode Prompt**: Creator Studio offers to launch in Safe Mode on next startup.
-- **Safe Mode Options**:
-  - _Continue with Paid Integrations Disabled_: Prevents any external API billing calls while keeping all local planning and prompt tools accessible.
-  - _Disable Plugins_: Runs with third-party plugins temporarily disabled.
-  - _Reset Preferences_: Restores default UI preferences while preserving all projects, assets, and prompt history in IndexedDB.
-  - _Clear Crash Marker_: Resets the crash-loop watchdog once the underlying issue is resolved.
-
----
-
-## 3. Ambiguous Paid Submissions
-
-If an internet outage or system crash occurs during an active paid API call:
-
-- The durable job engine flags the item as `RecoveryRequired`.
-- The app **never** silently resubmits the request automatically to avoid duplicate charges.
-- Users can review the job in the Activity Hub and either verify existing results or cancel the task safely.
+For common workflow problems, see [Troubleshooting](Troubleshooting.md).

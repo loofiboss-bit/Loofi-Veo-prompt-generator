@@ -1,57 +1,32 @@
 # Export and NLE Handoff
 
-Loofi Creator Studio v13.0.0 bridges generative AI production directly with professional Non-Linear Editing (NLE) suites via standardized interchange formats and multi-track packaging.
+Choose the export that matches your next task: editable project recovery, a creative handoff or
+an editorial timeline with local media.
 
----
+| Export                       | Use it for                                      | Important boundary                                         |
+| ---------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| `.loofi-project` schema 11   | Portable project backup and restore             | Missing referenced media blocks export                     |
+| Creative Pack schema 5       | Creative briefs, prompts and production handoff | Includes available project output; does not generate media |
+| **Download OTIO with media** | Editorial timeline handoff                      | Confirm import support in your chosen editor               |
+| **FCPXML: experimental**     | Testing an XML interchange workflow             | External NLE import remains unqualified                    |
 
-## 1. Export Formats & Standards
+## Timeline handoff
 
-### OpenTimelineIO (`Timeline.1`)
+The OTIO bundle uses actual timeline tracks, gaps, clip ranges and selected or accepted takes.
+Inspect cuts, trims and media references after import into your editor. Generated interchange files
+and automated tests do not prove compatibility with every editor or its current version.
 
-- Industry standard for editorial interchange across VFX and post-production studios.
-- Preserves track hierarchy, cut boundaries, transition timings, and clip metadata annotations.
-- Direct import into **DaVinci Resolve**, **Final Cut Pro**, and **Adobe Premiere Pro**.
+FCPXML remains experimental. Test a small representative project in your editor before relying on
+it for production. ComfyUI and Foley integrations do not supply generated media in this release.
 
-### Final Cut Pro XML (FCPXML 1.11)
+## Portable projects
 
-- Standard Apple FCPXML interchange supported natively by DaVinci Resolve and Final Cut Pro.
-- Preserves multi-track arrangements, audio ducking keyframes, and timing markers.
+Project archives include the document, referenced local media, relative paths, checksums, prompt
+artifacts, handoffs and production provenance. Revisions and media referenced only by an older
+version are included. Unrelated project media and the global template library are not included.
 
-### Creative Pack Schema 5
+Import creates a new local project, remaps IDs and installs media. Active cost approvals are
+revoked; imported work is not automatically submitted. Playback of restored local media does not
+need a provider account.
 
-- Comprehensive export bundle containing:
-  - Full project metadata and prompt artifacts.
-  - Production Bible v2 profiles and turnaround reference sheets.
-  - Rendered video takes, scratch dialogue stems, and Foley audio tracks.
-  - OpenTimelineIO schema payload (`Timeline.1`).
-  - Cryptographic SHA-256 checksum manifest.
-
-### Portable `.loofi-project` Schema 11
-
-- Self-contained, portable zip archive encapsulating the entire project state, history, assets, settings, and migration ledger.
-
----
-
-## 2. Multi-Track Timeline Layout
-
-Exported timelines are organized into dedicated tracks for clean editorial handoff:
-
-| Track  | Type  | Content                                                        |
-| :----- | :---- | :------------------------------------------------------------- |
-| **V1** | Video | Primary high-resolution video takes (Google Veo 3.1 / ComfyUI) |
-| **V2** | Video | Previz animatic reference frames and storyboard animatics      |
-| **A1** | Audio | Musical score and instrumental stems (Suno / Lyria 3 Pro)      |
-| **A2** | Audio | Dialogue voiceover and scratch dialogue tracks                 |
-| **A3** | Audio | Foley sound effects and physical action cues                   |
-| **A5** | Audio | Ambient room tone and environmental texture                    |
-
----
-
-## 3. Clip Markers & Metadata Preservation
-
-Every exported video clip includes embedded metadata markers:
-
-- **Prompt String**: The exact prompt text that generated the take.
-- **Model & Generation Seed**: Complete model identification and random seed for reproducibility.
-- **Camera Rig Info**: Focal length, aperture, and camera trajectory.
-- **Continuity Fingerprint**: Production Bible hash ensuring provenance tracing back to original character references.
+See [Project Backup and Restore](Project-Backup-and-Restore.md) and [Production Workflow](Production-Workflow.md).
