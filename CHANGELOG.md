@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [14.1.0] - 2026-10-08
+
 ### UI / Design
 
 - Modernize UI architecture with Pro Studio Glass design system:
@@ -23,7 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep COPR RPMs installable after bundled Sharp/libvips upgrades by filtering versioned
   private runtime requirements instead of one historical libvips version.
 
-## [14.1.0] - Unreleased
+### CI
+
+- Run Chromium E2E in the versioned Playwright Noble container used to qualify Ubuntu visual
+  baselines, preserving strict screenshot assertions across hosted runner font changes.
 
 ### Added
 
