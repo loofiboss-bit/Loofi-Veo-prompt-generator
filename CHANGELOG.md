@@ -7,7 +7,43 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [15.0.0] - Unreleased
+
+### Added — v15 Creator Delivery
+
+- Start page with recent-project media readiness, a reopenable welcome guide, and a saved choice
+  between Start and Prompt Studio on application launch.
+- Twelve local creative recipes (six social, three story, three music) and three separate offline
+  example projects with durable original clips, synthesized audio, caption clips, and CC0 provenance.
+- Local style profiles with bundled Noto fonts, colors, optional media-library logo, explicit preview
+  and application, project-owned snapshots, and a protected Studio checkpoint before application.
+- Desktop video export from Production and Timeline: MP4 H.264/AAC, up to 60 seconds, 30 fps,
+  720p/1080p, portrait/landscape/square, clip trim and gaps, simple transitions, crop, audio mixing,
+  safe margins, captions and logo.
+- Manual caption editing, SRT import/export, three caption styles, and optional approval-gated
+  Gemini transcription proposals bound to the current project, caption state and audio trim.
+- Publication packages with verified video, SRT, first-frame cover, editable publication text and
+  delivery report; optional approval-gated Gemini text proposals never replace edits automatically.
+- Swedish application translations and translated new creator workflows in all six app languages.
+- Result-based guides for offline export, captions and style, and publication-package preparation.
+
+### Changed — v15 Creator Delivery
+
+- Freeze and hash render plans; accept registered media identities through scoped native IPC, run
+  rendering in a separate process, report progress/cancellation, and verify media before saving.
+- Fail explicitly for missing selected media, unsupported effects, invalid captions or timings,
+  interrupted renders, and destination errors. Write completed deliveries through temporary files.
+- Preserve optional creator delivery data and media references through project saves and portable
+  import/export without changing project schema 11, Creative Pack 5, or existing storage identities.
+- Require reviewed platform-specific FFmpeg/ffprobe bundles, checksums, licenses and corresponding
+  dependency sources for distribution; retain the published v14.2.1 download path until release.
+
+### Qualification — v15 Creator Delivery
+
+- This entry describes unreleased implementation. Physical Windows operation, public package
+  availability and human onboarding speed are separate claims requiring their own evidence.
+- Five AI-assisted workflow scenarios replace the proposed human trial for this implementation;
+  they do not establish a four-of-five human completion rate or a five-minute onboarding result.
 
 ## [14.2.1] - 2026-10-08
 

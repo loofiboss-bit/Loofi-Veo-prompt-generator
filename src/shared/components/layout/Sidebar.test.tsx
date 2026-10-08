@@ -125,7 +125,7 @@ describe('Sidebar', () => {
     expect(nav).toBeInTheDocument();
     // All nav buttons should be rendered inside the nav
     const buttons = nav.querySelectorAll('button');
-    expect(buttons).toHaveLength(6);
+    expect(buttons).toHaveLength(7);
   });
 
   it('renders Prompt Studio and the advanced production destinations', () => {
@@ -143,9 +143,7 @@ describe('Sidebar', () => {
   it('opens Prompt Studio from the primary navigation item', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
-    // Prompt Studio is the first nav item
-    const nav = screen.getByRole('navigation');
-    const studioButton = nav.querySelector('button');
+    const studioButton = screen.getByRole('button', { name: /Prompt Studio/i });
     expect(studioButton).toBeTruthy();
     await user.click(studioButton!);
     expect(props.onNavigate).toHaveBeenCalledWith('studio');
@@ -154,10 +152,7 @@ describe('Sidebar', () => {
   it('opens Production from the second navigation item', async () => {
     const props = defaultProps();
     const { user } = render(<Sidebar {...props} />);
-    // Production is the second nav item
-    const nav = screen.getByRole('navigation');
-    const buttons = Array.from(nav.querySelectorAll('button'));
-    const productionButton = buttons[1];
+    const productionButton = screen.getByRole('button', { name: /Production/i });
     await user.click(productionButton);
     expect(props.onOpenDirector).toHaveBeenCalledOnce();
   });

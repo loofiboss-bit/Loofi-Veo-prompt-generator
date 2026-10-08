@@ -605,6 +605,7 @@ export function useCreateWorkflow() {
       productionBible: useAppStore.getState().productionBible ?? productionBible,
       promptArtifacts: await promptStudioHandoffService.listArtifacts(currentProjectId),
       studioRevisions: await studioRevisionService.list(currentProjectId),
+      creatorDelivery: (await projectDocumentService.load(currentProjectId))?.creatorDelivery,
       timeline: {
         tracks: useAppStore.getState().tracks,
         clips: useAppStore.getState().clips,

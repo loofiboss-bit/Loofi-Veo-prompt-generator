@@ -14,6 +14,17 @@ contextBridge.exposeInMainWorld('electron', {
   getSafeModeStatus: () => ipcRenderer.invoke('get-safe-mode-status'),
   resetSafeMode: () => ipcRenderer.invoke('reset-safe-mode'),
 
+  getTimelineRenderCapabilities: () => ipcRenderer.invoke('timeline-render-capabilities'),
+  startTimelineRender: (plan) => ipcRenderer.invoke('timeline-render-start', plan),
+  getTimelineRenderJob: (id) => ipcRenderer.invoke('timeline-render-get', id),
+  cancelTimelineRender: (id) => ipcRenderer.invoke('timeline-render-cancel', id),
+  saveTimelineRender: (input) => ipcRenderer.invoke('timeline-render-save', input),
+  onTimelineRenderUpdate: (callback) => {
+    const listener = (_event, job) => callback(job);
+    ipcRenderer.on('timeline-render-update', listener);
+    return () => ipcRenderer.removeListener('timeline-render-update', listener);
+  },
+
   // Download progress listener
   onDownloadProgress: (callback) => {
     ipcRenderer.on('download-progress', (event, progress) => {

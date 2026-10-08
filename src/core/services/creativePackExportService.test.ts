@@ -5,6 +5,8 @@ import { INITIAL_STATE } from '@core/constants';
 import type { ProductionRun, Shot } from '@core/types';
 import { compileVideoPromptArtifact } from './promptStudioService';
 import { creativePackExportService, migrateCreativePack } from './creativePackExportService';
+import { defaultCreatorDelivery } from './creatorDeliveryService';
+import type { Project } from '@core/types';
 
 const shot: Shot = {
   id: 1,
@@ -23,6 +25,24 @@ const shot: Shot = {
 };
 
 describe('creativePackExportService', () => {
+  it('preserves an independent delivery snapshot in Creative Pack schema 5', () => {
+    const delivery = defaultCreatorDelivery({
+      name: 'Example',
+      storyboard: { shots: [] },
+    } as unknown as Project);
+    const pack = creativePackExportService.buildCreativePack({
+      projectId: 'example',
+      promptState: INITIAL_STATE,
+      creatorDelivery: delivery,
+    });
+    delivery.title = 'Later change';
+    expect(pack.schemaVersion).toBe(5);
+    expect(pack.creatorDelivery?.title).toBe('Example');
+    const restored = migrateCreativePack(
+      JSON.parse(creativePackExportService.exportCreativePack(pack, 'json')),
+    );
+    expect(restored.creatorDelivery).toEqual(pack.creatorDelivery);
+  });
   it('exports additive revision history in schema 5 without sharing mutable snapshots', () => {
     const revision = {
       schemaVersion: 1 as const,

@@ -1,0 +1,56 @@
+name: Creator offline render runtime
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  build-source-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '24'
+      - name: Install isolated build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake ninja-build pkg-config git curl xz-utils python3-venv wine64
+      - name: Build exact Linux FFmpeg and archive corresponding sources
+        run: scripts/build-media-runtime-linux.sh
+      - name: Prepare pinned Windows cross-toolchain and its runtime sources
+        run: scripts/prepare-windows-toolchain.sh
+      - name: Build exact Windows FFmpeg from sources
+        run: scripts/build-media-runtime-windows.sh
+      - name: Check source manifests and binary integrity
+        run: node scripts/check-media-runtime.mjs
+      - name: Install application test dependencies
+        run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
+      - name: Exercise real Linux rendering pipeline
+        run: node --test electron/creator-render.test.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: creator-media-runtime
+          path: packaging/media-runtime
+          retention-days: 14
+  verify-windows-runtime:
+    needs: build-source-runtime
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: creator-media-runtime
+          path: packaging/media-runtime
+      - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
+      - name: Verify exact Windows runtime and sources
+        run: node scripts/check-media-runtime.mjs
+      - name: Exercise real Windows rendering pipeline
+        run: node --test electron/creator-render.test.mjs

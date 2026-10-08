@@ -4,15 +4,18 @@ import es from '../src/core/locales/es/studio.json' with { type: 'json' };
 import fr from '../src/core/locales/fr/studio.json' with { type: 'json' };
 import ja from '../src/core/locales/ja/studio.json' with { type: 'json' };
 import ar from '../src/core/locales/ar/studio.json' with { type: 'json' };
+import sv from '../src/core/locales/sv/studio.json' with { type: 'json' };
 import commonEn from '../src/core/locales/en/common.json' with { type: 'json' };
 import commonEs from '../src/core/locales/es/common.json' with { type: 'json' };
 import commonFr from '../src/core/locales/fr/common.json' with { type: 'json' };
 import commonJa from '../src/core/locales/ja/common.json' with { type: 'json' };
 import commonAr from '../src/core/locales/ar/common.json' with { type: 'json' };
+import commonSv from '../src/core/locales/sv/common.json' with { type: 'json' };
 import { blockExternalRequests, dismissModals } from './helpers';
 
 for (const [language, label, strings, common] of [
   ['en', 'English', en, commonEn],
+  ['sv', 'Svenska', sv, commonSv],
   ['es', 'Español', es, commonEs],
   ['fr', 'Français', fr, commonFr],
   ['ja', '日本語', ja, commonJa],
