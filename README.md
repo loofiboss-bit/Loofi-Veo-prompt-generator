@@ -110,7 +110,7 @@ Drafts, variant edits and section locks autosave after 500 ms to the active proj
 **Saving**, **Saved**, and **Not saved** report the real persistence result; memory fallback cannot
 claim a durable save. Project switching waits for pending draft writes.
 
-## New in v14.2.0
+## New in v14.2.1
 
 - Follow a responsive workbench with shared navigation, Quick navigation and contextual assets.
 - See accurate scene readiness and the next action; recover known jobs without a new paid request.
@@ -172,19 +172,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v14.2.0
+## Install v14.2.1
 
-Download the [v14.2.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.0)
+Download the [v14.2.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.1)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.2.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.2.0-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.2.1-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.2.1-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-14.2.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -203,8 +203,8 @@ already installed.
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-14.2.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-14.2.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage
 ```
 
 ## Development
