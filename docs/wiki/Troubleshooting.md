@@ -1,72 +1,51 @@
 # Troubleshooting
 
-Common issues and recommended resolutions for Loofi Creator Studio v13.0.0.
+Start with the visible status and preserve the current project before changing settings.
 
----
+## The project says Not saved
 
-## 1. 3D WebGPU Viewport or Three.js Blank / Error
+Keep the window open and retry saving. Only a durable write can report **Saved**; a memory fallback
+will not survive closing the app. Storage failures also block iteration actions that would replace
+work. Export a project backup once storage is working again.
 
-- **Cause**: Hardware acceleration is disabled or outdated graphics drivers.
-- **Resolution**:
-  - Verify that hardware acceleration is enabled in your system graphics settings.
-  - On Linux, ensure Vulkan and Mesa drivers are up to date:
-    ```bash
-    sudo dnf install mesa-dri-drivers mesa-vulkan-drivers
-    ```
-  - Launch with `--enable-gpu-rasterization` if running in constrained environments.
+## The pack has readiness warnings
 
----
+Open **Readiness checks → Open control** to inspect the relevant field or variant. Writing advice
+and uncertain manual compatibility are warnings, while documented constraints can block internal
+generation. First/last-frame recipes need both images; internal extension needs a real provider artifact.
 
-## 2. ComfyUI Offline Engine Cannot Connect
+## An AI proposal disappeared
 
-- **Cause**: ComfyUI is not running on `http://127.0.0.1:8188` or CORS is blocking localhost requests.
-- **Resolution**:
-  - Verify ComfyUI is running in your terminal: `curl http://127.0.0.1:8188/system_stats`.
-  - Start ComfyUI with the `--enable-cors-header` flag:
-    ```bash
-    python main.py --listen 127.0.0.1 --port 8188 --enable-cors-header
-    ```
-  - In **Settings → ComfyUI**, verify the host URL and click **Test Connection**.
+Edits or project switching invalidate pending proposals. Request enhancement or rewriting again
+from the current draft. Review differences before accepting; locked lyric sections remain unchanged.
 
----
+## A paid job reports RecoveryRequired
 
-## 3. Multimodal AI Co-Director Microphone Not Responding
+Do not submit another order. The provider may already have accepted the first. Inspect the job in
+Activity and use the available recovery path. Known operations resume polling or download;
+restarting reconciles persistent jobs. See [Diagnostics](Troubleshooting-and-Diagnostics.md).
 
-- **Cause**: System microphone permissions denied or AudioContext suspended.
-- **Resolution**:
-  - Check operating system privacy settings to ensure Creator Studio has microphone access.
-  - Verify your Gemini API key in **Settings → API Keys** has access to `gemini-3.8-live`.
+## ComfyUI, Live, LAN or Foley actions are unavailable
 
----
+Those integrations are incomplete and disabled. **Settings → Labs** only exposes local camera
+preview and ComfyUI connection diagnostics on demand. Enabling Labs does not enable rendering,
+Live audio, LAN collaboration or Foley generation. Firewall changes and microphone permissions
+will not activate them.
 
-## 4. P2P Virtual Writers' Room Cannot Connect to Peer
+## An AppImage will not launch
 
-- **Cause**: Peers are on different subnets or a local firewall is blocking WebRTC UDP traffic.
-- **Resolution**:
-  - Confirm both machines are on the same local network (LAN / Wi-Fi).
-  - Ensure local UDP traffic for WebRTC is not blocked by local firewalls (`firewalld` or Windows Defender):
-    ```bash
-    sudo firewall-cmd --add-service=mdns --permanent
-    sudo firewall-cmd --reload
-    ```
-  - Double check that the LAN pairing code matches exactly.
+Use the file downloaded from a published release, verify its checksum and make it executable:
 
----
+```bash
+chmod +x /path/to/downloaded.AppImage
+/path/to/downloaded.AppImage
+```
 
-## 5. Linux AppImage Launch Issues
+Record the actual launch error before changing system packages. See
+[Installation and Updates](Installation-and-Updates.md) for supported package channels.
 
-- **Cause**: Execution permissions missing or FUSE library not installed.
-- **Resolution**:
-  ```bash
-  chmod +x Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage
-  sudo dnf install fuse-libs
-  ./Loofi-Flow-Veo-Studio-13.0.0-linux-x86_64.AppImage
-  ```
+## Desktop credential storage is unavailable
 
----
-
-## 6. Linux Credential Vault / D-Bus Error
-
-- **Cause**: Secret Service / GNOME Keyring / KDE Wallet is locked or not initialized.
-- **Resolution**:
-  - The app includes fallback handling in diagnostics when Secret Service is unreachable. Ensure your desktop keyring daemon is running (`gnome-keyring-daemon` or `kwalletd5`).
+Inspect the credential-vault status in diagnostics and ensure your desktop session's keyring is
+available and unlocked. Never paste API keys, authorization headers or provider account data into
+an issue. Local compilation works without credentials.

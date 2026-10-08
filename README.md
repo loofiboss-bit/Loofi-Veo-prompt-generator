@@ -1,14 +1,67 @@
+<p align="center">
+  <img src="assets/branding/logo.png" alt="Loofi Creator Studio logo: film frame, play button and audio wave" width="88" />
+</p>
+
 # Loofi Creator Studio
 
-[![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?label=release)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
-[![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-green.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
-[![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
+![Loofi Creator Studio — Your idea. A copy-ready prompt pack.](assets/branding/github-banner.png)
 
-Local-first desktop workspace for individual creators: idea → editable prompt pack → manual
-handoff or approved production → portable result. v14.1.0 adds
-model comparison, actionable validation, reviewed AI changes, project revisions and reusable Studio templates.
-The installers below are published by the tag workflow after package qualification.
+<p align="center">
+  <strong>Turn a scene idea into video prompts. Turn a song idea into a lyrics pack.</strong><br />
+  A local-first desktop workspace for creators, with editable variants, model comparison and portable projects.
+</p>
+
+<p align="center">
+  <a href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest"><strong>Download</strong></a> ·
+  <a href="docs/wiki/Home.md"><strong>Explore the wiki</strong></a> ·
+  <a href="docs/wiki/Quick-Start.md"><strong>Quick start</strong></a> ·
+  <a href="https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues">Report an issue</a>
+</p>
+
+[![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
+[![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
+[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1410)
+[![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
+[![Release asset downloads](https://img.shields.io/github/downloads/loofiboss-bit/Loofi-Veo-prompt-generator/total?style=flat-square&labelColor=0f172a&label=asset%20downloads&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases)
+
+The download counter counts all release assets, including checksums and metadata; it is not a count
+of unique users or installations.
+
+## Why creators use it
+
+| From your idea to…             | What you get                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| **A video prompt pack**        | One primary and two editable alternatives, with synchronized copy fields.             |
+| **A model comparison**         | Compile the same brief for eight video targets in Arena before choosing your handoff. |
+| **A Suno lyrics pack**         | Separate style and lyrics, section locks, and manual copy into Suno.                  |
+| **A reusable workflow**        | Local templates, saved revisions, comparison and restore.                             |
+| **A portable project**         | Export your project with referenced media, checksums and provenance.                  |
+| **An approved production run** | Review supported Veo/Lyria requests and a maximum charge before submission.           |
+
+Prompt compilation runs locally without a provider key. Optional AI enhancement requires Gemini
+or Ollama. External generators have their own accounts, availability and pricing.
+
+**Video targets:** Flow, Veo API, Kling, Runway, Sora, Luma, Wan and Hailuo.
+**Music handoff:** Suno. Manual handoffs copy prompt text; they do not generate video in this app.
+
+## Your first prompt in a minute
+
+1. Open **Prompt Studio → Video** and describe the scene you want to create.
+2. Choose a target, mode and duration; add references if needed.
+3. Select **Build copy-ready pack**, review the three variants and edit the result.
+4. Copy the pack into your chosen generator, or compare targets in **Arena**.
+
+For music, switch to **Music & Lyrics**, build your pack and use **Copy Style** and **Copy Lyrics**
+in Suno. Follow the [quick start](docs/wiki/Quick-Start.md) for the complete workflow.
+
+## Inside Prompt Studio
+
+![Prompt Studio compiling a video pack locally, with editable variants and copy controls](assets/screenshots/10-prompt-studio.png)
+
+_A real v14.1.0 browser capture with a fictional scene: local compilation, three variants,
+revision tools and a ready-to-copy handoff. No provider key or generation request._
 
 ## Start here
 
@@ -164,10 +217,27 @@ npm run screenshots
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-## Screenshots
+## A look inside Production
+
+![Production scene planning with the local workflow](assets/screenshots/02-scene-planning.png)
+
+_Production scene planning. These deterministic screenshots show the advanced workflow;
+Prompt Studio is the copy-first starting point._
+
+| Review before spending                                                          | Review your selected takes                                       |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| ![Generation approval preflight](assets/screenshots/04-generation-approval.png) | ![Side-by-side take review](assets/screenshots/06-ab-review.png) |
 
 The [screenshot guide](docs/wiki/Screenshots.md) explains how to regenerate the deterministic,
 provider-free fixtures. The screenshots cover the advanced production workflow; Prompt Studio is the
 copy-first entry point in the shipped application.
 
-MIT License — see [LICENSE](LICENSE).
+## Help shape the studio
+
+Found a rough edge? [Report a bug](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/issues/new/choose)
+or suggest a workflow improvement. Contributions are welcome: start with
+[CONTRIBUTING.md](CONTRIBUTING.md), the [architecture](docs/ARCHITECTURE.md) and the
+[security policy](SECURITY.md). If the studio helps your workflow, a GitHub star helps others discover it.
+
+MIT License — see [LICENSE](LICENSE). Independent project; not affiliated with Google or the other
+model providers. Product names belong to their respective owners.

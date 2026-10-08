@@ -1,6 +1,6 @@
 # Prompting Guide & Universal Syntax Reference
 
-Loofi Creator Studio v13.0.0 compiles native prompt syntax for multiple generation targets. Follow these target-specific principles to maximize model fidelity.
+Loofi Creator Studio compiles model-tailored packages for multiple manual destinations. The following are writing examples, not guarantees of model fidelity or documented provider control syntax. Confirm your destination's actual model version and supported controls before submitting. See [Prompt Quality and Iteration](Prompt-Quality-and-Iteration.md) for readiness checks and comparison.
 
 ---
 

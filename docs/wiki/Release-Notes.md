@@ -9,21 +9,24 @@
 - Reuse complete local video/music templates with safe cross-project media handling.
 - Use the Pro Studio Glass interface with translated review surfaces and corrected Arabic layout.
 
-[Download v14.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0).
-The tag workflow qualifies Windows/Linux packages before publication. Physical desktop and paid
-provider qualification remain separate; see [release process](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/blob/main/docs/RELEASE.md).
+[Download v14.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0) for Windows and Linux.
+Package publication, physical desktop behavior and live paid provider qualification are separate
+evidence; see the [release process](../RELEASE.md) and [implementation record](../V14_1_IMPLEMENTATION.md).
 
 ## v13.0.0 — Universal Model Transpiler & Modular Studio Architecture
 
-v13 expands Loofi Creator Studio from Google Flow/Veo specialization into an open, universal AI video production suite:
+The v13 development work introduced multi-target compilation, modular Studio components and
+experimental integration scaffolding. The current v14 workspace supersedes its capability claims:
+ComfyUI rendering, Live audio, LAN collaboration and Foley generation are disabled incomplete
+integrations. Historical development highlights below are not current activation instructions:
 
 - **Universal Model Transpiler Engine**: Transpile cinematic shot rigs into model-specific prompts for Google Veo 3.1 / Flow, Kling 1.5/2.0, Runway Gen-3/4, OpenAI Sora, and Luma Dream Machine Ray-2.
 - **Prompt Studio UI Modularization**: Decomposes `PromptStudioPage` into decoupled, maintainable components (`VideoPromptStudio`, `MusicPromptStudio`, `PromptVariantCard`, `PromptValidationList`).
-- **ComfyUI Local GPU Engine**: Zero-cost, fully offline video rendering for Stable Video Diffusion (SVD-XT), HunyuanVideo, CogVideoX, and AnimateDiff with real-time VRAM and health diagnostics.
+- **ComfyUI integration scaffolding**: Experimental local engine work; current support is limited to on-demand connection diagnostics in Labs, with rendering disabled.
 - **3D WebGPU Staging & Generative Previz v2**: Real-time Three.js viewport, optical lens simulation (16mm to 135mm & 2.39:1 Anamorphic), calibrated apertures ($f/1.2$ to $f/16$), and client-side ControlNet Depth, Normal, and Wireframe map rendering.
-- **Multimodal AI Co-Director**: Hands-free audio voice directing powered by Gemini Live (`gemini-3.8-live`), waveform studio widget, and bidirectional camera/scene tool manipulation.
-- **Automated Foley & SFX Audio Pipeline**: Multi-track audio detection (A2 Dialogue TTS, A3 Foley/SFX, A5 Room Tone), dynamic ducking keyframe automation (-14 dB attenuation during dialogue), and offline synthetic WAV previz.
-- **P2P Virtual Writers' Room**: Local network (LAN) real-time collaboration over WebRTC data channels without cloud servers, creative production roles, LAN pairing codes, and AES-GCM data channel encryption.
+- **AI Co-Director scaffolding**: Experimental Live UI work; audio integration is incomplete and disabled.
+- **Foley and SFX scaffolding**: Experimental timeline/audio work; Foley generation is incomplete and disabled.
+- **Writers' room scaffolding**: Experimental collaboration work; multi-device LAN operation is incomplete and disabled.
 
 ## v12.0.0 — Previz & Multi-Track Production Studio
 
@@ -34,7 +37,7 @@ v12 bridges cinematic film direction with video generation and professional NLE 
 - **AI Screenplay Breakdown Engine**: Automatic parsing of Fountain and Markdown screenplays into scenes, dialogue lines, characters, locations, and foley cues with cinematic Director style profiles (Villeneuve, Anderson, Nolan, Fincher, Cyberpunk).
 - **Production Bible v2 & Visual Drift Scorer**: 4-angle turnaround reference matrix (front, 3/4, profile, action/back) for character identity locking, combined with client-side canvas perceptual hash (dHash) drift scoring.
 - **Multi-Track Timeline & OpenTimelineIO (OTIO) + Creative Pack Schema 5**: Multi-track video (V1 Veo primary, V2 Previz animatic) and audio (A1 Music, A2 Scratch Dialogue, A3 Foley SFX) with clip metadata markers and seamless NLE interchange for DaVinci Resolve, Final Cut Pro, and Premiere Pro.
-- **Project Schema 12 Migration**: Forward migration preserving all v10/v11 prompt artifacts, production runs, and continuity profiles.
+- **Project persistence work**: The current documented portable `.loofi-project` contract remains schema 11; see [Backup and Restore](Project-Backup-and-Restore.md).
 
 ## v11.0.0 — Prompt & Lyrics Studio
 
