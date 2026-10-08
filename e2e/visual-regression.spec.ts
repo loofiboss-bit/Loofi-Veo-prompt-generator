@@ -96,6 +96,9 @@ test.describe('Creator Studio visual regression', () => {
     await page.getByRole('button', { name: /new local plan/i }).click();
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
     await expect(page.getByText('Approval preflight')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Generate a take · Shot 1', exact: true }),
+    ).toBeVisible();
     await expect(page).toHaveScreenshot('creator-studio-approval.png', {
       animations: 'disabled',
       fullPage: true,
