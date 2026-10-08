@@ -16,6 +16,8 @@ export * from './promptStudioDraft';
 export * from './studioRevision';
 export * from './studioTemplate';
 export * from './externalStudioResult';
+export * from './creatorDelivery';
+import type { CreatorDeliveryV1 } from './creatorDelivery';
 import type { ExternalStudioResultV1 } from './externalStudioResult';
 import type { StudioRevisionV1 } from './studioRevision';
 import type { PromptStudioDraftV1 } from './promptStudioDraft';
@@ -381,6 +383,7 @@ export interface ProjectMetadata {
 
 export interface Project {
   [key: string]: unknown;
+  creatorDelivery?: CreatorDeliveryV1;
   studioDraft?: PromptStudioDraftV1;
   studioRevisions?: StudioRevisionV1[];
   studioResults?: ExternalStudioResultV1[];

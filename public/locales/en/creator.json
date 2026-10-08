@@ -1,0 +1,244 @@
+{
+  "start": {
+    "title": "Your next creative moment",
+    "description": "Turn an idea into a short video. Work locally, bring your own media, and use AI only when you choose.",
+    "create": "Create new",
+    "example": "Try an example",
+    "continue": "Continue a project",
+    "help": "Show welcome guide",
+    "defaultView": "Open the app on",
+    "label": "Start",
+    "studio": "Prompt Studio",
+    "production": "Production",
+    "defaultProjectTitle": "My short video",
+    "defaultIdea": "A small creative moment worth sharing"
+  },
+  "examples": {
+    "title": "Try it offline — no account or API key",
+    "description": "Original geometric clips and synthesized audio, free to reuse (CC0). Open, customize and export.",
+    "open": "Open example"
+  },
+  "recipes": {
+    "title": "Start with a creative recipe",
+    "scenes": "scenes",
+    "projectTitle": "Project title",
+    "idea": "Your idea",
+    "steps": "1. Customize your idea locally. 2. Add your media or generate clips externally. 3. Arrange and export in the desktop app.",
+    "cost": "Recipe drafts are local and free. Provider generation is optional and may have external costs. No generation starts here.",
+    "use": "Create scene drafts",
+    "save": "Save customized recipe as template",
+    "quick-tip": {
+      "title": "Quick tip",
+      "description": "Teach one useful thing",
+      "scenes": {
+        "0": "Hook: the problem",
+        "1": "Show the useful technique",
+        "2": "Result and invitation"
+      }
+    },
+    "product-story": {
+      "title": "Product story",
+      "description": "Show what makes your product useful",
+      "scenes": {
+        "0": "Product reveal",
+        "1": "Detail in use",
+        "2": "Benefit and invitation"
+      }
+    },
+    "before-after": {
+      "title": "Before / after",
+      "description": "Show a transformation",
+      "scenes": {
+        "0": "Before state",
+        "1": "The process",
+        "2": "After state"
+      }
+    },
+    "daily-moment": {
+      "title": "Daily moment",
+      "description": "Share a small memorable moment",
+      "scenes": {
+        "0": "Setting the scene",
+        "1": "A human detail",
+        "2": "A satisfying close"
+      }
+    },
+    "mini-tutorial": {
+      "title": "Mini tutorial",
+      "description": "Teach a process in four steps",
+      "scenes": {
+        "0": "Outcome preview",
+        "1": "First step",
+        "2": "Second step",
+        "3": "Final result"
+      }
+    },
+    "announcement": {
+      "title": "Announcement",
+      "description": "Introduce something new",
+      "scenes": {
+        "0": "Attention grabber",
+        "1": "What is new",
+        "2": "Why it matters",
+        "3": "Next step"
+      }
+    },
+    "short-story": {
+      "title": "Short story",
+      "description": "Tell a complete small story",
+      "scenes": {
+        "0": "The world",
+        "1": "The challenge",
+        "2": "The choice",
+        "3": "The resolution"
+      }
+    },
+    "travel-diary": {
+      "title": "Travel diary",
+      "description": "Capture a place and a feeling",
+      "scenes": {
+        "0": "Arrival",
+        "1": "Place and detail",
+        "2": "A personal moment",
+        "3": "Departure"
+      }
+    },
+    "documentary": {
+      "title": "Mini documentary",
+      "description": "Explain a real subject",
+      "scenes": {
+        "0": "Question",
+        "1": "Context",
+        "2": "Evidence",
+        "3": "Human perspective",
+        "4": "Conclusion"
+      }
+    },
+    "ambient-visual": {
+      "title": "Ambient visual",
+      "description": "Pair calm motion with instrumental audio",
+      "scenes": {
+        "0": "Soft opening",
+        "1": "Flowing shapes",
+        "2": "Quiet close"
+      }
+    },
+    "song-teaser": {
+      "title": "Song teaser",
+      "description": "Introduce a song and its mood",
+      "scenes": {
+        "0": "Mood introduction",
+        "1": "Hook imagery",
+        "2": "Song title"
+      }
+    },
+    "beat-loop": {
+      "title": "Beat loop",
+      "description": "Create a rhythmic visual sequence",
+      "scenes": {
+        "0": "Rhythm begins",
+        "1": "Patterns build",
+        "2": "Release",
+        "3": "Loop return"
+      }
+    }
+  },
+  "recent": {
+    "title": "Recent projects",
+    "ready": "Media available — arrange and export",
+    "addMedia": "Next: add media to your scenes",
+    "addIdea": "Next: add your idea",
+    "empty": "Your saved projects will appear here."
+  },
+  "style": {
+    "title": "My style",
+    "description": "Save your colors, font and creative direction. Applying a style saves a separate snapshot in the project.",
+    "new": "New style",
+    "name": "Style name",
+    "primary": "Primary color",
+    "text": "Text color",
+    "font": "Font",
+    "logo": "Logo from media library",
+    "noLogo": "No logo",
+    "direction": "Creative direction",
+    "save": "Save style",
+    "preview": "Preview on current project",
+    "logoPreview": "Logo preview",
+    "captionPreview": "A caption that is easy to read",
+    "confirmDescription": "Apply these colors, font, logo and creative direction to the current project? Existing continuity profiles remain available.",
+    "confirm": "Apply to this project",
+    "defaultName": "My style"
+  },
+  "welcome": {
+    "source": "How would you like to begin?",
+    "example": "Try an offline example",
+    "own": "Use my own idea or media",
+    "skip": "Skip for now"
+  },
+  "delivery": {
+    "saveProject": "Open a saved project to prepare a video delivery.",
+    "title": "Export video",
+    "desktopRequired": "Local MP4 export requires the desktop app with its bundled renderer.",
+    "ratio": "Format",
+    "resolution": "Resolution",
+    "margin": "Safe margin",
+    "limit": "Up to 60 seconds · 30 fps · H.264/AAC · no watermark",
+    "crop": "Preview crop and safe margins",
+    "cropMode": "Crop mode",
+    "fit": "Fit entire image",
+    "fill": "Crop to fill",
+    "audioMix": "Audio levels and fades",
+    "volume": "Volume",
+    "fadeIn": "Fade in (seconds)",
+    "fadeOut": "Fade out (seconds)",
+    "captions": "Captions",
+    "captionStyle": "Style",
+    "captionMode": "Output",
+    "sidecar": "SRT sidecar",
+    "burnIn": "Burn into video",
+    "captionText": "Text",
+    "startTime": "Start (seconds)",
+    "endTime": "End (seconds)",
+    "remove": "Remove",
+    "newCaption": "Your caption",
+    "addCaption": "Add caption",
+    "importSrt": "Import SRT",
+    "exportSrt": "Download SRT",
+    "audio": "Audio to transcribe",
+    "consentText": "Gemini receives the complete selected audio file shown below; captions are mapped to its timeline trim. Its provider may charge for this request. The desktop approval dialog shows the maximum charge before sending.",
+    "consent": "I approve sending this audio for a caption proposal.",
+    "propose": "Request Gemini proposal",
+    "reviewProposal": "Review caption proposal before accepting",
+    "staleProposal": "Project or captions changed. Request a new proposal.",
+    "acceptProposal": "Accept proposal",
+    "discard": "Discard",
+    "publishTitle": "Publication title",
+    "description": "Description",
+    "saveSettings": "Save delivery settings",
+    "retry": "Retry export",
+    "render": "Export video",
+    "cancel": "Cancel export",
+    "package": "Save publication package",
+    "saveMp4": "Save MP4",
+    "progress": "Export progress",
+    "locateClip": "Locate affected clip",
+    "publishAiConsent": "Only the publication title and description shown above are sent to Gemini. The desktop approval dialog shows the maximum charge before sending.",
+    "publishAi": "Request publication text proposal",
+    "publishProposal": "Review publication text proposal",
+    "acceptPublish": "Accept publication text",
+    "publishStale": "Publication text or project changed. Request a new proposal.",
+    "status": {
+      "queued": "Queued",
+      "rendering": "Rendering",
+      "verifying": "Verifying",
+      "complete": "Complete",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "styles": {
+      "classic": "Classic",
+      "pop": "Pop",
+      "karaoke": "Karaoke"
+    }
+  }
+}

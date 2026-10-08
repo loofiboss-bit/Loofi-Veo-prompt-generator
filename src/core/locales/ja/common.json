@@ -101,7 +101,8 @@
     "openNavigation": "ナビゲーションを開く",
     "closeNavigation": "ナビゲーションを閉じる",
     "focusMode": "集中モード",
-    "exitFocus": "集中モードを終了"
+    "exitFocus": "集中モードを終了",
+    "start": "スタート"
   },
   "activity": {
     "queueEyebrow": "永続ジョブ",

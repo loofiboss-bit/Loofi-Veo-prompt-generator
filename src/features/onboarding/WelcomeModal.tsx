@@ -20,6 +20,8 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const navigate = useNavigate();
   const { setWelcomeShown } = useOnboarding();
   const [mode, setMode] = useState<'video' | 'music'>('video');
+  const { t: creatorT } = useTranslation('creator');
+  const [source, setSource] = useState<'example' | 'own'>('example');
   const [busy, setBusy] = useState(false);
   const language = SUPPORTED_LANGUAGES.includes(i18n.language as SupportedLanguage)
     ? (i18n.language as SupportedLanguage)
@@ -28,7 +30,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     setWelcomeShown();
     localStorage.setItem('v8-onboarding-complete', 'true');
     onClose();
-    navigate(ROUTES.STUDIO + '?mode=' + mode);
+    navigate((source === 'example' ? ROUTES.START : ROUTES.STUDIO) + '?mode=' + mode);
   };
   return (
     <Modal isOpen={isOpen} onClose={finish} size="lg" closeOnBackdropClick>
@@ -63,6 +65,37 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             {t('musicMode')}
           </button>
         </div>
+        <fieldset className="mt-4">
+          <legend>{creatorT('welcome.source', 'How would you like to begin?')}</legend>
+          <label className="studio-field">
+            <input
+              type="radio"
+              name="welcome-source"
+              checked={source === 'example'}
+              onChange={() => setSource('example')}
+            />
+            {creatorT('welcome.example', 'Try an offline example')}
+          </label>
+          <label className="studio-field">
+            <input
+              type="radio"
+              name="welcome-source"
+              checked={source === 'own'}
+              onChange={() => setSource('own')}
+            />
+            {creatorT('welcome.own', 'Use my own idea or media')}
+          </label>
+        </fieldset>
+        <button
+          onClick={() => {
+            setWelcomeShown();
+            localStorage.setItem('v8-onboarding-complete', 'true');
+            onClose();
+          }}
+          disabled={busy}
+        >
+          {creatorT('welcome.skip', 'Skip for now')}
+        </button>
         <button className="studio-primary mt-4" onClick={finish} disabled={busy}>
           {t('startCreating')}
         </button>

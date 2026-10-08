@@ -125,6 +125,10 @@ const shotFixture: Shot = {
 };
 
 class MockAudioContext {
+  static instances: MockAudioContext[] = [];
+  constructor() {
+    MockAudioContext.instances.push(this);
+  }
   state: 'running' | 'suspended' = 'running';
 
   close = vi.fn().mockResolvedValue(undefined);
@@ -158,6 +162,15 @@ describe('TimelinePlayer direct export flows', () => {
       writable: true,
       configurable: true,
     });
+  });
+  it('closes each owned audio context exactly once through strict replay and unmount', () => {
+    MockAudioContext.instances = [];
+    const { unmount } = render(<TimelinePlayer shots={[shotFixture]} onClose={vi.fn()} />, {
+      reactStrictMode: true,
+    });
+    unmount();
+    expect(MockAudioContext.instances).toHaveLength(2);
+    for (const context of MockAudioContext.instances) expect(context.close).toHaveBeenCalledOnce();
   });
   it('does not rebuild an existing edit when opening timeline playback', () => {
     render(<TimelinePlayer shots={[shotFixture]} onClose={vi.fn()} />);

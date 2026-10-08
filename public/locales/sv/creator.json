@@ -1,0 +1,244 @@
+{
+  "start": {
+    "title": "Ditt nästa kreativa ögonblick",
+    "description": "Gör en idé till en kort video. Arbeta lokalt, använd egna medier och välj själv när du vill använda AI.",
+    "create": "Skapa nytt",
+    "example": "Prova ett exempel",
+    "continue": "Fortsätt ett projekt",
+    "help": "Visa välkomstguiden",
+    "defaultView": "Öppna appen på",
+    "label": "Start",
+    "studio": "Prompt Studio",
+    "production": "Produktion",
+    "defaultProjectTitle": "Min kortvideo",
+    "defaultIdea": "Ett litet kreativt ögonblick värt att dela"
+  },
+  "examples": {
+    "title": "Prova offline — inget konto eller API-nyckel behövs",
+    "description": "Egna geometriska klipp och syntetiserat ljud som får återanvändas fritt (CC0). Öppna, anpassa och exportera.",
+    "open": "Öppna exempel"
+  },
+  "recipes": {
+    "title": "Börja med ett kreativt recept",
+    "scenes": "scener",
+    "projectTitle": "Projekttitel",
+    "idea": "Din idé",
+    "steps": "1. Anpassa din idé lokalt. 2. Lägg till egna medier eller generera klipp externt. 3. Ordna och exportera i desktopappen.",
+    "cost": "Receptutkast är lokala och gratis. Generering hos en tjänst är frivillig och kan kosta pengar. Ingen generering startas här.",
+    "use": "Skapa scenutkast",
+    "save": "Spara anpassat recept som mall",
+    "quick-tip": {
+      "title": "Snabbtips",
+      "description": "Lär ut något användbart",
+      "scenes": {
+        "0": "Inledning: problemet",
+        "1": "Visa den användbara tekniken",
+        "2": "Resultat och inbjudan"
+      }
+    },
+    "product-story": {
+      "title": "Produktberättelse",
+      "description": "Visa vad som gör din produkt användbar",
+      "scenes": {
+        "0": "Visa produkten",
+        "1": "Detalj under användning",
+        "2": "Fördel och inbjudan"
+      }
+    },
+    "before-after": {
+      "title": "Före / efter",
+      "description": "Visa en förvandling",
+      "scenes": {
+        "0": "Utgångsläge",
+        "1": "Processen",
+        "2": "Slutläge"
+      }
+    },
+    "daily-moment": {
+      "title": "Vardagsögonblick",
+      "description": "Dela ett litet minnesvärt ögonblick",
+      "scenes": {
+        "0": "Presentera miljön",
+        "1": "En mänsklig detalj",
+        "2": "En tillfredsställande avslutning"
+      }
+    },
+    "mini-tutorial": {
+      "title": "Miniguide",
+      "description": "Lär ut en process i fyra steg",
+      "scenes": {
+        "0": "Förhandsvisa resultatet",
+        "1": "Första steget",
+        "2": "Andra steget",
+        "3": "Slutresultat"
+      }
+    },
+    "announcement": {
+      "title": "Nyhet",
+      "description": "Presentera något nytt",
+      "scenes": {
+        "0": "Fånga uppmärksamheten",
+        "1": "Det nya",
+        "2": "Varför det spelar roll",
+        "3": "Nästa steg"
+      }
+    },
+    "short-story": {
+      "title": "Kort berättelse",
+      "description": "Berätta en komplett liten historia",
+      "scenes": {
+        "0": "Världen",
+        "1": "Utmaningen",
+        "2": "Valet",
+        "3": "Lösningen"
+      }
+    },
+    "travel-diary": {
+      "title": "Resedagbok",
+      "description": "Fånga en plats och en känsla",
+      "scenes": {
+        "0": "Ankomst",
+        "1": "Plats och detalj",
+        "2": "Ett personligt ögonblick",
+        "3": "Avresa"
+      }
+    },
+    "documentary": {
+      "title": "Minidokumentär",
+      "description": "Förklara ett verkligt ämne",
+      "scenes": {
+        "0": "Fråga",
+        "1": "Sammanhang",
+        "2": "Belägg",
+        "3": "Mänskligt perspektiv",
+        "4": "Slutsats"
+      }
+    },
+    "ambient-visual": {
+      "title": "Stämningsbilder",
+      "description": "Kombinera lugna rörelser med instrumentalt ljud",
+      "scenes": {
+        "0": "Mjuk inledning",
+        "1": "Flödande former",
+        "2": "Lugn avslutning"
+      }
+    },
+    "song-teaser": {
+      "title": "Låtförhandsvisning",
+      "description": "Presentera en låt och dess stämning",
+      "scenes": {
+        "0": "Presentera stämningen",
+        "1": "Bilder till refrängen",
+        "2": "Låttitel"
+      }
+    },
+    "beat-loop": {
+      "title": "Rytmloop",
+      "description": "Skapa en rytmisk bildsekvens",
+      "scenes": {
+        "0": "Rytmen börjar",
+        "1": "Mönster byggs upp",
+        "2": "Utlopp",
+        "3": "Tillbaka till början"
+      }
+    }
+  },
+  "recent": {
+    "title": "Senaste projekt",
+    "ready": "Medier finns — ordna och exportera",
+    "addMedia": "Nästa steg: lägg till medier i dina scener",
+    "addIdea": "Nästa steg: lägg till din idé",
+    "empty": "Dina sparade projekt visas här."
+  },
+  "style": {
+    "title": "Min stil",
+    "description": "Spara färger, typsnitt och kreativ riktning. När en stil används sparas en separat kopia i projektet.",
+    "new": "Ny stil",
+    "name": "Stilnamn",
+    "primary": "Primärfärg",
+    "text": "Textfärg",
+    "font": "Typsnitt",
+    "logo": "Logotyp från mediebiblioteket",
+    "noLogo": "Ingen logotyp",
+    "direction": "Kreativ riktning",
+    "save": "Spara stil",
+    "preview": "Förhandsvisa i aktuellt projekt",
+    "logoPreview": "Förhandsvisning av logotyp",
+    "captionPreview": "En undertext som är lätt att läsa",
+    "confirmDescription": "Använd dessa färger, typsnitt, logotyp och kreativ riktning i aktuellt projekt? Befintliga kontinuitetsprofiler finns kvar.",
+    "confirm": "Använd i detta projekt",
+    "defaultName": "Min stil"
+  },
+  "welcome": {
+    "source": "Hur vill du börja?",
+    "example": "Prova ett offlineexempel",
+    "own": "Använd min egen idé eller egna medier",
+    "skip": "Hoppa över nu"
+  },
+  "delivery": {
+    "saveProject": "Öppna ett sparat projekt för att förbereda en videoleverans.",
+    "title": "Exportera video",
+    "desktopRequired": "Lokal MP4-export kräver desktopappen med dess medföljande renderare.",
+    "ratio": "Format",
+    "resolution": "Upplösning",
+    "margin": "Säker marginal",
+    "limit": "Upp till 60 sekunder · 30 bilder/s · H.264/AAC · ingen vattenstämpel",
+    "crop": "Förhandsvisa beskärning och säkra marginaler",
+    "cropMode": "Beskärningsläge",
+    "fit": "Passa in hela bilden",
+    "fill": "Beskär för att fylla",
+    "audioMix": "Ljudnivåer och toningar",
+    "volume": "Volym",
+    "fadeIn": "Tona in (sekunder)",
+    "fadeOut": "Tona ut (sekunder)",
+    "captions": "Textning",
+    "captionStyle": "Stil",
+    "captionMode": "Utdata",
+    "sidecar": "Separat SRT-fil",
+    "burnIn": "Bränn in i videon",
+    "captionText": "Text",
+    "startTime": "Start (sekunder)",
+    "endTime": "Slut (sekunder)",
+    "remove": "Ta bort",
+    "newCaption": "Din undertext",
+    "addCaption": "Lägg till undertext",
+    "importSrt": "Importera SRT",
+    "exportSrt": "Hämta SRT",
+    "audio": "Ljud att transkribera",
+    "consentText": "Gemini får hela den valda ljudfilen nedan; undertexterna anpassas till dess trimning på tidslinjen. Tjänsten kan ta betalt för begäran. Desktopappens godkännandedialog visar högsta kostnad innan ljudet skickas.",
+    "consent": "Jag godkänner att detta ljud skickas för ett textningsförslag.",
+    "propose": "Begär förslag från Gemini",
+    "reviewProposal": "Granska textningsförslaget innan du godkänner",
+    "staleProposal": "Projektet eller textningen har ändrats. Begär ett nytt förslag.",
+    "acceptProposal": "Godkänn förslag",
+    "discard": "Kasta förslag",
+    "publishTitle": "Publiceringstitel",
+    "description": "Beskrivning",
+    "saveSettings": "Spara leveransinställningar",
+    "retry": "Försök exportera igen",
+    "render": "Exportera video",
+    "cancel": "Avbryt export",
+    "package": "Spara publiceringspaket",
+    "saveMp4": "Spara MP4",
+    "progress": "Exportförlopp",
+    "locateClip": "Hitta berört klipp",
+    "publishAiConsent": "Endast publiceringstiteln och beskrivningen ovan skickas till Gemini. Desktopappens godkännandedialog visar högsta kostnad före sändning.",
+    "publishAi": "Begär förslag på publiceringstext",
+    "publishProposal": "Granska förslag på publiceringstext",
+    "acceptPublish": "Godkänn publiceringstext",
+    "publishStale": "Publiceringstexten eller projektet ändrades. Begär ett nytt förslag.",
+    "status": {
+      "queued": "Köad",
+      "rendering": "Renderar",
+      "verifying": "Verifierar",
+      "complete": "Klar",
+      "failed": "Misslyckad",
+      "cancelled": "Avbruten"
+    },
+    "styles": {
+      "classic": "Klassisk",
+      "pop": "Framhävd",
+      "karaoke": "Karaoke"
+    }
+  }
+}

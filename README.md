@@ -207,6 +207,24 @@ chmod +x Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage
 ./Loofi-Flow-Veo-Studio-14.2.1-linux-x86_64.AppImage
 ```
 
+## v15 development: from an idea to a video
+
+See the [local verification report and demonstration](docs/CREATOR_V15_VERIFICATION.md) for real rendered files, five AI-driven scenarios and platform qualification boundaries.
+
+The development workspace adds Start, twelve local recipes, three reusable offline examples,
+My style, captions and a desktop video/publication-package export workflow. This is **unreleased**;
+the stable downloads above remain v14.2.1. Native export requires a reviewed rendering bundle for
+the running platform, with no startup download or separate system FFmpeg requirement.
+
+- [Export your first offline video](docs/guides/FIRST_OFFLINE_VIDEO.md)
+- [Add captions and your own style](docs/guides/CAPTIONS_AND_STYLE.md)
+- [Prepare a publication package](docs/guides/PUBLICATION_PACKAGE.md)
+- [Current delivery behavior and limits](docs/CREATOR_DELIVERY.md)
+
+Local examples, editing, recipes and verified desktop export need no provider account or key.
+Optional Gemini proposals require approval and may incur provider charges. Social publishing remains
+a manual handoff.
+
 ## Development
 
 The v14.2 creator flow connects manual Studio video results back to their

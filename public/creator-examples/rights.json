@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "file": "music.wav",
+      "sha256": "b236ed013ab4efc89f09011449cb5fd4e87a251845f2c8cd9607064332a6bb9a",
+      "license": "CC0-1.0",
+      "author": "Loofi Creator Studio contributors",
+      "origin": "Original programmatic geometric animation / synthesized sine audio. No AI generation, stock media, personal data or third-party samples."
+    },
+    {
+      "file": "social.mp4",
+      "sha256": "96a7c3cd0d8fd8053c48a8667ec85b4ac3040dd957602193a9b80e49a1f2bfbb",
+      "license": "CC0-1.0",
+      "author": "Loofi Creator Studio contributors",
+      "origin": "Original programmatic geometric animation / synthesized sine audio. No AI generation, stock media, personal data or third-party samples."
+    },
+    {
+      "file": "story.mp4",
+      "sha256": "81a062066e951cb4852a1e7e7c8b18ee25085524e3c62c0c9e33ee7148967ef0",
+      "license": "CC0-1.0",
+      "author": "Loofi Creator Studio contributors",
+      "origin": "Original programmatic geometric animation / synthesized sine audio. No AI generation, stock media, personal data or third-party samples."
+    },
+    {
+      "file": "music.mp4",
+      "sha256": "c9f3c758e22a7ef9fae68f256d9f064773d2c004e4d6bfaf6923c4dc5c71ba84",
+      "license": "CC0-1.0",
+      "author": "Loofi Creator Studio contributors",
+      "origin": "Original synthesized sine audio visualized with FFmpeg showwaves. No AI generation, stock media or third-party samples."
+    }
+  ]
+}

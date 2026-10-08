@@ -27,9 +27,19 @@ describe('local-first welcome', () => {
     );
     expect(screen.queryByRole('textbox', { name: /API key/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.click(screen.getByRole('radio', { name: 'Use my own idea or media' }));
     await user.click(screen.getByRole('button', { name: 'Start creating' }));
     expect(close).toHaveBeenCalledTimes(1);
     expect(shown).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('v8-onboarding-complete')).toBe('true');
+  });
+  it('defaults to a key-free offline example and supports skipping', async () => {
+    const close = vi.fn();
+    const { user } = render(<WelcomeModal isOpen onClose={close} />);
+    expect(screen.getByRole('radio', { name: 'Try an offline example' })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }));
+    expect(shown).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('v8-onboarding-complete')).toBe('true');
   });
 });

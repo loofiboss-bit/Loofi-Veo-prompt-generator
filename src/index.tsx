@@ -19,6 +19,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import './index.css';
 import './shared/styles/accessibility.css';
 import './shared/styles/theme-presets.css';
+import './shared/styles/creator-fonts.css';
 import { themeService } from './core/services/themeService';
 import { markStart, PERF_MARKS } from './core/utils/performanceMarks';
 

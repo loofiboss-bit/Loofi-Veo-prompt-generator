@@ -28,6 +28,7 @@ import toastsEn from '../locales/en/toasts.json';
 import optimizationEn from '../locales/en/optimization.json';
 import createEn from '../locales/en/create.json';
 import studioEn from '../locales/en/studio.json';
+import creatorEn from '../locales/en/creator.json';
 
 /** All translation namespaces used in the app. */
 export const TRANSLATION_NAMESPACES = [
@@ -47,17 +48,19 @@ export const TRANSLATION_NAMESPACES = [
   'optimization',
   'create',
   'studio',
+  'creator',
 ] as const;
 
 export type TranslationNamespace = (typeof TRANSLATION_NAMESPACES)[number];
 
 /** Supported languages. */
-export const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'ja', 'ar'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'sv', 'es', 'fr', 'ja', 'ar'] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   en: 'English',
+  sv: 'Svenska',
   es: 'Español',
   fr: 'Français',
   ja: '日本語',
@@ -82,12 +85,32 @@ const enResources = {
   optimization: optimizationEn,
   create: createEn,
   studio: studioEn,
+  creator: creatorEn,
 };
 
 const nonEnglishResourceLoaders: Record<
   Exclude<SupportedLanguage, 'en'>,
   () => Promise<Record<string, Record<string, unknown>>>
 > = {
+  sv: async () => ({
+    common: (await import('../locales/sv/common.json')).default,
+    prompt: (await import('../locales/sv/prompt.json')).default,
+    history: (await import('../locales/sv/history.json')).default,
+    templates: (await import('../locales/sv/templates.json')).default,
+    studios: (await import('../locales/sv/studios.json')).default,
+    wizard: (await import('../locales/sv/wizard.json')).default,
+    tutorial: (await import('../locales/sv/tutorial.json')).default,
+    tooltips: (await import('../locales/sv/tooltips.json')).default,
+    errors: (await import('../locales/sv/errors.json')).default,
+    project: (await import('../locales/sv/project.json')).default,
+    search: (await import('../locales/sv/search.json')).default,
+    settings: (await import('../locales/sv/settings.json')).default,
+    toasts: (await import('../locales/sv/toasts.json')).default,
+    optimization: (await import('../locales/sv/optimization.json')).default,
+    create: (await import('../locales/sv/create.json')).default,
+    studio: (await import('../locales/sv/studio.json')).default,
+    creator: (await import('../locales/sv/creator.json')).default,
+  }),
   es: async () => ({
     common: (await import('../locales/es/common.json')).default,
     prompt: (await import('../locales/es/prompt.json')).default,
@@ -105,6 +128,7 @@ const nonEnglishResourceLoaders: Record<
     optimization: {},
     create: (await import('../locales/es/create.json')).default,
     studio: (await import('../locales/es/studio.json')).default,
+    creator: (await import('../locales/es/creator.json')).default,
   }),
   fr: async () => ({
     common: (await import('../locales/fr/common.json')).default,
@@ -123,6 +147,7 @@ const nonEnglishResourceLoaders: Record<
     optimization: {},
     create: (await import('../locales/fr/create.json')).default,
     studio: (await import('../locales/fr/studio.json')).default,
+    creator: (await import('../locales/fr/creator.json')).default,
   }),
   ja: async () => ({
     common: (await import('../locales/ja/common.json')).default,
@@ -141,6 +166,7 @@ const nonEnglishResourceLoaders: Record<
     optimization: {},
     create: (await import('../locales/ja/create.json')).default,
     studio: (await import('../locales/ja/studio.json')).default,
+    creator: (await import('../locales/ja/creator.json')).default,
   }),
   ar: async () => ({
     common: (await import('../locales/ar/common.json')).default,
@@ -159,6 +185,7 @@ const nonEnglishResourceLoaders: Record<
     optimization: (await import('../locales/ar/optimization.json')).default,
     create: (await import('../locales/ar/create.json')).default,
     studio: (await import('../locales/ar/studio.json')).default,
+    creator: (await import('../locales/ar/creator.json')).default,
   }),
 };
 

@@ -1,0 +1,43 @@
+{
+  "startButton": "Starta guiden",
+  "nextButton": "Nästa",
+  "prevButton": "Föregående",
+  "finishButton": "Slutför",
+  "steps": [
+    {
+      "targetId": "core-concept",
+      "title": "Börja här",
+      "text": "Ange din grundidé här. Den är grunden för din prompt."
+    },
+    {
+      "targetId": "autofill-button",
+      "title": "AI-hjälp",
+      "text": "Klicka på trollstaven för att automatiskt fylla i detaljer utifrån din idé."
+    },
+    {
+      "targetId": "details-tabs",
+      "title": "Förfina detaljer",
+      "text": "Använd flikarna för att justera till exempel scen, karaktär och kamera."
+    },
+    {
+      "targetId": "environment-ai-button",
+      "title": "Smarta förslag",
+      "text": "Leta efter trollstavar i andra fält för AI-förslag."
+    },
+    {
+      "targetId": "generate-prompt-button",
+      "title": "Generera",
+      "text": "Klicka på {{generateButton}} för att sammanställa din strukturerade prompt."
+    },
+    {
+      "targetId": "output-section",
+      "title": "Resultat",
+      "text": "Din genererade prompt visas här och kan kopieras eller skickas till Veo."
+    },
+    {
+      "targetId": "creative-studios-header-group",
+      "title": "Kreativa studior",
+      "text": "Utforska specialverktyg för bild, musik och videoanalys här."
+    }
+  ]
+}

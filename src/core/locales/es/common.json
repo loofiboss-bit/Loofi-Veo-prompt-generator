@@ -101,7 +101,8 @@
     "openNavigation": "Abrir navegación",
     "closeNavigation": "Cerrar navegación",
     "focusMode": "Modo de enfoque",
-    "exitFocus": "Salir del modo de enfoque"
+    "exitFocus": "Salir del modo de enfoque",
+    "start": "Inicio"
   },
   "activity": {
     "queueEyebrow": "Trabajo duradero",

@@ -198,7 +198,6 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   useEffect(() => {
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-      if (audioContextRef.current) audioContextRef.current.close();
     };
   }, []);
 
@@ -207,7 +206,9 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     const ctx = new AudioContextClass();
     audioContextRef.current = ctx;
     return () => {
-      ctx.close();
+      if (audioContextRef.current === ctx) audioContextRef.current = null;
+      if (ctx.state !== 'closed')
+        void ctx.close().catch((error) => logger.warn('Audio context cleanup failed', error));
     };
   }, []);
 

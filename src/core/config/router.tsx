@@ -14,6 +14,21 @@ import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { Skeleton } from '@shared/components/ui/Skeleton';
 import { ROUTES } from './routes';
 
+const StartPage = React.lazy(() =>
+  import('@features/creator/StartPage').then((m) => ({ default: m.StartPage })),
+);
+function StartRedirect() {
+  return (
+    <Navigate
+      to={
+        localStorage.getItem('creator-default-start-view') === ROUTES.STUDIO
+          ? ROUTES.STUDIO
+          : ROUTES.START
+      }
+      replace
+    />
+  );
+}
 // Lazy-loaded route components
 const TimelinePage = React.lazy(() =>
   import('@features/timeline/TimelinePage').then((m) => ({ default: m.TimelinePage })),
@@ -68,7 +83,17 @@ export const router = createHashRouter([
     children: [
       {
         index: true,
-        element: <Navigate to={ROUTES.STUDIO} replace />,
+        element: <StartRedirect />,
+      },
+      {
+        path: 'start',
+        element: (
+          <ErrorBoundary panelId="route-start-panel">
+            <React.Suspense fallback={<RoutePageSkeleton />}>
+              <StartPage />
+            </React.Suspense>
+          </ErrorBoundary>
+        ),
       },
       {
         path: 'studio',
