@@ -3,8 +3,9 @@ import { NAVIGATION_DESTINATIONS, getNavigationDestination } from './navigation'
 import { ROUTES } from './routes';
 
 describe('navigation destinations', () => {
-  it('defines seven unique canonical routes in workflow order', () => {
+  it('defines eight unique canonical routes in workflow order', () => {
     expect(NAVIGATION_DESTINATIONS.map((destination) => destination.id)).toEqual([
+      'start',
       'studio',
       'create',
       'timeline',
@@ -13,7 +14,7 @@ describe('navigation destinations', () => {
       'activity',
       'settings',
     ]);
-    expect(new Set(NAVIGATION_DESTINATIONS.map((destination) => destination.path)).size).toBe(7);
+    expect(new Set(NAVIGATION_DESTINATIONS.map((destination) => destination.path)).size).toBe(8);
     for (const destination of NAVIGATION_DESTINATIONS)
       expect(getNavigationDestination(destination.path)).toBe(destination);
   });

@@ -1,6 +1,6 @@
 # Loofi Creator Studio Documentation
 
-Use this index to navigate the documentation for Loofi Creator Studio v14.1.0.
+Use this index to navigate stable Loofi Creator Studio documentation and unreleased development guides.
 
 The source workspace version can differ from the published installers. Use the installation guide
 for package availability and the implementation records for qualification evidence.
@@ -45,3 +45,12 @@ for package availability and the implementation records for qualification eviden
 
 Documentation changes should update this index when a new canonical page is added. Prefer linking to
 one canonical page instead of copying the same instructions into several files.
+
+## v15 development guides
+
+- [Creator delivery behavior and limits](CREATOR_DELIVERY.md)
+- [Export your first offline video](guides/FIRST_OFFLINE_VIDEO.md)
+- [Captions and personal style](guides/CAPTIONS_AND_STYLE.md)
+- [Publication package](guides/PUBLICATION_PACKAGE.md)
+
+These guides describe the development workspace, not published v14.2.1 installers.

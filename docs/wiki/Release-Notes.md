@@ -1,5 +1,16 @@
 # Release Notes
 
+## v15.0.0 — Creator Delivery
+
+Create short videos locally using twelve recipes, three offline examples, saved style profiles and
+editable captions. Export verified H.264/AAC MP4 and publication ZIP packages with bundled rendering
+resources. Optional Gemini proposals require approval; social publishing remains a manual handoff.
+Existing project and archive formats remain compatible.
+
+[Download v15.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
+
+See the [verification boundaries](../CREATOR_V15_VERIFICATION.md).
+
 ## v14.2.1 — Connected Creator Flow
 
 - Navigate a responsive workbench with shared navigation and contextual asset access.

@@ -1,7 +1,7 @@
 Name:           veo-prompt-generator
-Version:        14.2.1
+Version:        15.0.0
 Release:        1%{?dist}
-Summary:        Local-first Loofi Creator Studio for Flow/Veo prompts and Suno lyrics
+Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT
 URL:            https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator
 Source0:        Loofi-Flow-Veo-Studio-%{version}-linux-x86_64.rpm
@@ -79,6 +79,9 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Thu Oct 08 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 15.0.0-1
+- Package Creator Delivery with bundled offline rendering resources.
+
 * Thu Oct 08 2026 Loofi Release Engineering <loofiboss-bit@users.noreply.github.com> - 14.2.1-1
 - Release the connected creator flow and responsive workbench.
 - Preserve verified Electron payloads and explicit Fedora runtime dependencies.

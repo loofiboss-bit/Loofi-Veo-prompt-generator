@@ -101,7 +101,8 @@
     "openNavigation": "فتح التنقل",
     "closeNavigation": "إغلاق التنقل",
     "focusMode": "وضع التركيز",
-    "exitFocus": "الخروج من وضع التركيز"
+    "exitFocus": "الخروج من وضع التركيز",
+    "start": "البداية"
   },
   "activity": {
     "queueEyebrow": "عمل دائم",

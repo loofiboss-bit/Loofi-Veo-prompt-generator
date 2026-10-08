@@ -23,6 +23,38 @@ const asFile = async (blob: Blob): Promise<File> =>
   new File([await blob.arrayBuffer()], 'project.loofi-project', { type: 'application/zip' });
 
 describe('v11 .loofi-project bundle', () => {
+  it('preserves delivery settings, style logo references, and caption media in schema 11', async () => {
+    const delivery = {
+      schemaVersion: 1 as const,
+      revision: 4,
+      aspectRatio: '9:16' as const,
+      captionsMode: 'burn-in' as const,
+      captionStyle: 'classic' as const,
+      safeMargin: 0.08,
+      crops: { clip: { mode: 'fill' as const, x: 0.3, y: 0.5 } },
+      audioFades: { audio: { inSeconds: 1, outSeconds: 2 } },
+      title: 'Återanvändbar berättelse',
+      description: 'Offline publication',
+      updatedAt: 123,
+      style: {
+        schemaVersion: 1 as const,
+        id: 'style',
+        name: 'Personal',
+        primaryColor: '#123456',
+        textColor: '#ffffff',
+        fontFamily: 'Noto Sans' as const,
+        logoAssetId: asset.id,
+        creativeDescription: 'Warm daylight',
+        updatedAt: 123,
+      },
+    };
+    const blob = await exportProjectToZip({ ...project, creatorDelivery: delivery }, [asset]);
+    const restored = await importProjectFromZip(await asFile(blob));
+    expect(restored.project.creatorDelivery).toEqual(delivery);
+    expect(restored.assets.find((item) => item.id === delivery.style.logoAssetId)?.data).toBe(
+      asset.data,
+    );
+  });
   it('round-trips project, assets, provenance, catalog snapshot, and migration history', async () => {
     const promptArtifact = compileVideoPromptArtifact({
       idea: 'A courier crosses a rainy street',

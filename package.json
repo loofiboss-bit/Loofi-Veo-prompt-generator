@@ -8,7 +8,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "14.2.1",
+  "version": "15.0.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -35,12 +35,12 @@
     "start": "vite preview --host --port 8080",
     "electron": "vite build && electron .",
     "electron:dev": "concurrently \"vite\" \"wait-on tcp:8080 && electron .\"",
-    "dist": "vite build && electron-builder",
+    "dist": "npm run media-runtime:check && vite build && electron-builder",
     "prepare": "husky",
-    "validate": "npm run theme:check && npm run models:check && npm run i18n:create:check && npm run i18n:studio:check && npm run lint:ci && npm run typecheck && npm run test && npm run test:desktop && npm run format:check",
+    "validate": "npm run theme:check && npm run models:check && npm run i18n:create:check && npm run i18n:studio:check && npm run i18n:creator:check && npm run lint:ci && npm run typecheck && npm run test && npm run test:desktop && npm run format:check",
     "models:check": "node scripts/check-executable-models.mjs",
     "i18n:create:check": "node scripts/check-create-translations.mjs",
-    "validate:release": "npm run package:rpm:check && npm run pre-release:check && npm run validate && npm run build",
+    "validate:release": "npm run media-runtime:check && npm run package:rpm:check && npm run pre-release:check && npm run validate && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",
@@ -56,7 +56,12 @@
     "cli:help": "node --import tsx src/cli/index.ts --help",
     "theme:check": "node scripts/check-theme-classes.mjs",
     "test:desktop": "node scripts/test-desktop.mjs",
-    "i18n:studio:check": "node scripts/check-studio-translations.mjs"
+    "i18n:studio:check": "node scripts/check-studio-translations.mjs",
+    "i18n:creator:check": "node scripts/check-creator-translations.mjs",
+    "media-runtime:build:linux": "bash scripts/build-media-runtime-linux.sh",
+    "media-runtime:build:windows": "bash scripts/build-media-runtime-windows.sh",
+    "media-runtime:check": "node scripts/check-media-runtime.mjs",
+    "media-runtime:provision": "node scripts/provision-media-runtime.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -263,6 +268,22 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Loofi Creator Studio"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "packaging/media-runtime",
+        "to": "media-runtime",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "public/creator-fonts",
+        "to": "creator-fonts",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

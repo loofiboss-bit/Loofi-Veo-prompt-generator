@@ -1,0 +1,244 @@
+{
+  "start": {
+    "title": "Votre prochain moment créatif",
+    "description": "Transformez une idée en vidéo courte. Travaillez en local, utilisez vos médias et choisissez quand utiliser l’IA.",
+    "create": "Créer un projet",
+    "example": "Essayer un exemple",
+    "continue": "Continuer un projet",
+    "help": "Afficher le guide de bienvenue",
+    "defaultView": "Ouvrir l’application sur",
+    "label": "Accueil",
+    "studio": "Studio de prompts",
+    "production": "Production",
+    "defaultProjectTitle": "Ma vidéo courte",
+    "defaultIdea": "Un petit moment créatif à partager"
+  },
+  "examples": {
+    "title": "Essayez hors ligne — sans compte ni clé API",
+    "description": "Clips géométriques originaux et audio synthétisé, réutilisables librement (CC0). Ouvrez, personnalisez et exportez.",
+    "open": "Ouvrir l’exemple"
+  },
+  "recipes": {
+    "title": "Commencez avec une recette créative",
+    "scenes": "scènes",
+    "projectTitle": "Titre du projet",
+    "idea": "Votre idée",
+    "steps": "1. Personnalisez votre idée en local. 2. Ajoutez vos médias ou générez des clips à l’extérieur. 3. Organisez et exportez dans l’application de bureau.",
+    "cost": "Les brouillons sont locaux et gratuits. La génération externe est facultative et peut être payante. Aucune génération ne démarre ici.",
+    "use": "Créer des brouillons de scènes",
+    "save": "Enregistrer la recette personnalisée comme modèle",
+    "quick-tip": {
+      "title": "Conseil rapide",
+      "description": "Enseignez quelque chose d’utile",
+      "scenes": {
+        "0": "Accroche : le problème",
+        "1": "Montrez la technique utile",
+        "2": "Résultat et invitation"
+      }
+    },
+    "product-story": {
+      "title": "Histoire d’un produit",
+      "description": "Montrez ce qui rend votre produit utile",
+      "scenes": {
+        "0": "Présentation du produit",
+        "1": "Détail en utilisation",
+        "2": "Avantage et invitation"
+      }
+    },
+    "before-after": {
+      "title": "Avant / après",
+      "description": "Montrez une transformation",
+      "scenes": {
+        "0": "État initial",
+        "1": "Le processus",
+        "2": "État final"
+      }
+    },
+    "daily-moment": {
+      "title": "Moment du quotidien",
+      "description": "Partagez un petit moment mémorable",
+      "scenes": {
+        "0": "Présentation de la scène",
+        "1": "Un détail humain",
+        "2": "Une fin satisfaisante"
+      }
+    },
+    "mini-tutorial": {
+      "title": "Mini tutoriel",
+      "description": "Enseignez un processus en quatre étapes",
+      "scenes": {
+        "0": "Aperçu du résultat",
+        "1": "Première étape",
+        "2": "Deuxième étape",
+        "3": "Résultat final"
+      }
+    },
+    "announcement": {
+      "title": "Annonce",
+      "description": "Présentez une nouveauté",
+      "scenes": {
+        "0": "Attirez l’attention",
+        "1": "La nouveauté",
+        "2": "Pourquoi c’est important",
+        "3": "Étape suivante"
+      }
+    },
+    "short-story": {
+      "title": "Histoire courte",
+      "description": "Racontez une histoire brève et complète",
+      "scenes": {
+        "0": "Le monde",
+        "1": "Le défi",
+        "2": "Le choix",
+        "3": "La résolution"
+      }
+    },
+    "travel-diary": {
+      "title": "Carnet de voyage",
+      "description": "Capturez un lieu et une émotion",
+      "scenes": {
+        "0": "Arrivée",
+        "1": "Lieu et détail",
+        "2": "Un moment personnel",
+        "3": "Départ"
+      }
+    },
+    "documentary": {
+      "title": "Mini documentaire",
+      "description": "Expliquez un sujet réel",
+      "scenes": {
+        "0": "Question",
+        "1": "Contexte",
+        "2": "Éléments de preuve",
+        "3": "Perspective humaine",
+        "4": "Conclusion"
+      }
+    },
+    "ambient-visual": {
+      "title": "Visuel d’ambiance",
+      "description": "Associez des mouvements calmes à une musique instrumentale",
+      "scenes": {
+        "0": "Ouverture douce",
+        "1": "Formes fluides",
+        "2": "Fin paisible"
+      }
+    },
+    "song-teaser": {
+      "title": "Aperçu d’une chanson",
+      "description": "Présentez une chanson et son ambiance",
+      "scenes": {
+        "0": "Présentation de l’ambiance",
+        "1": "Images du refrain",
+        "2": "Titre de la chanson"
+      }
+    },
+    "beat-loop": {
+      "title": "Boucle rythmique",
+      "description": "Créez une séquence visuelle rythmique",
+      "scenes": {
+        "0": "Le rythme commence",
+        "1": "Les motifs se construisent",
+        "2": "Libération",
+        "3": "Retour au début"
+      }
+    }
+  },
+  "recent": {
+    "title": "Projets récents",
+    "ready": "Médias disponibles — organisez et exportez",
+    "addMedia": "Étape suivante : ajouter des médias aux scènes",
+    "addIdea": "Étape suivante : ajouter votre idée",
+    "empty": "Vos projets enregistrés apparaîtront ici."
+  },
+  "style": {
+    "title": "Mon style",
+    "description": "Enregistrez vos couleurs, police et direction créative. Appliquer un style enregistre une copie indépendante dans le projet.",
+    "new": "Nouveau style",
+    "name": "Nom du style",
+    "primary": "Couleur principale",
+    "text": "Couleur du texte",
+    "font": "Police",
+    "logo": "Logo de la bibliothèque de médias",
+    "noLogo": "Sans logo",
+    "direction": "Direction créative",
+    "save": "Enregistrer le style",
+    "preview": "Aperçu dans le projet actuel",
+    "logoPreview": "Aperçu du logo",
+    "captionPreview": "Un sous-titre facile à lire",
+    "confirmDescription": "Appliquer ces couleurs, police, logo et direction créative au projet actuel ? Les profils de continuité existants restent disponibles.",
+    "confirm": "Appliquer à ce projet",
+    "defaultName": "Mon style"
+  },
+  "welcome": {
+    "source": "Comment souhaitez-vous commencer ?",
+    "example": "Essayer un exemple hors ligne",
+    "own": "Utiliser mon idée ou mes médias",
+    "skip": "Passer pour le moment"
+  },
+  "delivery": {
+    "saveProject": "Ouvrez un projet enregistré pour préparer une livraison vidéo.",
+    "title": "Exporter la vidéo",
+    "desktopRequired": "L’export MP4 local nécessite l’application de bureau avec son moteur de rendu intégré.",
+    "ratio": "Format",
+    "resolution": "Résolution",
+    "margin": "Marge de sécurité",
+    "limit": "Jusqu’à 60 secondes · 30 i/s · H.264/AAC · sans filigrane",
+    "crop": "Aperçu du recadrage et des marges de sécurité",
+    "cropMode": "Mode de recadrage",
+    "fit": "Afficher l’image entière",
+    "fill": "Recadrer pour remplir",
+    "audioMix": "Niveaux audio et fondus",
+    "volume": "Volume",
+    "fadeIn": "Fondu d’entrée (secondes)",
+    "fadeOut": "Fondu de sortie (secondes)",
+    "captions": "Sous-titres",
+    "captionStyle": "Style",
+    "captionMode": "Sortie",
+    "sidecar": "Fichier SRT séparé",
+    "burnIn": "Incruster dans la vidéo",
+    "captionText": "Texte",
+    "startTime": "Début (secondes)",
+    "endTime": "Fin (secondes)",
+    "remove": "Supprimer",
+    "newCaption": "Votre sous-titre",
+    "addCaption": "Ajouter un sous-titre",
+    "importSrt": "Importer un SRT",
+    "exportSrt": "Télécharger le SRT",
+    "audio": "Audio à transcrire",
+    "consentText": "Gemini reçoit le fichier audio sélectionné complet affiché ci-dessous ; les sous-titres sont adaptés à sa coupe dans la timeline. Le fournisseur peut facturer cette demande. Le dialogue d’approbation affiche le coût maximum avant l’envoi.",
+    "consent": "J’approuve l’envoi de cet audio pour une proposition de sous-titres.",
+    "propose": "Demander une proposition à Gemini",
+    "reviewProposal": "Vérifiez les sous-titres proposés avant d’accepter",
+    "staleProposal": "Le projet ou les sous-titres ont changé. Demandez une nouvelle proposition.",
+    "acceptProposal": "Accepter la proposition",
+    "discard": "Rejeter",
+    "publishTitle": "Titre de publication",
+    "description": "Description",
+    "saveSettings": "Enregistrer les paramètres de livraison",
+    "retry": "Réessayer l’export",
+    "render": "Exporter la vidéo",
+    "cancel": "Annuler l’export",
+    "package": "Enregistrer le kit de publication",
+    "saveMp4": "Enregistrer le MP4",
+    "progress": "Progression de l’export",
+    "locateClip": "Localiser le clip concerné",
+    "publishAiConsent": "Seuls le titre de publication et la description affichés ci-dessus sont envoyés à Gemini. Le dialogue d’approbation affiche le coût maximum avant l’envoi.",
+    "publishAi": "Demander un texte de publication",
+    "publishProposal": "Vérifier le texte de publication proposé",
+    "acceptPublish": "Accepter le texte de publication",
+    "publishStale": "Le texte de publication ou le projet a changé. Demandez une nouvelle proposition.",
+    "status": {
+      "queued": "En attente",
+      "rendering": "Rendu en cours",
+      "verifying": "Vérification",
+      "complete": "Terminé",
+      "failed": "Échec",
+      "cancelled": "Annulé"
+    },
+    "styles": {
+      "classic": "Classique",
+      "pop": "Accentué",
+      "karaoke": "Karaoké"
+    }
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "start": {
+    "title": "Tu próximo momento creativo",
+    "description": "Convierte una idea en un vídeo corto. Trabaja en local, utiliza tus propios medios y elige cuándo usar IA.",
+    "create": "Crear nuevo",
+    "example": "Probar un ejemplo",
+    "continue": "Continuar un proyecto",
+    "help": "Mostrar guía de bienvenida",
+    "defaultView": "Abrir la aplicación en",
+    "label": "Inicio",
+    "studio": "Estudio de prompts",
+    "production": "Producción",
+    "defaultProjectTitle": "Mi vídeo corto",
+    "defaultIdea": "Un pequeño momento creativo que vale la pena compartir"
+  },
+  "examples": {
+    "title": "Pruébalo sin conexión — sin cuenta ni clave de API",
+    "description": "Clips geométricos originales y audio sintetizado, libres de reutilizar (CC0). Abre, personaliza y exporta.",
+    "open": "Abrir ejemplo"
+  },
+  "recipes": {
+    "title": "Empieza con una receta creativa",
+    "scenes": "escenas",
+    "projectTitle": "Título del proyecto",
+    "idea": "Tu idea",
+    "steps": "1. Personaliza tu idea en local. 2. Añade tus medios o genera clips externamente. 3. Organiza y exporta en la aplicación de escritorio.",
+    "cost": "Los borradores de recetas son locales y gratuitos. La generación externa es opcional y puede tener costes. Aquí no se inicia ninguna generación.",
+    "use": "Crear borradores de escenas",
+    "save": "Guardar receta personalizada como plantilla",
+    "quick-tip": {
+      "title": "Consejo rápido",
+      "description": "Enseña algo útil",
+      "scenes": {
+        "0": "Gancho: el problema",
+        "1": "Muestra la técnica útil",
+        "2": "Resultado e invitación"
+      }
+    },
+    "product-story": {
+      "title": "Historia de producto",
+      "description": "Muestra qué hace útil tu producto",
+      "scenes": {
+        "0": "Presentación del producto",
+        "1": "Detalle en uso",
+        "2": "Beneficio e invitación"
+      }
+    },
+    "before-after": {
+      "title": "Antes / después",
+      "description": "Muestra una transformación",
+      "scenes": {
+        "0": "Estado inicial",
+        "1": "El proceso",
+        "2": "Estado final"
+      }
+    },
+    "daily-moment": {
+      "title": "Momento cotidiano",
+      "description": "Comparte un pequeño momento memorable",
+      "scenes": {
+        "0": "Presenta la escena",
+        "1": "Un detalle humano",
+        "2": "Un final satisfactorio"
+      }
+    },
+    "mini-tutorial": {
+      "title": "Miniguía",
+      "description": "Enseña un proceso en cuatro pasos",
+      "scenes": {
+        "0": "Vista previa del resultado",
+        "1": "Primer paso",
+        "2": "Segundo paso",
+        "3": "Resultado final"
+      }
+    },
+    "announcement": {
+      "title": "Anuncio",
+      "description": "Presenta algo nuevo",
+      "scenes": {
+        "0": "Llama la atención",
+        "1": "Qué hay de nuevo",
+        "2": "Por qué importa",
+        "3": "Siguiente paso"
+      }
+    },
+    "short-story": {
+      "title": "Historia corta",
+      "description": "Cuenta una historia breve y completa",
+      "scenes": {
+        "0": "El mundo",
+        "1": "El desafío",
+        "2": "La decisión",
+        "3": "La resolución"
+      }
+    },
+    "travel-diary": {
+      "title": "Diario de viaje",
+      "description": "Captura un lugar y una emoción",
+      "scenes": {
+        "0": "Llegada",
+        "1": "Lugar y detalle",
+        "2": "Un momento personal",
+        "3": "Salida"
+      }
+    },
+    "documentary": {
+      "title": "Minidocumental",
+      "description": "Explica un tema real",
+      "scenes": {
+        "0": "Pregunta",
+        "1": "Contexto",
+        "2": "Evidencia",
+        "3": "Perspectiva humana",
+        "4": "Conclusión"
+      }
+    },
+    "ambient-visual": {
+      "title": "Visual ambiental",
+      "description": "Combina movimiento suave con audio instrumental",
+      "scenes": {
+        "0": "Inicio suave",
+        "1": "Formas fluidas",
+        "2": "Final tranquilo"
+      }
+    },
+    "song-teaser": {
+      "title": "Avance de canción",
+      "description": "Presenta una canción y su ambiente",
+      "scenes": {
+        "0": "Presentación del ambiente",
+        "1": "Imágenes del estribillo",
+        "2": "Título de la canción"
+      }
+    },
+    "beat-loop": {
+      "title": "Bucle rítmico",
+      "description": "Crea una secuencia visual rítmica",
+      "scenes": {
+        "0": "Comienza el ritmo",
+        "1": "Se construyen patrones",
+        "2": "Liberación",
+        "3": "Vuelta al inicio"
+      }
+    }
+  },
+  "recent": {
+    "title": "Proyectos recientes",
+    "ready": "Medios disponibles — organiza y exporta",
+    "addMedia": "Siguiente: añade medios a tus escenas",
+    "addIdea": "Siguiente: añade tu idea",
+    "empty": "Tus proyectos guardados aparecerán aquí."
+  },
+  "style": {
+    "title": "Mi estilo",
+    "description": "Guarda tus colores, fuente y dirección creativa. Al aplicar un estilo se guarda una copia independiente en el proyecto.",
+    "new": "Nuevo estilo",
+    "name": "Nombre del estilo",
+    "primary": "Color principal",
+    "text": "Color del texto",
+    "font": "Fuente",
+    "logo": "Logotipo de la biblioteca de medios",
+    "noLogo": "Sin logotipo",
+    "direction": "Dirección creativa",
+    "save": "Guardar estilo",
+    "preview": "Vista previa en el proyecto actual",
+    "logoPreview": "Vista previa del logotipo",
+    "captionPreview": "Un subtítulo fácil de leer",
+    "confirmDescription": "¿Aplicar estos colores, fuente, logotipo y dirección creativa al proyecto actual? Los perfiles de continuidad existentes siguen disponibles.",
+    "confirm": "Aplicar a este proyecto",
+    "defaultName": "Mi estilo"
+  },
+  "welcome": {
+    "source": "¿Cómo quieres empezar?",
+    "example": "Probar un ejemplo sin conexión",
+    "own": "Usar mi propia idea o medios",
+    "skip": "Omitir por ahora"
+  },
+  "delivery": {
+    "saveProject": "Abre un proyecto guardado para preparar una entrega de vídeo.",
+    "title": "Exportar vídeo",
+    "desktopRequired": "La exportación local a MP4 requiere la aplicación de escritorio con su renderizador incluido.",
+    "ratio": "Formato",
+    "resolution": "Resolución",
+    "margin": "Margen seguro",
+    "limit": "Hasta 60 segundos · 30 fps · H.264/AAC · sin marca de agua",
+    "crop": "Vista previa del recorte y los márgenes seguros",
+    "cropMode": "Modo de recorte",
+    "fit": "Ajustar la imagen completa",
+    "fill": "Recortar para llenar",
+    "audioMix": "Niveles de audio y fundidos",
+    "volume": "Volumen",
+    "fadeIn": "Fundido de entrada (segundos)",
+    "fadeOut": "Fundido de salida (segundos)",
+    "captions": "Subtítulos",
+    "captionStyle": "Estilo",
+    "captionMode": "Salida",
+    "sidecar": "Archivo SRT aparte",
+    "burnIn": "Incrustar en el vídeo",
+    "captionText": "Texto",
+    "startTime": "Inicio (segundos)",
+    "endTime": "Fin (segundos)",
+    "remove": "Eliminar",
+    "newCaption": "Tu subtítulo",
+    "addCaption": "Añadir subtítulo",
+    "importSrt": "Importar SRT",
+    "exportSrt": "Descargar SRT",
+    "audio": "Audio para transcribir",
+    "consentText": "Gemini recibe el archivo de audio completo seleccionado que se muestra abajo; los subtítulos se ajustan al recorte de la línea de tiempo. El proveedor puede cobrar esta solicitud. El diálogo de aprobación de escritorio muestra el coste máximo antes de enviar.",
+    "consent": "Apruebo enviar este audio para una propuesta de subtítulos.",
+    "propose": "Solicitar propuesta a Gemini",
+    "reviewProposal": "Revisar la propuesta de subtítulos antes de aceptarla",
+    "staleProposal": "El proyecto o los subtítulos han cambiado. Solicita una nueva propuesta.",
+    "acceptProposal": "Aceptar propuesta",
+    "discard": "Descartar",
+    "publishTitle": "Título de publicación",
+    "description": "Descripción",
+    "saveSettings": "Guardar ajustes de entrega",
+    "retry": "Reintentar exportación",
+    "render": "Exportar vídeo",
+    "cancel": "Cancelar exportación",
+    "package": "Guardar paquete de publicación",
+    "saveMp4": "Guardar MP4",
+    "progress": "Progreso de exportación",
+    "locateClip": "Localizar el clip afectado",
+    "publishAiConsent": "Solo se envían a Gemini el título de publicación y la descripción mostrados arriba. El diálogo de aprobación de escritorio muestra el coste máximo antes de enviar.",
+    "publishAi": "Solicitar propuesta de texto para publicación",
+    "publishProposal": "Revisar propuesta de texto para publicación",
+    "acceptPublish": "Aceptar texto de publicación",
+    "publishStale": "El texto de publicación o el proyecto han cambiado. Solicita una nueva propuesta.",
+    "status": {
+      "queued": "En cola",
+      "rendering": "Renderizando",
+      "verifying": "Verificando",
+      "complete": "Completado",
+      "failed": "Fallido",
+      "cancelled": "Cancelado"
+    },
+    "styles": {
+      "classic": "Clásico",
+      "pop": "Destacado",
+      "karaoke": "Karaoke"
+    }
+  }
+}

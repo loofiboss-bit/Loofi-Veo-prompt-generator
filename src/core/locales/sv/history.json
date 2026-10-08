@@ -1,0 +1,10 @@
+{
+  "title": "Historik",
+  "clear": "Rensa historik",
+  "clearConfirm": "Är du säker?",
+  "empty": "Ingen historik ännu.",
+  "use": "Använd",
+  "delete": "Ta bort",
+  "deleteConfirm": "Ta bort denna post?",
+  "searchPlaceholder": "Sök i historiken..."
+}

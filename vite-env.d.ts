@@ -8,6 +8,23 @@ interface ImportMetaEnv {
 
 // Electron API types
 interface ElectronAPI {
+  getTimelineRenderCapabilities?: () => Promise<
+    import('./src/core/types').TimelineRenderCapabilities
+  >;
+  startTimelineRender?: (
+    plan: import('./src/core/types').TimelineRenderPlanV1,
+  ) => Promise<import('./src/core/types').TimelineRenderJobV1>;
+  getTimelineRenderJob?: (
+    id: string,
+  ) => Promise<import('./src/core/types').TimelineRenderJobV1 | null>;
+  cancelTimelineRender?: (id: string) => Promise<boolean>;
+  saveTimelineRender?: (input: {
+    id: string;
+    package: boolean;
+  }) => Promise<{ saved: boolean; name?: string }>;
+  onTimelineRenderUpdate?: (
+    callback: (job: import('./src/core/types').TimelineRenderJobV1) => void,
+  ) => () => void;
   platform: string;
   arch: string;
   downloadUpdate: (input: { url: string; checksumUrl: string }) => Promise<string>;

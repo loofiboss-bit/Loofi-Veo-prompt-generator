@@ -3,7 +3,7 @@ import type { IconName } from '@core/types';
 
 export type NavigationGroup = 'create' | 'library' | 'followup';
 export interface NavigationDestination {
-  id: 'studio' | 'create' | 'timeline' | 'projects' | 'assets' | 'activity' | 'settings';
+  id: 'start' | 'studio' | 'create' | 'timeline' | 'projects' | 'assets' | 'activity' | 'settings';
   path: RoutePath;
   labelKey: string;
   label: string;
@@ -11,6 +11,14 @@ export interface NavigationDestination {
   group?: NavigationGroup;
 }
 export const NAVIGATION_DESTINATIONS: readonly NavigationDestination[] = [
+  {
+    id: 'start',
+    path: ROUTES.START,
+    labelKey: 'sidebar.start',
+    label: 'Start',
+    icon: 'sparkles',
+    group: 'create',
+  },
   {
     id: 'studio',
     path: ROUTES.STUDIO,

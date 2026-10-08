@@ -1,0 +1,23 @@
+{
+  "title": "Mallar",
+  "use": "Använd mall",
+  "searchPlaceholder": "Sök mallar...",
+  "noResults": "Inga mallar hittades.",
+  "yourPresetsTitle": "Dina förinställningar",
+  "builtInTitle": "Inbyggda mallar",
+  "deletePreset": "Ta bort",
+  "deletePresetConfirm": "Ta bort förinställning?",
+  "edit": "Redigera",
+  "save": "Spara",
+  "cancel": "Avbryt",
+  "updateSettings": "Uppdatera",
+  "updateSettingsConfirm": "Uppdatera förinställningen med aktuella inställningar?",
+  "renamePlaceholder": "Nytt namn...",
+  "savePresetModal": {
+    "title": "Spara förinställning",
+    "label": "Förinställningens namn",
+    "placeholder": "t.ex. Min science fiction-stil",
+    "cancel": "Avbryt",
+    "save": "Spara"
+  }
+}

@@ -80,7 +80,8 @@
     "collapseSidebar": "Collapse sidebar",
     "collaborate": "Collaborate",
     "comments": "Comments",
-    "roles": "Roles"
+    "roles": "Roles",
+    "start": "Start"
   },
   "commandPalette": {
     "title": "Command Palette",

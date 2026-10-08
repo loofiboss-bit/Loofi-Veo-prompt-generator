@@ -136,4 +136,26 @@ describe('projectDocumentService persistence', () => {
     await projectDocumentService.save({ ...project, studioDraft: { ...newDraft, revision: 2 } });
     expect(stored.studioDraft?.revision).toBe(5);
   });
+  it('preserves newer delivery settings when a stale editor snapshot arrives', async () => {
+    const delivery: NonNullable<Project['creatorDelivery']> = {
+      schemaVersion: 1,
+      revision: 4,
+      aspectRatio: '9:16',
+      captionsMode: 'burn-in',
+      captionStyle: 'classic',
+      safeMargin: 0.1,
+      crops: {},
+      title: 'Current delivery',
+      description: '',
+      updatedAt: 4,
+    };
+    mocks.get.mockResolvedValue({ ...project, creatorDelivery: delivery });
+    await projectDocumentService.save({
+      ...project,
+      creatorDelivery: { ...delivery, revision: 2, title: 'Stale title' },
+    });
+    expect(mocks.set.mock.calls[0][1].creatorDelivery).toEqual(delivery);
+    await projectDocumentService.save(project);
+    expect(mocks.set.mock.calls[1][1].creatorDelivery).toEqual(delivery);
+  });
 });
