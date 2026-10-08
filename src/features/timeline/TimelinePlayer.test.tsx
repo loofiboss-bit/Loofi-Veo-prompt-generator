@@ -159,6 +159,10 @@ describe('TimelinePlayer direct export flows', () => {
       configurable: true,
     });
   });
+  it('does not rebuild an existing edit when opening timeline playback', () => {
+    render(<TimelinePlayer shots={[shotFixture]} onClose={vi.fn()} />);
+    expect(mockSyncTimelineFromShots).not.toHaveBeenCalled();
+  });
 
   it('shows direct export hint and disables direct option when readiness fails', async () => {
     mockGetResolveDirectExportReadiness.mockResolvedValue({

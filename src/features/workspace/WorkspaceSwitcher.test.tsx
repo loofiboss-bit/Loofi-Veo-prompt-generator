@@ -130,7 +130,7 @@ describe('WorkspaceSwitcher — Accessibility', () => {
   it('shows aria-label with workspace name in collapsed mode', () => {
     renderSwitcher({ isCollapsed: true });
     const btn = screen.getByRole('button');
-    expect(btn).toHaveAttribute('aria-label', 'Current workspace: Design System');
+    expect(btn).toHaveAttribute('aria-label', 'Switch workspace. Current: Design System');
   });
 
   // ── Inline create ──────────────────────────────────────────────
@@ -206,5 +206,11 @@ describe('WorkspaceSwitcher — Accessibility', () => {
 
     expect(screen.getByText('2 projects')).toBeInTheDocument();
     expect(screen.getByText('0 projects')).toBeInTheDocument();
+  });
+  it('opens workspace choices in collapsed mode', async () => {
+    const { user } = renderSwitcher({ isCollapsed: true });
+    await user.click(screen.getByRole('button', { name: /switch workspace/i }));
+    expect(screen.getByRole('listbox', { name: 'Workspaces' })).toBeInTheDocument();
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
   });
 });

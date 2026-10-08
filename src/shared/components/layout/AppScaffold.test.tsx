@@ -1,13 +1,26 @@
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@/test-utils';
 import { ROUTES } from '@core/config/routes';
 
 import { AppScaffold } from './AppScaffold';
 
+const viewport = vi.hoisted(() => ({ isMobile: false, isCompact: false }));
+vi.mock('@shared/hooks/useViewport', () => ({ useViewport: () => viewport }));
 vi.mock('./Sidebar', () => ({
-  Sidebar: ({ activeSection }: { activeSection: string }) => (
-    <div data-testid="sidebar-active-section">{activeSection}</div>
+  Sidebar: ({
+    activeSection,
+    isCollapsed,
+    onToggleCollapse,
+  }: {
+    activeSection: string;
+    isCollapsed: boolean;
+    onToggleCollapse: () => void;
+  }) => (
+    <div data-testid="sidebar-active-section" data-collapsed={isCollapsed}>
+      <span>{activeSection}</span>
+      <button onClick={onToggleCollapse}>Toggle sidebar</button>
+    </div>
   ),
 }));
 
@@ -43,8 +56,8 @@ vi.mock('./FocusModeBanner', () => ({
   FocusModeBanner: () => <div data-testid="focus-mode-banner" />,
 }));
 
-function renderScaffold(pathname: string, activeSection = 'prompt') {
-  return render(
+function scaffold(pathname: string, activeSection = 'prompt') {
+  return (
     <AppScaffold
       skipToContentLabel="Skip to content"
       pathname={pathname}
@@ -77,11 +90,18 @@ function renderScaffold(pathname: string, activeSection = 'prompt') {
       collaborationPanelsProps={{} as never}
       appPanelsProps={{} as never}
       appOverlaysProps={{} as never}
-    />,
+    />
   );
+}
+function renderScaffold(pathname: string, activeSection = 'prompt') {
+  return render(scaffold(pathname, activeSection));
 }
 
 describe('AppScaffold', () => {
+  beforeEach(() => {
+    viewport.isMobile = false;
+    viewport.isCompact = false;
+  });
   it('maps the settings route to the settings sidebar section', () => {
     renderScaffold(ROUTES.SETTINGS, 'prompt');
 
@@ -103,5 +123,58 @@ describe('AppScaffold', () => {
     renderScaffold(ROUTES.HOME, 'prompt');
 
     expect(screen.getByTestId('sidebar-active-section')).toHaveTextContent('prompt');
+  });
+  it('shares the collapsed width with content and restores defaults across categories', async () => {
+    const { user, rerender } = renderScaffold(ROUTES.STUDIO);
+    const content = screen.getByRole('main', { name: 'Workspace content' });
+    expect(content).toHaveStyle({ marginInlineStart: 'var(--sidebar-width)' });
+    await user.click(screen.getByRole('button', { name: 'Toggle sidebar' }));
+    expect(content).toHaveStyle({ marginInlineStart: 'var(--sidebar-width-collapsed)' });
+    viewport.isCompact = true;
+    // The context row state is scoped to each responsive category.
+    rerender(scaffold(ROUTES.STUDIO));
+    expect(screen.getByRole('main', { name: 'Workspace content' })).toHaveStyle({
+      marginInlineStart: 'var(--sidebar-width-collapsed)',
+    });
+  });
+  it('uses a dismissible drawer without offset on mobile', async () => {
+    viewport.isMobile = true;
+    viewport.isCompact = true;
+    const { user } = renderScaffold(ROUTES.STUDIO);
+    expect(screen.queryByTestId('sidebar-active-section')).not.toBeInTheDocument();
+    expect(screen.getByRole('main', { name: 'Workspace content' })).toHaveStyle({
+      marginInlineStart: '0px',
+    });
+    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    expect(screen.getByRole('dialog', { name: 'Main navigation' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('uses a unique skip target without changing the hash route and a visible palette entry', async () => {
+    const { user } = renderScaffold(ROUTES.STUDIO);
+    const hash = window.location.hash;
+    await user.click(screen.getByRole('link', { name: 'Skip to content' }));
+    expect(window.location.hash).toBe(hash);
+    expect(screen.getByRole('main', { name: 'Workspace content' })).toHaveFocus();
+    expect(screen.getByRole('link', { name: 'Skip to content' })).toHaveAttribute(
+      'href',
+      '#app-route-content',
+    );
+    expect(screen.getByRole('main', { name: 'Workspace content' })).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+    expect(screen.getByRole('button', { name: 'Quick navigation' })).toBeInTheDocument();
+  });
+  it('focuses a lazily mounted page title after navigation', async () => {
+    const { rerender } = renderScaffold(ROUTES.STUDIO);
+    const content = screen.getByRole('main', { name: 'Workspace content' });
+    content.scrollTop = 120;
+    rerender(scaffold(ROUTES.SETTINGS));
+    expect(content.scrollTop).toBe(0);
+    const title = document.createElement('h1');
+    title.textContent = 'Prompt Studio';
+    content.appendChild(title);
+    await waitFor(() => expect(title).toHaveFocus());
   });
 });

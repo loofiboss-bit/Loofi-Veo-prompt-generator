@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { manualReviewContext } from './productionReadinessService';
 import { createPromptStudioDraft } from './promptStudioDraftService';
 import { studioRevisionSnapshot } from './studioRevisionService';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -66,6 +67,9 @@ import {
   buildPortableProjectBundle,
   importPortableProject,
   hydrateProjectMedia,
+  exportProjectOtioBundle,
+  preflightProjectOtioExport,
+  OtioExportPreflightError,
 } from './projectTransferService';
 
 const project = {
@@ -188,6 +192,21 @@ describe('portable project transfer', () => {
         },
       ],
     } as unknown as ProductionRun;
+    const sourceTake = run.shots[0].takes[0];
+    sourceTake.manualReview = {
+      contextIdentity: manualReviewContext(run.shots[0], sourceTake),
+      confirmedAt: 1,
+      notes: 'Checked',
+    };
+    run.shots[0].takes.push({
+      ...sourceTake,
+      id: 'stale-take',
+      manualReview: {
+        contextIdentity: 'obsolete',
+        confirmedAt: 1,
+        notes: 'Stale',
+      },
+    });
     state.getRuns.mockResolvedValue([run]);
     state.listArtifacts.mockResolvedValue([{ id: 'artifact', projectId: 'a' } as PromptArtifactV1]);
     state.listDrafts.mockResolvedValue([
@@ -219,5 +238,346 @@ describe('portable project transfer', () => {
     expect(imported.shots[0].takes[0].status).toBe('recovery-required');
     expect(imported.shots[0].takes[0].taskId).toBeUndefined();
     expect(imported.shots[0].takes[0].localMediaUrl).toMatch(/^blob:/);
+    expect(imported.shots[0].takes[0].manualReview?.contextIdentity).toBe(
+      manualReviewContext(imported.shots[0], imported.shots[0].takes[0]),
+    );
+    expect(imported.shots[0].takes[1].manualReview?.contextIdentity).toBe('obsolete');
+  });
+  it('packages storyboard dialogue from its audio URL independently of the selected video', async () => {
+    state.assets[0] = { ...state.assets[0], groupId: project.id };
+    const dialogue: Asset = {
+      ...asset,
+      id: 'dialogue',
+      type: 'audio',
+      mimeType: 'audio/wav',
+      storageKey: 'dialogue-bytes',
+      url: 'blob:dialogue',
+    };
+    state.assets.push(dialogue);
+    state.blobs.set('dialogue-bytes', new Blob(['actual-dialogue'], { type: 'audio/wav' }));
+    const document = {
+      ...project,
+      storyboard: {
+        shots: [{ id: 1, generatedVideoUrl: asset.url, audioUrl: dialogue.url }],
+        timeline: {
+          tracks: [
+            { id: 'v', type: 'video', label: 'Video' },
+            { id: 'a', type: 'audio', label: 'Dialogue' },
+          ],
+          clips: [
+            {
+              id: 'video_1',
+              resourceId: 1,
+              trackId: 'v',
+              type: 'video',
+              label: 'Video',
+              startTime: 0,
+              duration: 2,
+              offset: 0,
+            },
+            {
+              id: 'audio_1',
+              resourceId: 1,
+              trackId: 'a',
+              type: 'audio',
+              label: 'Dialogue',
+              startTime: 0,
+              duration: 2,
+              offset: 0,
+            },
+          ],
+        },
+      },
+    } as unknown as Project;
+    const run = {
+      projectId: project.id,
+      shots: [
+        {
+          id: 1,
+          selectedTakeId: 'take',
+          takes: [{ id: 'take', localMediaKey: 'a-video', localMediaUrl: asset.url }],
+        },
+      ],
+    } as unknown as ProductionRun;
+    for (const selectedRun of [run, undefined]) {
+      const bundle = await exportProjectOtioBundle(document, selectedRun);
+      const zip = await JSZip.loadAsync(await bundle.arrayBuffer());
+      expect(await zip.file('assets/dialogue.wav')!.async('string')).toBe('actual-dialogue');
+      const timeline = JSON.parse(await zip.file('timeline.otio')!.async('string'));
+      expect(timeline.tracks.children[1].children[0].media_reference.target_url).toBe(
+        'assets/dialogue.wav',
+      );
+      expect(timeline.tracks.children[0].children[0].media_reference.target_url).toBe(
+        'assets/a-video.mp4',
+      );
+    }
+  });
+  it('delivers only actual video/audio edit media, ignoring unavailable old takes and revisions', async () => {
+    const music: Asset = {
+      ...asset,
+      id: 'music',
+      type: 'audio',
+      mimeType: 'audio/wav',
+      storageKey: 'music-bytes',
+      url: 'blob:music',
+    };
+    state.assets.push(music);
+    state.blobs.set('music-bytes', new Blob(['sound'], { type: 'audio/wav' }));
+    const document = {
+      ...project,
+      studioRevisions: [{ snapshot: { referenceAssetIds: ['missing-revision'] } }],
+      storyboard: {
+        ...project.storyboard,
+        timeline: {
+          tracks: [
+            { id: 'v', type: 'video', label: 'Video' },
+            { id: 'a', type: 'audio', label: 'Audio' },
+          ],
+          clips: [
+            {
+              id: 'v1',
+              trackId: 'v',
+              type: 'video',
+              resourceId: 'a-video',
+              label: 'Chosen',
+              startTime: 2,
+              offset: 1,
+              duration: 3,
+            },
+            {
+              id: 'a1',
+              trackId: 'a',
+              type: 'audio',
+              resourceId: 'music',
+              label: 'Music',
+              startTime: 0,
+              offset: 0.5,
+              duration: 5,
+            },
+          ],
+        },
+      },
+    } as unknown as Project;
+    const run = {
+      id: 'run',
+      projectId: 'a',
+      shots: [
+        {
+          id: 1,
+          selectedTakeId: 'gone',
+          takes: [{ id: 'gone', localMediaKey: 'gone', status: 'accepted' }],
+        },
+      ],
+    } as unknown as ProductionRun;
+    state.getRuns.mockResolvedValue([run]);
+    const network = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      throw new Error('Unexpected network');
+    });
+    const blob = await exportProjectOtioBundle(document, run);
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    expect(zip.file('assets/a-video.mp4')).not.toBeNull();
+    expect(zip.file('assets/music.wav')).not.toBeNull();
+    expect(zip.file('assets/gone.mp4')).toBeNull();
+    expect(zip.file('project.json')).toBeNull();
+    const timeline = JSON.parse(await zip.file('timeline.otio')!.async('string'));
+    expect(timeline.tracks.children[0].children[0].OTIO_SCHEMA).toBe('Gap.1');
+    expect(timeline.tracks.children[0].children[1].source_range.start_time.value).toBe(24);
+    expect(timeline.tracks.children[1].children[0].media_reference.target_url).toBe(
+      'assets/music.wav',
+    );
+    expect(network).not.toHaveBeenCalled();
+    network.mockRestore();
+    await expect(buildPortableProjectBundle(document)).rejects.toThrow(
+      'Referenced local media missing',
+    );
+  });
+
+  it('reports concrete missing chosen clips before packaging', async () => {
+    state.blobs.clear();
+    const document = {
+      ...project,
+      storyboard: {
+        ...project.storyboard,
+        timeline: {
+          tracks: [{ id: 'v', type: 'video', label: 'Video' }],
+          clips: [
+            {
+              id: 'c',
+              trackId: 'v',
+              resourceId: 'a-video',
+              label: 'Scene opening',
+              startTime: 0,
+              duration: 2,
+              offset: 0,
+            },
+          ],
+        },
+      },
+    } as unknown as Project;
+    expect(await preflightProjectOtioExport(document)).toEqual({
+      missingMedia: [
+        {
+          mediaKey: 'a-video',
+          clipId: 'c',
+          clipLabel: 'Scene opening',
+          assetId: 'a-video',
+          shotId: undefined,
+        },
+      ],
+    });
+    await expect(exportProjectOtioBundle(document)).rejects.toBeInstanceOf(
+      OtioExportPreflightError,
+    );
+  });
+
+  it('remaps external result, frozen artifact and media identities while keeping numeric scenes consistent', async () => {
+    const document = {
+      ...project,
+      studioResults: [
+        {
+          id: 'external-result',
+          projectId: 'a',
+          assetId: 'a-video',
+          artifactId: 'frozen-artifact',
+          storyboardShotId: 1,
+          variantIndex: 0,
+          artifactSnapshot: { id: 'frozen-artifact', projectId: 'a', prompt: 'Frozen prompt' },
+        },
+      ],
+    } as unknown as Project;
+    const blob = await buildPortableProjectBundle(document);
+    state.assets = [];
+    const restored = await importPortableProject(
+      new File([await blob.arrayBuffer()], 'result.loofi-project'),
+    );
+    const result = (
+      restored as unknown as {
+        studioResults: {
+          id: string;
+          projectId: string;
+          assetId: string;
+          artifactId: string;
+          storyboardShotId: number;
+          artifactSnapshot: { id: string; projectId: string; prompt: string };
+        }[];
+      }
+    ).studioResults[0];
+    expect(result.id).not.toBe('external-result');
+    expect(result.projectId).toBe(restored.id);
+    expect(result.assetId).toBe(state.assets[0].id);
+    expect(result.artifactId).toBe(result.artifactSnapshot.id);
+    expect(result.artifactId).not.toBe('frozen-artifact');
+    expect(result.artifactSnapshot.projectId).toBe(restored.id);
+    expect(result.artifactSnapshot.prompt).toBe('Frozen prompt');
+    expect(result.storyboardShotId).toBe(restored.storyboard.shots[0].id);
+  });
+  it('exports a selected generated take without requiring other takes or reference assets', async () => {
+    const document = {
+      ...project,
+      storyboard: {
+        ...project.storyboard,
+        timeline: {
+          tracks: [{ id: 'v', type: 'video', label: 'Video' }],
+          clips: [
+            {
+              id: 'chosen',
+              trackId: 'v',
+              resourceId: 1,
+              selectedTakeId: 'selected',
+              label: 'Selected scene',
+              startTime: 0,
+              duration: 2,
+              offset: 0.5,
+            },
+          ],
+        },
+      },
+    } as unknown as Project;
+    const run = {
+      projectId: 'a',
+      shots: [
+        {
+          id: 1,
+          selectedTakeId: 'old',
+          takes: [
+            { id: 'old', localMediaKey: 'gone' },
+            {
+              id: 'selected',
+              localMediaKey: 'selected-bytes',
+              prompt: 'Chosen prompt',
+              request: { modelId: 'veo' },
+            },
+          ],
+        },
+      ],
+    } as unknown as ProductionRun;
+    state.blobs.set('selected-bytes', new Blob(['chosen-video'], { type: 'video/mp4' }));
+    const blob = await exportProjectOtioBundle(document, run);
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    expect(zip.file('assets/selected-bytes.mp4')).not.toBeNull();
+    expect(zip.file('assets/a-video.mp4')).toBeNull();
+    const timeline = JSON.parse(await zip.file('timeline.otio')!.async('string'));
+    expect(timeline.tracks.children[0].children[0].metadata.loofi).toMatchObject({
+      takeId: 'selected',
+      prompt: 'Chosen prompt',
+    });
+    const provenance = JSON.parse(await zip.file('provenance.json')!.async('string'));
+    expect(provenance.clips[0].take.id).toBe('selected');
+    run.shots[0].takes[1].localMediaKey = undefined;
+    expect((await preflightProjectOtioExport(document, run)).missingMedia).toHaveLength(1);
+  });
+
+  it('includes only selected external result provenance and keeps relative media paths', async () => {
+    const document = {
+      ...project,
+      studioResults: [
+        {
+          id: 'chosen-result',
+          assetId: 'a-video',
+          artifactId: 'snapshot',
+          variantIndex: 0,
+          artifactSnapshot: { prompt: 'Exactly copied prompt' },
+        },
+        { id: 'unused-result', assetId: 'missing-external' },
+      ],
+      storyboard: {
+        ...project.storyboard,
+        timeline: {
+          tracks: [{ id: 'v', type: 'video', label: 'Video' }],
+          clips: [
+            {
+              id: 'external',
+              trackId: 'v',
+              resourceId: 'a-video',
+              label: 'Imported result',
+              startTime: 0,
+              duration: 2,
+              offset: 0,
+            },
+          ],
+        },
+      },
+    } as unknown as Project;
+    const blob = await exportProjectOtioBundle(document);
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    const provenance = JSON.parse(await zip.file('provenance.json')!.async('string'));
+    expect(provenance.studioResults).toHaveLength(1);
+    expect(provenance.studioResults[0].artifactSnapshot.prompt).toBe('Exactly copied prompt');
+    const timeline = JSON.parse(await zip.file('timeline.otio')!.async('string'));
+    expect(timeline.tracks.children[0].children[0].media_reference.target_url).toBe(
+      'assets/a-video.mp4',
+    );
+  });
+  it('rejects an empty actual edit instead of falling back to storyboard scenes', async () => {
+    const document = {
+      ...project,
+      storyboard: {
+        ...project.storyboard,
+        timeline: { tracks: [{ id: 'v', type: 'video', label: 'Video' }], clips: [] },
+      },
+    } as unknown as Project;
+    await expect(exportProjectOtioBundle(document)).rejects.toThrow(
+      'Timeline has no exportable media clips',
+    );
   });
 });

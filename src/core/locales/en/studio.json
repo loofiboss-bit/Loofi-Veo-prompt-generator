@@ -347,5 +347,34 @@
     "rollAngleDegrees": "Roll angle",
     "spatialGrid": "Spatial placement",
     "customDirectives": "Camera notes"
+  },
+  "editView": "Editor",
+  "resultView": "Result",
+  "workspaceView": "Workspace view",
+  "copyOptions": "Copy options",
+  "libraryTabs": {
+    "templates": "Templates",
+    "history": "Previous packs",
+    "revisions": "Revisions"
+  },
+  "externalResults": {
+    "title": "External video results",
+    "import": "Import result for this variant",
+    "importing": "Importing video…",
+    "empty": "No imported results yet.",
+    "source": "Original prompt",
+    "notes": "Review notes",
+    "confirm": "Confirm manual review",
+    "confirmed": "Manual review confirmed",
+    "scene": "Storyboard scene",
+    "newScene": "Create a new scene",
+    "useTimeline": "Use on timeline",
+    "pending": "Saving result…",
+    "unavailable": "This local video is unavailable. Choose a replacement and review it again.",
+    "duration": "{{seconds}} seconds",
+    "error": "Result could not be saved.",
+    "relink": "Relink in Assets",
+    "refresh": "Refresh local media",
+    "replace": "Choose replacement video"
   }
 }

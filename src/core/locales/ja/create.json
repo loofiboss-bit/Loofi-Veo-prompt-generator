@@ -1,7 +1,7 @@
 {
   "brand": "Loofi Creator Studio",
-  "title": "作成",
-  "description": "概要、シーン、素材、生成、レビュー、書き出しを、自動保存される1つのプロジェクトで管理します。",
+  "title": "制作",
+  "description": "シーンを計画し、参照を追加して、生成を承認し、確認して書き出します。",
   "workflowLabel": "作成ワークフロー",
   "help": "ワークフローのヘルプ",
   "autosaved": "自動保存済み · 安全なチェックポイント {{time}}",
@@ -77,7 +77,9 @@
     "copyPack": "Creative Pack v2をコピー",
     "approveContinuityReview": "継続性レビューを承認",
     "continuityReviewApproved": "継続性レビューを承認済み",
-    "downloadOtio": "メディア付きOTIOをダウンロード"
+    "downloadOtio": "メディア付きOTIOをダウンロード",
+    "relinkExportMedia": "クリップを再リンク",
+    "openMediaLibrary": "メディアライブラリを開く"
   },
   "labels": {
     "idea": "制作アイデア",
@@ -107,7 +109,9 @@
     "semanticReview": "承認済みGeminiセマンティックレビューを使用",
     "exportPreview": "Creative Pack v2プレビュー",
     "continuityReviewCost": "任意のGeminiレビュー · 最大 ${{cost}}",
-    "fcpxmlExperimental": "FCPXML：実験的"
+    "fcpxmlExperimental": "FCPXML：実験的",
+    "missingExportMedia": "選択したタイムラインのメディアがありません。書き出す前に一覧のクリップを再リンクしてください。",
+    "chooseReplacementMedia": "置き換えるメディアを選択"
   },
   "empty": {
     "title": "最初の制作実行を作成",
@@ -207,5 +211,44 @@
     "continuityReviewApproved": "このスナップショットの任意のGemini継続性レビューを承認しました。",
     "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。",
     "otioReady": "OTIOバンドルの準備完了。"
+  },
+  "saveStatus": {
+    "failed": "制作プランを読み込みまたは保存できませんでした。",
+    "loading": "制作プランを読み込み中…",
+    "savedPlan": "保存済みの制作プラン · {{time}}",
+    "noPlan": "保存済みの制作プランはありません"
+  },
+  "flow": {
+    "nextAction": "次の操作",
+    "references": "参照を補完",
+    "recover": "ジョブを復旧",
+    "generate": "テイクを生成",
+    "relink": "メディアを再リンク",
+    "review": "結果を確認",
+    "accept": "結果を採用",
+    "localChecks": "ローカル事前確認",
+    "aiReview": "AIによる確認",
+    "combinedReview": "複合確認",
+    "notReviewed": "未確認",
+    "score": "スコア：{{score}}",
+    "confirmManual": "手動確認を確定",
+    "manualConfirmed": "手動確認済み",
+    "recoveryCheck": "ジョブを確認／結果を再取得",
+    "recoveryAmbiguous": "送信結果が不明です。新しい有料実行を準備する前にプロバイダーの履歴を確認してください。",
+    "recoveryUnavailable": "このジョブは自動復旧できません。",
+    "recoveryStarted": "新しい生成要求を送信せずに復旧を開始しました。",
+    "activity": "アクティビティを開く",
+    "production": "制作シーンを開く",
+    "reviewCompleteLocal": "ローカル事前確認が完了しました。動画を見て手動確認を確定してください。",
+    "noPlayable": "再生可能なテイクはまだありません。",
+    "comparison": "テイクのA/B比較",
+    "notes": "比較メモ",
+    "keep": "採用",
+    "reject": "却下",
+    "revise": "修正",
+    "findings": "確認事項",
+    "reviewWarnings": "ローカル確認は動画の品質を評価しません。",
+    "reviewFailed": "AIによる確認に失敗しました。手動で確認できます。",
+    "openFailed": "リンク先の制作シーンを開けませんでした。現在の作業は保持されています。"
   }
 }

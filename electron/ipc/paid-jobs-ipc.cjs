@@ -39,6 +39,21 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
 
   ipcMain.handle('paid-job-list', async () => getEngine()?.store.readAll() ?? []);
   ipcMain.handle('paid-job-cancel', async (_, id) => getEngine()?.cancel(id) ?? false);
+  ipcMain.handle('paid-job-recover', async (_, context) => {
+    const engine = getEngine();
+    if (!engine || !context || typeof context.id !== 'string') return false;
+    const job = await engine.store.get(context.id);
+    if (
+      !job ||
+      !job.providerOperationName ||
+      !['Error', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status) ||
+      job.productionRunId !== context.runId ||
+      job.productionShotId !== context.shotId ||
+      job.productionTakeId !== context.takeId
+    )
+      return false;
+    return engine.retry(job.id);
+  });
   ipcMain.handle('paid-job-retry', async (_, id) => {
     const engine = getEngine();
     if (!engine) return false;

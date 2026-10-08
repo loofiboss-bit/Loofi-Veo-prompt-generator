@@ -80,6 +80,13 @@ const MOCK_ARTIFACT: PromptArtifactV1 = {
 };
 
 describe('ValidationRail', () => {
+  it('keeps blocked checks visible while filtering optional checks separately', () => {
+    render(<ValidationRail artifact={MOCK_ARTIFACT} statuses={['blocked']} />);
+    expect(screen.getByText('Missing Parameters')).toBeInTheDocument();
+    expect(screen.queryByText('Creative Clarity')).toBeNull();
+    expect(screen.queryByText('Dialogue Syntax')).toBeNull();
+  });
+
   it('renders check labels and details', () => {
     render(<ValidationRail artifact={MOCK_ARTIFACT} />);
 

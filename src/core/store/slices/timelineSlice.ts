@@ -119,7 +119,7 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
       let cursor = 0;
 
       state.sbShots.forEach((shot) => {
-        if (!shot.generatedVideoUrl && shot.type !== 'title' && shot.action) return;
+        if (!shot.generatedVideoUrl && shot.type !== 'title') return;
         const duration = shot.duration || 5;
 
         generatedClips.push({

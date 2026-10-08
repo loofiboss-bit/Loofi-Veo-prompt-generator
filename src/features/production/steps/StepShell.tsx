@@ -16,13 +16,10 @@ export function StepShell({
   return (
     <section aria-labelledby={`${id}-step-title`} className="space-y-4">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-wider text-blue-300">
-          {t('stepEyebrow')}
-        </p>
         <h2
           id={`${id}-step-title`}
           tabIndex={-1}
-          className="mt-1 text-xl font-semibold text-white focus:outline-none"
+          className="mt-1 text-lg font-semibold text-slate-100 focus:outline-none"
         >
           {t(`steps.${id}.title`, title)}
         </h2>

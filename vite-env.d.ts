@@ -101,6 +101,12 @@ interface ElectronAPI {
   ) => Promise<import('./src/core/types').PaidJobTask>;
   listPaidJobs?: () => Promise<import('./src/core/types').PaidJobTask[]>;
   cancelPaidJob?: (id: string) => Promise<boolean>;
+  recoverPaidJob?: (context: {
+    id: string;
+    runId: string;
+    shotId: number;
+    takeId: string;
+  }) => Promise<boolean>;
   retryPaidJob?: (id: string) => Promise<boolean>;
   onPaidJobUpdate?: (callback: (job: import('./src/core/types').PaidJobTask) => void) => () => void;
   cacheDesktopMedia?: (input: {

@@ -1,3 +1,8 @@
+import {
+  isTakeReviewCurrent,
+  isTakePlayable,
+  manualReviewContext,
+} from '@core/services/productionReadinessService';
 import { createStore, del, get, keys, set } from 'idb-keyval';
 
 import { mediaAssetService } from '@core/services/mediaAssetService';
@@ -20,6 +25,13 @@ import type {
   ProductionTake,
   ShotReviewResult,
 } from '@core/types';
+
+const takeContentChanged = (take: ProductionTake, updates: Partial<ProductionTake>): boolean =>
+  ('localMediaKey' in updates && updates.localMediaKey !== take.localMediaKey) ||
+  ('providerMediaUri' in updates && updates.providerMediaUri !== take.providerMediaUri) ||
+  ('request' in updates && JSON.stringify(updates.request) !== JSON.stringify(take.request)) ||
+  ('continuitySnapshot' in updates &&
+    updates.continuitySnapshot?.snapshotHash !== take.continuitySnapshot?.snapshotHash);
 
 const RUN_STORE = createStore('veo-production-runs', 'production-runs-v1');
 const RUN_PREFIX = 'production-run:';
@@ -517,6 +529,13 @@ class ProductionRunService {
               ...shot,
               prompt: updates.prompt ?? shot.prompt,
               status: 'awaiting-approval',
+              takes: shot.takes.map((take) => ({
+                ...take,
+                reviewInvalidated: true,
+                manualReview: undefined,
+                review: undefined,
+                reviewContextIdentity: undefined,
+              })),
               revisionPrompt: updates.prompt ? undefined : shot.revisionPrompt,
               continuitySnapshot: continuity?.snapshot,
               continuityReport: continuity?.report,
@@ -762,7 +781,24 @@ class ProductionRunService {
                 updates.status ?? shot.takes.find((t) => t.id === takeId)?.status,
               ),
               takes: shot.takes.map((take) =>
-                take.id === takeId ? { ...take, ...updates } : take,
+                take.id === takeId
+                  ? {
+                      ...take,
+                      ...updates,
+                      reviewInvalidated: takeContentChanged(take, updates)
+                        ? true
+                        : (updates.reviewInvalidated ?? take.reviewInvalidated),
+                      manualReview: takeContentChanged(take, updates)
+                        ? undefined
+                        : (updates.manualReview ?? take.manualReview),
+                      review: takeContentChanged(take, updates)
+                        ? undefined
+                        : (updates.review ?? take.review),
+                      reviewContextIdentity: takeContentChanged(take, updates)
+                        ? undefined
+                        : (updates.reviewContextIdentity ?? take.reviewContextIdentity),
+                    }
+                  : take,
               ),
             }
           : shot,
@@ -845,12 +881,55 @@ class ProductionRunService {
                 ...shot,
                 status: needsRevision ? 'needs-revision' : 'reviewing',
                 revisionPrompt: needsRevision ? review.proposedRevisionPrompt : undefined,
-                takes: shot.takes.map((take) => (take.id === takeId ? { ...take, review } : take)),
+                takes: shot.takes.map((take) =>
+                  take.id === takeId
+                    ? {
+                        ...take,
+                        review,
+                        reviewInvalidated: false,
+                        reviewContextIdentity: manualReviewContext(shot, take),
+                      }
+                    : take,
+                ),
               }
             : shot,
         ),
       };
     });
+  }
+
+  async confirmManualReview(
+    runId: string,
+    shotId: number,
+    takeId: string,
+    notes: string,
+  ): Promise<ProductionRun> {
+    return this.mutateRun(runId, (run) => ({
+      ...run,
+      shots: run.shots.map((shot) => {
+        if (shot.id !== shotId) return shot;
+        const take = shot.takes.find((item) => item.id === takeId);
+        if (!take || !isTakePlayable(take))
+          throw new Error('A playable take is required for manual review.');
+        assertCurrentContinuitySnapshot(shot);
+        return {
+          ...shot,
+          takes: shot.takes.map((item) =>
+            item.id === takeId
+              ? {
+                  ...item,
+                  reviewInvalidated: false,
+                  manualReview: {
+                    contextIdentity: manualReviewContext(shot, item),
+                    confirmedAt: Date.now(),
+                    notes: notes.trim(),
+                  },
+                }
+              : item,
+          ),
+        };
+      }),
+    }));
   }
 
   async acceptTake(runId: string, shotId: number, takeId: string): Promise<ProductionRun> {
@@ -860,6 +939,9 @@ class ProductionRunService {
         const take = shot.takes.find((item) => item.id === takeId);
         if (!take) {
           throw new Error(`Production take ${takeId} was not found.`);
+        }
+        if (!isTakePlayable(take) || !isTakeReviewCurrent(shot, take)) {
+          throw new Error('Review the current playable take before accepting it.');
         }
         if (!take.localMediaKey && !take.mediaRiskWaived) {
           throw new Error('Cache the generated media locally or explicitly waive the media risk.');

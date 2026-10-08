@@ -3,6 +3,7 @@ import { INITIAL_STATE } from '@core/constants';
 import { studioRevisionSnapshot } from './studioRevisionService';
 import { createPromptStudioDraft } from './promptStudioDraftService';
 import type { Project } from '@core/types';
+import { compileVideoPromptArtifact } from './promptStudioService';
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), set: vi.fn(), backup: vi.fn() }));
 vi.mock('@core/utils/safeIdbKeyval', () => ({
@@ -73,6 +74,45 @@ describe('projectDocumentService persistence', () => {
     mocks.get.mockResolvedValue({ ...project, studioRevisions: [revision] });
     await projectDocumentService.save({ ...project, studioRevisions: [] });
     expect(mocks.set.mock.calls[0][1].studioRevisions).toEqual([revision]);
+  });
+  it('retains imported results and newer manual reviews across stale editor snapshots', async () => {
+    const artifact = compileVideoPromptArtifact({
+      idea: 'A boat on a lake',
+      target: 'flow-veo',
+      mode: 'text-to-video',
+      aspectRatio: '16:9',
+      durationSeconds: 8,
+    });
+    const result = {
+      schemaVersion: 1 as const,
+      id: 'external-a',
+      projectId: 'a',
+      artifactId: artifact.id,
+      variantIndex: 0 as const,
+      target: artifact.target,
+      assetId: 'video-a',
+      assetName: 'video.webm',
+      mimeType: 'video/webm',
+      durationSeconds: 2,
+      importedAt: '2026-10-08',
+      updatedAt: 2,
+      sourceSnapshot: artifact,
+      variantSnapshot: artifact.primary as import('@core/types').VideoPromptVariant,
+      manualReview: { confirmedAt: '2026-10-08', notes: 'Reviewed', assetId: 'video-a' },
+    };
+    mocks.get.mockResolvedValue({ ...project, studioResults: [result] });
+    await projectDocumentService.save({ ...project, studioResults: [] });
+    expect(mocks.set.mock.calls[0][1].studioResults).toEqual([result]);
+    await projectDocumentService.save({
+      ...project,
+      studioResults: [{ ...result, updatedAt: 1, manualReview: undefined }],
+    });
+    expect(mocks.set.mock.calls[1][1].studioResults).toEqual([result]);
+    await projectDocumentService.save({
+      ...project,
+      studioResults: [{ ...result, updatedAt: 3, storyboardShotId: 4 }],
+    });
+    expect(mocks.set.mock.calls[2][1].studioResults[0].storyboardShotId).toBe(4);
   });
   it('serializes draft patches with editor saves and keeps the newest draft revision', async () => {
     let stored = { ...project, composer: { gridSize: 20 } } as Project;

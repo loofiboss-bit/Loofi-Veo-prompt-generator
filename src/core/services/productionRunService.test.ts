@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { INITIAL_STATE } from '@core/constants';
+import { isTakeReviewCurrent, productionReadiness } from './productionReadinessService';
 import { fingerprintAsset } from './continuityService';
 import type { Asset, ContinuityOverrideRecord, ProductionRun } from '@core/types';
 
@@ -580,7 +581,16 @@ describe('productionRunService', () => {
     await productionRunService.createRun(makeRun());
     await productionRunService.approveShots('run-1', [1], 0.8);
     const take = await productionRunService.createApprovedTake('run-1', 1);
-    await productionRunService.updateTake('run-1', 1, take.id, { status: 'complete' });
+    await productionRunService.updateTake('run-1', 1, take.id, {
+      status: 'complete',
+      providerMediaUri: 'https://provider/video.mp4',
+    });
+    await productionRunService.confirmManualReview(
+      'run-1',
+      1,
+      take.id,
+      'Watched the complete video.',
+    );
 
     await expect(productionRunService.acceptTake('run-1', 1, take.id)).rejects.toThrow(
       'Cache the generated media',
@@ -672,5 +682,62 @@ describe('productionRunService', () => {
     await expect(productionRunService.createApprovedTake('run-1', 1)).rejects.toThrow(
       'No active generation approval',
     );
+  });
+  it('requires current review and invalidates manual confirmation after media replacement', async () => {
+    await productionRunService.createRun(makeRun());
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const take = await productionRunService.createApprovedTake('run-1', 1);
+    await productionRunService.updateTake('run-1', 1, take.id, {
+      status: 'complete',
+      providerMediaUri: 'https://provider/video.mp4',
+    });
+    await expect(productionRunService.acceptTake('run-1', 1, take.id)).rejects.toThrow(
+      'Review the current playable take',
+    );
+    const confirmed = await productionRunService.confirmManualReview(
+      'run-1',
+      1,
+      take.id,
+      'Watched',
+    );
+    expect(confirmed.shots[0].takes[0].manualReview?.notes).toBe('Watched');
+    const replaced = await productionRunService.updateTake('run-1', 1, take.id, {
+      providerMediaUri: 'https://provider/new.mp4',
+    });
+    expect(replaced.shots[0].takes[0].manualReview).toBeUndefined();
+  });
+  it('does not reinterpret an invalidated accepted take as an accepted legacy result', async () => {
+    await productionRunService.createRun(makeRun());
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const take = await productionRunService.createApprovedTake('run-1', 1);
+    await productionRunService.updateTake('run-1', 1, take.id, {
+      status: 'complete',
+      providerMediaUri: 'https://provider/video.mp4',
+    });
+    await productionRunService.confirmManualReview('run-1', 1, take.id, 'Watched');
+    await productionRunService.waiveMediaRisk('run-1', 1, take.id);
+    await productionRunService.acceptTake('run-1', 1, take.id);
+    const changed = await productionRunService.updateShotRequest(
+      'run-1',
+      1,
+      { prompt: 'A different scene' },
+      0.8,
+    );
+    const scene = changed.shots[0];
+    const acceptedTake = scene.takes[0];
+    expect(acceptedTake.status).toBe('accepted');
+    expect(acceptedTake.reviewInvalidated).toBe(true);
+    expect(isTakeReviewCurrent(scene, acceptedTake)).toBe(false);
+    expect(productionReadiness(changed).completion.review).toBe(false);
+    await expect(productionRunService.acceptTake('run-1', 1, take.id)).rejects.toThrow(
+      'Review the current playable take',
+    );
+    const confirmed = await productionRunService.confirmManualReview(
+      'run-1',
+      1,
+      take.id,
+      'Watched again',
+    );
+    expect(isTakeReviewCurrent(confirmed.shots[0], confirmed.shots[0].takes[0])).toBe(true);
   });
 });

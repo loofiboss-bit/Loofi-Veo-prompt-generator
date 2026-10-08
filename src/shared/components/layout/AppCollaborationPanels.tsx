@@ -1,9 +1,11 @@
 import { LAB_CAPABILITIES } from '@core/config/studioCapabilities';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
 import { ModalSkeleton } from '@shared/components/ui/Skeleton';
+import { OPEN_ASSET_LIBRARY_EVENT } from '@shared/utils/assetLibraryEvents';
 
 // Lazy-loaded collaboration panels — only rendered when opened (v2.2.0 bundle reduction)
 const AssetLibrary = React.lazy(() => import('@features/prompt/AssetLibrary'));
@@ -63,16 +65,32 @@ export function AppCollaborationPanels({
   currentProjectName,
 }: AppCollaborationPanelsProps) {
   const { t } = useTranslation(['common']);
+  const location = useLocation();
+  const [assetLibraryOpen, setAssetLibraryOpen] = useState(false);
+  const [assetLibraryMounted, setAssetLibraryMounted] = useState(false);
+  useEffect(() => {
+    const open = () => {
+      setAssetLibraryMounted(true);
+      setAssetLibraryOpen(true);
+    };
+    window.addEventListener(OPEN_ASSET_LIBRARY_EVENT, open);
+    return () => window.removeEventListener(OPEN_ASSET_LIBRARY_EVENT, open);
+  }, []);
+  useEffect(() => {
+    setAssetLibraryOpen(false);
+  }, [location.pathname, currentProjectId]);
   const lanAvailable = Boolean(LAB_CAPABILITIES.find((item) => item.id === 'lan')?.runnable);
 
   return (
     <>
-      {/* Global Asset Library */}
-      <ErrorBoundary panelId="app-asset-library-panel">
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <AssetLibrary />
-        </React.Suspense>
-      </ErrorBoundary>
+      {/* The drawer is opened by reference and timeline controls, never by global navigation. */}
+      {assetLibraryMounted && (
+        <ErrorBoundary panelId="app-asset-library-panel">
+          <React.Suspense fallback={<ModalSkeleton />}>
+            <AssetLibrary isOpen={assetLibraryOpen} onClose={() => setAssetLibraryOpen(false)} />
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
 
       {/* AI Optimize Panel (v3.4.0) — fixed right sidebar */}
       {isOptimizePanelOpen && (

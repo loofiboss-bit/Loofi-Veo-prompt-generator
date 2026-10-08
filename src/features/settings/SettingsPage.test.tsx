@@ -90,7 +90,9 @@ vi.mock('@core/store/useAppStore', () => ({
   }),
 }));
 
-function renderSettingsPage(initialEntry: string) {
+function renderSettingsPage(
+  initialEntry: string | { pathname: string; search?: string; state?: { returnTo: string } },
+) {
   return render(
     <I18nextProvider i18n={i18n}>
       <MemoryRouter initialEntries={[initialEntry]}>
@@ -129,11 +131,22 @@ describe('SettingsPage', () => {
     expect(mockUpdateSettings).toHaveBeenCalledWith({ enableExperimentalFeatures: true });
   });
 
-  it('navigates back to the prompt builder from the header button', async () => {
+  it('returns direct settings visits to Prompt Studio', async () => {
     renderSettingsPage(ROUTES.SETTINGS);
 
-    fireEvent.click(screen.getByRole('button', { name: /back to prompt builder/i }));
+    fireEvent.click(screen.getByRole('button', { name: /back to workspace/i }));
 
-    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.HOME);
+    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.STUDIO);
+  });
+  it('returns to the originating route and keeps its search parameters after tab changes', () => {
+    renderSettingsPage({ pathname: ROUTES.SETTINGS, state: { returnTo: '/studio?mode=music' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Plugins' }));
+    fireEvent.click(screen.getByRole('button', { name: /back to workspace/i }));
+    expect(mockNavigate).toHaveBeenCalledWith('/studio?mode=music');
+  });
+  it('rejects an external return destination', () => {
+    renderSettingsPage({ pathname: ROUTES.SETTINGS, state: { returnTo: '//example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /back to workspace/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.STUDIO);
   });
 });

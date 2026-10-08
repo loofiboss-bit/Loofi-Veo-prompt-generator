@@ -20,6 +20,15 @@ class PaidJobService {
     return (await window.electron?.cancelPaidJob?.(id)) ?? false;
   }
 
+  async recover(context: {
+    id: string;
+    runId: string;
+    shotId: number;
+    takeId: string;
+  }): Promise<boolean> {
+    return (await window.electron?.recoverPaidJob?.(context)) ?? false;
+  }
+
   async retry(id: string): Promise<boolean> {
     return (await window.electron?.retryPaidJob?.(id)) ?? false;
   }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { render, screen, waitFor } from '@/test-utils';
 
@@ -76,6 +76,18 @@ vi.mock('@core/store/useEditorSessionStore', () => ({
 }));
 
 describe('ProjectsPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('keeps the current project when saving its document fails', async () => {
+    saveProject.mockRejectedValueOnce(new Error('Local storage unavailable'));
+    const { user } = render(<ProjectsPage />);
+    await user.click(screen.getByRole('button', { name: /Project B/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Local storage unavailable');
+    expect(setCurrentProject).not.toHaveBeenCalled();
+    expect(commitProjectDocument).not.toHaveBeenCalled();
+  });
   it('loads the selected project document before persisting the current project id', async () => {
     const currentDocument = { ...projectDocument, id: 'project-a', name: 'Project A' };
     captureCurrentProjectDocument.mockReturnValue(currentDocument);

@@ -4,11 +4,12 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v14.1.0 Prompt Quality & Safe Iteration
+## v14.2.0 Connected Creator Flow
 
-v14.1 adds Model Arena comparison for eight video targets, actionable validation, reviewed AI
-proposals, durable project revisions and complete local Studio templates. It also includes the
-Pro Studio Glass design and safer cross-project template reuse.
+v14.2 connects imported and generated video results to their source prompt, review and selected
+edit. It includes the responsive workbench, shared scene readiness and next actions, protected
+job recovery, explicit local/AI review sources, manual confirmation and selected-media OTIO delivery.
+External imports create no provider operations or cost approvals. Persisted formats stay compatible.
 
 The durable v14 workflow remains:
 
@@ -23,7 +24,7 @@ The durable v14 workflow remains:
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v14.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0)
+[v14.2.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.0)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -31,19 +32,20 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-14.1.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-14.1.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-14.2.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-14.2.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-14.2.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-14.2.0-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.
 Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
 
-Local Node 24 verification: 4,164 Vitest tests, 100 native tests, production build and 66 Chromium
-E2E tests passed. One local E2E case requires a packaged Electron executable. Ubuntu CI and Fedora
-keep separate reviewed visual baselines because their system font rendering differs.
-See [implementation evidence](V14_1_IMPLEMENTATION.md) for the exact qualification boundaries.
+Pre-publication verification on PR 61: 4,228 Vitest tests, 101 native tests and 99 Chromium tests
+passed, with the package-only browser test skipped until the canonical package build. All six visual
+tests passed on Fedora and Ubuntu uses the matching Playwright Noble container. Screenshot
+thresholds and performance budgets remain enabled.
+See [creator-flow contracts and verification](CREATOR_FLOW.md) for the current workflow boundaries.
 
 ## Local release gates
 
@@ -137,6 +139,8 @@ Automated release evidence does not imply physical desktop qualification. Keep t
 - paid provider execution after a real approval and price review.
 
 ## Historical releases
+
+- [v14.1.0 Prompt Quality & Safe Iteration](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0)
 
 - [v13.0.0 Universal Model Transpiler](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v13.0.0)
 

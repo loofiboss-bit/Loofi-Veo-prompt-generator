@@ -36,6 +36,7 @@ import { sanitizeStudioTemplate } from '@core/services/studioTemplateService';
 import { studioReferenceService } from '@core/services/studioReferenceService';
 import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { STUDIO_CAPABILITIES, studioGenerationBlocker } from '@core/config/studioCapabilities';
+import { openAssetLibrary } from '@shared/utils/assetLibraryEvents';
 import { ROUTES } from '@core/config/routes';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { useProjectStore } from '@core/store/useProjectStore';
@@ -51,6 +52,7 @@ import { StudioTemplateLibrary } from './components/StudioTemplateLibrary';
 import { VideoVariantCard } from './components/VideoVariantCard';
 import { MusicVariantCard } from './components/MusicVariantCard';
 import { ValidationRail } from './components/ValidationRail';
+import { ExternalStudioResults } from './components/ExternalStudioResults';
 
 const SpatialCameraDirector = lazy(() =>
   import('@features/create/components/SpatialCameraDirector').then((m) => ({
@@ -110,8 +112,16 @@ export function PromptStudioPage() {
   const [params] = useSearchParams();
   const projectId = useProjectStore((s) => s.currentProjectId) ?? 'default';
   const store = usePromptStudioDraftStore();
+  const studioLoading = store.status === 'loading';
   const assets = useAppStore((s) => s.assets);
   const labs = useSettingsStore((s) => s.enableExperimentalFeatures);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLElement>(null);
+  const focusResultRequested = useRef(false);
+  const [splitLayout, setSplitLayout] = useState(true);
+  const splitLayoutRef = useRef(true);
+  const [activeView, setActiveView] = useState<'editor' | 'result'>('editor');
+  const [libraryTab, setLibraryTab] = useState<'templates' | 'history' | 'revisions'>('templates');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -197,12 +207,42 @@ export function PromptStudioPage() {
       setProposal(null);
   }, [proposal, store.draft?.projectId, store.draft?.revision]);
 
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      const split = entry.contentRect.width >= 960;
+      if (!split && splitLayoutRef.current !== split) {
+        const focused = document.activeElement;
+        // Keep the focused pane visible when the split workspace becomes tabbed.
+        if (
+          focused &&
+          workspace.querySelector('.studio-columns > .studio-brief')?.contains(focused)
+        )
+          setActiveView('editor');
+        else if (focused && resultRef.current?.contains(focused)) setActiveView('result');
+      }
+      splitLayoutRef.current = split;
+      setSplitLayout(split);
+    });
+    observer.observe(workspace);
+    return () => observer.disconnect();
+  }, [projectId, store.draft?.projectId, studioLoading]);
+
+  useEffect(() => {
+    if (focusResultRequested.current && activeView === 'result' && !changing && !busy) {
+      focusResultRequested.current = false;
+      if (!splitLayout) resultRef.current?.focus();
+    }
+  }, [activeView, changing, busy, splitLayout, proposal]);
+
   const draft = store.draft;
   if (!draft || draft.projectId !== projectId || store.status === 'loading')
     return (
-      <main className="studio-workspace" aria-busy="true">
+      <div className="studio-workspace" aria-busy="true">
         <p role="status">{store.error ?? t('loading')}</p>
-      </main>
+      </div>
     );
   const { video, music, mode, artifact, selectedVariant, lockedSections } = draft;
   const currentArtifact = artifact?.kind === mode ? revalidatePromptArtifact(artifact) : null;
@@ -216,6 +256,11 @@ export function PromptStudioPage() {
           lyrics: undefined,
         })
     : false;
+
+  const revealResult = () => {
+    focusResultRequested.current = !splitLayout;
+    setActiveView('result');
+  };
 
   const updateVideo = (changes: Partial<VideoPromptArtifactInput>) => {
     store.applyDraft({
@@ -356,6 +401,7 @@ export function PromptStudioPage() {
           mode === 'video' ? compileVideoPromptArtifact(video) : compileMusicPromptArtifact(music),
         );
         await saveArtifact(next);
+        revealResult();
         setMessage(t('built'));
       }),
     );
@@ -429,6 +475,7 @@ export function PromptStudioPage() {
           revision: revision!,
           token,
         });
+        revealResult();
         setMessage(t('revision.proposalReady'));
       } finally {
         if (mounted.current && aiRequest.current === token) setBusy(false);
@@ -470,6 +517,13 @@ export function PromptStudioPage() {
       });
     });
   const focusValidation = (action: PromptValidationAction) => {
+    setActiveView(
+      action.field === 'variant' ||
+        action.field === 'styleOfMusic' ||
+        action.variantIndex !== undefined
+        ? 'result'
+        : 'editor',
+    );
     if (action.variantIndex !== undefined) store.setSelectedVariant(action.variantIndex);
     requestAnimationFrame(() => {
       const workspace = document.querySelector<HTMLElement>('.studio-workspace');
@@ -647,10 +701,14 @@ export function PromptStudioPage() {
   );
 
   return (
-    <main className="studio-workspace">
+    <div
+      ref={workspaceRef}
+      className="studio-workspace"
+      data-layout={splitLayout ? 'split' : 'tabs'}
+    >
       <header className="studio-heading">
         <div>
-          <h1>{t('title')}</h1>
+          <h1 tabIndex={-1}>{t('title')}</h1>
           <p>{t('description')}</p>
         </div>
         <span role="status" aria-live="polite" className="studio-save-status">
@@ -663,6 +721,7 @@ export function PromptStudioPage() {
           disabled={changing}
           aria-pressed={mode === 'video'}
           onClick={() => {
+            setActiveView('editor');
             store.setMode('video');
             navigate(ROUTES.STUDIO + '?mode=video', { replace: true });
           }}
@@ -674,6 +733,7 @@ export function PromptStudioPage() {
           disabled={changing}
           aria-pressed={mode === 'music'}
           onClick={() => {
+            setActiveView('editor');
             store.setMode('music');
             navigate(ROUTES.STUDIO + '?mode=music', { replace: true });
           }}
@@ -693,8 +753,30 @@ export function PromptStudioPage() {
           ) : null}
         </div>
       ) : null}
+      {!splitLayout ? (
+        <div className="studio-view-tabs" role="group" aria-label={t('workspaceView')}>
+          <button
+            type="button"
+            aria-pressed={activeView === 'editor'}
+            onClick={() => setActiveView('editor')}
+          >
+            {t('editView')}
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeView === 'result'}
+            onClick={() => setActiveView('result')}
+          >
+            {t('resultView')}
+          </button>
+        </div>
+      ) : null}
       <div className="studio-columns">
-        <section className="studio-brief" aria-label={t('brief')}>
+        <section
+          className="studio-brief"
+          aria-label={t('brief')}
+          hidden={!splitLayout && activeView !== 'editor'}
+        >
           <fieldset disabled={changing} className="studio-brief">
             <Field label={mode === 'video' ? t('idea') : t('topic')}>
               <textarea
@@ -711,65 +793,6 @@ export function PromptStudioPage() {
                 }
               />
             </Field>
-            <details className="studio-details">
-              <summary>{t('templatesHistory')}</summary>
-              <div className="studio-fields">
-                <Field label={t('history')}>
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      const previous = history.find((item) => item.id === e.target.value);
-                      if (!previous) return;
-                      if (previous.projectId !== projectId) return;
-                      void run(() =>
-                        change(async () => {
-                          await checkpoint('history');
-                          store.applyDraft({
-                            mode: previous.kind,
-                            ...(previous.kind === 'video'
-                              ? { video: previous.input as VideoPromptArtifactInput }
-                              : { music: previous.input as MusicPromptArtifactInput }),
-                            artifact: revalidatePromptArtifact(previous),
-                            selectedVariant: 0,
-                            selectedVariants: {
-                              ...store.draft?.selectedVariants,
-                              [previous.kind]: 0,
-                            },
-                            artifacts: {
-                              ...store.draft?.artifacts,
-                              [previous.kind]: revalidatePromptArtifact(previous),
-                            },
-                          });
-                        }),
-                      );
-                    }}
-                  >
-                    <option value="">{t('chooseHistory')}</option>
-                    {history.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.primary.title}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-            </details>
-            <StudioRevisionHistory
-              draft={draft}
-              refreshKey={revisionRefresh}
-              disabled={changing || busy}
-              onSave={() =>
-                change(async () => {
-                  await checkpoint('manual');
-                  setMessage(t('revision.saved'));
-                })
-              }
-              onRestore={restoreRevision}
-            />
-            <details className="studio-details">
-              <summary>{t('templateLibrary.title')}</summary>
-              <StudioTemplateLibrary draft={draft} onApply={applyTemplate} />
-            </details>
             {mode === 'video' ? (
               <>
                 <div className="studio-fields">
@@ -859,6 +882,9 @@ export function PromptStudioPage() {
                 </p>
                 {video.mode !== 'text-to-video' ? (
                   <div className="studio-fields">
+                    <button type="button" onClick={openAssetLibrary}>
+                      {t('common:assets.browseLibrary')}
+                    </button>
                     <Field label={t('importImage')}>
                       <input
                         aria-label={t('importImage')}
@@ -910,6 +936,15 @@ export function PromptStudioPage() {
                       : null}
                   </div>
                 ) : null}
+                <div className="studio-actions">
+                  <button className="studio-primary" disabled={changing} onClick={build}>
+                    {t('build')}
+                  </button>
+                  <button disabled={busy || changing} onClick={optimize}>
+                    {busy ? t('enhancing') : t('enhance')}
+                  </button>
+                </div>
+                <p className="studio-hint">{t('localFirst')}</p>
                 <details className="studio-details">
                   <summary>{t('sceneDetails')}</summary>
                   <div className="studio-fields">
@@ -974,6 +1009,15 @@ export function PromptStudioPage() {
                     </select>
                   </Field>
                 </div>
+                <div className="studio-actions">
+                  <button className="studio-primary" disabled={changing} onClick={build}>
+                    {t('build')}
+                  </button>
+                  <button disabled={busy || changing} onClick={optimize}>
+                    {busy ? t('enhancing') : t('enhance')}
+                  </button>
+                </div>
+                <p className="studio-hint">{t('localFirst')}</p>
                 <details className="studio-details">
                   <summary>{t('musicDetails')}</summary>
                   <div className="studio-fields">
@@ -1043,18 +1087,90 @@ export function PromptStudioPage() {
                 </details>
               </>
             )}
-            <div className="studio-actions">
-              <button className="studio-primary" disabled={changing} onClick={build}>
-                {t('build')}
-              </button>
-              <button disabled={busy || changing} onClick={optimize}>
-                {busy ? t('enhancing') : t('enhance')}
-              </button>
-            </div>
-            <p className="studio-hint">{t('localFirst')}</p>
+            <details className="studio-details studio-library">
+              <summary>{t('templatesHistory')}</summary>
+              <div className="studio-library-tabs" role="group" aria-label={t('templatesHistory')}>
+                {(['templates', 'history', 'revisions'] as const).map((tab) => (
+                  <button
+                    type="button"
+                    key={tab}
+                    aria-pressed={libraryTab === tab}
+                    onClick={() => setLibraryTab(tab)}
+                  >
+                    {t('libraryTabs.' + tab)}
+                  </button>
+                ))}
+              </div>
+              <div className="studio-library-panel" hidden={libraryTab !== 'templates'}>
+                <StudioTemplateLibrary draft={draft} onApply={applyTemplate} />
+              </div>
+              <div className="studio-library-panel" hidden={libraryTab !== 'history'}>
+                <div className="studio-fields">
+                  <Field label={t('history')}>
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        const previous = history.find((item) => item.id === e.target.value);
+                        if (!previous) return;
+                        if (previous.projectId !== projectId) return;
+                        void run(() =>
+                          change(async () => {
+                            await checkpoint('history');
+                            store.applyDraft({
+                              mode: previous.kind,
+                              ...(previous.kind === 'video'
+                                ? { video: previous.input as VideoPromptArtifactInput }
+                                : { music: previous.input as MusicPromptArtifactInput }),
+                              artifact: revalidatePromptArtifact(previous),
+                              selectedVariant: 0,
+                              selectedVariants: {
+                                ...store.draft?.selectedVariants,
+                                [previous.kind]: 0,
+                              },
+                              artifacts: {
+                                ...store.draft?.artifacts,
+                                [previous.kind]: revalidatePromptArtifact(previous),
+                              },
+                            });
+                          }),
+                        );
+                      }}
+                    >
+                      <option value="">{t('chooseHistory')}</option>
+                      {history.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.primary.title}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              </div>
+              <div className="studio-library-panel" hidden={libraryTab !== 'revisions'}>
+                <StudioRevisionHistory
+                  embedded
+                  draft={draft}
+                  refreshKey={revisionRefresh}
+                  disabled={changing || busy}
+                  onSave={() =>
+                    change(async () => {
+                      await checkpoint('manual');
+                      setMessage(t('revision.saved'));
+                    })
+                  }
+                  onRestore={restoreRevision}
+                />
+              </div>
+            </details>
           </fieldset>
         </section>
-        <section className="studio-output" aria-label={t('handoff')}>
+        <section
+          ref={resultRef}
+          tabIndex={-1}
+          className="studio-output"
+          aria-label={t('handoff')}
+          hidden={!splitLayout && activeView !== 'result'}
+        >
           {proposal ? (
             <section className="studio-proposal" aria-label={t('revision.review')}>
               <h2>{t('revision.review')}</h2>
@@ -1109,9 +1225,20 @@ export function PromptStudioPage() {
                     : t('compiledLocally')}
                 </span>
               </div>
+              {currentArtifact.validation.some((check) => check.status === 'blocked') ? (
+                <ValidationRail
+                  artifact={currentArtifact}
+                  onAction={focusValidation}
+                  statuses={['blocked']}
+                />
+              ) : null}
               <details className="studio-details">
                 <summary>{t('checks')}</summary>
-                <ValidationRail artifact={currentArtifact} onAction={focusValidation} />
+                <ValidationRail
+                  artifact={currentArtifact}
+                  onAction={focusValidation}
+                  statuses={['pass', 'warning']}
+                />
               </details>
               <div className="studio-toolbar" role="group" aria-label={t('chooseVariant')}>
                 {[currentArtifact.primary, ...currentArtifact.alternatives].map(
@@ -1173,9 +1300,7 @@ export function PromptStudioPage() {
               ) : null}
               {currentArtifact.kind === 'music' ? (
                 <>
-                  <button className="studio-primary" onClick={openSuno}>
-                    {t('copyOpenSuno')}
-                  </button>
+                  <button onClick={openSuno}>{t('copyOpenSuno')}</button>
                   <details className="studio-details">
                     <summary>{t('lyricTools')}</summary>
                     <Field label={t('section')}>
@@ -1232,7 +1357,8 @@ export function PromptStudioPage() {
                               mounted.current &&
                               operation.current === token &&
                               usePromptStudioDraftStore.getState().draft?.revision === revision
-                            )
+                            ) {
+                              revealResult();
                               setProposal({
                                 before: structuredClone(ready),
                                 artifact: next,
@@ -1240,6 +1366,7 @@ export function PromptStudioPage() {
                                 revision: revision!,
                                 token,
                               });
+                            }
                           } finally {
                             if (mounted.current && aiRequest.current === token) setBusy(false);
                           }
@@ -1253,6 +1380,14 @@ export function PromptStudioPage() {
               ) : null}
             </fieldset>
           )}
+          {mode === 'video' && (
+            <ExternalStudioResults
+              projectId={projectId}
+              artifact={staleArtifact ? null : currentArtifact}
+              variantIndex={selectedVariant}
+              disabled={changing}
+            />
+          )}
         </section>
       </div>
       <ModelArenaModal
@@ -1261,6 +1396,6 @@ export function PromptStudioPage() {
         input={video}
         onSelectTarget={selectTarget}
       />
-    </main>
+    </div>
   );
 }
