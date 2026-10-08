@@ -36,6 +36,7 @@ interface ProductionRunStoreState {
   clearError: () => void;
 }
 
+let initializationVersion = 0;
 export const useProductionRunStore = create<ProductionRunStoreState>()(
   temporal(
     (set, get) => ({
@@ -47,17 +48,26 @@ export const useProductionRunStore = create<ProductionRunStoreState>()(
       error: null,
 
       initialize: async (projectId) => {
+        const version = ++initializationVersion;
         set({ isLoading: true, error: null });
         try {
           const runs = await productionRunService.getRunsForProject(projectId);
+          if (version !== initializationVersion) return;
+          const selected = get().activeRun;
           set({
             runs,
-            activeRun: runs[0] ?? null,
+            activeRun:
+              (selected?.projectId === projectId
+                ? runs.find((run) => run.id === selected.id)
+                : undefined) ??
+              runs[0] ??
+              null,
             selectedShotIds: [],
             hydratedProjectId: projectId,
             isLoading: false,
           });
         } catch (error) {
+          if (version !== initializationVersion) return;
           set({
             isLoading: false,
             error: error instanceof Error ? error.message : 'Failed to load production runs.',

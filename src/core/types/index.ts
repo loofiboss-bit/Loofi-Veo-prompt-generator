@@ -15,6 +15,8 @@ export * from './promptArtifact';
 export * from './promptStudioDraft';
 export * from './studioRevision';
 export * from './studioTemplate';
+export * from './externalStudioResult';
+import type { ExternalStudioResultV1 } from './externalStudioResult';
 import type { StudioRevisionV1 } from './studioRevision';
 import type { PromptStudioDraftV1 } from './promptStudioDraft';
 export * from './production';
@@ -381,6 +383,7 @@ export interface Project {
   [key: string]: unknown;
   studioDraft?: PromptStudioDraftV1;
   studioRevisions?: StudioRevisionV1[];
+  studioResults?: ExternalStudioResultV1[];
   id: string;
   name: string;
   lastModified: number;

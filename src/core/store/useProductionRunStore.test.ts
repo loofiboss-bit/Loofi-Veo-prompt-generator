@@ -103,6 +103,30 @@ describe('useProductionRunStore', () => {
     expect(useProductionRunStore.getState().activeRun?.id).toBe('run-1');
     expect(useProductionRunStore.getState().selectedShotIds).toEqual([1]);
   });
+  it('keeps an explicitly selected older run across workspace step remounts', async () => {
+    const newest = { ...run, id: 'newest' };
+    useProductionRunStore.setState({ activeRun: run, runs: [newest, run] });
+    mockGetRunsForProject.mockResolvedValue([newest, run]);
+    await useProductionRunStore.getState().initialize('project-1');
+    expect(useProductionRunStore.getState().activeRun?.id).toBe('run-1');
+  });
+  it('ignores late initialization of the previously active project', async () => {
+    let finish: (runs: ProductionRun[]) => void = () => {};
+    mockGetRunsForProject.mockImplementationOnce(
+      () =>
+        new Promise<ProductionRun[]>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const older = useProductionRunStore.getState().initialize('project-1');
+    const next = { ...run, id: 'run-2', projectId: 'project-2' };
+    mockGetRunsForProject.mockResolvedValueOnce([next]);
+    await useProductionRunStore.getState().initialize('project-2');
+    finish([run]);
+    await older;
+    expect(useProductionRunStore.getState().hydratedProjectId).toBe('project-2');
+    expect(useProductionRunStore.getState().activeRun?.id).toBe('run-2');
+  });
 
   it('approves selected shots with their exact maximum estimate', async () => {
     useProductionRunStore.setState({ activeRun: run, runs: [run], selectedShotIds: [1] });

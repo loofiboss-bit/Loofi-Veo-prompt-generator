@@ -77,7 +77,9 @@
     "copyPack": "Copy Creative Pack v2",
     "approveContinuityReview": "Approve continuity review",
     "continuityReviewApproved": "Continuity review approved",
-    "downloadOtio": "Download OTIO with media"
+    "downloadOtio": "Download OTIO with media",
+    "relinkExportMedia": "Relink clip",
+    "openMediaLibrary": "Open media library"
   },
   "labels": {
     "idea": "Production idea",
@@ -107,7 +109,9 @@
     "semanticReview": "Use approved Gemini semantic review when reviewing a take",
     "exportPreview": "Creative Pack v2 preview",
     "continuityReviewCost": "Optional Gemini review · maximum ${{cost}}",
-    "fcpxmlExperimental": "FCPXML: experimental"
+    "fcpxmlExperimental": "FCPXML: experimental",
+    "missingExportMedia": "Selected timeline media is missing. Relink the listed clips before exporting.",
+    "chooseReplacementMedia": "Choose replacement media"
   },
   "empty": {
     "title": "Create the first production run",
@@ -213,5 +217,38 @@
     "loading": "Loading production plans…",
     "savedPlan": "Saved production plan · {{time}}",
     "noPlan": "No saved production plan yet"
+  },
+  "flow": {
+    "nextAction": "Next action",
+    "references": "Complete references",
+    "recover": "Recover job",
+    "generate": "Generate a take",
+    "relink": "Relink media",
+    "review": "Review result",
+    "accept": "Accept result",
+    "localChecks": "Local prechecks",
+    "aiReview": "AI review",
+    "combinedReview": "Combined review",
+    "notReviewed": "Not reviewed",
+    "score": "Score: {{score}}",
+    "confirmManual": "Confirm manual review",
+    "manualConfirmed": "Manual review confirmed",
+    "recoveryCheck": "Check job / fetch result again",
+    "recoveryAmbiguous": "Submission outcome is uncertain. Check provider activity before preparing a new paid attempt.",
+    "recoveryUnavailable": "This job cannot be recovered automatically.",
+    "recoveryStarted": "Recovery started without a new generation request.",
+    "activity": "Open Activity",
+    "production": "Open production scene",
+    "reviewCompleteLocal": "Local prechecks completed. Watch the video and confirm a manual review.",
+    "noPlayable": "No playable takes yet.",
+    "comparison": "A/B take comparison",
+    "notes": "Comparison notes",
+    "keep": "Keep",
+    "reject": "Reject",
+    "revise": "Revise",
+    "findings": "Findings",
+    "reviewWarnings": "Local checks do not assess video quality.",
+    "reviewFailed": "AI review failed; manual review is available.",
+    "openFailed": "The linked production scene could not be opened. Your current work is preserved."
   }
 }

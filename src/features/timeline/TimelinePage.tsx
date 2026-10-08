@@ -1,15 +1,90 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
 import { ROUTES } from '@core/config/routes';
 import { useAppStore } from '@core/store/useAppStore';
 import EmptyState from '@shared/components/EmptyState';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { projectDocumentService } from '@core/services/projectDocumentService';
+import {
+  exportProjectOtioBundle,
+  preflightProjectOtioExport,
+  downloadProjectBlob,
+  type MissingTimelineMedia,
+} from '@core/services/projectTransferService';
+import { TimelineExportRecovery } from '@shared/components/TimelineExportRecovery';
 
 import TimelinePlayer from './TimelinePlayer';
 
 export const TimelinePage: React.FC = () => {
   const { t } = useTranslation('common');
+  const { t: createT } = useTranslation('create');
+  const projectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
+  const projectName =
+    useProjectStore((state) => state.projects.find((project) => project.id === projectId)?.name) ??
+    createT('labels.currentProject');
+  const activeRun = useProductionRunStore((state) => state.activeRun);
+  const run = activeRun?.projectId === projectId ? activeRun : null;
+  const [exporting, setExporting] = useState(false);
+  const exportingRef = useRef(false);
+  const [exportStatus, setExportStatus] = useState('');
+  const [missingMedia, setMissingMedia] = useState<MissingTimelineMedia[]>([]);
+  const currentProjectRef = useRef(projectId);
+  currentProjectRef.current = projectId;
+  useEffect(() => {
+    setMissingMedia([]);
+    setExportStatus('');
+  }, [projectId]);
+  const captureSavedProject = async () => {
+    const document = useEditorSessionStore
+      .getState()
+      .captureCurrentProjectDocument({ id: projectId, name: projectName });
+    await projectDocumentService.save(document);
+    const saved = await projectDocumentService.load(projectId);
+    if (!saved) throw new Error('Saved project document is unavailable.');
+    return saved;
+  };
+  const handleDelivery = async () => {
+    if (exportingRef.current) return;
+    exportingRef.current = true;
+    setExporting(true);
+    setExportStatus('');
+    try {
+      const saved = await captureSavedProject();
+      const check = await preflightProjectOtioExport(saved, run);
+      if (currentProjectRef.current !== projectId) return;
+      setMissingMedia(check.missingMedia);
+      if (check.missingMedia.length) return;
+      const blob = await exportProjectOtioBundle(saved, run);
+      if (currentProjectRef.current !== projectId) return;
+      downloadProjectBlob(blob, `${projectName}.otio.zip`);
+      setExportStatus(createT('messages.otioReady', 'OTIO package downloaded with local media.'));
+    } catch (error) {
+      if (currentProjectRef.current === projectId)
+        setExportStatus(error instanceof Error ? error.message : 'OTIO export failed');
+    } finally {
+      exportingRef.current = false;
+      setExporting(false);
+    }
+  };
+  const handleRelink = async (entry: MissingTimelineMedia, assetId: string) => {
+    const state = useAppStore.getState();
+    const clip = state.clips.find((item) => item.id === entry.clipId);
+    const asset = state.assets.find((item) => item.id === assetId);
+    if (!clip || !asset || asset.type !== clip.type) return;
+    state.updateTimelineClip(clip.id, { resourceId: asset.id, selectedTakeId: undefined });
+    try {
+      const saved = await captureSavedProject();
+      const check = await preflightProjectOtioExport(saved, run);
+      if (currentProjectRef.current === projectId) setMissingMedia(check.missingMedia);
+    } catch (error) {
+      if (currentProjectRef.current === projectId)
+        setExportStatus(error instanceof Error ? error.message : 'Media relink failed');
+    }
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const navigationState = location.state as { returnToStudio?: 'story' } | null;
@@ -56,7 +131,23 @@ export const TimelinePage: React.FC = () => {
   return (
     <section className="creator-page min-h-full text-slate-100">
       <header className="creator-page-header border-b border-slate-800 px-4 py-3">
-        <h1 className="text-2xl font-semibold">{t('timeline.title', 'Timeline')}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">{t('timeline.title', 'Timeline')}</h1>
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={() => void handleDelivery()}
+            className="rounded-md border border-slate-600 px-3 py-2 text-sm disabled:opacity-50"
+          >
+            {createT('actions.downloadOtio', 'Download OTIO with media')}
+          </button>
+        </div>
+        {exportStatus && (
+          <p role="status" className="mt-2 text-sm">
+            {exportStatus}
+          </p>
+        )}
+        <TimelineExportRecovery missingMedia={missingMedia} onRelink={handleRelink} />
       </header>
       <TimelinePlayer embedded shots={shots} onClose={handleExitTimeline} />
     </section>

@@ -198,6 +198,15 @@ chmod +x Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.AppImage
 
 ## Development
 
+The current unreleased creator-flow additions connect manual Studio video results back to their
+original prompt variants. Import a local video, confirm a manual review, and use it on a storyboard
+scene and timeline. Production shows scene-specific next actions, recovery for known jobs, and
+review sources and findings. Timeline and Production can export only the selected edit as an OTIO
+delivery ZIP; complete `.loofi-project` backups remain separate and strict.
+
+See [creator-flow contracts and verification](docs/CREATOR_FLOW.md). These local development changes
+do not imply a new published installer or release.
+
 Node.js 24 and npm are required.
 
 ```bash

@@ -52,6 +52,7 @@ import { StudioTemplateLibrary } from './components/StudioTemplateLibrary';
 import { VideoVariantCard } from './components/VideoVariantCard';
 import { MusicVariantCard } from './components/MusicVariantCard';
 import { ValidationRail } from './components/ValidationRail';
+import { ExternalStudioResults } from './components/ExternalStudioResults';
 
 const SpatialCameraDirector = lazy(() =>
   import('@features/create/components/SpatialCameraDirector').then((m) => ({
@@ -118,6 +119,7 @@ export function PromptStudioPage() {
   const resultRef = useRef<HTMLElement>(null);
   const focusResultRequested = useRef(false);
   const [splitLayout, setSplitLayout] = useState(true);
+  const splitLayoutRef = useRef(true);
   const [activeView, setActiveView] = useState<'editor' | 'result'>('editor');
   const [libraryTab, setLibraryTab] = useState<'templates' | 'history' | 'revisions'>('templates');
   const [message, setMessage] = useState('');
@@ -211,7 +213,7 @@ export function PromptStudioPage() {
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return;
       const split = entry.contentRect.width >= 960;
-      if (!split) {
+      if (!split && splitLayoutRef.current !== split) {
         const focused = document.activeElement;
         // Keep the focused pane visible when the split workspace becomes tabbed.
         if (
@@ -221,6 +223,7 @@ export function PromptStudioPage() {
           setActiveView('editor');
         else if (focused && resultRef.current?.contains(focused)) setActiveView('result');
       }
+      splitLayoutRef.current = split;
       setSplitLayout(split);
     });
     observer.observe(workspace);
@@ -1376,6 +1379,14 @@ export function PromptStudioPage() {
                 </>
               ) : null}
             </fieldset>
+          )}
+          {mode === 'video' && (
+            <ExternalStudioResults
+              projectId={projectId}
+              artifact={staleArtifact ? null : currentArtifact}
+              variantIndex={selectedVariant}
+              disabled={changing}
+            />
           )}
         </section>
       </div>

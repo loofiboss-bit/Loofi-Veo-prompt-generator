@@ -22,9 +22,18 @@ describe('useProductionWorkflow', () => {
       status: 'complete',
       shots: [
         {
+          selectedTakeId: 'take',
           status: 'accepted',
           generationRequest: { mode: 'text-to-video' },
-          takes: [{ review: { overallScore: 90 } }],
+          takes: [
+            {
+              id: 'take',
+              status: 'accepted',
+              localMediaKey: 'media',
+              localMediaUrl: 'blob:video',
+              review: { overallScore: 90, source: 'local' },
+            },
+          ],
         },
       ],
     } as unknown as ProductionRun;

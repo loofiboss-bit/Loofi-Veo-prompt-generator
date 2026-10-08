@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dismissModals } from './helpers';
+import { blockExternalRequests, dismissModals } from './helpers';
+import { creatorVideo } from './fixtures/creatorVideo';
 
 const isGoogleGenerativeLanguageRequest = (rawUrl: string): boolean => {
   try {
@@ -17,56 +18,62 @@ interface MockTakeOptions {
 }
 
 const injectCompletedTake = async (page: Page, options: MockTakeOptions) => {
-  await page.evaluate(async ({ runId, takeId, shortenPrompt }) => {
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('veo-production-runs');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction('production-runs-v1', 'readwrite');
-      const store = transaction.objectStore('production-runs-v1');
-      const request = store.get(`production-run:${runId}`);
-      request.onsuccess = () => {
-        const run = request.result;
-        const shot = run.shots[0];
-        if (shortenPrompt) {
-          shot.prompt = 'Short prompt';
-          shot.camera = '';
-          shot.generationRequest.prompt = 'Short prompt';
-        }
-        const approval = [...run.approvals]
-          .reverse()
-          .find((item) => item.status === 'active' && item.shotIds.includes(shot.id));
-        if (approval) approval.consumedSubmissions += 1;
-        shot.status = 'media-at-risk';
-        shot.takes.push({
-          id: takeId,
-          prompt: shot.generationRequest.prompt,
-          request: shot.generationRequest,
-          status: 'media-at-risk',
-          providerMediaUri: 'data:video/mp4;base64,AAAA',
-          providerArtifact: {
-            operationName: `operations/${takeId}`,
-            mediaUri: 'data:video/mp4;base64,AAAA',
+  await page.route('**/mock-video.webm', (route) =>
+    route.fulfill({ body: creatorVideo, contentType: 'video/webm' }),
+  );
+  await page.evaluate(
+    async ({ runId, takeId, shortenPrompt, mediaUri }) => {
+      const database = await new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('veo-production-runs');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction('production-runs-v1', 'readwrite');
+        const store = transaction.objectStore('production-runs-v1');
+        const request = store.get(`production-run:${runId}`);
+        request.onsuccess = () => {
+          const run = request.result;
+          const shot = run.shots[0];
+          if (shortenPrompt) {
+            shot.prompt = 'Short prompt';
+            shot.camera = '';
+            shot.generationRequest.prompt = 'Short prompt';
+          }
+          const approval = [...run.approvals]
+            .reverse()
+            .find((item) => item.status === 'active' && item.shotIds.includes(shot.id));
+          if (approval) approval.consumedSubmissions += 1;
+          shot.status = 'media-at-risk';
+          shot.takes.push({
+            id: takeId,
+            prompt: shot.generationRequest.prompt,
+            request: shot.generationRequest,
+            status: 'media-at-risk',
+            providerMediaUri: mediaUri,
+            providerArtifact: {
+              operationName: `operations/${takeId}`,
+              mediaUri,
+              createdAt: Date.now(),
+              expiresAt: Date.now() + 86_400_000,
+            },
             createdAt: Date.now(),
-            expiresAt: Date.now() + 86_400_000,
-          },
-          createdAt: Date.now(),
-          completedAt: Date.now(),
-        });
-        run.status = 'reviewing';
-        run.updatedAt = Date.now();
-        store.put(run, `production-run:${runId}`);
-      };
-      request.onerror = () => reject(request.error);
-      transaction.oncomplete = () => {
-        database.close();
-        resolve();
-      };
-      transaction.onerror = () => reject(transaction.error);
-    });
-  }, options);
+            completedAt: Date.now(),
+          });
+          run.status = 'reviewing';
+          run.updatedAt = Date.now();
+          store.put(run, `production-run:${runId}`);
+        };
+        request.onerror = () => reject(request.error);
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => reject(transaction.error);
+      });
+    },
+    { ...options, mediaUri: new URL('/mock-video.webm', page.url()).href },
+  );
 };
 
 const leaveProductionSurface = async (page: Page) => {
@@ -80,6 +87,9 @@ const reopenProductionRun = async (page: Page) => {
 };
 
 test.describe('Director Mode', () => {
+  test.beforeEach(async ({ page }) => {
+    await blockExternalRequests(page);
+  });
   test('creates, approves, and restores a local production run without cloud calls', async ({
     page,
   }) => {
@@ -148,7 +158,8 @@ test.describe('Director Mode', () => {
     await reopenProductionRun(page);
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('button', { name: 'Review take' }).click();
-    await expect(page.getByText(/Review score:/)).toBeVisible();
+    await expect(page.getByText('Local prechecks', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/Review score:/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Prepare revision' })).toBeVisible();
     await page.getByRole('button', { name: 'Prepare revision' }).click();
     await expect(page.getByText('awaiting-approval', { exact: true }).first()).toBeVisible();
@@ -162,6 +173,9 @@ test.describe('Director Mode', () => {
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByRole('button', { name: 'Review take' }).click();
     await page.getByRole('button', { name: 'Accept media risk' }).click();
+    await expect(page.getByRole('button', { name: 'Accept take', exact: true })).toBeDisabled();
+    await page.getByLabel('Comparison notes').fill('Watched the mocked take; manually approved.');
+    await page.getByRole('button', { name: 'Confirm manual review', exact: true }).first().click();
     await page.getByRole('button', { name: 'Accept take' }).click();
     await expect(page.getByText('complete', { exact: true }).first()).toBeVisible();
 

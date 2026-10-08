@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import type { ProductionTake } from '@core/types';
 import { TakeCompare } from './TakeCompare';
@@ -31,7 +31,7 @@ const take = (id: string, score: number): ProductionTake => ({
       { id: 'motion', score: score - 5, summary: 'Motion remains coherent.' },
     ],
     findings: [],
-    source: 'local',
+    source: 'gemini',
     createdAt: 1,
   },
   createdAt: 1,
@@ -51,8 +51,8 @@ describe('TakeCompare', () => {
       />,
     );
     expect(screen.getAllByText(/Score:/)).toHaveLength(2);
-    expect(screen.getAllByText('prompt adherence')).toHaveLength(2);
-    expect(screen.getAllByText('motion')).toHaveLength(2);
+    expect(screen.getAllByText(/prompt adherence/)).toHaveLength(2);
+    expect(screen.getAllByText(/^motion:/)).toHaveLength(2);
     expect(document.querySelectorAll('video')).toHaveLength(2);
     fireEvent.change(screen.getByLabelText('Comparison notes'), {
       target: { value: 'Preserve subject identity.' },
@@ -66,5 +66,41 @@ describe('TakeCompare', () => {
       expect.objectContaining({ id: 'a' }),
       'Preserve subject identity.',
     );
+  });
+  it('shows local checks without quality scores and requires manual confirmation', () => {
+    const local = take('local', 95);
+    local.review!.source = 'local';
+    local.review!.findings = [
+      {
+        id: 'warning',
+        severity: 'warning',
+        category: 'motion',
+        message: 'Only metadata was checked.',
+        timestampSeconds: 2,
+      },
+    ];
+    const onManualReview = vi.fn();
+    const onKeep = vi.fn();
+    render(
+      <TakeCompare
+        takes={[local]}
+        onManualReview={onManualReview}
+        onKeep={onKeep}
+        onReject={vi.fn()}
+        onRevise={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Score:/)).toBeNull();
+    expect(screen.getAllByText('Only metadata was checked.')).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Keep' })[0]).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Comparison notes'), {
+      target: { value: 'I watched the video.' },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Confirm manual review' })[0]);
+    expect(onManualReview).toHaveBeenCalledWith(local, 'I watched the video.');
+    const video = document.querySelector('video')!;
+    Object.defineProperty(video, 'duration', { value: 8 });
+    fireEvent.click(screen.getAllByRole('button', { name: '2s' })[0]);
+    expect(video.currentTime).toBe(2);
   });
 });
