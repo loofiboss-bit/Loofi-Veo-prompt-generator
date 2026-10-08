@@ -56,17 +56,17 @@ describe('TimelinePage', () => {
 
     expect(
       screen.getByRole('status', {
-        name: /timeline is ready when you have generated clips/i,
+        name: /your timeline is empty/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /back to prompt builder/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /back to prompt studio/i })).toBeInTheDocument();
   });
 
   it('returns to storyboard from the empty state when timeline was opened there', async () => {
     mockLocationState = { returnToStudio: 'story' };
     const { user } = render(<TimelinePage />);
 
-    await user.click(screen.getByRole('button', { name: /back to story board/i }));
+    await user.click(screen.getByRole('button', { name: /back to story ?board/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES.HOME, {
       state: { reopenStudio: 'story' },

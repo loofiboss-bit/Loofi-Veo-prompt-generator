@@ -347,5 +347,14 @@
     "rollAngleDegrees": "Roll angle",
     "spatialGrid": "Spatial placement",
     "customDirectives": "Camera notes"
+  },
+  "editView": "Editor",
+  "resultView": "Result",
+  "workspaceView": "Workspace view",
+  "copyOptions": "Copy options",
+  "libraryTabs": {
+    "templates": "Templates",
+    "history": "Previous packs",
+    "revisions": "Revisions"
   }
 }

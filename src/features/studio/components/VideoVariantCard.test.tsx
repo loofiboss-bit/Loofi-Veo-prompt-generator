@@ -16,14 +16,16 @@ const MOCK_VARIANT: VideoPromptVariant = {
 };
 
 describe('VideoVariantCard', () => {
-  it('renders variant title, prompt, and action buttons', () => {
-    render(
+  it('renders variant title, prompt, and action buttons', async () => {
+    const { user } = render(
       <VideoVariantCard variant={MOCK_VARIANT} primary onCopy={vi.fn()} onHandoff={vi.fn()} />,
     );
 
     expect(screen.getByText('Recommended Take')).toBeInTheDocument();
     expect(screen.getByDisplayValue(/cyber vehicle cruises/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy prompt/i })).toBeInTheDocument();
+    expect(screen.getByText('Copy options').closest('details')).not.toHaveAttribute('open');
+    await user.click(screen.getByText('Copy options'));
     expect(screen.getByRole('button', { name: /Copy negative/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy checklist/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy handoff/i })).toBeInTheDocument();

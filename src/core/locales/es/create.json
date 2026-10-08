@@ -1,7 +1,7 @@
 {
   "brand": "Loofi Creator Studio",
-  "title": "Crear",
-  "description": "Resumen, escenas, recursos, generación, revisión y exportación comparten un único contexto de proyecto guardado automáticamente.",
+  "title": "Producción",
+  "description": "Planifica escenas, adjunta referencias, aprueba la generación, revisa y exporta.",
   "workflowLabel": "Flujo de creación",
   "help": "Ayuda del flujo",
   "autosaved": "Guardado automáticamente · punto seguro {{time}}",
@@ -207,5 +207,11 @@
     "continuityReviewApproved": "Revisión de continuidad opcional de Gemini aprobada para esta instantánea.",
     "longShot": "Esta toma de {{duration}} s supera un segmento Veo. Divídela o genera ocho segundos y usa la extensión desde una toma Veo no caducada.",
     "otioReady": "Paquete OTIO listo."
+  },
+  "saveStatus": {
+    "failed": "No se pudo cargar o guardar el plan de producción.",
+    "loading": "Cargando planes de producción…",
+    "savedPlan": "Plan de producción guardado · {{time}}",
+    "noPlan": "Aún no hay un plan de producción guardado"
   }
 }

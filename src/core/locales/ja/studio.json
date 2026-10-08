@@ -347,5 +347,14 @@
     "rollAngleDegrees": "ロール角度",
     "spatialGrid": "空間配置",
     "customDirectives": "カメラの補足"
+  },
+  "editView": "編集",
+  "resultView": "結果",
+  "workspaceView": "ワークスペース表示",
+  "copyOptions": "コピーオプション",
+  "libraryTabs": {
+    "templates": "テンプレート",
+    "history": "以前のパック",
+    "revisions": "リビジョン"
   }
 }

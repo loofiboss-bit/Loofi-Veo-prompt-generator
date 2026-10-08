@@ -62,12 +62,18 @@ export function MusicVariantCard({
               className="studio-primary"
               onClick={() => onCopy(variant.copyStyle, t('copied'))}
             >
-              {t('copyStyle')}
+              {t('copyPrompt')}
             </button>
-            <button onClick={() => onCopy(variant.copyLyrics, t('copied'))}>
-              {t('copyLyrics')}
-            </button>
-            <button onClick={() => onCopy(variant.copyAll, t('copied'))}>{t('copyAll')}</button>
+            <details className="studio-copy-menu">
+              <summary>{t('copyOptions')}</summary>
+              <button onClick={() => onCopy(variant.copyStyle, t('copied'))}>
+                {t('copyStyle')}
+              </button>
+              <button onClick={() => onCopy(variant.copyLyrics, t('copied'))}>
+                {t('copyLyrics')}
+              </button>
+              <button onClick={() => onCopy(variant.copyAll, t('copied'))}>{t('copyAll')}</button>
+            </details>
           </div>
         </div>
       ) : null}

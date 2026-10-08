@@ -15,11 +15,8 @@ export function CreateWorkflow({ activeStep = 'generate' }: { activeStep?: Produ
   const workflow = useCreateWorkflow();
 
   return (
-    <div
-      data-production-step={activeStep}
-      className="min-h-full bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8"
-    >
-      <div className="mx-auto flex max-w-7xl flex-col gap-5">
+    <div data-production-step={activeStep} className="min-h-full text-slate-100">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4">
         <WorkflowToolbar activeStep={activeStep} workflow={workflow} />
 
         {(workflow.feedback || workflow.error) && (

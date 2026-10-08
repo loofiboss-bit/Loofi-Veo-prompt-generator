@@ -44,7 +44,8 @@ test('restores manual variant edits after changing the brief and rebuilding', as
     'My exact cinematic edit',
   );
   await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
-  await page.getByText('Versions and comparison', { exact: true }).click();
+  await page.getByText('Templates and history', { exact: true }).click();
+  await page.getByRole('button', { name: 'Revisions', exact: true }).click();
   const versions = page.getByRole('combobox', { name: 'Compare a saved version', exact: true });
   const id = await versions
     .locator('option')
@@ -68,7 +69,9 @@ test('reuses a complete video template in a new project', async ({ page }) => {
   await page.getByLabel(/^Target(?: |$)/).selectOption('wan-video');
   await page.getByLabel(/^Core idea/).fill('Reusable sunset scene');
   await page.getByLabel('Aspect ratio', { exact: true }).selectOption('9:16');
-  await page.getByText('Studio template library', { exact: true }).first().click();
+  const library = page.locator('.studio-library');
+  if ((await library.getAttribute('open')) === null) await library.locator('summary').click();
+  await page.getByRole('button', { name: 'Templates', exact: true }).click();
   await page.getByLabel('Template name', { exact: true }).fill('Sunset preset');
   await page.getByRole('button', { name: 'Save current inputs as template', exact: true }).click();
   await expect(page.getByText('Template saved.', { exact: true })).toBeVisible();
@@ -80,7 +83,9 @@ test('reuses a complete video template in a new project', async ({ page }) => {
   ).toBeVisible();
   await page.getByRole('button', { name: 'Prompt Studio', exact: true }).click();
   await expect(page.getByLabel(/^Core idea/)).toHaveValue('');
-  await page.getByText('Studio template library', { exact: true }).first().click();
+  if ((await page.locator('.studio-library').getAttribute('open')) === null)
+    await page.locator('.studio-library > summary').click();
+  await page.getByRole('button', { name: 'Templates', exact: true }).click();
   await page.getByRole('button', { name: 'Sunset preset — Preview', exact: true }).click();
   await page.getByRole('button', { name: 'Apply template', exact: true }).click();
   await expect(page.getByLabel(/^Core idea/)).toHaveValue('Reusable sunset scene');
@@ -118,7 +123,9 @@ test('reuses music input and locked original lyrics across projects', async ({ p
   ).toBeEnabled();
   await page.getByText('Revise lyrics with AI', { exact: true }).click();
   await page.getByRole('checkbox', { name: 'Lock this section', exact: true }).check();
-  await page.getByText('Studio template library', { exact: true }).first().click();
+  if ((await page.locator('.studio-library').getAttribute('open')) === null)
+    await page.locator('.studio-library > summary').click();
+  await page.getByRole('button', { name: 'Templates', exact: true }).click();
   await page.getByLabel('Template name', { exact: true }).fill('Home song');
   await page.getByRole('button', { name: 'Save current inputs as template', exact: true }).click();
   await expect(page.getByText('Template saved.', { exact: true })).toBeVisible();
@@ -128,7 +135,9 @@ test('reuses music input and locked original lyrics across projects', async ({ p
   await expect(page.locator('aside').getByText('Music recipient', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Prompt Studio', exact: true }).click();
   await page.getByRole('button', { name: 'Music & Lyrics', exact: true }).click();
-  await page.getByText('Studio template library', { exact: true }).first().click();
+  if ((await page.locator('.studio-library').getAttribute('open')) === null)
+    await page.locator('.studio-library > summary').click();
+  await page.getByRole('button', { name: 'Templates', exact: true }).click();
   await page.getByRole('button', { name: 'Home song — Preview', exact: true }).click();
   await page.getByRole('button', { name: 'Apply template', exact: true }).click();
   await expect(page.getByLabel('Song idea / story', { exact: true })).toHaveValue('Coming home');

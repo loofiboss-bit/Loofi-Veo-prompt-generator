@@ -87,7 +87,21 @@
     "collapseSidebar": "Réduire la barre latérale",
     "collaborate": "Collaborer",
     "comments": "Commentaires",
-    "roles": "Rôles"
+    "roles": "Rôles",
+    "groups": {
+      "create": "Créer",
+      "library": "Bibliothèque",
+      "followup": "Suivi",
+      "settings": "Navigation"
+    },
+    "navigation": "Navigation principale",
+    "quickNavigation": "Navigation rapide",
+    "noProject": "Aucun projet sélectionné",
+    "workspaceContent": "Contenu de l’espace de travail",
+    "openNavigation": "Ouvrir la navigation",
+    "closeNavigation": "Fermer la navigation",
+    "focusMode": "Mode concentration",
+    "exitFocus": "Quitter le mode concentration"
   },
   "activity": {
     "queueEyebrow": "Travail durable",
@@ -137,6 +151,21 @@
     "name": "Nom du projet",
     "create": "Créer un projet",
     "import": "Importer un projet",
-    "export": "Exporter le projet"
+    "export": "Exporter le projet",
+    "actions": "Actions du projet"
+  },
+  "assets": {
+    "continuityProfiles": "Profils de continuité",
+    "browseLibrary": "Parcourir les médias du projet",
+    "closeLibrary": "Fermer la bibliothèque de médias",
+    "libraryTitle": "Bibliothèque de médias"
+  },
+  "timeline": {
+    "title": "Chronologie",
+    "description": "Organisez et prévisualisez le storyboard du projet actuel.",
+    "emptyTitle": "Votre chronologie est vide",
+    "emptyDescription": "Ajoutez des scènes dans Production pour commencer à modifier votre storyboard.",
+    "backToStoryboard": "Retour au storyboard",
+    "backToStudio": "Retour à Prompt Studio"
   }
 }

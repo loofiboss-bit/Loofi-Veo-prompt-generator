@@ -1,7 +1,7 @@
 {
   "brand": "Loofi Creator Studio",
-  "title": "Create",
-  "description": "Brief, scenes, assets, generation, review, and export share one autosaved project context.",
+  "title": "Production",
+  "description": "Plan scenes, attach references, approve generation, review, and export.",
   "workflowLabel": "Create workflow",
   "help": "Workflow help",
   "autosaved": "Autosaved · safe checkpoint {{time}}",
@@ -207,5 +207,11 @@
     "continuityReviewApproved": "Optional Gemini continuity review approved for this snapshot.",
     "longShot": "This {{duration}}s shot exceeds one Veo segment. Split it now, or generate eight seconds and use extension mode from a non-expired Veo take.",
     "otioReady": "OTIO bundle ready."
+  },
+  "saveStatus": {
+    "failed": "Production plan could not be loaded or saved.",
+    "loading": "Loading production plans…",
+    "savedPlan": "Saved production plan · {{time}}",
+    "noPlan": "No saved production plan yet"
   }
 }

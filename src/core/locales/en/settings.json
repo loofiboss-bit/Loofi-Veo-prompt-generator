@@ -17,11 +17,13 @@
   "pluginRegistryUrl": "Plugin Registry URL",
   "save": "Save",
   "presets": {
-    "default": "Default (Cyan)",
+    "default": "Default (Blue)",
     "midnight": "Midnight",
     "ocean": "Ocean",
     "forest": "Forest",
     "sunset": "Sunset",
     "amethyst": "Amethyst"
-  }
+  },
+  "backToWorkspace": "Back to workspace",
+  "category": "Settings category"
 }

@@ -17,11 +17,13 @@
   "pluginRegistryUrl": "URL du Registre de Plugins",
   "save": "Enregistrer",
   "presets": {
-    "default": "Par défaut (Cyan)",
+    "default": "Par défaut (Bleu)",
     "midnight": "Minuit",
     "ocean": "Océan",
     "forest": "Forêt",
     "sunset": "Coucher de soleil",
     "amethyst": "Améthyste"
-  }
+  },
+  "backToWorkspace": "Retour à l’espace de travail",
+  "category": "Catégorie de paramètres"
 }

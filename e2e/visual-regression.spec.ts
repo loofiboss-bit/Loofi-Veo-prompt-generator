@@ -32,6 +32,7 @@ test.describe('Creator Studio visual regression', () => {
       'Canonical visual baselines are captured with Linux desktop Chromium.',
     );
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ colorScheme: 'dark' });
     // Keep revision and checkpoint timestamps stable while browser timers continue running.
     await page.clock.setFixedTime(new Date('2026-08-01T12:00:00Z'));
     await page.goto('/');
@@ -91,7 +92,7 @@ test.describe('Creator Studio visual regression', () => {
 
   test('generation approval step', async ({ page }) => {
     await page.goto('/#/create');
-    await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Production', exact: true })).toBeVisible();
     await page.getByRole('button', { name: /new local plan/i }).click();
     await page.getByRole('button', { name: 'Generate', exact: true }).click();
     await expect(page.getByText('Approval preflight')).toBeVisible();
@@ -116,7 +117,7 @@ test.describe('Creator Studio visual regression', () => {
     await page.goto('/#/timeline');
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
-    await expect(page.getByRole('heading', { name: 'Timeline' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Timeline', exact: true })).toBeVisible();
     await expect(page).toHaveScreenshot('timeline-hub.png', {
       animations: 'disabled',
       fullPage: true,

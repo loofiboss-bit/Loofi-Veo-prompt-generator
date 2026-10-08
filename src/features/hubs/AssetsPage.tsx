@@ -77,6 +77,7 @@ export function AssetsPage() {
   const initializeRuns = useProductionRunStore((state) => state.initialize);
   const projectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<'media' | 'profiles'>('media');
   const [profileName, setProfileName] = useState('');
   const [profileKind, setProfileKind] = useState<ContinuityProfileKind>('character');
   const [profileAssetId, setProfileAssetId] = useState('');
@@ -317,13 +318,13 @@ export function AssetsPage() {
   };
 
   return (
-    <main id="main-content" className="min-h-full bg-slate-950 px-6 py-8 text-slate-100">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="border-b border-slate-800 pb-5">
+    <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <header className="creator-page-header border-b border-slate-800 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-300">
             {t('assets.libraryEyebrow', 'Local media library')}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold">{t('sidebar.assets', 'Assets')}</h1>
+          <h1 className="mt-1 text-2xl font-semibold">{t('sidebar.assets', 'Assets')}</h1>
           <p className="mt-2 text-sm text-slate-400">
             {t(
               'assets.consolidatedDescription',
@@ -332,8 +333,61 @@ export function AssetsPage() {
           </p>
         </header>
 
+        <div
+          className="creator-assets-tabs flex flex-wrap gap-2"
+          role="tablist"
+          aria-label={t('sidebar.assets', 'Assets')}
+        >
+          {(['media', 'profiles'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              id={`assets-${tab}-tab`}
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`assets-${tab}-panel`}
+              tabIndex={activeTab === tab ? 0 : -1}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={(event) => {
+                if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+                  event.preventDefault();
+                  const nextTab =
+                    event.key === 'Home'
+                      ? 'media'
+                      : event.key === 'End'
+                        ? 'profiles'
+                        : activeTab === 'media'
+                          ? 'profiles'
+                          : 'media';
+                  setActiveTab(nextTab);
+                  document.getElementById(`assets-${nextTab}-tab`)?.focus();
+                }
+              }}
+              className={`rounded-md border px-3 py-2 text-sm font-semibold ${activeTab === tab ? 'border-blue-400 bg-blue-500/10 text-blue-300' : 'border-slate-700 text-slate-400'}`}
+            >
+              {tab === 'media'
+                ? t('assets.mediaLibrary', 'Media library')
+                : t('assets.continuityProfiles', 'Continuity profiles')}
+            </button>
+          ))}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        {statusMessage && (
+          <p className="text-sm text-blue-300" role="status">
+            {statusMessage}
+          </p>
+        )}
         <section
-          aria-labelledby="production-bible-title"
+          id="assets-profiles-panel"
+          role="tabpanel"
+          aria-labelledby="assets-profiles-tab"
+          hidden={activeTab !== 'profiles'}
           className="rounded-2xl border border-blue-900/70 bg-slate-900 p-5"
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -425,18 +479,6 @@ export function AssetsPage() {
                     {t('assets.createProfile', 'Create profile')}
                   </button>
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUpload}
-                  className="hidden"
-                />
-                {statusMessage && (
-                  <p className="text-xs text-blue-200" role="status">
-                    {statusMessage}
-                  </p>
-                )}
                 {acceptedTakes.length > 0 && (
                   <div className="mt-4 border-t border-slate-800 pt-3">
                     <p className="text-[11px] font-semibold text-slate-300">
@@ -583,7 +625,12 @@ export function AssetsPage() {
           </div>
         </section>
 
-        <section aria-labelledby="media-library-title">
+        <section
+          id="assets-media-panel"
+          role="tabpanel"
+          aria-labelledby="assets-media-tab"
+          hidden={activeTab !== 'media'}
+        >
           <div className="flex items-center justify-between gap-3">
             <h2 id="media-library-title" className="text-lg font-semibold">
               {t('assets.mediaLibrary', 'Media library')}
@@ -592,6 +639,13 @@ export function AssetsPage() {
               {assets.length} {t('assets.files', 'files')}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-3 rounded-md border border-slate-700 px-3 py-2 text-sm font-semibold"
+          >
+            {t('assets.addLocalImage', 'Add local image')}
+          </button>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {assets.length === 0 ? (
               <p className="col-span-full rounded-xl border border-dashed border-slate-700 p-8 text-slate-400">
@@ -658,6 +712,6 @@ export function AssetsPage() {
           </div>
         </section>
       </div>
-    </main>
+    </section>
   );
 }

@@ -97,7 +97,7 @@ test.describe('Director Mode', () => {
     await page
       .getByLabel('Production idea')
       .fill('A courier races through a rain-soaked neon market at night.');
-    await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Production', exact: true })).toBeVisible();
     await page.getByRole('button', { name: /new local plan/i }).click();
 
     await expect(
@@ -114,7 +114,7 @@ test.describe('Director Mode', () => {
     expect(cloudRequests).toEqual([]);
 
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'Create', exact: true })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Production', exact: true })).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByLabel('Production run')).toContainText('Director Run');

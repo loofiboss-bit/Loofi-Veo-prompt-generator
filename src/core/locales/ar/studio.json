@@ -347,5 +347,14 @@
     "rollAngleDegrees": "زاوية التدحرج",
     "spatialGrid": "الموضع المكاني",
     "customDirectives": "ملاحظات الكاميرا"
+  },
+  "editView": "تحرير",
+  "resultView": "النتيجة",
+  "workspaceView": "عرض مساحة العمل",
+  "copyOptions": "خيارات النسخ",
+  "libraryTabs": {
+    "templates": "القوالب",
+    "history": "الحزم السابقة",
+    "revisions": "المراجعات"
   }
 }
