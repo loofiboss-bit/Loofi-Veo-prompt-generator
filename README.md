@@ -6,9 +6,9 @@
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 Local-first desktop workspace for individual creators: idea → editable prompt pack → manual
-handoff or approved production → portable result. The local v14.1.0 development version adds
+handoff or approved production → portable result. v14.1.0 adds
 model comparison, actionable validation, reviewed AI changes, project revisions and reusable Studio templates.
-The latest published installation documented below remains v14.0.1.
+The installers below are published by the tag workflow after package qualification.
 
 ## Start here
 
@@ -46,7 +46,7 @@ Drafts, variant edits and section locks autosave after 500 ms to the active proj
 **Saving**, **Saved**, and **Not saved** report the real persistence result; memory fallback cannot
 claim a durable save. Project switching waits for pending draft writes.
 
-## New in v14.1.0 development
+## New in v14.1.0
 
 - **Compare in Arena** compiles all eight video targets from the same brief with the same compiler
   as Studio. Copy packages match Studio exactly; this is a prompt comparison, not a video-quality benchmark.
@@ -97,19 +97,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v14.0.1
+## Install v14.1.0
 
-Download the [v14.0.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.0.1)
+Download the [v14.1.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.0.1-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.0.1-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-14.1.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-14.1.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -122,14 +122,14 @@ sudo dnf install veo-prompt-generator
 The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
 publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
 checks `SHA256SUMS.txt` before COPR builds the package. The current package is
-`14.0.1-1.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
+`14.1.0-2.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
 already installed.
 
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-14.0.1-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-14.1.0-linux-x86_64.AppImage
 ```
 
 ## Development
