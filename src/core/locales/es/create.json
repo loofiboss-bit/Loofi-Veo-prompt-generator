@@ -77,7 +77,9 @@
     "copyPack": "Copiar Creative Pack v2",
     "approveContinuityReview": "Aprobar revisión de continuidad",
     "continuityReviewApproved": "Revisión de continuidad aprobada",
-    "downloadOtio": "Descargar OTIO con medios"
+    "downloadOtio": "Descargar OTIO con medios",
+    "relinkExportMedia": "Volver a vincular clip",
+    "openMediaLibrary": "Abrir biblioteca de medios"
   },
   "labels": {
     "idea": "Idea de producción",
@@ -107,7 +109,9 @@
     "semanticReview": "Usar la revisión semántica aprobada de Gemini",
     "exportPreview": "Vista previa de Creative Pack v2",
     "continuityReviewCost": "Revisión Gemini opcional · máximo ${{cost}}",
-    "fcpxmlExperimental": "FCPXML: función experimental"
+    "fcpxmlExperimental": "FCPXML: función experimental",
+    "missingExportMedia": "Faltan medios seleccionados en la línea de tiempo. Vuelve a vincular los clips indicados antes de exportar.",
+    "chooseReplacementMedia": "Elegir medio de sustitución"
   },
   "empty": {
     "title": "Crea la primera ejecución",
@@ -213,5 +217,38 @@
     "loading": "Cargando planes de producción…",
     "savedPlan": "Plan de producción guardado · {{time}}",
     "noPlan": "Aún no hay un plan de producción guardado"
+  },
+  "flow": {
+    "nextAction": "Siguiente acción",
+    "references": "Completar referencias",
+    "recover": "Recuperar tarea",
+    "generate": "Generar una toma",
+    "relink": "Volver a vincular medios",
+    "review": "Revisar resultado",
+    "accept": "Aceptar resultado",
+    "localChecks": "Comprobaciones locales",
+    "aiReview": "Revisión con IA",
+    "combinedReview": "Revisión combinada",
+    "notReviewed": "Sin revisar",
+    "score": "Puntuación: {{score}}",
+    "confirmManual": "Confirmar revisión manual",
+    "manualConfirmed": "Revisión manual confirmada",
+    "recoveryCheck": "Comprobar tarea / recuperar resultado",
+    "recoveryAmbiguous": "El resultado del envío es incierto. Comprueba la actividad del proveedor antes de preparar otro intento de pago.",
+    "recoveryUnavailable": "Esta tarea no se puede recuperar automáticamente.",
+    "recoveryStarted": "Recuperación iniciada sin una nueva solicitud de generación.",
+    "activity": "Abrir Actividad",
+    "production": "Abrir escena de producción",
+    "reviewCompleteLocal": "Comprobaciones locales completadas. Mira el vídeo y confirma una revisión manual.",
+    "noPlayable": "Todavía no hay tomas reproducibles.",
+    "comparison": "Comparación de tomas A/B",
+    "notes": "Notas de comparación",
+    "keep": "Conservar",
+    "reject": "Rechazar",
+    "revise": "Revisar toma",
+    "findings": "Hallazgos",
+    "reviewWarnings": "Las comprobaciones locales no evalúan la calidad del vídeo.",
+    "reviewFailed": "La revisión con IA falló; puedes revisar manualmente.",
+    "openFailed": "No se pudo abrir la escena de producción vinculada. Se conserva tu trabajo actual."
   }
 }

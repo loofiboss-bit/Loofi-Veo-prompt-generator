@@ -1,8 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
 
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useAppStore } from '@core/store/useAppStore';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { projectDocumentService } from '@core/services/projectDocumentService';
+import { productionRunService } from '@core/services/productionRunService';
+import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { CreateWorkflow } from './CreateWorkflow';
 import {
   PRODUCTION_STEPS,
@@ -19,14 +26,81 @@ import { ContinuitySummary } from './components/ContinuitySummary';
 
 export function CreatePage() {
   const { t } = useTranslation('create');
+  const [params] = useSearchParams();
+  const requestedRunId = params.get('run');
+  const requestedShotId = params.get('shot');
   const projectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const activeRun = useProductionRunStore((state) => state.activeRun);
   const loading = useProductionRunStore((state) => state.isLoading);
   const persistenceError = useProductionRunStore((state) => state.error);
-  const workflow = useProductionWorkflow(projectId, activeRun);
+  const hydratedProjectId = useProductionRunStore((state) => state.hydratedProjectId);
+  const runs = useProductionRunStore((state) => state.runs);
+  const [linkedRun, setLinkedRun] = useState<{ id: string; projectId: string } | null>(null);
+  const [linkError, setLinkError] = useState(false);
+  const assets = useAppStore((state) => state.assets);
+  const workflow = useProductionWorkflow(projectId, activeRun, assets);
+  const [actionFocus, setActionFocus] = useState<{ shotId: number; sequence: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setLinkedRun(null);
+    setLinkError(false);
+    if (!requestedRunId) return;
+    void (async () => {
+      try {
+        const run = await productionRunService.getRun(requestedRunId);
+        if (!run) throw new Error('Linked production run is unavailable.');
+        if (cancelled) return;
+        const projects = useProjectStore.getState();
+        const originalProjectId = projects.currentProjectId;
+        const stillOpening = () =>
+          !cancelled && useProjectStore.getState().currentProjectId === originalProjectId;
+        if (projects.currentProjectId !== run.projectId) {
+          if (!(await usePromptStudioDraftStore.getState().flush()))
+            throw new Error('Save the current Studio draft before changing projects.');
+          if (!stillOpening()) return;
+          const current = projects.projects.find((item) => item.id === projects.currentProjectId);
+          if (current)
+            await projectDocumentService.save(
+              useEditorSessionStore.getState().captureCurrentProjectDocument(current),
+            );
+          const document = await projectDocumentService.load(run.projectId);
+          if (!document || cancelled) throw new Error('Linked project is unavailable.');
+          if (!stillOpening()) return;
+          await hydrateProjectMedia(document);
+          if (!stillOpening()) return;
+          if (!(await projects.setCurrentProject(run.projectId)))
+            throw new Error('Linked project could not be opened.');
+          if (cancelled || useProjectStore.getState().currentProjectId !== run.projectId) return;
+          useEditorSessionStore.getState().commitProjectDocument(document, 'load');
+        }
+        if (!cancelled) setLinkedRun({ id: run.id, projectId: run.projectId });
+      } catch {
+        if (!cancelled) setLinkError(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedRunId]);
+  useEffect(() => {
+    if (!linkedRun || loading || hydratedProjectId !== linkedRun.projectId) return;
+    if (!runs.some((run) => run.id === linkedRun.id)) {
+      setLinkError(true);
+      return;
+    }
+    useProductionRunStore.getState().selectRun(linkedRun.id);
+    workflow.setCurrentStep('generate');
+    const shotId = Number(requestedShotId);
+    if (requestedShotId && Number.isFinite(shotId))
+      setActionFocus((previous) => ({ shotId, sequence: (previous?.sequence ?? 0) + 1 }));
+    setLinkedRun(null);
+  }, [linkedRun, loading, hydratedProjectId, runs, requestedShotId, workflow]);
   useEffect(() => {
     document.getElementById(`${workflow.currentStep}-step-title`)?.focus();
   }, [workflow.currentStep]);
+  useEffect(() => {
+    if (actionFocus) document.getElementById(`production-shot-${actionFocus.shotId}`)?.focus();
+  }, [actionFocus, workflow.currentStep]);
   const content = <CreateWorkflow activeStep={workflow.currentStep} />;
   const activeContent = {
     brief: <BriefStep>{content}</BriefStep>,
@@ -91,7 +165,35 @@ export function CreatePage() {
           })}
         </div>
       </nav>
-      <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">{activeContent}</div>
+      <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        {linkError && (
+          <p role="alert" className="mb-4 text-sm">
+            {t('flow.openFailed')}
+          </p>
+        )}
+        {workflow.nextAction && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-slate-700 p-3">
+            <span className="text-sm font-medium">{t('flow.nextAction')}</span>
+            <button
+              type="button"
+              className="rounded-md border border-slate-600 px-3 py-2 text-sm"
+              onClick={() => {
+                const action = workflow.nextAction;
+                if (!action) return;
+                workflow.setCurrentStep(action.step);
+                setActionFocus((previous) => ({
+                  shotId: action.shotId,
+                  sequence: (previous?.sequence ?? 0) + 1,
+                }));
+              }}
+            >
+              {t(`flow.${workflow.nextAction.kind}`)} ·{' '}
+              {activeRun?.shots.find((shot) => shot.id === workflow.nextAction?.shotId)?.title}
+            </button>
+          </div>
+        )}
+        {activeContent}
+      </div>
       <footer className="mt-6 border-t border-slate-800 px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-wrap justify-between items-center gap-2">
           <button

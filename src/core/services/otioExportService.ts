@@ -1,5 +1,5 @@
 import type { OtioTimeline, OtioTrack, OtioClip, OtioGap } from '@core/types/otio';
-import type { Shot, TimelineState, ProductionRun } from '@core/types';
+import type { Shot, TimelineState, ProductionRun, TimelineClip } from '@core/types';
 
 export interface OtioExportOptions {
   projectName?: string;
@@ -15,6 +15,69 @@ export interface OtioExportOptions {
   requireMedia?: boolean;
 }
 
+/** Resolve only the selected take; audio/asset IDs must never select a numeric scene by accident. */
+export function resolveOtioSelection(
+  resourceId: string | number,
+  selectedTakeId: string | undefined,
+  run?: ProductionRun | null,
+  mediaType: TimelineClip['type'] = 'video',
+) {
+  // Storyboard dialogue uses the same numeric scene ID as its video clip.
+  // Give it its own key and never select a generated video take for an audio track.
+  if (mediaType !== 'video')
+    return {
+      shot: undefined,
+      take: undefined,
+      mediaKey: typeof resourceId === 'number' ? `${mediaType}:${resourceId}` : resourceId,
+    };
+  const shot = run?.shots.find((candidate) =>
+    selectedTakeId
+      ? candidate.takes.some((take) => take.id === selectedTakeId)
+      : typeof resourceId === 'number' && candidate.id === resourceId,
+  );
+  const take = shot?.takes.find(
+    (candidate) => candidate.id === (selectedTakeId ?? shot.selectedTakeId),
+  );
+  return { shot, take, mediaKey: take?.localMediaKey ?? String(resourceId) };
+}
+
+export function selectedOtioClips(options: OtioExportOptions): TimelineClip[] {
+  if (options.timeline) {
+    const includedTracks = new Set(
+      options.timeline.tracks
+        .filter(
+          (track) =>
+            track.type !== 'text' &&
+            (track.type !== 'audio' || options.includeAudioTracks !== false),
+        )
+        .map((track) => track.id),
+    );
+    return options.timeline.clips
+      .filter((clip) => includedTracks.has(clip.trackId))
+      .map((clip) => ({
+        ...clip,
+        type:
+          clip.type ??
+          (options.timeline!.tracks.find((track) => track.id === clip.trackId)?.type === 'audio'
+            ? 'audio'
+            : 'video'),
+      }));
+  }
+  return (options.shots.length ? options.shots : (options.productionRun?.shots ?? [])).map(
+    (shot) => ({
+      id: `shot:${shot.id}`,
+      resourceId: shot.id,
+      trackId: 'selected-video',
+      startTime: 0,
+      offset: 0,
+      duration:
+        'generationRequest' in shot ? shot.generationRequest.durationSeconds : shot.duration,
+      type: 'video',
+      label: `Shot ${shot.id}`,
+    }),
+  );
+}
+
 export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
   const fps = options.fps ?? 24;
   if (!Number.isFinite(fps) || fps <= 0) throw new Error('A positive frame rate is required.');
@@ -27,16 +90,14 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
     duration: number,
     offset: number,
     selectedTakeId?: string,
+    mediaType: TimelineClip['type'] = 'video',
   ): OtioClip => {
-    const shot = options.productionRun?.shots.find(
-      (candidate) =>
-        candidate.id === Number(resourceId) ||
-        Boolean(selectedTakeId && candidate.takes.some((take) => take.id === selectedTakeId)),
+    const { shot, take, mediaKey } = resolveOtioSelection(
+      resourceId,
+      selectedTakeId,
+      options.productionRun,
+      mediaType,
     );
-    const take = shot?.takes.find(
-      (candidate) => candidate.id === (selectedTakeId ?? shot.selectedTakeId),
-    );
-    const mediaKey = take?.localMediaKey ?? String(resourceId);
     const path = paths[mediaKey];
     if (!path || path.startsWith('/') || path.split('/').includes('..') || /^[a-z]+:/i.test(path))
       missing.push(mediaKey);
@@ -58,7 +119,7 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
           shotId:
             shot?.id ?? (Number.isFinite(Number(resourceId)) ? Number(resourceId) : undefined),
           prompt: take?.prompt ?? shot?.prompt,
-          modelTarget: take?.request.modelId ?? shot?.generationRequest.modelId,
+          modelTarget: take?.request?.modelId ?? shot?.generationRequest?.modelId,
           takeId: take?.id,
           mediaKey,
           volume: undefined,
@@ -66,7 +127,7 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
       },
     };
   };
-  if (options.timeline?.clips.length) {
+  if (options.timeline) {
     for (const track of options.timeline.tracks) {
       if (track.type === 'text' || (track.type === 'audio' && options.includeAudioTracks === false))
         continue;
@@ -75,6 +136,13 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
       for (const clip of options.timeline.clips
         .filter((item) => item.trackId === track.id)
         .sort((a, b) => a.startTime - b.startTime)) {
+        if (
+          ![clip.startTime, clip.duration, clip.offset].every(Number.isFinite) ||
+          clip.startTime < 0 ||
+          clip.duration <= 0 ||
+          clip.offset < 0
+        )
+          throw new Error(`Invalid timing for timeline clip: ${clip.label}`);
         if (clip.startTime < cursor)
           throw new Error(
             `Overlapping clips on track ${track.label} cannot be represented in a sequential OTIO track.`,
@@ -94,6 +162,7 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
           clip.duration,
           clip.offset,
           clip.selectedTakeId,
+          clip.type ?? (track.type === 'audio' ? 'audio' : 'video'),
         );
         item.metadata.loofi = {
           ...item.metadata.loofi!,
@@ -112,7 +181,7 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
       });
     }
   } else {
-    const shots = options.productionRun?.shots ?? options.shots;
+    const shots = options.shots.length ? options.shots : (options.productionRun?.shots ?? []);
     tracks.push({
       OTIO_SCHEMA: 'Track.1',
       name: 'V1 - Selected takes',

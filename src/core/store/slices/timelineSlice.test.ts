@@ -222,6 +222,11 @@ describe('timelineSlice — gcTimeline', () => {
 });
 
 describe('timelineSlice — syncTimelineFromShots', () => {
+  it('does not fabricate a clip for an empty starter scene', () => {
+    useAppStore.getState().resetAll();
+    useAppStore.getState().syncTimelineFromShots();
+    expect(useAppStore.getState().clips).toEqual([]);
+  });
   it('generates video clip for shot that has a generatedVideoUrl', () => {
     useAppStore.setState({
       sbShots: [

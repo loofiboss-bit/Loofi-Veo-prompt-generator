@@ -185,9 +185,13 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
   const selectedClip = clips.find((c) => c.id === selectedClipId) || null;
 
+  const timelineInitialized = useRef(false);
   useEffect(() => {
-    syncTimelineFromShots();
-  }, [playlist.length, syncTimelineFromShots]);
+    if (timelineInitialized.current || !playlist.length) return;
+    timelineInitialized.current = true;
+    // Opening playback must not rebuild an existing edit or replace external asset IDs.
+    if (!clips.length) syncTimelineFromShots();
+  }, [playlist.length, clips.length, syncTimelineFromShots]);
 
   // ... (Keep existing WebGL and Audio Context setup useEffects) ...
 
@@ -792,7 +796,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
       {/* Panels */}
       {showFilters && (
-        <div className="absolute top-24 inset-x-3 ms-auto max-w-md z-30">
+        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <FilterControls
               filters={filters}
@@ -814,7 +818,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {showVFX && (
-        <div className="absolute top-24 inset-x-3 ms-auto max-w-md z-30">
+        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <VFXPanel
               filters={filters}
@@ -837,7 +841,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {showChromaKey && (
-        <div className="absolute top-24 inset-x-3 ms-auto max-w-md z-30">
+        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <ChromaKeyPanel
               config={effectiveChromaConfig}
@@ -850,7 +854,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {showMixer && (
-        <div className="absolute bottom-[40%] inset-x-3 ms-auto max-w-md z-40">
+        <div className="relative mx-3 max-w-md z-40 sm:absolute sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <AudioMixer
               volumes={audioMix}

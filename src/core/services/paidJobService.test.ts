@@ -13,6 +13,9 @@ describe('paidJobService', () => {
     expect(await paidJobService.list()).toEqual([]);
     expect(await paidJobService.cancel('job-1')).toBe(false);
     expect(await paidJobService.retry('job-1')).toBe(false);
+    expect(
+      await paidJobService.recover({ id: 'job-1', runId: 'run', shotId: 1, takeId: 'take' }),
+    ).toBe(false);
     expect(() => paidJobService.subscribe(() => {})).not.toThrow();
   });
 
@@ -43,5 +46,18 @@ describe('paidJobService', () => {
     expect(onPaidJobUpdate).toHaveBeenCalledWith(callback);
     await expect(paidJobService.cancel('job-1')).resolves.toBe(true);
     await expect(paidJobService.retry('job-1')).resolves.toBe(true);
+  });
+  it('recovers only through the dedicated scoped bridge without retry/submission', async () => {
+    const recoverPaidJob = vi.fn().mockResolvedValue(true);
+    const retryPaidJob = vi.fn();
+    const submitPaidJob = vi.fn();
+    window.electron = { recoverPaidJob, retryPaidJob, submitPaidJob } as unknown as NonNullable<
+      typeof window.electron
+    >;
+    const context = { id: 'job', runId: 'run', shotId: 1, takeId: 'take' };
+    expect(await paidJobService.recover(context)).toBe(true);
+    expect(recoverPaidJob).toHaveBeenCalledWith(context);
+    expect(retryPaidJob).not.toHaveBeenCalled();
+    expect(submitPaidJob).not.toHaveBeenCalled();
   });
 });

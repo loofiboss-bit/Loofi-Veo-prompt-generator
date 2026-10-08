@@ -9,8 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Import local video results for manual Studio targets with frozen source variants, durable media,
+  content-bound manual review, and explicit storyboard/timeline placement.
+- Show the next production action for the affected scene and link scenes to their durable jobs.
+- Recover known video operations and downloads through scoped IPC without submitting new generation.
+- Export selected timeline media from Production or Timeline as a separate OTIO delivery ZIP with
+  local assets, provenance and checksums; show missing clips with compatible replacement controls.
+
 ### Changed
 
+- Distinguish local prechecks from AI and combined review; expose findings and timestamp seeking,
+  and require manual confirmation for local or failed AI review before accepting a new take.
+- Calculate workflow completion from usable references, playable results and current review rather
+  than the existence of any take or older review. Preserve already accepted legacy results.
 - Reorganize Creator Studio as a calm workbench with grouped navigation, shared sidebar widths,
   a visible Quick navigation entry and consistent themes and saved accents.
 - Keep Studio's idea, basic settings and build actions together; move templates, previous packs
@@ -23,6 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Keep mobile timeline panels in document flow so playback tools remain reachable.
+- Preserve edited timeline clips when opening playback, export storyboard dialogue independently
+  of the scene video, and retain the selected production run when changing workflow steps.
+- Restore the selected language's lazy translation resources after reopening the application.
+- Preserve the selected Studio pane when its content height changes in a narrow window.
+- Preserve newer external result imports and reviews when an editor saves an older project snapshot.
+- Keep complete project backup strict while allowing selected delivery despite missing unselected
+  takes or revision-only media. Preserve imported result links and valid review contexts on import.
 - Prevent collapsed navigation from covering controls or leaving unused sidebar space.
 - Restore workspace selection in collapsed navigation and return from Settings to the originating
   workspace. Give canonical routes one main landmark and reliable heading and drawer focus.

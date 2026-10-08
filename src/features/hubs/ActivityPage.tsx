@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { paidJobService } from '@core/services/paidJobService';
@@ -31,15 +32,28 @@ const mergeDurableJobs = (current: PaidJobTask[], incoming: PaidJobTask[]): Paid
 };
 
 export function ActivityPage() {
+  const [params] = useSearchParams();
+  const requestedJob = params.get('job');
+  const focusedJob = useRef<string | null>(null);
   const { t } = useTranslation('common');
+  const { t: flow } = useTranslation('create');
   const queueItems = useGenerationQueueStore((state) => state.items);
   const activeCount = useGenerationQueueStore((state) => state.activeCount);
   const pendingCount = useGenerationQueueStore((state) => state.pendingCount);
   const cancelQueueItem = useGenerationQueueStore((state) => state.cancel);
   const retryQueueItem = useGenerationQueueStore((state) => state.retry);
   const [durableJobs, setDurableJobs] = useState<PaidJobTask[]>([]);
+  const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!requestedJob || focusedJob.current === requestedJob) return;
+    const card = document.getElementById(`paid-job-${requestedJob}`);
+    if (card) {
+      card.focus();
+      focusedJob.current = requestedJob;
+    }
+  }, [requestedJob, durableJobs]);
 
   const refreshDurableJobs = useCallback(async () => {
     try {
@@ -77,6 +91,8 @@ export function ActivityPage() {
     try {
       const changed = await paidJobService[action](id);
       if (changed) await refreshDurableJobs();
+    } catch (failure) {
+      setActionError(failure instanceof Error ? failure.message : flow('flow.recoveryUnavailable'));
     } finally {
       setPendingActionId(null);
     }
@@ -165,6 +181,11 @@ export function ActivityPage() {
           <h2 id="durable-jobs-heading" className="text-lg font-semibold">
             {t('activity.durableJobs')}
           </h2>
+          {actionError && (
+            <p role="alert" className="mt-3 text-sm text-amber-300">
+              {actionError}
+            </p>
+          )}
           {loadError && (
             <p role="alert" className="mt-3 rounded-xl border border-amber-700 p-4 text-amber-200">
               {t('activity.loadFailed')}
@@ -180,9 +201,22 @@ export function ActivityPage() {
                 const isMusic = 'jobKind' in job && job.jobKind === 'music';
                 const canCancel =
                   ACTIVE_DURABLE_STATUSES.has(job.status) || job.status === 'Queued';
-                const canRetry = job.status === 'Error';
+                const videoJob =
+                  'productionRunId' in job &&
+                  job.productionRunId &&
+                  job.productionShotId !== undefined &&
+                  job.productionTakeId
+                    ? job
+                    : null;
+                const canRecover =
+                  videoJob &&
+                  videoJob.providerOperationName &&
+                  ATTENTION_DURABLE_STATUSES.has(job.status);
+                const canRetry = !videoJob && job.status === 'Error';
                 return (
                   <article
+                    id={`paid-job-${job.id}`}
+                    tabIndex={-1}
                     key={job.id}
                     className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
                   >
@@ -196,7 +230,22 @@ export function ActivityPage() {
                       <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
                     </div>
                     {job.error && <p className="mt-2 text-sm text-amber-300">{job.error}</p>}
-                    {(canCancel || canRetry) && (
+                    {videoJob && (
+                      <Link
+                        to={`/create?run=${encodeURIComponent(videoJob.productionRunId!)}&shot=${videoJob.productionShotId}`}
+                        className="mt-2 inline-block text-sm text-blue-300 underline"
+                      >
+                        {flow('flow.production')}
+                      </Link>
+                    )}
+                    {videoJob &&
+                      job.status === 'RecoveryRequired' &&
+                      !videoJob.providerOperationName && (
+                        <p className="mt-2 text-xs text-amber-300">
+                          {flow('flow.recoveryAmbiguous')}
+                        </p>
+                      )}
+                    {(canCancel || canRetry || canRecover) && (
                       <div className="mt-3 flex gap-2">
                         {canCancel && (
                           <button
@@ -206,6 +255,27 @@ export function ActivityPage() {
                             onClick={() => void runDurableAction('cancel', job.id)}
                           >
                             {t('activity.cancel')}
+                          </button>
+                        )}
+                        {canRecover && (
+                          <button
+                            type="button"
+                            disabled={pendingActionId === job.id}
+                            className="rounded bg-blue-600 px-3 py-1.5 text-sm disabled:opacity-50"
+                            onClick={() => {
+                              setPendingActionId(job.id);
+                              void paidJobService
+                                .recover({
+                                  id: job.id,
+                                  runId: videoJob!.productionRunId!,
+                                  shotId: videoJob!.productionShotId!,
+                                  takeId: videoJob!.productionTakeId!,
+                                })
+                                .then(() => refreshDurableJobs())
+                                .finally(() => setPendingActionId(null));
+                            }}
+                          >
+                            {flow('flow.recoveryCheck')}
                           </button>
                         )}
                         {canRetry && (

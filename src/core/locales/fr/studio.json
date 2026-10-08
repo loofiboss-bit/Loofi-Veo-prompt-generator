@@ -356,5 +356,25 @@
     "templates": "Modèles",
     "history": "Packs précédents",
     "revisions": "Révisions"
+  },
+  "externalResults": {
+    "title": "Résultats vidéo externes",
+    "import": "Importer le résultat de cette variante",
+    "importing": "Importation de la vidéo…",
+    "empty": "Aucun résultat importé pour le moment.",
+    "source": "Prompt d’origine",
+    "notes": "Notes de vérification",
+    "confirm": "Confirmer la vérification manuelle",
+    "confirmed": "Vérification manuelle confirmée",
+    "scene": "Scène du storyboard",
+    "newScene": "Créer une nouvelle scène",
+    "useTimeline": "Utiliser dans la timeline",
+    "pending": "Enregistrement du résultat…",
+    "unavailable": "Cette vidéo locale est indisponible. Choisissez un remplacement et vérifiez-le à nouveau.",
+    "duration": "{{seconds}} secondes",
+    "error": "Le résultat n’a pas pu être enregistré.",
+    "relink": "Relier dans les médias",
+    "refresh": "Actualiser les médias locaux",
+    "replace": "Choisir une vidéo de remplacement"
   }
 }

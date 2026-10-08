@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import type {
   Asset,
   Project,
@@ -8,11 +9,20 @@ import type {
 import { projectService } from '@core/services/projectService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
 import { productionRunService } from '@core/services/productionRunService';
+import { manualReviewContext } from '@core/services/productionReadinessService';
 import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
-import { exportOtioJson } from '@core/services/otioExportService';
+import {
+  exportOtioJson,
+  resolveOtioSelection,
+  selectedOtioClips,
+} from '@core/services/otioExportService';
 import { mediaAssetService } from '@core/services/mediaAssetService';
 import { useAppStore } from '@core/store/useAppStore';
-import { exportProjectToZip, importProjectFromZip } from '@core/utils/projectArchiver';
+import {
+  exportProjectToZip,
+  importProjectFromZip,
+  resolveProjectAssetBlob,
+} from '@core/utils/projectArchiver';
 
 /** Collect references from the chosen document, never from another active workspace. */
 export function collectProjectAssetIds(value: unknown): Set<string> {
@@ -189,7 +199,7 @@ export async function importPortableProject(file: File): Promise<Project> {
     };
     return visit(value) as T;
   };
-  const restoredRuns = remapImportedReferences<ProductionRun[]>(runs, ids).map((run) => ({
+  const restoredRuns = remapImportedReferences<ProductionRun[]>(runs, ids).map((run, runIndex) => ({
     ...run,
     projectId: inventory.id,
     status: run.status === 'complete' ? ('complete' as const) : ('paused' as const),
@@ -197,15 +207,32 @@ export async function importPortableProject(file: File): Promise<Project> {
       ...approval,
       status: approval.status === 'active' ? ('revoked' as const) : approval.status,
     })),
-    shots: run.shots.map((shot) => ({
+    shots: run.shots.map((shot, shotIndex) => ({
       ...shot,
-      takes: shot.takes.map((take) => {
+      takes: shot.takes.map((take, takeIndex) => {
         const asset = restoredAssets.find((entry) => entry.id === take.localMediaKey);
+        const originalShot = runs[runIndex].shots[shotIndex];
+        const originalTake = originalShot.takes[takeIndex];
+        const validManual =
+          originalTake.manualReview &&
+          originalTake.manualReview.contextIdentity ===
+            manualReviewContext(originalShot, originalTake);
         return {
           ...take,
           taskId: undefined,
           costApproval: undefined,
           localMediaUrl: asset?.url,
+          reviewContextIdentity:
+            originalTake.reviewContextIdentity === manualReviewContext(originalShot, originalTake)
+              ? manualReviewContext(shot, take)
+              : take.reviewContextIdentity,
+          manualReview:
+            validManual && take.manualReview
+              ? {
+                  ...take.manualReview,
+                  contextIdentity: manualReviewContext(shot, take),
+                }
+              : take.manualReview,
           status: ['queued', 'approved', 'submitting', 'generating'].includes(take.status)
             ? ('recovery-required' as const)
             : take.status,
@@ -240,26 +267,194 @@ export async function importPortableProject(file: File): Promise<Project> {
   return document;
 }
 
-export async function exportProjectOtioBundle(project: Project, run: ProductionRun): Promise<Blob> {
-  if (run.projectId !== project.id) throw new Error('Production run belongs to another project.');
-  const paths: Record<string, string> = {};
-  const pathFor = (id: string, mime: string) =>
-    `assets/${id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${mime.split('/')[1]?.split(';')[0] === 'jpeg' ? 'jpg' : mime.split('/')[1]?.split(';')[0] || 'bin'}`;
-  for (const asset of useAppStore.getState().assets)
-    paths[asset.id] = pathFor(asset.id, asset.mimeType);
-  for (const shot of run.shots)
-    for (const take of shot.takes)
-      if (take.localMediaKey) paths[take.localMediaKey] = pathFor(take.localMediaKey, 'video/mp4');
-  const otio = exportOtioJson({
+export interface MissingTimelineMedia {
+  mediaKey: string;
+  clipId?: string;
+  clipLabel: string;
+  shotId?: number;
+  assetId?: string;
+}
+
+export class OtioExportPreflightError extends Error {
+  constructor(public readonly missingMedia: MissingTimelineMedia[]) {
+    super(`Local timeline media missing: ${missingMedia.map((item) => item.clipLabel).join(', ')}`);
+    this.name = 'OtioExportPreflightError';
+  }
+}
+
+const deliveryPath = (asset: Asset) => {
+  const extension = asset.mimeType.split('/')[1]?.split(';')[0] ?? 'bin';
+  return `assets/${asset.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${extension === 'jpeg' ? 'jpg' : extension.replace(/[^a-zA-Z0-9]/g, '') || 'bin'}`;
+};
+
+async function prepareOtioDelivery(project: Project, run?: ProductionRun | null) {
+  if (run && run.projectId !== project.id)
+    throw new Error('Production run belongs to another project.');
+  const options = {
     projectId: project.id,
     projectName: project.name,
     shots: project.storyboard?.shots ?? [],
     timeline: project.storyboard?.timeline,
     productionRun: run,
-    mediaPaths: paths,
+  };
+  const selected = selectedOtioClips(options);
+  if (!selected.length) throw new Error('Timeline has no exportable media clips.');
+  const available = useAppStore.getState().assets;
+  const media = new Map<string, { asset: Asset; blob: Blob }>();
+  const paths: Record<string, string> = {};
+  const missingMedia: MissingTimelineMedia[] = [];
+  const provenance: unknown[] = [];
+  for (const clip of selected) {
+    const { shot, take, mediaKey } = resolveOtioSelection(
+      clip.resourceId,
+      clip.selectedTakeId,
+      run,
+      clip.type,
+    );
+    if (shot && (!take || !take.localMediaKey)) {
+      missingMedia.push({ mediaKey, clipId: clip.id, clipLabel: clip.label, shotId: shot.id });
+      continue;
+    }
+    const storyboardShot =
+      typeof clip.resourceId === 'number'
+        ? project.storyboard?.shots.find((item) => item.id === clip.resourceId)
+        : undefined;
+    const url =
+      clip.type === 'audio'
+        ? clip.trackId === 'audio_sfx' || clip.id.startsWith('sfx_')
+          ? undefined
+          : storyboardShot?.audioUrl
+        : (take?.localMediaUrl ??
+          storyboardShot?.generatedVideoUrl ??
+          storyboardShot?.takes?.[storyboardShot.selectedTakeIndex]);
+    const matches = available.filter((asset) => asset.type === clip.type && asset.url === url);
+    let asset =
+      available.find((item) => item.id === mediaKey && item.type === clip.type) ??
+      matches.find((item) => item.groupId === project.id) ??
+      (matches.length === 1 ? matches[0] : undefined);
+    if (!asset && take?.localMediaKey)
+      asset = {
+        id: take.localMediaKey,
+        storageKey: take.localMediaKey,
+        name: `${take.id}.mp4`,
+        mimeType: 'video/mp4',
+        type: 'video',
+        url: take.localMediaUrl ?? '',
+        data: '',
+      };
+    let blob = asset ? media.get(asset.id)?.blob : undefined;
+    if (asset && !blob) {
+      try {
+        blob = asset.data
+          ? new Blob(
+              [
+                Uint8Array.from(
+                  atob(asset.data.includes(',') ? asset.data.split(',').pop()! : asset.data),
+                  (value) => value.charCodeAt(0),
+                ),
+              ],
+              { type: asset.mimeType },
+            )
+          : ((await resolveProjectAssetBlob(asset)) ?? undefined);
+      } catch {
+        // A failed local read is a relinkable missing-media entry, never a remote fetch.
+        blob = undefined;
+      }
+    }
+    if (!asset || !blob || blob.size === 0) {
+      missingMedia.push({
+        mediaKey,
+        clipId: clip.id,
+        clipLabel: clip.label,
+        shotId: shot?.id ?? storyboardShot?.id,
+        assetId: asset?.id,
+      });
+      continue;
+    }
+    media.set(asset.id, { asset, blob });
+    paths[mediaKey] = deliveryPath(asset);
+    provenance.push({
+      clipId: clip.id,
+      shotId: shot?.id ?? storyboardShot?.id,
+      assetId: asset.id,
+      take: take
+        ? {
+            id: take.id,
+            prompt: take.prompt,
+            request: take.request,
+            review: take.review,
+            manualReview: take.manualReview,
+            sourceArtifactId: take.sourceArtifactId,
+            sourceVariantIndex: take.sourceVariantIndex,
+            continuitySnapshot: take.continuitySnapshot,
+            localMediaKey: asset.id,
+          }
+        : undefined,
+    });
+  }
+  return { options, media, paths, missingMedia, provenance };
+}
+
+/** Check durable bytes for the actual edit without reading revision or unselected media. */
+export async function preflightProjectOtioExport(project: Project, run?: ProductionRun | null) {
+  const { missingMedia } = await prepareOtioDelivery(project, run);
+  return { missingMedia };
+}
+
+export async function exportProjectOtioBundle(
+  project: Project,
+  run?: ProductionRun | null,
+): Promise<Blob> {
+  const prepared = await prepareOtioDelivery(project, run);
+  if (prepared.missingMedia.length) throw new OtioExportPreflightError(prepared.missingMedia);
+  const otio = exportOtioJson({
+    ...prepared.options,
+    mediaPaths: prepared.paths,
     requireMedia: true,
   });
-  return buildPortableProjectBundle(project, { 'timeline.otio': otio });
+  const zip = new JSZip();
+  const checksums: Record<string, string> = {};
+  const add = async (path: string, bytes: Uint8Array) => {
+    if (zip.file(path)) throw new Error(`Ambiguous archive media path: ${path}`);
+    zip.file(path, Uint8Array.from(bytes));
+    const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
+    checksums[path] = Array.from(new Uint8Array(digest), (value) =>
+      value.toString(16).padStart(2, '0'),
+    ).join('');
+  };
+  for (const { asset, blob } of prepared.media.values())
+    await add(deliveryPath(asset), new Uint8Array(await blob.arrayBuffer()));
+  await add('timeline.otio', new TextEncoder().encode(otio));
+  const selectedIds = new Set(prepared.media.keys());
+  const externalResults = project.studioResults ?? [];
+  await add(
+    'provenance.json',
+    new TextEncoder().encode(
+      JSON.stringify(
+        {
+          projectId: project.id,
+          clips: prepared.provenance,
+          studioResults: externalResults.filter((result) => selectedIds.has(result.assetId)),
+        },
+        null,
+        2,
+      ),
+    ),
+  );
+  zip.file(
+    'manifest.json',
+    JSON.stringify(
+      {
+        format: 'loofi-delivery',
+        schemaVersion: 1,
+        createdAt: Date.now(),
+        checksums,
+      },
+      null,
+      2,
+    ),
+  );
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 
 export async function hydrateProjectMedia(project: Project): Promise<void> {

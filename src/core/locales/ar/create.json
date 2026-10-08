@@ -77,7 +77,9 @@
     "copyPack": "نسخ Creative Pack v2",
     "approveContinuityReview": "اعتماد مراجعة الاستمرارية",
     "continuityReviewApproved": "تم اعتماد مراجعة الاستمرارية",
-    "downloadOtio": "تنزيل OTIO مع الوسائط"
+    "downloadOtio": "تنزيل OTIO مع الوسائط",
+    "relinkExportMedia": "إعادة ربط المقطع",
+    "openMediaLibrary": "فتح مكتبة الوسائط"
   },
   "labels": {
     "idea": "فكرة الإنتاج",
@@ -107,7 +109,9 @@
     "semanticReview": "استخدام مراجعة Gemini الدلالية الموافق عليها",
     "exportPreview": "معاينة Creative Pack v2",
     "continuityReviewCost": "مراجعة Gemini اختيارية · الحد الأقصى ${{cost}}",
-    "fcpxmlExperimental": "FCPXML: تجريبي"
+    "fcpxmlExperimental": "FCPXML: تجريبي",
+    "missingExportMedia": "وسائط المخطط الزمني المحددة مفقودة. أعد ربط المقاطع المدرجة قبل التصدير.",
+    "chooseReplacementMedia": "اختيار وسائط بديلة"
   },
   "empty": {
     "title": "أنشئ أول تشغيل إنتاج",
@@ -213,5 +217,38 @@
     "loading": "جارٍ تحميل خطط الإنتاج…",
     "savedPlan": "خطة الإنتاج المحفوظة · {{time}}",
     "noPlan": "لا توجد خطة إنتاج محفوظة بعد"
+  },
+  "flow": {
+    "nextAction": "الإجراء التالي",
+    "references": "إكمال المراجع",
+    "recover": "استعادة المهمة",
+    "generate": "إنشاء لقطة",
+    "relink": "إعادة ربط الوسائط",
+    "review": "مراجعة النتيجة",
+    "accept": "اعتماد النتيجة",
+    "localChecks": "فحوص محلية أولية",
+    "aiReview": "مراجعة بالذكاء الاصطناعي",
+    "combinedReview": "مراجعة مشتركة",
+    "notReviewed": "لم تتم المراجعة",
+    "score": "التقييم: {{score}}",
+    "confirmManual": "تأكيد المراجعة اليدوية",
+    "manualConfirmed": "تم تأكيد المراجعة اليدوية",
+    "recoveryCheck": "فحص المهمة / استرجاع النتيجة",
+    "recoveryAmbiguous": "نتيجة الإرسال غير مؤكدة. تحقق من نشاط المزود قبل إعداد محاولة مدفوعة جديدة.",
+    "recoveryUnavailable": "لا يمكن استعادة هذه المهمة تلقائياً.",
+    "recoveryStarted": "بدأت الاستعادة دون إرسال طلب إنشاء جديد.",
+    "activity": "فتح النشاط",
+    "production": "فتح مشهد الإنتاج",
+    "reviewCompleteLocal": "اكتملت الفحوص المحلية. شاهد الفيديو وأكد المراجعة اليدوية.",
+    "noPlayable": "لا توجد لقطات قابلة للتشغيل بعد.",
+    "comparison": "مقارنة اللقطات A/B",
+    "notes": "ملاحظات المقارنة",
+    "keep": "احتفاظ",
+    "reject": "رفض",
+    "revise": "تعديل",
+    "findings": "النتائج",
+    "reviewWarnings": "الفحوص المحلية لا تقيم جودة الفيديو.",
+    "reviewFailed": "فشلت المراجعة بالذكاء الاصطناعي؛ تتوفر المراجعة اليدوية.",
+    "openFailed": "تعذر فتح مشهد الإنتاج المرتبط. تم الحفاظ على عملك الحالي."
   }
 }
