@@ -3,6 +3,7 @@ vi.mock('@core/services/gemini/geminiAudioService', () => ({ transcribeAudio: vi
 import { transcribeAudio } from '@core/services/gemini/geminiAudioService';
 import {
   creatorCaptionService,
+  getCreatorCaptionOverlaps,
   exportCreatorSrt,
   importCreatorSrt,
   validateCreatorCaptions,
@@ -46,5 +47,29 @@ describe('creator captions', () => {
     await expect(creatorCaptionService.propose(new Blob(), 3)).rejects.toThrow('provider failed');
     vi.mocked(transcribeAudio).mockResolvedValueOnce([]);
     await expect(creatorCaptionService.propose(new Blob(), 3)).rejects.toThrow('No valid captions');
+  });
+});
+
+describe('caption review and export order', () => {
+  const caption = (id: string, startTime: number, endTime: number) => ({
+    id,
+    text: id,
+    startTime,
+    endTime,
+    style: 'classic' as const,
+  });
+  it('exports chronological sequence without mutating captions or dropping overlaps', () => {
+    const captions = [caption('later', 4, 6), caption('first', 0, 5), caption('same', 4, 7)];
+    const srt = exportCreatorSrt(captions);
+    expect(importCreatorSrt(srt, 7).map((entry) => entry.text)).toEqual(['first', 'later', 'same']);
+    expect(captions[0].id).toBe('later');
+    expect(getCreatorCaptionOverlaps(captions)).toEqual([
+      { firstId: 'first', secondId: 'later' },
+      { firstId: 'first', secondId: 'same' },
+      { firstId: 'later', secondId: 'same' },
+    ]);
+  });
+  it('does not report touching captions as overlapping', () => {
+    expect(getCreatorCaptionOverlaps([caption('a', 0, 2), caption('b', 2, 3)])).toEqual([]);
   });
 });

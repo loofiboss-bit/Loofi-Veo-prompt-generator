@@ -166,6 +166,7 @@ class CreatorRecipeService {
       schemaVersion: 1,
       revision: 0,
       recipeId: recipe.id,
+      editorMode: 'delivery',
       aspectRatio: recipe.aspectRatio,
       captionsMode: 'sidecar',
       captionStyle: 'classic',
@@ -173,6 +174,66 @@ class CreatorRecipeService {
       crops: {},
       title: title.trim(),
       description: idea.trim(),
+      updatedAt: Date.now(),
+    };
+    await projectDocumentService.save(project);
+    await projectService.registerDocument(project);
+    return { project, assets };
+  }
+  async createFromFiles(
+    files: File[],
+    title: string,
+  ): Promise<{ project: Project; assets: Asset[] }> {
+    if (!files.length || !title.trim()) throw new Error('Choose media and a project title.');
+    const assets: Asset[] = [];
+    for (const file of files) assets.push(await mediaAssetService.importLocalFile(file));
+    const inventory = await projectService.createProject({ name: title.trim() });
+    const project = createEmptyProjectDocument(inventory);
+    let videoTime = 0;
+    let audioTime = 0;
+    project.storyboard.timeline = {
+      zoomLevel: 20,
+      currentTime: 0,
+      tracks: [
+        { id: 'creator-video', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 0 },
+        { id: 'creator-audio', label: 'Audio', type: 'audio', trackType: 'music', zIndex: 1 },
+        {
+          id: 'creator-captions',
+          label: 'Captions',
+          type: 'text',
+          trackType: 'captions',
+          zIndex: 2,
+        },
+      ],
+      clips: assets.map((asset) => {
+        const duration = asset.type === 'image' ? 5 : asset.durationSeconds!;
+        const startTime = asset.type === 'audio' ? audioTime : videoTime;
+        if (asset.type === 'audio') audioTime += duration;
+        else videoTime += duration;
+        return {
+          id: crypto.randomUUID(),
+          resourceId: asset.id,
+          type: asset.type,
+          trackId: asset.type === 'audio' ? 'creator-audio' : 'creator-video',
+          label: asset.name,
+          startTime,
+          duration,
+          offset: 0,
+          volume: 1,
+        };
+      }),
+    };
+    project.creatorDelivery = {
+      schemaVersion: 1,
+      revision: 0,
+      editorMode: 'delivery',
+      aspectRatio: '9:16',
+      captionsMode: 'sidecar',
+      captionStyle: 'classic',
+      safeMargin: 0.08,
+      crops: {},
+      title: title.trim(),
+      description: '',
       updatedAt: Date.now(),
     };
     await projectDocumentService.save(project);

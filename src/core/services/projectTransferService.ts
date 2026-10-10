@@ -35,7 +35,11 @@ export function collectProjectAssetIds(value: unknown): Set<string> {
       ids.add(node);
     else if (Array.isArray(node)) node.forEach((item) => visit(item, key));
     else if (node && typeof node === 'object')
-      Object.entries(node).forEach(([field, item]) => visit(item, field));
+      Object.entries(node).forEach(([field, item]) => {
+        // Text resources are caption identities, not binary media references.
+        if (field === 'resourceId' && (node as { type?: string }).type === 'text') return;
+        visit(item, field);
+      });
   };
   visit(value);
   return ids;
@@ -243,6 +247,7 @@ export async function importPortableProject(file: File): Promise<Project> {
   const document = {
     ...replaceUrls(remapImportedReferences(imported.project, ids)),
     id: inventory.id,
+    documentRevision: 0,
     name: inventory.name,
     migrationHistory: imported.migrationHistory,
   };

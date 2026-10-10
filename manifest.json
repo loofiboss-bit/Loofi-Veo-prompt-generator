@@ -1,8 +1,8 @@
 {
   "short_name": "Creator Studio",
   "name": "Loofi Creator Studio",
-  "version": "15.0.0",
-  "description": "Local-first Prompt Studio for copy-ready Flow/Veo prompts and Suno lyrics, with approval-gated production handoffs.",
+  "version": "16.0.0",
+  "description": "Local-first video editing, captions and verified MP4 delivery for individual creators, with optional AI and portable projects.",
   "icons": [
     {
       "src": "icon-192x192.png",

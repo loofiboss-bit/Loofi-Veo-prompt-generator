@@ -2,6 +2,7 @@ import { createStore, del, get, keys, set } from 'idb-keyval';
 
 import { logger } from '@core/services/loggerService';
 import { appendApiKeyToMediaUrl } from '@core/utils/mediaUrlAuth';
+import type { Asset } from '@core/types';
 
 const MEDIA_STORE = createStore('veo-generated-media', 'generated-media-v1');
 
@@ -41,6 +42,89 @@ class MediaAssetService {
     };
     await set(key, record, MEDIA_STORE);
     return record;
+  }
+
+  /** Local imports never contact a provider or retain large base64 payloads in UI state. */
+  async importLocalFile(file: File): Promise<Asset> {
+    const type = file.type.startsWith('video/')
+      ? 'video'
+      : file.type.startsWith('audio/')
+        ? 'audio'
+        : file.type.startsWith('image/')
+          ? 'image'
+          : null;
+    if (!type || !file.size) throw new Error('Choose a non-empty video, audio or image file.');
+    const key = `local-media:${crypto.randomUUID()}`;
+    let url: string;
+    if (window.electron?.importDesktopMedia) {
+      const bytes = await file.arrayBuffer();
+      const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+      const stored = await window.electron.importDesktopMedia({ key, bytes, mimeType: file.type });
+      if (stored.sha256 !== hash || stored.sizeBytes !== file.size)
+        throw new Error('The saved media did not match the original file. Please retry.');
+      url = stored.localUrl;
+    } else {
+      await this.storeBlob(key, file);
+      url = (await this.getObjectUrl(key))!;
+    }
+    const asset: Asset = {
+      id: key,
+      storageKey: key,
+      name: file.name,
+      type,
+      mimeType: file.type,
+      data: '',
+      url,
+      groupId: key,
+      version: 1,
+      tags: [],
+    };
+    if (type !== 'image') {
+      const metadata = await window.electron?.inspectTimelineRenderMedia?.(key);
+      if (metadata && !metadata.available)
+        throw new Error(`Media could not be decoded: ${file.name}`);
+      if (metadata?.streamTypes && !metadata.streamTypes.includes(type))
+        throw new Error(`Media does not contain a supported ${type} stream: ${file.name}`);
+      asset.durationSeconds = metadata?.durationSeconds ?? (await this.readDuration(url, type));
+      if (!Number.isFinite(asset.durationSeconds) || asset.durationSeconds <= 0)
+        throw new Error(`Media has no valid duration: ${file.name}`);
+    }
+    return asset;
+  }
+
+  private readDuration(url: string, type: 'video' | 'audio'): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const media = document.createElement(type);
+      const cleanup = () => {
+        clearTimeout(timer);
+        media.removeAttribute('src');
+        media.load();
+      };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('Media metadata could not be read. Choose a supported file.'));
+      }, 15000);
+      media.preload = 'metadata';
+      media.onloadedmetadata = () => {
+        const duration = media.duration;
+        cleanup();
+        resolve(duration);
+      };
+      media.onerror = () => {
+        cleanup();
+        reject(new Error('Media could not be decoded. Choose a supported file.'));
+      };
+      media.src = url;
+    });
+  }
+
+  async prepareDesktopProxy(asset: Asset): Promise<Asset> {
+    if (asset.type !== 'video' || !asset.storageKey || !window.electron?.createDesktopMediaProxy)
+      return asset;
+    const proxy = await window.electron.createDesktopMediaProxy(asset.storageKey);
+    return { ...asset, proxyUrl: proxy.url, isProxyReady: true };
   }
 
   async cacheRemoteMedia(input: {

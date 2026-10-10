@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { logger } from '@core/services/loggerService';
+import { useProjectSaveStore } from './useProjectSaveStore';
 
 import {
   type EditorSessionMachineEvent,
@@ -67,6 +68,7 @@ export const useEditorSessionStore = create<EditorSessionStore>((set, get) => ({
     try {
       if (operation === 'load') {
         applyProjectDocumentToStores(project);
+        useProjectSaveStore.getState().setStatus(project.id, { status: 'saved' });
       }
 
       get().dispatch({

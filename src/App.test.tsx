@@ -1,3 +1,4 @@
+vi.mock('@shared/hooks/useProjectAutosave', () => ({ useProjectAutosave: vi.fn() }));
 /**
  * App.test.tsx — v3.8.0
  *

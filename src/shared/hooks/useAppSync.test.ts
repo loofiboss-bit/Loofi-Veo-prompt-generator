@@ -1,139 +1,51 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-
-const { mockSetState, mockSubscribe } = vi.hoisted(() => ({
-  mockSetState: vi.fn(),
-  mockSubscribe: vi.fn(() => vi.fn()),
-}));
-
-// BroadcastChannel mock
-let lastChannel: {
-  onmessage: ((event: { data: unknown }) => void) | null;
-  postMessage: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
-} | null = null;
-
+import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { useAppStore } from '@core/store/useAppStore';
+import { PROJECT_SAVED_EVENT } from '@core/services/projectDocumentService';
+import { useAppSync } from './useAppSync';
+let channel: MockBroadcastChannel;
 class MockBroadcastChannel {
   onmessage: ((event: { data: unknown }) => void) | null = null;
   postMessage = vi.fn();
   close = vi.fn();
-  constructor(_name: string) {
-    lastChannel = this;
+  constructor() {
+    channel = this;
   }
 }
-
-vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
-
-vi.mock('@core/store/useAppStore', () => ({
-  useAppStore: {
-    setState: mockSetState,
-    subscribe: mockSubscribe,
-  },
-}));
-
-vi.mock('@core/services/loggerService', () => ({
-  logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
-}));
-
-import { useAppSync } from './useAppSync';
-
-describe('useAppSync', () => {
+describe('project window notifications', () => {
   beforeEach(() => {
-    lastChannel = null;
-    vi.clearAllMocks();
-    mockSubscribe.mockReturnValue(vi.fn());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
     vi.stubGlobal('BroadcastChannel', MockBroadcastChannel);
+    useProjectSaveStore.setState({ projects: {} });
   });
-
-  it('should return connected status', () => {
-    const { result } = renderHook(() => useAppSync());
-    expect(result.current).toBe(true);
-  });
-
-  it('should create a BroadcastChannel', () => {
+  it('broadcasts only saved project identities and revisions', () => {
     renderHook(() => useAppSync());
-    expect(lastChannel).not.toBeNull();
-  });
-
-  it('should subscribe to store changes', () => {
-    renderHook(() => useAppSync());
-    expect(mockSubscribe).toHaveBeenCalled();
-  });
-
-  it('should update store when receiving state update messages', () => {
-    renderHook(() => useAppSync());
-
-    const payload = { description: 'test prompt' };
-    lastChannel?.onmessage?.({ data: { type: 'STATE_UPDATE', payload } });
-
-    expect(mockSetState).toHaveBeenCalledWith({ promptState: payload });
-  });
-
-  it('should ignore messages without STATE_UPDATE type', () => {
-    renderHook(() => useAppSync());
-
-    lastChannel?.onmessage?.({ data: { type: 'OTHER', payload: {} } });
-
-    expect(mockSetState).not.toHaveBeenCalled();
-  });
-
-  it('should ignore messages without data', () => {
-    renderHook(() => useAppSync());
-
-    lastChannel?.onmessage?.({ data: null });
-
-    expect(mockSetState).not.toHaveBeenCalled();
-  });
-
-  it('should broadcast store changes', () => {
-    renderHook(() => useAppSync());
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const subscriberCallback = (mockSubscribe as any).mock.calls[0][0] as (
-      state: Record<string, unknown>,
-    ) => void;
-    const mockState = { promptState: { description: 'broadcast test' } };
-    subscriberCallback(mockState);
-
-    expect(lastChannel?.postMessage).toHaveBeenCalledWith({
-      type: 'STATE_UPDATE',
-      payload: mockState.promptState,
+    window.dispatchEvent(
+      new CustomEvent(PROJECT_SAVED_EVENT, { detail: { projectId: 'a', revision: 2 } }),
+    );
+    expect(channel.postMessage).toHaveBeenCalledWith({
+      type: 'PROJECT_CHANGED',
+      projectId: 'a',
+      revision: 2,
     });
   });
-
-  it('should close channel on unmount', () => {
-    const { unmount } = renderHook(() => useAppSync());
-
-    unmount();
-
-    expect(lastChannel?.close).toHaveBeenCalled();
+  it('never copies prompt content from another window', () => {
+    renderHook(() => useAppSync());
+    const before = useAppStore.getState().promptState;
+    channel.onmessage?.({
+      data: { type: 'STATE_UPDATE', payload: { description: 'Remote prompt' } },
+    });
+    expect(useAppStore.getState().promptState).toBe(before);
   });
-
-  it('should unsubscribe from store on unmount', () => {
-    const unsubscribe = vi.fn();
-    mockSubscribe.mockReturnValue(unsubscribe);
-
+  it('tracks changes separately for each project', () => {
+    renderHook(() => useAppSync());
+    channel.onmessage?.({ data: { type: 'PROJECT_CHANGED', projectId: 'b', revision: 4 } });
+    expect(useProjectSaveStore.getState().projects.b.remoteRevision).toBe(4);
+    expect(useProjectSaveStore.getState().projects.a).toBeUndefined();
+  });
+  it('closes the channel on unmount', () => {
     const { unmount } = renderHook(() => useAppSync());
     unmount();
-
-    expect(unsubscribe).toHaveBeenCalled();
-  });
-
-  it('should return false when BroadcastChannel fails', () => {
-    vi.stubGlobal(
-      'BroadcastChannel',
-      class {
-        constructor() {
-          throw new Error('Not supported');
-        }
-      },
-    );
-
-    const { result } = renderHook(() => useAppSync());
-    expect(result.current).toBe(false);
+    expect(channel.close).toHaveBeenCalled();
   });
 });

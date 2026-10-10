@@ -23,28 +23,24 @@ export const helpTopics: HelpTopic[] = [
     id: 'what-is-loofi-veo',
     category: 'Getting Started',
     title: 'What is Loofi Creator Studio?',
-    content: `Loofi Creator Studio is a local-first studio for Flow/Veo video production and structured external music handoffs. It helps you organize, manage, and export scene packs, shot cards, lyrics, and production briefs.
+    content: `Loofi Creator Studio helps individual creators finish local videos up to three minutes without an account or API key. Import your own clips, trim and arrange a timeline, add captions, check delivery, render a review and save a verified MP4 in the desktop app.
 
-Key features include:
-- Project-based organization
-- Template library
-- Version control
-- Export in multiple formats
-- Workflow automation`,
+Projects autosave locally with conflict recovery. Prompt Studio and advanced Production remain available, with optional AI only when requested. Final export supports 720p/1080p, 30 fps, H.264/AAC and portrait, landscape or square output.`,
     keywords: ['intro', 'overview', 'what is', 'about'],
   },
   {
     id: 'first-steps',
     category: 'Getting Started',
     title: 'Getting Started Guide',
-    content: `Follow these steps to get started:
+    content: `1. Open Start and choose Create from your own clips.
+2. Select local video, images or music. Import creates and opens a saved project.
+3. Arrange, split or trim clips in Timeline. Undo and redo apply whole edits.
+4. Add captions or import SRT with an explicit Append or Replace choice.
+5. Choose Check delivery and resolve every blocker.
+6. In the desktop app, choose Review delivery to inspect the real rendered video.
+7. Export video and save MP4 or a publication package. Wait for Saved before closing.
 
-1. Create a new project
-2. Add your first prompt
-3. Use templates or create from scratch
-4. Export or save your work
-
-You can also take the interactive tutorial from the Help menu.`,
+A review becomes stale when the project changes. Browser editing works locally; verified MP4 rendering uses the desktop runtime.`,
     keywords: ['start', 'begin', 'tutorial', 'guide', 'first'],
   },
 
@@ -67,13 +63,11 @@ Projects help you organize related prompts together.`,
     id: 'manage-projects',
     category: 'Projects',
     title: 'Managing Projects',
-    content: `You can manage your projects by:
+    content: `Open Projects to search by name, sort by modification time or name, rename, duplicate or archive a project. Show archived includes inactive projects. Copies preserve local media and have separate document identities.
 
-- Renaming: Click the project name to edit
-- Deleting: Right-click and select "Delete"
-- Archiving: Move inactive projects to archive
-- Searching: Use the search bar to find projects
-- Filtering: Filter by tags or date`,
+The save indicator distinguishes Saving, Saved, Unsaved, conflicts and storage errors. Another window never copies its content into your editor. On conflict, Load latest replaces local edits explicitly; Save as copy preserves them in a separate active project.
+
+Desktop automatic backups appear in Projects. Restore verifies the checksum and creates a new recovered project. A backup listing alone is not proof of verification.`,
     keywords: ['manage', 'edit', 'delete', 'archive', 'project'],
   },
 

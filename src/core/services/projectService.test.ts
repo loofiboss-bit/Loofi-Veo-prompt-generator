@@ -60,7 +60,12 @@ vi.mock('./presetManager', () => ({
 }));
 
 vi.mock('./projectDocumentService', () => ({
-  projectDocumentService: { listMetadata: mockListProjectMetadata },
+  cloneProjectDocument: vi.fn(),
+  projectDocumentService: {
+    listMetadata: mockListProjectMetadata,
+    load: vi.fn().mockResolvedValue(null),
+    save: vi.fn().mockResolvedValue({ durable: true }),
+  },
 }));
 
 import { projectService } from './projectService';

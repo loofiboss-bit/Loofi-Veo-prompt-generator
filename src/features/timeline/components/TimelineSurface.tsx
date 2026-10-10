@@ -4,6 +4,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import * as geminiService from '@core/services/geminiService';
 import { logger } from '@core/services/loggerService';
 import Icon from '@shared/components/ui/Icon';
+import { useTranslation } from 'react-i18next';
 
 import TimelineTrackView from './TimelineTrack';
 import { getVisibleTrackWindow } from './timelineVirtualization';
@@ -27,6 +28,7 @@ interface TimelineSurfaceProps {
   ) => Promise<string>;
   onSelectClip?: (clip: TimelineClip | null) => void;
   selectedClipId?: string | null;
+  deliveryMode?: boolean;
 }
 
 const HEADER_WIDTH = 192;
@@ -41,7 +43,9 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
   startVideoGeneration,
   onSelectClip,
   selectedClipId,
+  deliveryMode = false,
 }) => {
+  const { t } = useTranslation('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -55,6 +59,8 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
 
   const {
     updateTimelineClip,
+    splitTimelineClip,
+    setZoomLevel,
     removeTimelineClip,
     shiftTrackClips,
     sbShots,
@@ -92,6 +98,11 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest('input, textarea, select, [contenteditable="true"]')
+      )
+        return;
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
         const shouldRipple = rippleEnabled || e.shiftKey;
         removeTimelineClip(selectedClipId, shouldRipple);
@@ -208,18 +219,30 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
       return;
     }
 
-    const newClipId = `${clip.id}_split_${Date.now()}`;
-    const newClip: TimelineClip = {
-      ...clip,
-      id: newClipId,
-      startTime: clip.startTime + relTime,
-      offset: clip.offset + relTime,
-      duration: clip.duration - relTime,
-      label: `${clip.label} (Part 2)`,
-    };
+    splitTimelineClip(clip.id, relTime);
+  };
 
-    updateTimelineClip(clip.id, { duration: relTime }, false);
-    addTimelineClip(newClip);
+  const selectedClip = clips.find((clip) => clip.id === selectedClipId);
+  const canEditAtPlayhead =
+    !!selectedClip &&
+    currentTime > selectedClip.startTime &&
+    currentTime < selectedClip.startTime + selectedClip.duration;
+  const updateClip = (id: string, changes: Partial<TimelineClip>) => {
+    if (snapEnabled && changes.startTime !== undefined) {
+      const points = [
+        0,
+        currentTime,
+        ...clips
+          .filter((clip) => clip.id !== id)
+          .flatMap((clip) => [clip.startTime, clip.startTime + clip.duration]),
+      ];
+      const nearest = points.reduce((best, point) =>
+        Math.abs(point - changes.startTime!) < Math.abs(best - changes.startTime!) ? point : best,
+      );
+      if (Math.abs(nearest - changes.startTime) * zoomLevel <= 8)
+        changes = { ...changes, startTime: nearest };
+    }
+    updateTimelineClip(id, changes, rippleEnabled);
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -271,6 +294,7 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
             <button
               onClick={() => setActiveTool('select')}
               className={`rounded p-1 ${activeTool === 'select' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              aria-pressed={activeTool === 'select'}
               title="Select tool"
               aria-label="Select tool"
             >
@@ -279,6 +303,7 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
             <button
               onClick={() => setActiveTool('razor')}
               className={`rounded p-1 ${activeTool === 'razor' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+              aria-pressed={activeTool === 'razor'}
               title="Razor tool"
               aria-label="Razor tool"
             >
@@ -289,12 +314,14 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
           <button
             onClick={() => setRippleEnabled(!rippleEnabled)}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${rippleEnabled ? 'border border-fuchsia-500/30 bg-fuchsia-900/20 text-fuchsia-400' : 'text-slate-500 hover:text-slate-300'}`}
+            aria-pressed={rippleEnabled}
             title="Magnetic Timeline (Ripple Edit)"
           >
             <Icon name="layers" className="h-3.5 w-3.5" />
             Magnetic
           </button>
           <button
+            aria-pressed={snapEnabled}
             onClick={() => setSnapEnabled(!snapEnabled)}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${snapEnabled ? 'bg-cyan-900/20 text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
@@ -302,14 +329,69 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            disabled={!canEditAtPlayhead}
+            onClick={() =>
+              selectedClip &&
+              splitTimelineClip(selectedClip.id, currentTime - selectedClip.startTime)
+            }
+            className="text-xs text-slate-300 disabled:opacity-40"
+          >
+            {t('timeline.splitPlayhead', 'Split at playhead')}
+          </button>
+          <button
+            disabled={!canEditAtPlayhead}
+            onClick={() =>
+              selectedClip &&
+              updateTimelineClip(
+                selectedClip.id,
+                {
+                  startTime: currentTime,
+                  offset:
+                    selectedClip.type === 'text'
+                      ? 0
+                      : selectedClip.offset + currentTime - selectedClip.startTime,
+                  duration: selectedClip.startTime + selectedClip.duration - currentTime,
+                },
+                rippleEnabled,
+              )
+            }
+            className="text-xs text-slate-300 disabled:opacity-40"
+          >
+            {t('timeline.trimStart', 'Trim start to playhead')}
+          </button>
+          <button
+            disabled={!canEditAtPlayhead}
+            onClick={() =>
+              selectedClip &&
+              updateTimelineClip(
+                selectedClip.id,
+                { duration: currentTime - selectedClip.startTime },
+                rippleEnabled,
+              )
+            }
+            className="text-xs text-slate-300 disabled:opacity-40"
+          >
+            {t('timeline.trimEnd', 'Trim end to playhead')}
+          </button>
+          <button
+            disabled={!selectedClip}
+            onClick={() => {
+              if (selectedClip) removeTimelineClip(selectedClip.id, rippleEnabled);
+              onSelectClip?.(null);
+            }}
+            className="text-xs text-slate-300 disabled:opacity-40"
+          >
+            {t('timeline.remove', 'Remove clip')}
+          </button>
           <Icon name="search" className="h-3 w-3 text-slate-500" />
           <input
             type="range"
             min="5"
             max="100"
             value={zoomLevel}
-            readOnly
+            onChange={(event) => setZoomLevel(Number(event.target.value))}
             aria-label="Timeline zoom level"
             className="h-1 w-24 cursor-pointer appearance-none rounded-lg bg-slate-700"
           />
@@ -373,7 +455,9 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
                 viewportEndPx={viewportEndPx}
                 shotsById={shotsById}
                 assetsById={assetsById}
-                onClipUpdate={(id, changes) => updateTimelineClip(id, changes, rippleEnabled)}
+                onClipUpdate={updateClip}
+                razorEnabled={activeTool === 'razor'}
+                deliveryMode={deliveryMode}
                 onSelectClip={(clip) => handleClipClick(clip)}
                 selectedClipId={selectedClipId}
                 onSplitClip={handleClipSplit}
@@ -405,7 +489,7 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
                   >
                     <Icon name="arrow-right" className="h-4 w-4 rotate-180" />
                   </button>
-                  {gap.trackId === 'video_main' && (
+                  {!deliveryMode && gap.trackId === 'video_main' && (
                     <button
                       onClick={() => handleFillGap(gap.start, gap.end)}
                       disabled={!!fillingGapId}

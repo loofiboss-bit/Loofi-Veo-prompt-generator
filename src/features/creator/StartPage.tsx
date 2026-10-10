@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { CREATOR_RECIPES, CREATOR_RECIPE_LABELS } from '@core/config/creatorRecipes';
@@ -21,6 +21,7 @@ const newStyle = (name = 'My style'): CreatorStyleProfileV1 => ({
 export function StartPage() {
   const { t } = useTranslation('creator');
   const navigate = useNavigate();
+  const localFiles = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
   const state = useCreatorStore();
   const assets = useAppStore((store) => store.assets);
@@ -55,6 +56,30 @@ export function StartPage() {
           )}
         </p>
         <div className="creator-actions">
+          <input
+            ref={localFiles}
+            type="file"
+            disabled={state.busy}
+            multiple
+            accept="video/*,audio/*,image/*"
+            className="sr-only"
+            aria-label={t('v16.chooseMedia', 'Choose local media')}
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              event.target.value = '';
+              if (files.length)
+                void state.createFromFiles(files, name).then((ok) => {
+                  if (ok) navigate(ROUTES.TIMELINE);
+                });
+            }}
+          />
+          <button
+            className="studio-primary"
+            disabled={state.busy}
+            onClick={() => localFiles.current?.click()}
+          >
+            {t('v16.createFromFiles', 'Create from your own clips')}
+          </button>
           <button
             className="studio-primary"
             disabled={state.busy}
@@ -174,24 +199,26 @@ export function StartPage() {
       <section>
         <h2>{t('recent.title', 'Recent projects')}</h2>
         <div className="creator-grid">
-          {state.recent.map(({ project, mediaReady, previewUrl }) => (
+          {state.recent.map(({ project, previewUrl }) => (
             <article key={project.id}>
               {previewUrl && (
                 <video muted playsInline preload="metadata" controls src={previewUrl} />
               )}
               <h3>{project.name}</h3>
               <p>
-                {mediaReady
-                  ? t('recent.ready', 'Media available — arrange and export')
-                  : project.storyboard.shots.length
-                    ? t('recent.addMedia', 'Next: add media to your scenes')
-                    : t('recent.addIdea', 'Next: add your idea')}
+                {t(
+                  'v16.openRecent',
+                  'Open your project to continue editing or prepare a delivery.',
+                )}
               </p>
               <button
                 disabled={state.busy}
                 onClick={() =>
                   void state.open(project.id).then((ok) => {
-                    if (ok) navigate(mediaReady ? ROUTES.TIMELINE : ROUTES.STUDIO);
+                    if (ok)
+                      navigate(
+                        useAppStore.getState().clips.length ? ROUTES.TIMELINE : ROUTES.STUDIO,
+                      );
                   })
                 }
               >

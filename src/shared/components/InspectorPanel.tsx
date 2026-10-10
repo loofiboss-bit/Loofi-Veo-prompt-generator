@@ -1,4 +1,5 @@
 import React, { Suspense, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   TimelineClip,
   TransformProps,
@@ -16,6 +17,7 @@ const SpatialPanner = React.lazy(() => import('./SpatialPanner'));
 
 interface InspectorPanelProps {
   selectedClip: TimelineClip | null;
+  deliveryMode?: boolean;
   onUpdate: (id: string, changes: Partial<TimelineClip>) => void;
   currentTime: number; // Global timeline time
 }
@@ -27,7 +29,13 @@ const DEFAULT_TRANSFORM: TransformProps = {
   opacity: 100,
 };
 
-const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate, currentTime }) => {
+const InspectorPanel: React.FC<InspectorPanelProps> = ({
+  selectedClip,
+  onUpdate,
+  currentTime,
+  deliveryMode = false,
+}) => {
+  const { t } = useTranslation('common');
   const [activeSection, setActiveSection] = useState<'transform' | 'audio' | 'effects'>(
     'transform',
   );
@@ -40,6 +48,89 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({ selectedClip, onUpdate,
         <p className="text-xs text-slate-500">
           Select a clip in the timeline to edit its properties.
         </p>
+      </div>
+    );
+  }
+
+  if (deliveryMode) {
+    return (
+      <div className="w-full max-w-80 overflow-y-auto border-l border-slate-700 bg-slate-900 p-4 space-y-4">
+        <h3 className="text-sm text-slate-200">{selectedClip.label}</h3>
+        <p className="text-xs text-slate-400">
+          {t('timeline.deliveryControls', 'These controls are supported by video export.')}
+        </p>
+        <label className="block text-xs text-slate-300">
+          {t('timeline.start', 'Start (seconds)')}
+          <input
+            className="block w-full bg-slate-800"
+            type="number"
+            min="0"
+            step="0.1"
+            value={selectedClip.startTime}
+            onChange={(event) =>
+              onUpdate(selectedClip.id, { startTime: Number(event.target.value) })
+            }
+          />
+        </label>
+        <label className="block text-xs text-slate-300">
+          {t('timeline.duration', 'Duration (seconds)')}
+          <input
+            className="block w-full bg-slate-800"
+            type="number"
+            min="0.1"
+            step="0.1"
+            value={selectedClip.duration}
+            onChange={(event) =>
+              onUpdate(selectedClip.id, { duration: Number(event.target.value) })
+            }
+          />
+        </label>
+        {selectedClip.type !== 'text' && (
+          <label className="block text-xs text-slate-300">
+            {t('timeline.sourceOffset', 'Source offset (seconds)')}
+            <input
+              className="block w-full bg-slate-800"
+              type="number"
+              min="0"
+              step="0.1"
+              value={selectedClip.offset}
+              onChange={(event) =>
+                onUpdate(selectedClip.id, { offset: Number(event.target.value) })
+              }
+            />
+          </label>
+        )}
+        {(selectedClip.type === 'video' || selectedClip.type === 'audio') && (
+          <label className="block text-xs text-slate-300">
+            {t('timeline.volume', 'Volume')}
+            <input
+              className="block w-full"
+              type="range"
+              min="0"
+              max="2"
+              step="0.05"
+              value={selectedClip.volume ?? 1}
+              onChange={(event) =>
+                onUpdate(selectedClip.id, { volume: Number(event.target.value) })
+              }
+            />
+          </label>
+        )}
+        {selectedClip.caption && (
+          <label className="block text-xs text-slate-300">
+            {t('timeline.caption', 'Caption')}
+            <textarea
+              className="block w-full bg-slate-800"
+              value={selectedClip.caption.text}
+              onChange={(event) =>
+                onUpdate(selectedClip.id, {
+                  label: event.target.value,
+                  caption: { ...selectedClip.caption!, text: event.target.value },
+                })
+              }
+            />
+          </label>
+        )}
       </div>
     );
   }

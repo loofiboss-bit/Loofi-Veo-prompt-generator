@@ -336,6 +336,14 @@ class ProjectService {
         settings: { ...original.settings },
       });
 
+      const { projectDocumentService, cloneProjectDocument } =
+        await import('./projectDocumentService');
+      const document = await projectDocumentService.load(id);
+      if (document) {
+        await projectDocumentService.save(
+          cloneProjectDocument(document, duplicate.id, duplicate.name),
+        );
+      }
       logger.info('Project duplicated', undefined, { originalId: id, newId: duplicate.id });
       return duplicate;
     } catch (error) {

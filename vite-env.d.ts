@@ -8,6 +8,22 @@ interface ImportMetaEnv {
 
 // Electron API types
 interface ElectronAPI {
+  listTimelineRenderJobs?: (
+    projectId?: string,
+  ) => Promise<import('./src/core/types').TimelineRenderJobV1[]>;
+  retryTimelineRender?: (id: string) => Promise<import('./src/core/types').TimelineRenderJobV1>;
+  getTimelineRenderPreview?: (id: string) => Promise<{ url: string; contentHash: string }>;
+  inspectTimelineRenderMedia?: (mediaId: string) => Promise<{
+    available: boolean;
+    durationSeconds?: number;
+    streamTypes?: string[];
+    mimeType?: string;
+    sha256?: string;
+    reason?: string;
+  }>;
+  createDesktopMediaProxy?: (
+    mediaId: string,
+  ) => Promise<{ key: string; url: string; sha256: string }>;
   getTimelineRenderCapabilities?: () => Promise<
     import('./src/core/types').TimelineRenderCapabilities
   >;

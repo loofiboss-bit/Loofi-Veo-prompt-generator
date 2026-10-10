@@ -1,50 +1,69 @@
-import { useEffect, useState, useRef } from 'react';
-import { useAppStore } from '@core/store/useAppStore';
+import { useEffect, useState } from 'react';
 import { logger } from '@core/services/loggerService';
+import { PROJECT_SAVED_EVENT } from '@core/services/projectDocumentService';
+import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { useAppStore } from '@core/store/useAppStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 
-const CHANNEL_NAME = 'veo-prompt-sync';
-
+/** Broadcast identities and revisions only; another window never overwrites local work. */
 export const useAppSync = () => {
   const [isConnected, setIsConnected] = useState(false);
-  const channelRef = useRef<BroadcastChannel | null>(null);
-  const isReceivingRef = useRef(false);
-
   useEffect(() => {
+    let channel: BroadcastChannel | undefined;
     try {
-      const channel = new BroadcastChannel(CHANNEL_NAME);
-      channelRef.current = channel;
+      channel = new BroadcastChannel('veo-prompt-sync');
       setIsConnected(true);
-
-      channel.onmessage = (event) => {
-        if (event.data && event.data.type === 'STATE_UPDATE') {
-          // Prevent circular updates
-          isReceivingRef.current = true;
-          // Update only the promptState part of the store
-          useAppStore.setState({ promptState: event.data.payload });
-          isReceivingRef.current = false;
-        }
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        const data = event.data as { type?: string; projectId?: string; revision?: number } | null;
+        if (
+          data?.type !== 'PROJECT_CHANGED' ||
+          typeof data.projectId !== 'string' ||
+          !Number.isSafeInteger(data.revision) ||
+          data.revision! < 0
+        )
+          return;
+        const current = useEditorSessionStore.getState().projectSnapshot;
+        if (current?.id === data.projectId && (current.documentRevision ?? 0) >= data.revision!)
+          return;
+        useProjectSaveStore.getState().notifyRemoteChange(data.projectId, data.revision!);
       };
-    } catch (e) {
-      logger.warn('BroadcastChannel setup failed', e);
-      setIsConnected(false);
+    } catch (error) {
+      logger.warn('BroadcastChannel setup failed', error);
     }
-
-    // Subscribe to store changes to broadcast them
-    const unsubscribe = useAppStore.subscribe((state) => {
-      if (!isReceivingRef.current && channelRef.current) {
-        // We only sync the promptState, not the whole UI state (like modals)
-        channelRef.current.postMessage({
-          type: 'STATE_UPDATE',
-          payload: state.promptState,
+    const saved = (event: Event) => {
+      const { projectId, revision } = (
+        event as CustomEvent<{ projectId: string; revision: number }>
+      ).detail;
+      const session = useEditorSessionStore.getState();
+      if (session.projectSnapshot?.id === projectId) {
+        useEditorSessionStore.setState({
+          projectSnapshot: { ...session.projectSnapshot, documentRevision: revision },
         });
       }
+      channel?.postMessage({ type: 'PROJECT_CHANGED', projectId, revision });
+    };
+    window.addEventListener(PROJECT_SAVED_EVENT, saved);
+    const unsubscribe = useAppStore.subscribe((state, previous) => {
+      if (
+        state.promptState !== previous.promptState ||
+        state.clips !== previous.clips ||
+        state.tracks !== previous.tracks ||
+        state.sbShots !== previous.sbShots ||
+        state.sbGlobalContext !== previous.sbGlobalContext ||
+        state.characterBank !== previous.characterBank ||
+        state.visualDNA !== previous.visualDNA ||
+        state.productionBible !== previous.productionBible
+      ) {
+        const id = useProjectStore.getState().currentProjectId;
+        if (id) useProjectSaveStore.getState().markDirty(id);
+      }
     });
-
     return () => {
       unsubscribe();
-      channelRef.current?.close();
+      window.removeEventListener(PROJECT_SAVED_EVENT, saved);
+      channel?.close();
     };
   }, []);
-
   return isConnected;
 };

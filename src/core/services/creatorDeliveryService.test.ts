@@ -105,8 +105,8 @@ describe('creator render plans', () => {
       creatorDeliveryService.buildPlan(makeProject([{ ...clip, duration: 3 }]), []),
     ).rejects.toThrow('Local media');
     await expect(
-      creatorDeliveryService.buildPlan(makeProject([{ ...clip, duration: 61 }]), [asset]),
-    ).rejects.toThrow('60 seconds');
+      creatorDeliveryService.buildPlan(makeProject([{ ...clip, duration: 181 }]), [asset]),
+    ).rejects.toThrow('180 seconds');
     await expect(
       creatorDeliveryService.buildPlan(
         makeProject([
@@ -189,5 +189,47 @@ describe('creator render plans', () => {
       fadeOutSeconds: 0.5,
       mediaId: 'audio-key',
     });
+  });
+});
+describe('read-only delivery preflight', () => {
+  it('collects independent clip blockers without importing media', async () => {
+    const importMedia = vi.fn();
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        importDesktopMedia: importMedia,
+        inspectTimelineRenderMedia: vi
+          .fn()
+          .mockResolvedValue({ available: true, durationSeconds: 2 }),
+      },
+    });
+    const project = makeProject([
+      {
+        ...clip,
+        opacity: 0.5,
+        colorGrade: { brightness: 1 } as TimelineClip['colorGrade'],
+        cameraEffect: { type: 'drift', intensity: 0.5 },
+      },
+      { ...clip, id: 'other', resourceId: 'missing', trackId: 'missing' },
+    ]);
+    const diagnostics = await creatorDeliveryService.preflight(project, [asset]);
+    expect(
+      diagnostics.some((item) => item.clipId === 'clip' && item.message.includes('not supported')),
+    ).toBe(true);
+    expect(
+      diagnostics.some(
+        (item) => item.clipId === 'clip' && item.message.includes('source duration'),
+      ),
+    ).toBe(true);
+    expect(
+      diagnostics.some((item) => item.clipId === 'other' && item.message.includes('track')),
+    ).toBe(true);
+    expect(
+      diagnostics.filter(
+        (item) => item.clipId === 'clip' && item.message.includes('not supported'),
+      ),
+    ).toHaveLength(3);
+    expect(diagnostics.every((item) => item.action.length > 0)).toBe(true);
+    expect(importMedia).not.toHaveBeenCalled();
   });
 });
