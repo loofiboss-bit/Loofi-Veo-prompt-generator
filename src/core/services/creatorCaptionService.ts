@@ -33,13 +33,32 @@ const timestamp = (value: number) => {
   return `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')},${String(ms % 1000).padStart(3, '0')}`;
 };
 export function exportCreatorSrt(captions: Caption[]): string {
-  return captions
+  return [...captions]
+    .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime)
     .map(
       (caption, index) =>
         `${index + 1}\n${timestamp(caption.startTime)} --> ${timestamp(caption.endTime)}\n${caption.text}\n`,
     )
     .join('\n');
 }
+/** Overlaps are reported for review; no caption text is discarded. */
+export function getCreatorCaptionOverlaps(
+  captions: Caption[],
+): Array<{ firstId: string; secondId: string }> {
+  const sorted = [...captions].sort((a, b) => a.startTime - b.startTime);
+  const overlaps: Array<{ firstId: string; secondId: string }> = [];
+  sorted.forEach((caption, index) => {
+    for (
+      let next = index + 1;
+      next < sorted.length && sorted[next].startTime < caption.endTime;
+      next++
+    ) {
+      overlaps.push({ firstId: caption.id, secondId: sorted[next].id });
+    }
+  });
+  return overlaps;
+}
+
 export function importCreatorSrt(text: string, duration: number): Caption[] {
   const time = (value: string) => {
     const match = /^(\d{2,}):([0-5]\d):([0-5]\d)[,.](\d{3})$/.exec(value);

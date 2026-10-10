@@ -7,7 +7,7 @@
 ![Loofi Creator Studio — Your idea. A copy-ready prompt pack.](assets/branding/github-banner.png)
 
 <p align="center">
-  <strong>Turn a scene idea into video prompts. Turn a song idea into a lyrics pack.</strong><br />
+  <strong>Create a finished video from your own clips. Build video prompts and lyrics when you need them.</strong><br />
   A local-first desktop workspace for creators, with editable variants, model comparison and portable projects.
 </p>
 
@@ -28,6 +28,23 @@
 
 The download counter counts all release assets, including checksums and metadata; it is not a count
 of unique users or installations.
+
+## v16 development: your clips to a finished video
+
+The working source targets **16.0.0**, which is not published. The download links below continue to
+point to the published v15 release.
+
+1. On **Start**, choose **Create from your own clips** and select video, images or audio.
+2. Arrange and trim clips in the local editor. Add captions or import SRT with Add/Replace.
+3. Choose **Check delivery**, fix every reported issue, then **Review delivery**.
+4. Export up to three minutes of verified H.264/AAC video and save MP4 or a publication ZIP.
+
+Project autosave reports durable storage and backup failures separately. Conflicts preserve local
+work with **Load latest** and **Save as copy**. Projects exposes search, sorting, archive and automatic
+backup recovery. Native jobs survive navigation; rendering interrupted by app exit is marked failed.
+Local media, editing and supported desktop export require no account, key or external request.
+
+See [the v16 workflow and qualification boundaries](docs/CREATOR_V16.md).
 
 ## Why creators use it
 

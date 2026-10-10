@@ -1,14 +1,14 @@
 {
   "name": "veo-prompt-generator",
   "private": true,
-  "description": "Local-first Creator Studio for approval-gated Flow/Veo video and official Lyria music workflows",
+  "description": "Local-first video editing, captions and verified MP4 delivery for individual creators, with optional AI and portable projects.",
   "license": "MIT",
   "desktopName": "Loofi Creator Studio",
   "author": {
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "15.0.0",
+  "version": "16.0.0",
   "engines": {
     "node": ">=24.0.0"
   },

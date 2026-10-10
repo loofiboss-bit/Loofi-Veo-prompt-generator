@@ -15,6 +15,13 @@ function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow })
   ipcMain.handle('timeline-render-capabilities', (event) => authorize(event).capabilities());
   ipcMain.handle('timeline-render-start', (event, plan) => authorize(event).start(plan));
   ipcMain.handle('timeline-render-get', (event, id) => authorize(event).get(id));
+  ipcMain.handle('timeline-render-list', (event, projectId) => authorize(event).list(projectId));
+  ipcMain.handle('timeline-render-retry', (event, id) => authorize(event).retry(id));
+  ipcMain.handle('timeline-render-preview', (event, id) => authorize(event).preview(id));
+  ipcMain.handle('timeline-render-inspect-media', (event, mediaId) =>
+    authorize(event).inspectMedia(mediaId),
+  );
+  ipcMain.handle('timeline-render-proxy', (event, mediaId) => authorize(event).proxy(mediaId));
   ipcMain.handle('timeline-render-cancel', async (event, id) => {
     await authorize(event).cancel(id);
     return true;

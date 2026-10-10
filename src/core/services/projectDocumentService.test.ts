@@ -5,11 +5,15 @@ import { createPromptStudioDraft } from './promptStudioDraftService';
 import type { Project } from '@core/types';
 import { compileVideoPromptArtifact } from './promptStudioService';
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), set: vi.fn(), backup: vi.fn() }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), set: vi.fn(), atomic: vi.fn(), backup: vi.fn() }));
 vi.mock('@core/utils/safeIdbKeyval', () => ({
   createStore: vi.fn(() => ({})),
   safeGet: mocks.get,
   safeSet: mocks.set,
+  atomicUpdate: mocks.atomic,
+}));
+vi.mock('./projectService', () => ({
+  projectService: { registerDocument: vi.fn().mockResolvedValue(undefined) },
 }));
 vi.mock('./loggerService', () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
 import { projectDocumentService, ProjectPersistenceError } from './projectDocumentService';
@@ -36,6 +40,13 @@ describe('projectDocumentService persistence', () => {
     localStorage.clear();
     mocks.get.mockResolvedValue(undefined);
     mocks.set.mockResolvedValue({ durable: true });
+    mocks.atomic.mockImplementation(
+      async (key: string, updater: (current: Project | undefined) => Project) => {
+        const snapshot = updater(await mocks.get(key));
+        const result = await mocks.set(key, snapshot);
+        if (!result.durable) throw new Error(result.error);
+      },
+    );
     mocks.backup.mockResolvedValue(undefined);
     Object.defineProperty(window, 'electron', {
       configurable: true,
@@ -44,22 +55,24 @@ describe('projectDocumentService persistence', () => {
   });
   it('rejects memory fallback and never creates a backup after a failed durable save', async () => {
     mocks.set.mockResolvedValue({ durable: false, error: 'Quota exceeded' });
-    await expect(projectDocumentService.save(project)).rejects.toBeInstanceOf(
-      ProjectPersistenceError,
-    );
+    await expect(
+      projectDocumentService.save({ ...project, documentRevision: 0 }),
+    ).rejects.toBeInstanceOf(ProjectPersistenceError);
     expect(mocks.backup).not.toHaveBeenCalled();
     expect(mocks.set).toHaveBeenCalledTimes(1);
   });
   it('reports backup failure separately from successful durable save', async () => {
     mocks.backup.mockRejectedValue(new Error('Disk full'));
-    await expect(projectDocumentService.save(project)).resolves.toEqual({
-      durable: true,
-      backupError: 'Disk full',
-    });
+    await expect(projectDocumentService.save({ ...project, documentRevision: 0 })).resolves.toEqual(
+      {
+        durable: true,
+        backupError: 'Disk full',
+      },
+    );
   });
   it('preserves unknown document data when saving a known-field snapshot', async () => {
     mocks.get.mockResolvedValue({ ...project, futureExtension: { preserved: true } });
-    await projectDocumentService.save(project);
+    await projectDocumentService.save({ ...project, documentRevision: 0 });
     expect(mocks.set.mock.calls[0][1]).toMatchObject({ futureExtension: { preserved: true } });
   });
   it('retains checkpoints when an editor saves a stale history snapshot', async () => {
@@ -133,7 +146,9 @@ describe('projectDocumentService persistence', () => {
     }));
     await Promise.all([editor, patch]);
     expect(stored.composer?.gridSize).toBe(36);
-    await projectDocumentService.save({ ...project, studioDraft: { ...newDraft, revision: 2 } });
+    await expect(
+      projectDocumentService.save({ ...project, studioDraft: { ...newDraft, revision: 2 } }),
+    ).rejects.toThrow('another window');
     expect(stored.studioDraft?.revision).toBe(5);
   });
   it('preserves newer delivery settings when a stale editor snapshot arrives', async () => {
@@ -155,7 +170,65 @@ describe('projectDocumentService persistence', () => {
       creatorDelivery: { ...delivery, revision: 2, title: 'Stale title' },
     });
     expect(mocks.set.mock.calls[0][1].creatorDelivery).toEqual(delivery);
-    await projectDocumentService.save(project);
+    await projectDocumentService.save({ ...project, documentRevision: 0 });
     expect(mocks.set.mock.calls[1][1].creatorDelivery).toEqual(delivery);
+  });
+  it('rejects a stale window snapshot atomically without writing or creating a backup', async () => {
+    mocks.get.mockResolvedValue({ ...project, documentRevision: 3, name: 'Other window' });
+    await expect(projectDocumentService.save({ ...project, documentRevision: 2 })).rejects.toThrow(
+      'another window',
+    );
+    expect(mocks.set).not.toHaveBeenCalled();
+    expect(mocks.backup).not.toHaveBeenCalled();
+  });
+  it('advances a legacy revision only after durable commit', async () => {
+    const snapshot = { ...project, documentRevision: undefined };
+    await projectDocumentService.save(snapshot);
+    expect(snapshot.documentRevision).toBe(1);
+    expect(mocks.set.mock.calls[0][1].documentRevision).toBe(1);
+  });
+  it('rejects an older same-runtime timeline after a completed write', async () => {
+    let stored: Project = { ...project, id: 'same-runtime', documentRevision: 0 };
+    mocks.get.mockImplementation(async () => stored);
+    mocks.set.mockImplementation(async (_key, value) => {
+      stored = value;
+      return { durable: true };
+    });
+    const old = structuredClone(stored);
+    await projectDocumentService.save({ ...stored, name: 'Newer edit' });
+    await expect(projectDocumentService.save(old)).rejects.toThrow('another window');
+    expect(stored.name).toBe('Newer edit');
+    expect(stored.documentRevision).toBe(1);
+  });
+  it('copies nested project bindings and revision identities while retaining durable media', async () => {
+    const source = {
+      ...project,
+      id: 'source',
+      documentRevision: 9,
+      future: { projectId: 'source', storageKey: 'original-media' },
+      studioRevisions: [{ id: 'revision-original', projectId: 'source' }],
+    } as unknown as Project;
+    const copy = await projectDocumentService.copy(source);
+    expect(copy.id).not.toBe('source');
+    expect(copy.documentRevision).toBe(1);
+    expect(copy.studioRevisions![0].id).not.toBe('revision-original');
+    expect((copy as unknown as { future: unknown }).future).toEqual({
+      projectId: copy.id,
+      storageKey: 'original-media',
+    });
+    expect(source.documentRevision).toBe(9);
+    expect(source.studioRevisions![0].id).toBe('revision-original');
+  });
+  it('never copies an unverified native backup', async () => {
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        restoreProjectBackup: vi.fn().mockResolvedValue({ verified: false, snapshot: project }),
+      },
+    });
+    await expect(projectDocumentService.restoreBackupCopy('a', 'backup')).rejects.toThrow(
+      'checksum',
+    );
+    expect(mocks.atomic).not.toHaveBeenCalled();
   });
 });

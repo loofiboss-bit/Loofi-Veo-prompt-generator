@@ -49,6 +49,7 @@ interface TimelinePlayerProps {
   shots: Shot[];
   onClose: () => void;
   embedded?: boolean;
+  deliveryMode?: boolean;
   bgMusicUrl?: string | null;
   ambienceUrl?: string | null;
 }
@@ -68,6 +69,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
   shots,
   onClose,
   embedded = false,
+  deliveryMode = false,
   bgMusicUrl,
   ambienceUrl,
 }) => {
@@ -796,7 +798,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       </div>
 
       {/* Panels */}
-      {showFilters && (
+      {!deliveryMode && showFilters && (
         <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <FilterControls
@@ -818,7 +820,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </Suspense>
         </div>
       )}
-      {showVFX && (
+      {!deliveryMode && showVFX && (
         <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <VFXPanel
@@ -841,7 +843,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </Suspense>
         </div>
       )}
-      {showChromaKey && (
+      {!deliveryMode && showChromaKey && (
         <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <ChromaKeyPanel
@@ -854,7 +856,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
           </Suspense>
         </div>
       )}
-      {showMixer && (
+      {!deliveryMode && showMixer && (
         <div className="relative mx-3 max-w-md z-40 sm:absolute sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <AudioMixer
@@ -937,6 +939,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         {showInspector && selectedClip && (
           <Suspense fallback={<ModalSkeleton />}>
             <InspectorPanel
+              deliveryMode={deliveryMode}
               selectedClip={selectedClip}
               onUpdate={updateTimelineClip}
               currentTime={currentTime}
@@ -988,6 +991,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             </button>
             <button
               type="button"
+              disabled={deliveryMode}
               onClick={() => {
                 setShowFilters(!showFilters);
                 setShowChromaKey(false);
@@ -1001,6 +1005,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             </button>
             <button
               type="button"
+              disabled={deliveryMode}
               onClick={() => {
                 setShowVFX(!showVFX);
                 setShowFilters(false);
@@ -1014,6 +1019,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             </button>
             <button
               type="button"
+              disabled={deliveryMode}
               onClick={() => {
                 setShowChromaKey(!showChromaKey);
                 setShowFilters(false);
@@ -1027,6 +1033,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
             </button>
             <button
               type="button"
+              disabled={deliveryMode}
               onClick={() => {
                 setShowMixer(!showMixer);
                 setShowFilters(false);
@@ -1057,6 +1064,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
 
         <Timeline
+          deliveryMode={deliveryMode}
           timelineState={{ tracks, clips, zoomLevel, currentTime }}
           onClipUpdate={updateTimelineClip}
           onSeek={handleGlobalSeek}

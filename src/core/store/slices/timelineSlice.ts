@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Shot, TimelineTrack, TimelineClip, ClipTransition } from '@core/types';
+import { Shot, TimelineTrack, TimelineClip, ClipTransition, Caption } from '@core/types';
 
 const DEFAULT_TRACKS: TimelineTrack[] = [
   { id: 'text_main', label: 'Captions/Overlay', type: 'text', trackType: 'captions', zIndex: 10 },
@@ -9,6 +9,24 @@ const DEFAULT_TRACKS: TimelineTrack[] = [
   { id: 'audio_music', label: 'Music', type: 'audio', trackType: 'music', zIndex: 0 },
   { id: 'audio_ambience', label: 'Atmosphere', type: 'audio', trackType: 'ambience', zIndex: -1 },
 ];
+
+/** Keep caption timing and timeline geometry in one undoable document update. */
+const timedClip = (clip: TimelineClip, startTime: number, duration: number): TimelineClip => ({
+  ...clip,
+  startTime,
+  duration,
+  ...(clip.type === 'text' ? { offset: 0 } : {}),
+  ...(clip.caption
+    ? { caption: { ...clip.caption, startTime, endTime: startTime + duration } }
+    : {}),
+});
+
+const moveLinkedClips = (clips: TimelineClip[], shifts: Map<string, number>): TimelineClip[] =>
+  clips.map((clip) => {
+    const delta =
+      shifts.get(clip.id) ?? (clip.sourceClipId ? shifts.get(clip.sourceClipId) : undefined);
+    return delta === undefined ? clip : timedClip(clip, clip.startTime + delta, clip.duration);
+  });
 
 export interface TimelineSlice {
   sbShots: Shot[];
@@ -27,11 +45,19 @@ export interface TimelineSlice {
   syncTimelineFromShots: () => void;
   updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>, ripple?: boolean) => void;
   addTimelineClip: (clip: TimelineClip) => void;
+  splitTimelineClip: (clipId: string, relativeTime: number) => void;
+  setTimelineClipTransition: (clipId: string, transition: ClipTransition) => void;
+  importTimelineCaptions: (
+    captions: Caption[],
+    mode: 'append' | 'replace',
+    sourceClipId?: string,
+  ) => void;
+  mergeTimelineCaptions: (clipIds: string[]) => void;
+  shiftTimelineCaptions: (clipIds: string[], delta: number) => void;
   removeTimelineClip: (clipId: string, ripple?: boolean) => void;
   updateShotTransition: (shotId: number, transition: ClipTransition) => void;
   shiftTrackClips: (trackId: string, timeThreshold: number, delta: number) => void;
 
-  // View State Actions
   setZoomLevel: (level: number) => void;
   setCurrentTime: (time: number) => void;
 
@@ -187,46 +213,245 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
       const targetClip = state.clips.find((c) => c.id === clipId);
       if (!targetClip) return state;
 
-      let newClips = state.clips.map((c) => (c.id === clipId ? { ...c, ...updates } : c));
-
-      // Ripple Logic: If duration changed, shift subsequent clips
-      if (ripple && updates.duration !== undefined) {
-        const delta = updates.duration - targetClip.duration;
-        if (delta !== 0) {
-          newClips = newClips.map((c) => {
-            if (c.trackId === targetClip.trackId && c.startTime > targetClip.startTime) {
-              return { ...c, startTime: c.startTime + delta };
-            }
-            return c;
-          });
+      const updated = { ...targetClip, ...updates };
+      if (
+        !Number.isFinite(updated.startTime) ||
+        updated.startTime < 0 ||
+        !Number.isFinite(updated.duration) ||
+        updated.duration <= 0 ||
+        !Number.isFinite(updated.offset) ||
+        updated.offset < 0
+      )
+        return state;
+      // Offset changes trim source content; only the remaining movement translates captions.
+      const movement =
+        updated.startTime - targetClip.startTime - (updated.offset - targetClip.offset);
+      const shifts = new Map<string, number>();
+      if (ripple) {
+        const delta =
+          updated.startTime + updated.duration - targetClip.startTime - targetClip.duration;
+        for (const clip of state.clips) {
+          if (clip.trackId === targetClip.trackId && clip.startTime > targetClip.startTime)
+            shifts.set(clip.id, delta);
         }
       }
-
-      return { clips: newClips };
+      const clips = state.clips.flatMap((clip): TimelineClip[] => {
+        if (clip.id === clipId) return [timedClip(updated, updated.startTime, updated.duration)];
+        if (clip.type === 'text' && clip.sourceClipId === clipId) {
+          const start = Math.max(updated.startTime, clip.startTime + movement);
+          const end = Math.min(
+            updated.startTime + updated.duration,
+            clip.startTime + clip.duration + movement,
+          );
+          return end > start ? [timedClip(clip, start, end - start)] : [];
+        }
+        return [clip];
+      });
+      const shifted = moveLinkedClips(clips, shifts);
+      return shifted.some((clip) => clip.startTime < 0) ? state : { clips: shifted };
     }),
 
   removeTimelineClip: (clipId, ripple = false) =>
     set((state) => {
-      const clipToRemove = state.clips.find((c) => c.id === clipId);
-      if (!clipToRemove) return state;
-
-      const remainingClips = state.clips.filter((c) => c.id !== clipId);
-
+      const target = state.clips.find((clip) => clip.id === clipId);
+      if (!target) return state;
+      const shifts = new Map<string, number>();
       if (ripple) {
-        const trackId = clipToRemove.trackId;
-        const threshold = clipToRemove.startTime;
-        const shiftAmount = -clipToRemove.duration;
-
-        const shiftedClips = remainingClips.map((c) => {
-          if (c.trackId === trackId && c.startTime > threshold) {
-            return { ...c, startTime: c.startTime + shiftAmount };
-          }
-          return c;
-        });
-        return { clips: shiftedClips };
+        for (const clip of state.clips) {
+          if (clip.trackId === target.trackId && clip.startTime > target.startTime)
+            shifts.set(clip.id, -target.duration);
+        }
       }
+      return {
+        clips: moveLinkedClips(
+          state.clips.filter((clip) => clip.id !== clipId && clip.sourceClipId !== clipId),
+          shifts,
+        ),
+      };
+    }),
 
-      return { clips: remainingClips };
+  setTimelineClipTransition: (clipId, transition) =>
+    set((state) => {
+      const target = state.clips.find((clip) => clip.id === clipId);
+      if (
+        !target ||
+        !['video', 'image'].includes(target.type) ||
+        !['cut', 'fade_black', 'dissolve'].includes(transition.type)
+      )
+        return state;
+      const ordered = state.clips
+        .filter(
+          (clip) =>
+            clip.trackId === target.trackId && (clip.type === 'video' || clip.type === 'image'),
+        )
+        .sort((a, b) => a.startTime - b.startTime);
+      const previous = ordered[ordered.findIndex((clip) => clip.id === clipId) - 1];
+      if (transition.type === 'dissolve' && !previous) return state;
+      const duration =
+        transition.type === 'cut'
+          ? 0
+          : Math.min(
+              transition.duration,
+              target.duration / 2,
+              previous ? previous.duration / 2 : target.duration / 2,
+            );
+      if (!Number.isFinite(duration) || (transition.type !== 'cut' && duration <= 0)) return state;
+      // Dissolves need real overlapping source intervals. Update all affected clips and
+      // linked captions together so both export validation and undo see a complete edit.
+      const start =
+        previous && (transition.type === 'dissolve' || target.transition?.type === 'dissolve')
+          ? previous.startTime + previous.duration - (transition.type === 'dissolve' ? duration : 0)
+          : target.startTime;
+      const delta = start - target.startTime;
+      const shifts = new Map(
+        state.clips
+          .filter((clip) => clip.trackId === target.trackId && clip.startTime >= target.startTime)
+          .map((clip) => [clip.id, delta]),
+      );
+      const clips = moveLinkedClips(state.clips, shifts).map((clip) =>
+        clip.id === clipId ? { ...clip, transition: { type: transition.type, duration } } : clip,
+      );
+      return clips.some((clip) => clip.startTime < 0) ? state : { clips };
+    }),
+
+  splitTimelineClip: (clipId, relativeTime) =>
+    set((state) => {
+      const clip = state.clips.find((entry) => entry.id === clipId);
+      if (
+        !clip ||
+        !Number.isFinite(relativeTime) ||
+        relativeTime <= 0 ||
+        relativeTime >= clip.duration
+      )
+        return state;
+      const splitTime = clip.startTime + relativeTime;
+      const secondId = crypto.randomUUID();
+      const part = (
+        entry: TimelineClip,
+        start: number,
+        end: number,
+        id: string,
+        sourceClipId = entry.sourceClipId,
+      ): TimelineClip => ({
+        ...timedClip(entry, start, end - start),
+        id,
+        sourceClipId,
+        offset: entry.type === 'text' ? 0 : entry.offset + start - entry.startTime,
+        ...(entry.caption
+          ? {
+              caption: {
+                ...entry.caption,
+                id: crypto.randomUUID(),
+                startTime: start,
+                endTime: end,
+              },
+            }
+          : {}),
+      });
+      return {
+        clips: state.clips.flatMap((entry): TimelineClip[] => {
+          if (entry.id === clipId)
+            return [
+              part(entry, entry.startTime, splitTime, entry.id),
+              {
+                ...part(entry, splitTime, entry.startTime + entry.duration, secondId),
+                transition: { type: 'cut', duration: 0 },
+              },
+            ];
+          if (entry.type !== 'text' || entry.sourceClipId !== clipId) return [entry];
+          const end = entry.startTime + entry.duration;
+          if (entry.startTime >= splitTime) return [{ ...entry, sourceClipId: secondId }];
+          if (end <= splitTime) return [entry];
+          return [
+            part(entry, entry.startTime, splitTime, entry.id, clipId),
+            part(entry, splitTime, end, crypto.randomUUID(), secondId),
+          ];
+        }),
+      };
+    }),
+
+  importTimelineCaptions: (captions, mode, sourceClipId) =>
+    set((state) => {
+      if (
+        captions.some(
+          (caption) =>
+            !caption.text.trim() ||
+            !Number.isFinite(caption.startTime) ||
+            !Number.isFinite(caption.endTime) ||
+            caption.startTime < 0 ||
+            caption.endTime <= caption.startTime,
+        )
+      )
+        return state;
+      return {
+        clips: [
+          ...state.clips.filter((clip) => mode !== 'replace' || !clip.caption),
+          ...captions.map(
+            (caption): TimelineClip => ({
+              id: crypto.randomUUID(),
+              resourceId: caption.id,
+              trackId: 'text_main',
+              type: 'text',
+              label: caption.text,
+              startTime: caption.startTime,
+              duration: caption.endTime - caption.startTime,
+              offset: 0,
+              caption: { ...caption, id: crypto.randomUUID() },
+              sourceClipId,
+            }),
+          ),
+        ],
+      };
+    }),
+
+  mergeTimelineCaptions: (clipIds) =>
+    set((state) => {
+      const selected = state.clips
+        .filter((clip) => clipIds.includes(clip.id) && clip.caption)
+        .sort((a, b) => a.startTime - b.startTime);
+      if (
+        selected.length < 2 ||
+        selected.some(
+          (clip) =>
+            clip.sourceClipId !== selected[0].sourceClipId || clip.trackId !== selected[0].trackId,
+        )
+      )
+        return state;
+      const first = selected[0];
+      const end = Math.max(...selected.map((clip) => clip.startTime + clip.duration));
+      const text = selected.map((clip) => clip.caption!.text).join('\n');
+      const merged = timedClip(
+        { ...first, label: text, caption: { ...first.caption!, id: crypto.randomUUID(), text } },
+        first.startTime,
+        end - first.startTime,
+      );
+      return {
+        clips: state.clips.flatMap((clip) =>
+          clip.id === first.id
+            ? [merged]
+            : selected.some((entry) => entry.id === clip.id)
+              ? []
+              : [clip],
+        ),
+      };
+    }),
+
+  shiftTimelineCaptions: (clipIds, delta) =>
+    set((state) => {
+      if (
+        !Number.isFinite(delta) ||
+        state.clips.some(
+          (clip) => clipIds.includes(clip.id) && clip.caption && clip.startTime + delta < 0,
+        )
+      )
+        return state;
+      return {
+        clips: state.clips.map((clip) =>
+          clipIds.includes(clip.id) && clip.caption
+            ? timedClip(clip, clip.startTime + delta, clip.duration)
+            : clip,
+        ),
+      };
     }),
 
   addTimelineClip: (clip) =>
@@ -241,14 +466,16 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
     }),
 
   shiftTrackClips: (trackId, timeThreshold, delta) =>
-    set((state) => ({
-      clips: state.clips.map((c) => {
-        if (c.trackId === trackId && c.startTime > timeThreshold) {
-          return { ...c, startTime: c.startTime + delta };
-        }
-        return c;
-      }),
-    })),
+    set((state) => {
+      if (!Number.isFinite(delta)) return state;
+      const shifts = new Map(
+        state.clips
+          .filter((clip) => clip.trackId === trackId && clip.startTime > timeThreshold)
+          .map((clip) => [clip.id, delta]),
+      );
+      const clips = moveLinkedClips(state.clips, shifts);
+      return clips.some((clip) => clip.startTime < 0) ? state : { clips };
+    }),
 
   setZoomLevel: (level) => set({ zoomLevel: level }),
   setCurrentTime: (time) => set({ currentTime: time }),

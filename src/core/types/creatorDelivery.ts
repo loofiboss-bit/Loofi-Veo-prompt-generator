@@ -30,6 +30,7 @@ export interface CreatorCropV1 {
 }
 export interface CreatorDeliveryV1 {
   schemaVersion: 1;
+  editorMode?: 'delivery' | 'advanced';
   revision: number;
   recipeId?: string;
   style?: CreatorStyleProfileV1;
@@ -59,6 +60,8 @@ export interface TimelineRenderClipV1 {
 }
 export interface TimelineRenderPlanV1 {
   schemaVersion: 1;
+  mediaHashes?: Record<string, string>;
+  purpose?: 'preview' | 'delivery';
   projectId: string;
   projectName: string;
   contentHash: string;
@@ -79,15 +82,22 @@ export interface TimelineRenderCapabilities {
   available: boolean;
   reason?: string;
   version?: string;
+  maxDurationSeconds?: number;
+  aspectRatios?: CreatorAspectRatio[];
+  resolutions?: ('720p' | '1080p')[];
+  fps?: number;
+  supportedOperations?: string[];
 }
 export interface TimelineRenderJobV1 {
   id: string;
+  purpose?: 'preview' | 'delivery';
   projectId: string;
   contentHash: string;
   status: 'queued' | 'rendering' | 'verifying' | 'complete' | 'failed' | 'cancelled';
   progress: number;
   error?: string;
   savedName?: string;
+  createdAt?: number;
 }
 export interface CreatorTimelineSnapshot {
   tracks: TimelineTrack[];

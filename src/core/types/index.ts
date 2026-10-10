@@ -383,6 +383,8 @@ export interface ProjectMetadata {
 
 export interface Project {
   [key: string]: unknown;
+  /** Optimistic concurrency token; legacy documents begin at zero. */
+  documentRevision?: number;
   creatorDelivery?: CreatorDeliveryV1;
   studioDraft?: PromptStudioDraftV1;
   studioRevisions?: StudioRevisionV1[];
@@ -617,6 +619,7 @@ export interface Asset {
   version?: number;
   parentId?: string;
   storageKey?: string;
+  durationSeconds?: number;
   providerUri?: string;
   providerExpiresAt?: number;
 
@@ -754,6 +757,8 @@ export interface VolumeKeyframe {
 
 export interface TimelineClip {
   id: string;
+  /** Caption linkage to a timeline clip, independent of its source media identity. */
+  sourceClipId?: string;
   resourceId: string | number;
   trackId: string;
   startTime: number;

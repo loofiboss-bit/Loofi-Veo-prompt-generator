@@ -7,6 +7,46 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [16.0.0] - Unreleased
+
+### Added — Local Creator Editing
+
+- Create a local video project from original clips, images and audio without a provider account.
+- Unified delivery editor with a local media library, source playback, timeline, supported clip
+  controls, caption editing and native delivery review.
+- Atomic document revisions, debounced project autosave, truthful save/backup status and explicit
+  load-latest or save-copy conflict recovery. Cross-window messages contain project identities
+  and revisions instead of automatically copying prompt content.
+- Project search, modification/name sorting, rename, duplication, archive filtering and verified
+  automatic-backup recovery into a new project.
+- Read-only delivery diagnostics with clip navigation, real 720p review through the final rendering
+  pipeline, persistent export history and explicit retry of a frozen native render plan.
+- Native checksum-cached editing proxies using the packaged runtime; final rendering uses originals.
+- Linked captions, atomic caption split/merge/time shift and explicit append/replace SRT import.
+
+### Changed
+
+- Extend local MP4 rendering to 180 seconds; retain 30 fps H.264/AAC, 720p/1080p, three aspect ratios
+  and one main visual track. Freeze source-media checksums with render plans.
+- Keep rendering alive when navigating or changing projects; interrupted jobs fail honestly after
+  restart. Completed jobs remain available through the native journal.
+- List recent project metadata without hydrating every project's media. Original local imports use
+  durable media storage instead of base64 payloads in component state.
+- Sort SRT output by time and warn about overlapping captions without discarding text.
+
+### Fixed
+
+- Split text clips with fresh caption identities, synchronized timing and zero source offset.
+- Move and trim linked captions with their source clips, keeping independent captions unchanged.
+- Make delivery-mode transitions work for imported asset clips and create valid dissolve overlap
+  atomically with linked-caption movement.
+- Reset document revisions when importing a portable project into a new project identity.
+
+### Qualification
+
+- This is an unpublished development version. Physical Fedora/KDE and Windows operation and
+  five-person usability acceptance require separate observations; automated tests cannot prove them.
+
 ## [15.0.0] - 2026-10-08
 
 ### Added — v15 Creator Delivery

@@ -52,7 +52,7 @@ test('validates frozen canonical snapshot and rejects mutated hash', () => {
 test('rejects unsupported bounds, paths, timings and overlap with clip identity', () => {
   for (const changes of [
     { fps: 60 },
-    { durationSeconds: 61 },
+    { durationSeconds: 181 },
     { safeMargin: 0.9 },
     { resolution: '4k' },
     { captions: [{ id: 'c', text: 'bad', startTime: 2, endTime: 1 }] },
@@ -199,15 +199,41 @@ test(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aA1kAAAAASUVORK5CYII=',
         'base64',
       );
+      const { promisify } = require('node:util');
+      const execFile = promisify(require('node:child_process').execFile);
+      const binary = path.join(realBinary, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+      const logoFile = path.join(root, 'logo-source.png');
+      await execFile(binary, [
+        '-hide_banner',
+        '-nostdin',
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        'color=c=red:s=64x32',
+        '-frames:v',
+        '1',
+        logoFile,
+      ]);
+      const logo = await fs.readFile(logoFile);
       const engine = new CreatorRenderEngine({
         root,
         runtimeRoot: '/unused',
         fontsRoot: path.resolve('public/creator-fonts'),
-        getMediaStore: () => ({ read: async () => ({ bytes: png, mimeType: 'image/png' }) }),
+        getMediaStore: () => ({
+          read: async (id) => ({ bytes: id === 'logo' ? logo : png, mimeType: 'image/png' }),
+        }),
       });
       engine.binaryDirectory = realBinary;
       engine.capabilities = async () => ({ available: true, version: 'test-only-vendor-nightly' });
-      const p = plan();
+      const p = plan({
+        style: {
+          fontFamily: 'Noto Sans',
+          primaryColor: '#336699',
+          textColor: '#FFFFFF',
+          logoAssetId: 'logo',
+        },
+      });
       p.clips[0].startTime = 0.5;
       p.clips[0].duration = 1.5;
       p.contentHash = planHash(p);
@@ -218,6 +244,48 @@ test(
       const metadata = await engine.probe(path.join(root, job.id, 'output.mp4'));
       assert.equal(metadata.streams[0].width, 720);
       assert.equal(metadata.streams[0].codec_name, 'h264');
+      const pixel = await execFile(
+        binary,
+        [
+          '-v',
+          'error',
+          '-ss',
+          '0.25',
+          '-i',
+          path.join(root, job.id, 'output.mp4'),
+          '-vf',
+          'crop=16:16:620:50,scale=1:1',
+          '-frames:v',
+          '1',
+          '-pix_fmt',
+          'rgb24',
+          '-f',
+          'rawvideo',
+          'pipe:1',
+        ],
+        { encoding: 'buffer' },
+      );
+      assert.ok(
+        pixel.stdout[0] > 180 && pixel.stdout[1] < 60 && pixel.stdout[2] < 60,
+        'red logo is visible in the verified export',
+      );
+      const reviewPlan = { ...p, purpose: 'preview' };
+      reviewPlan.contentHash = planHash(reviewPlan);
+      const review = await engine.start(reviewPlan);
+      while (['queued', 'rendering', 'verifying'].includes(engine.get(review.id).status))
+        await new Promise((r) => setTimeout(r, 50));
+      assert.equal(engine.get(review.id).status, 'complete', engine.get(review.id).error);
+      assert.equal(
+        crypto
+          .createHash('sha256')
+          .update(await fs.readFile(path.join(root, review.id, 'output.mp4')))
+          .digest('hex'),
+        crypto
+          .createHash('sha256')
+          .update(await fs.readFile(path.join(root, job.id, 'output.mp4')))
+          .digest('hex'),
+        '720p review and delivery use the identical compositing pipeline',
+      );
       await engine.save(job.id, path.join(root, 'publication.zip'), true);
       const JSZip = require('jszip');
       const zip = await JSZip.loadAsync(await fs.readFile(path.join(root, 'publication.zip')));
@@ -396,6 +464,179 @@ test('save failure preserves prior file and cleans temporary siblings', async ()
       (await fs.readdir(root)).some((name) => name.endsWith('.partial')),
       false,
     );
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+test('accepts three-minute plans and lists/retries persisted immutable snapshots', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-v16-retry-'));
+  try {
+    const snapshot = plan({ durationSeconds: 180 });
+    snapshot.clips[0].duration = 180;
+    snapshot.contentHash = planHash(snapshot);
+    assert.equal(validatePlan(snapshot).durationSeconds, 180);
+    const id = crypto.randomUUID();
+    await fs.mkdir(path.join(root, id));
+    await fs.writeFile(
+      path.join(root, id, 'job.json'),
+      JSON.stringify({
+        id,
+        projectId: 'project',
+        contentHash: snapshot.contentHash,
+        status: 'rendering',
+        progress: 0.4,
+      }),
+    );
+    await fs.writeFile(path.join(root, id, 'plan.json'), JSON.stringify(snapshot));
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    await engine.initialize();
+    assert.equal(engine.list('project')[0].status, 'failed');
+    assert.deepEqual(engine.list('another-project'), []);
+    engine.capabilities = async () => ({ available: true });
+    engine.render = async () => {};
+    const retried = await engine.retry(id);
+    assert.notEqual(retried.id, id);
+    assert.equal(retried.contentHash, snapshot.contentHash);
+    assert.equal(engine.get(id).status, 'failed');
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+test('preview access verifies output checksum and accepts only known complete jobs', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-v16-preview-'));
+  try {
+    const id = crypto.randomUUID();
+    const directory = path.join(root, id);
+    await fs.mkdir(directory);
+    const output = Buffer.from('verified output');
+    await fs.writeFile(path.join(directory, 'output.mp4'), output);
+    await fs.writeFile(
+      path.join(directory, 'verification.json'),
+      JSON.stringify({ outputSha256: crypto.createHash('sha256').update(output).digest('hex') }),
+    );
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    engine.jobs.set(id, {
+      directory,
+      job: { id, projectId: 'p', contentHash: 'immutable', status: 'complete' },
+    });
+    assert.equal((await engine.preview(id)).contentHash, 'immutable');
+    await assert.rejects(engine.preview('/etc/passwd'), /not found/);
+    await fs.writeFile(path.join(directory, 'output.mp4'), 'tampered');
+    await assert.rejects(engine.preview(id), /checksum/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+test(
+  'real three-minute outputs retain duration and dimensions in every aspect ratio',
+  { skip: !realBinary },
+  async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-v16-180-'));
+    try {
+      const png = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aA1kAAAAASUVORK5CYII=',
+        'base64',
+      );
+      const engine = new CreatorRenderEngine({
+        root,
+        runtimeRoot: '/unused',
+        fontsRoot: path.resolve('public/creator-fonts'),
+        getMediaStore: () => ({ read: async () => ({ bytes: png, mimeType: 'image/png' }) }),
+      });
+      engine.binaryDirectory = realBinary;
+      engine.capabilities = async () => ({ available: true });
+      for (const aspectRatio of ['1:1', '16:9', '9:16']) {
+        const snapshot = plan({ durationSeconds: 180, aspectRatio, captionsMode: 'sidecar' });
+        snapshot.clips[0].duration = 180;
+        snapshot.contentHash = planHash(snapshot);
+        const job = await engine.start(snapshot);
+        while (['queued', 'rendering', 'verifying'].includes(engine.get(job.id).status))
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        assert.equal(engine.get(job.id).status, 'complete', engine.get(job.id).error);
+        const metadata = await engine.probe(path.join(root, job.id, 'output.mp4'));
+        assert.ok(Math.abs(Number(metadata.format.duration) - 180) < 0.1);
+        assert.equal(metadata.streams[0].codec_name, 'h264');
+        const expected =
+          aspectRatio === '1:1' ? [720, 720] : aspectRatio === '16:9' ? [1280, 720] : [720, 1280];
+        assert.deepEqual([metadata.streams[0].width, metadata.streams[0].height], expected);
+      }
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  'bundled proxies are checksum cached and native metadata is scoped to registered identities',
+  { skip: !realBinary },
+  async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-v16-proxy-'));
+    try {
+      const { DesktopMediaStore } = require('./media-store.cjs');
+      const { promisify } = require('node:util');
+      const execFile = promisify(require('node:child_process').execFile);
+      const source = path.join(root, 'source.mp4');
+      await execFile(
+        path.join(realBinary, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'),
+        [
+          '-hide_banner',
+          '-nostdin',
+          '-y',
+          '-f',
+          'lavfi',
+          '-i',
+          'color=c=blue:s=128x128:r=30:d=1',
+          '-c:v',
+          'libx264',
+          source,
+        ],
+      );
+      const store = new DesktopMediaStore(root);
+      await store.importBytes({
+        key: 'original',
+        bytes: await fs.readFile(source),
+        mimeType: 'video/mp4',
+      });
+      const engine = new CreatorRenderEngine({
+        root,
+        runtimeRoot: '/unused',
+        getMediaStore: () => store,
+      });
+      engine.binaryDirectory = realBinary;
+      engine.capabilities = async () => ({ available: true });
+      const metadata = await engine.inspectMedia('original');
+      assert.ok(Math.abs(metadata.durationSeconds - 1) < 0.1);
+      assert.ok(metadata.streamTypes.includes('video'));
+      await assert.rejects(engine.inspectMedia(source), /identity/);
+      const first = await engine.proxy('original');
+      const second = await engine.proxy('original');
+      assert.equal(first.key, second.key);
+      assert.equal(first.url, second.url);
+      assert.ok((await store.read('original')).bytes.byteLength > 0);
+      assert.equal((await store.records()).length, 2);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);
+test('frozen source hashes reject media replacement under a reused identity', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-v16-media-hash-'));
+  try {
+    const engine = new CreatorRenderEngine({
+      root,
+      runtimeRoot: '/unused',
+      getMediaStore: () => ({
+        read: async () => ({ bytes: Buffer.from('changed'), mimeType: 'image/png' }),
+      }),
+    });
+    engine.capabilities = async () => ({ available: true });
+    const snapshot = plan({
+      mediaHashes: { registered: crypto.createHash('sha256').update('original').digest('hex') },
+    });
+    const job = await engine.start(snapshot);
+    while (['queued', 'rendering', 'verifying'].includes(engine.get(job.id).status))
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    assert.equal(engine.get(job.id).status, 'failed');
+    assert.match(engine.get(job.id).error, /Media changed.*clip/);
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('electron', {
   getTimelineRenderCapabilities: () => ipcRenderer.invoke('timeline-render-capabilities'),
   startTimelineRender: (plan) => ipcRenderer.invoke('timeline-render-start', plan),
   getTimelineRenderJob: (id) => ipcRenderer.invoke('timeline-render-get', id),
+  listTimelineRenderJobs: (projectId) => ipcRenderer.invoke('timeline-render-list', projectId),
+  retryTimelineRender: (id) => ipcRenderer.invoke('timeline-render-retry', id),
+  getTimelineRenderPreview: (id) => ipcRenderer.invoke('timeline-render-preview', id),
+  inspectTimelineRenderMedia: (mediaId) =>
+    ipcRenderer.invoke('timeline-render-inspect-media', mediaId),
+  createDesktopMediaProxy: (mediaId) => ipcRenderer.invoke('timeline-render-proxy', mediaId),
   cancelTimelineRender: (id) => ipcRenderer.invoke('timeline-render-cancel', id),
   saveTimelineRender: (input) => ipcRenderer.invoke('timeline-render-save', input),
   onTimelineRenderUpdate: (callback) => {

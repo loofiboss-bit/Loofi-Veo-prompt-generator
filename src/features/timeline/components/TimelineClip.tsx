@@ -16,6 +16,7 @@ interface TimelineClipProps {
   onSelect?: (clip: TimelineClip) => void;
   isSelected?: boolean;
   onSplit?: (clip: TimelineClip, splitTime: number) => void;
+  razorEnabled?: boolean;
 }
 
 const TimelineClipView: React.FC<TimelineClipProps> = ({
@@ -28,6 +29,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
   onSelect,
   isSelected,
   onSplit,
+  razorEnabled,
 }) => {
   const { generateWaveform } = useAudioWorker();
   const imageUrl = asset?.url || shot?.conceptImageUrl;
@@ -80,24 +82,9 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     }
 
     setPreviewStartTime(nextStartTime);
+    pendingStartTimeRef.current = null;
     onUpdate(clip.id, { startTime: nextStartTime });
   }, [clip.id, onUpdate]);
-
-  const scheduleDragUpdate = useCallback(
-    (nextStartTime: number) => {
-      pendingStartTimeRef.current = nextStartTime;
-
-      if (rafRef.current !== null) {
-        return;
-      }
-
-      rafRef.current = window.requestAnimationFrame(() => {
-        rafRef.current = null;
-        flushPendingDragUpdate();
-      });
-    },
-    [flushPendingDragUpdate],
-  );
 
   // --- Waveform Generation ---
   useEffect(() => {
@@ -232,9 +219,10 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
       const deltaX = e.clientX - dragStateRef.current.startX;
       const deltaTime = deltaX / zoomLevel;
       const newStartTime = Math.max(0, dragStateRef.current.initialStartTime + deltaTime);
-      scheduleDragUpdate(newStartTime);
+      pendingStartTimeRef.current = newStartTime;
+      setPreviewStartTime(newStartTime);
     },
-    [scheduleDragUpdate, zoomLevel],
+    [zoomLevel],
   );
 
   const handleGlobalMouseUp = useCallback(
@@ -269,7 +257,7 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     if (clip.isLoading) return;
 
     // Alt+Click to Split (Razor)
-    if (e.altKey && onSplit) {
+    if ((e.altKey || razorEnabled) && onSplit) {
       e.stopPropagation();
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
@@ -337,6 +325,12 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
   return (
     <div
       onMouseDown={handleMouseDown}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect?.(clip);
+        }
+      }}
       role="button"
       aria-label={`${clip.label} clip, ${clip.duration.toFixed(1)} seconds`}
       tabIndex={0}

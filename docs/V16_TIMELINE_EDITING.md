@@ -1,0 +1,11 @@
+# v16 timeline and caption editing
+
+The local delivery editor exposes source timing, clip volume and caption text. Advanced transform, keyframe, color, VFX, chroma-key and mixer controls remain available for advanced projects. Export preflight is the authority for whether existing advanced content can render.
+
+Use the timeline playhead buttons to split, trim either edge, or remove the selected clip. The razor tool and Alt-click split at the clicked time. Magnetic editing ripples later clips on the edited track; snapping aligns movement to clip boundaries or the playhead within eight screen pixels. Dragging commits one undoable update on release. Delivery transition controls support cuts, fades and dissolves; selecting a dissolve creates its matching overlap and shifts subsequent sources and linked captions in one undoable update. Returning to a cut removes that overlap. Transition durations are bounded to half of the adjacent clip durations. Delete/Backspace do not remove clips while typing in an input.
+
+Caption timing is stored in global timeline seconds. Text splits receive distinct caption identities and zero source offsets. An optional `sourceClipId` links a caption to its source clip: moving/rippling a source moves its linked captions, trimming intersects the retained source interval, and removing a source removes linked captions. Source splits divide crossing captions and transfer later captions to the new source segment. Unlinked captions retain their placement during source edits.
+
+`importTimelineCaptions(captions, mode, sourceClipId?)` appends or replaces all caption clips in one undoable action. `splitTimelineClip`, `mergeTimelineCaptions` and `shiftTimelineCaptions` also commit atomically. Merge requires a common caption track and source link, joins text with line breaks and spans the selected interval. Shifts that would create negative timing are rejected. SRT output sorts by start/end time without changing the document; `getCreatorCaptionOverlaps` reports overlapping pairs without discarding text.
+
+Regression coverage includes split identities/timing, linked and free captions, left trim, ripple/removal/gap closing, caption batch editing, undo/redo, SRT ordering and safe delivery controls.
