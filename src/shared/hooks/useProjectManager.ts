@@ -75,37 +75,11 @@ export const useProjectManager = () => {
           ...legacyMetadata.filter((meta) => !canonical.some((project) => project.id === meta.id)),
         ];
 
-        const hydratedProjects = await Promise.all(
-          metadata.map(async (meta) => {
-            const persistedProject = await safeGet<Project>(
-              getProjectStorageKey(meta.id),
-              PROJECT_SNAPSHOT_STORE,
-            );
-
-            const project = persistedProject ?? readLegacyProject(meta.id);
-
-            if (project && !persistedProject) {
-              await safeSet(getProjectStorageKey(meta.id), project, PROJECT_SNAPSHOT_STORE);
-            }
-
-            return project;
-          }),
-        );
-
         if (storedMeta === undefined && metadata.length > 0) {
           await safeSet(META_KEY, metadata, PROJECT_SNAPSHOT_STORE);
         }
-
-        if (isCancelled) {
-          return;
-        }
-
-        projectsRef.current = hydratedProjects.reduce<Record<string, Project>>((acc, project) => {
-          if (project) {
-            acc[project.id] = project;
-          }
-          return acc;
-        }, {});
+        if (isCancelled) return;
+        // Documents and media are loaded on demand, never while listing projects.
         setProjectList(metadata);
         return;
       } catch (error) {
@@ -140,10 +114,17 @@ export const useProjectManager = () => {
   };
 
   const pendingPersistence = useRef<Promise<void>>(Promise.resolve());
+  const savedRevisions = useRef<Record<string, number>>({});
   const persistProject = (project: Project) => {
-    const pending = projectDocumentService
-      .save(project)
-      .then(() => projectService.registerDocument(project));
+    const pending = pendingPersistence.current.then(async () => {
+      // A rapid local create/save pair may capture before its first write commits.
+      // Advance only using this manager's successful writes, never remote revisions.
+      if (savedRevisions.current[project.id] !== undefined)
+        project.documentRevision = savedRevisions.current[project.id];
+      await projectDocumentService.save(project);
+      savedRevisions.current[project.id] = project.documentRevision ?? 0;
+      await projectService.registerDocument(project);
+    });
     pendingPersistence.current = pending;
     void pending.catch((error) => logger.error('Failed to persist project data', error));
   };
@@ -241,22 +222,10 @@ export const useProjectManager = () => {
     updateMeta(newMeta);
   };
 
-  const loadProject = (id: string): Project | null => {
-    const cachedProject = projectsRef.current[id];
-    if (cachedProject) {
-      return cachedProject;
-    }
-
-    const legacyProject = readLegacyProject(id);
-    if (legacyProject) {
-      projectsRef.current = {
-        ...projectsRef.current,
-        [id]: legacyProject,
-      };
-      persistProject(legacyProject);
-    }
-
-    return legacyProject;
+  const loadProject = async (id: string): Promise<Project | null> => {
+    const project = await projectDocumentService.load(id);
+    if (project) projectsRef.current[id] = project;
+    return project;
   };
 
   const deleteProject = async (id: string) => {
@@ -278,9 +247,10 @@ export const useProjectManager = () => {
     updateMeta(newMeta);
   };
 
-  const exportProject = (meta: ProjectMetadata) => {
+  const exportProject = async (meta: ProjectMetadata) => {
     try {
-      const project = loadProject(meta.id);
+      await flushPersistence();
+      const project = await loadProject(meta.id);
       if (!project) {
         return;
       }

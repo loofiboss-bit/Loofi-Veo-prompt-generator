@@ -21,6 +21,8 @@ interface TimelineTrackProps {
   onSelectClip?: (clip: TimelineClip) => void;
   selectedClipId?: string | null;
   onSplitClip?: (clip: TimelineClip, relTime: number) => void;
+  razorEnabled?: boolean;
+  deliveryMode?: boolean;
 }
 
 const TimelineTrackView: React.FC<TimelineTrackProps> = ({
@@ -38,17 +40,24 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
   onSelectClip,
   selectedClipId,
   onSplitClip,
+  razorEnabled,
+  deliveryMode = false,
 }) => {
   const updateShotTransition = useAppStore((state) => state.updateShotTransition);
+  const setTimelineClipTransition = useAppStore((state) => state.setTimelineClipTransition);
+  const orderedClips = React.useMemo(
+    () => [...clips].sort((a, b) => a.startTime - b.startTime),
+    [clips],
+  );
   const contentRef = React.useRef<HTMLDivElement>(null);
   const beatMarkerRefs = React.useRef<Array<HTMLDivElement | null>>([]);
   const clipIndexMap = React.useMemo(
-    () => new Map(clips.map((clip, index) => [clip.id, index])),
-    [clips],
+    () => new Map(orderedClips.map((clip, index) => [clip.id, index])),
+    [orderedClips],
   );
   const visibleClips = React.useMemo(
-    () => getVisibleClips(clips, zoomLevel, viewportStartPx, viewportEndPx),
-    [clips, zoomLevel, viewportStartPx, viewportEndPx],
+    () => getVisibleClips(orderedClips, zoomLevel, viewportStartPx, viewportEndPx),
+    [orderedClips, zoomLevel, viewportStartPx, viewportEndPx],
   );
 
   React.useEffect(() => {
@@ -71,7 +80,9 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
   }, [beatMarkers, duration, zoomLevel]);
 
   const handleTransitionUpdate = (clip: TimelineClip, transition: ClipTransition) => {
-    if (typeof clip.resourceId === 'number') {
+    if (deliveryMode) {
+      setTimelineClipTransition(clip.id, transition);
+    } else if (typeof clip.resourceId === 'number') {
       updateShotTransition(clip.resourceId, transition);
     }
   };
@@ -119,12 +130,13 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
 
         {visibleClips.map((clip) => {
           const clipIndex = clipIndexMap.get(clip.id) ?? 0;
-          const previousClip = clipIndex > 0 ? clips[clipIndex - 1] : null;
+          const previousClip = clipIndex > 0 ? orderedClips[clipIndex - 1] : null;
 
           return (
             <React.Fragment key={clip.id}>
               {track.type === 'video' && previousClip && (
                 <TransitionHandle
+                  deliveryMode={deliveryMode}
                   transition={clip.transition || { type: 'cut', duration: 0 }}
                   onUpdate={(transition) => handleTransitionUpdate(clip, transition)}
                   left={clip.startTime * zoomLevel}
@@ -145,6 +157,7 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
                 onSelect={onSelectClip}
                 isSelected={selectedClipId === clip.id}
                 onSplit={onSplitClip}
+                razorEnabled={razorEnabled}
               />
             </React.Fragment>
           );

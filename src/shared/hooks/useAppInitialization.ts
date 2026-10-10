@@ -95,7 +95,7 @@ interface UseAppInitializationOptions {
 }
 
 export function useAppInitialization({ _hasHydrated, addToast }: UseAppInitializationOptions) {
-  const projectStore = useProjectStore();
+  const initializeProjects = useProjectStore().initialize;
   const didRecordHydration = useRef(false);
   const didStartCriticalBootstrap = useRef(false);
 
@@ -284,7 +284,7 @@ export function useAppInitialization({ _hasHydrated, addToast }: UseAppInitializ
         await runTrackedStartupStep(
           'projectStore',
           async () => {
-            await projectStore.initialize();
+            await initializeProjects();
             const activeId = useProjectStore.getState().currentProjectId;
             if (!activeId) return;
             const document = await projectDocumentService.load(activeId);
@@ -327,5 +327,5 @@ export function useAppInitialization({ _hasHydrated, addToast }: UseAppInitializ
         window.removeEventListener('offline', onlineResumeHandler);
       }
     };
-  }, [_hasHydrated, projectStore, addToast]);
+  }, [_hasHydrated, initializeProjects, addToast]);
 }

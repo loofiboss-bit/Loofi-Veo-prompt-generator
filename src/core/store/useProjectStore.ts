@@ -53,7 +53,7 @@ export const useProjectStore = create<ProjectStore>()(
         set({ isLoading: true, error: null });
         try {
           await projectService.initialize();
-          const projects = await projectService.getAllProjects();
+          const projects = await projectService.getAllProjects(true);
           const currentId = await projectService.getCurrentProjectId();
 
           set({
@@ -80,7 +80,7 @@ export const useProjectStore = create<ProjectStore>()(
             throw new Error('Save the current Studio draft before changing projects.');
           }
           const project = await projectService.createProject(data);
-          const projects = await projectService.getAllProjects();
+          const projects = await projectService.getAllProjects(true);
 
           set({
             projects,
@@ -125,7 +125,7 @@ export const useProjectStore = create<ProjectStore>()(
         try {
           const updated = await projectService.updateProject(id, updates);
           if (updated) {
-            const projects = await projectService.getAllProjects();
+            const projects = await projectService.getAllProjects(true);
             set({ projects, isLoading: false });
             return true;
           }
@@ -144,7 +144,7 @@ export const useProjectStore = create<ProjectStore>()(
         try {
           const success = await projectService.deleteProject(id);
           if (success) {
-            const projects = await projectService.getAllProjects();
+            const projects = await projectService.getAllProjects(true);
             const currentId = await projectService.getCurrentProjectId();
             set({
               projects,
@@ -168,7 +168,7 @@ export const useProjectStore = create<ProjectStore>()(
         try {
           const success = await projectService.archiveProject(id);
           if (success) {
-            const projects = await projectService.getAllProjects();
+            const projects = await projectService.getAllProjects(true);
             set({ projects, isLoading: false });
             return true;
           }
@@ -187,7 +187,7 @@ export const useProjectStore = create<ProjectStore>()(
         try {
           const success = await projectService.unarchiveProject(id);
           if (success) {
-            const projects = await projectService.getAllProjects();
+            const projects = await projectService.getAllProjects(true);
             set({ projects, isLoading: false });
             return true;
           }
@@ -206,7 +206,7 @@ export const useProjectStore = create<ProjectStore>()(
         try {
           const duplicate = await projectService.duplicateProject(id, newName);
           if (duplicate) {
-            const projects = await projectService.getAllProjects();
+            const projects = await projectService.getAllProjects(true);
             set({ projects, isLoading: false });
             return duplicate;
           }
@@ -249,7 +249,7 @@ export const useProjectStore = create<ProjectStore>()(
       refreshProjects: async () => {
         set({ isLoading: true, error: null });
         try {
-          const projects = await projectService.getAllProjects();
+          const projects = await projectService.getAllProjects(true);
           set({ projects, isLoading: false });
         } catch (error) {
           logger.error('Failed to refresh projects', undefined, error);

@@ -149,7 +149,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   const handleBackup = async (meta: ProjectMetadata) => {
     setIsProcessing(true);
     try {
-      const project = loadProject(meta.id);
+      const project = await loadProject(meta.id);
       if (!project) throw new Error('Project data not found');
 
       const blob = await exportPortableProject(project.id);

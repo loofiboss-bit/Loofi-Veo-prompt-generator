@@ -1,3 +1,6 @@
+import { EditorMediaPanel } from './EditorMediaPanel';
+import { LocalTimelineEditor } from './LocalTimelineEditor';
+import '@features/creator/creator.css';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
@@ -24,6 +27,10 @@ import TimelinePlayer from './TimelinePlayer';
 export const TimelinePage: React.FC = () => {
   const { t } = useTranslation('common');
   const { t: createT } = useTranslation('create');
+  const { t: creatorT } = useTranslation('creator');
+  const deliveryMode = useEditorSessionStore(
+    (state) => state.projectSnapshot?.creatorDelivery?.editorMode === 'delivery',
+  );
   const projectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const projectName =
     useProjectStore((state) => state.projects.find((project) => project.id === projectId)?.name) ??
@@ -106,7 +113,7 @@ export const TimelinePage: React.FC = () => {
     navigate(ROUTES.HOME);
   };
 
-  if (playableShots.length === 0 && !hasTimelineMedia) {
+  if (!deliveryMode && playableShots.length === 0 && !hasTimelineMedia) {
     return (
       <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
         <header className="creator-page-header mx-auto mb-4 max-w-6xl border-b border-slate-800 pb-4">
@@ -154,10 +161,37 @@ export const TimelinePage: React.FC = () => {
         )}
         <TimelineExportRecovery missingMedia={missingMedia} onRelink={handleRelink} />
       </header>
-      <ErrorBoundary panelId="creator-delivery">
-        <CreatorDeliveryPanel />
-      </ErrorBoundary>
-      <TimelinePlayer embedded shots={shots} onClose={handleExitTimeline} />
+      {deliveryMode ? (
+        <>
+          <p className="local-editor-next">
+            {hasTimelineMedia
+              ? creatorT(
+                  'v16.nextEdit',
+                  'Next: arrange your clips, then check and review your delivery below.',
+                )
+              : creatorT('v16.importHint', 'Add your clips, images and music to begin.')}
+          </p>
+          <div className="local-editor-layout">
+            <EditorMediaPanel />
+            <ErrorBoundary panelId="local-timeline-editor">
+              <LocalTimelineEditor />
+            </ErrorBoundary>
+          </div>
+          <details className="local-editor-delivery" open>
+            <summary>{creatorT('v16.captionDelivery', 'Captions and delivery')}</summary>
+            <ErrorBoundary panelId="creator-delivery">
+              <CreatorDeliveryPanel />
+            </ErrorBoundary>
+          </details>
+        </>
+      ) : (
+        <>
+          <ErrorBoundary panelId="creator-delivery">
+            <CreatorDeliveryPanel />
+          </ErrorBoundary>
+          <TimelinePlayer embedded shots={shots} onClose={handleExitTimeline} />
+        </>
+      )}
     </section>
   );
 };

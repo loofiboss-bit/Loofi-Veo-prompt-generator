@@ -6,9 +6,9 @@ import { useToastManager } from '@shared/hooks/useToastManager';
 import { useAppStore } from '@core/store/useAppStore';
 import { Asset, StockAsset, Shot } from '@core/types';
 import * as stockMediaService from '@core/services/stockMediaService';
-import { generateProxy } from '@core/services/proxyService';
+import { mediaAssetService } from '@core/services/mediaAssetService';
+import { resolveProjectAssetBlob } from '@core/utils/projectArchiver';
 import * as geminiService from '@core/services/geminiService';
-import { extractLastFrame } from '@core/utils/videoUtils';
 import { prepareOutpaint } from '@core/services/imageEditService';
 import { logger } from '@core/services/loggerService';
 
@@ -59,58 +59,16 @@ const AssetLibrary: React.FC<AssetLibraryProps> = ({ isOpen, onClose }) => {
   const [stockType, setStockType] = useState<'video' | 'audio'>('video');
 
   const [processingQueue, setProcessingQueue] = useState<string[]>([]);
-  const [taggingQueue, setTaggingQueue] = useState<string[]>([]);
   const [expandingQueue, setExpandingQueue] = useState<string[]>([]);
 
-  const processAutoTagging = async (asset: Asset) => {
-    setTaggingQueue((prev) => [...prev, asset.id]);
-
-    try {
-      let base64Data = '';
-      let mimeType = '';
-
-      if (asset.type === 'image') {
-        base64Data = asset.data;
-        mimeType = asset.mimeType;
-      } else if (asset.type === 'video') {
-        try {
-          const frame = await extractLastFrame(asset.url || asset.proxyUrl || '');
-          base64Data = frame.data;
-          mimeType = frame.mimeType;
-        } catch (e) {
-          logger.warn('Failed to extract frame for tagging', e);
-          return;
-        }
-      } else {
-        return;
-      }
-
-      if (base64Data) {
-        const tags = await geminiService.generateAssetTags(base64Data, mimeType);
-        if (tags.length > 0) {
-          updateAsset(asset.id, { tags });
-        }
-      }
-    } catch (e) {
-      logger.error('Auto-tagging failed', e);
-    } finally {
-      setTaggingQueue((prev) => prev.filter((id) => id !== asset.id));
-    }
-  };
-
   const handleExpandImage = async (asset: Asset) => {
-    if (asset.type !== 'image' || !asset.data) return;
+    if (asset.type !== 'image') return;
 
     setExpandingQueue((prev) => [...prev, asset.id]);
 
     try {
-      const byteCharacters = atob(asset.data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: asset.mimeType });
+      const blob = await resolveProjectAssetBlob(asset);
+      if (!blob) throw new Error('Local image is missing.');
 
       const { composite, mask, prompt } = await prepareOutpaint(blob, 16 / 9);
 
@@ -161,56 +119,31 @@ const AssetLibrary: React.FC<AssetLibraryProps> = ({ isOpen, onClose }) => {
     setPendingDeleteAsset(null);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const url = e.target?.result as string;
-        if (url) {
-          const data = url.substring(url.indexOf(',') + 1);
-          const type = file.type.startsWith('image') ? 'image' : 'audio';
-          const isVideo = file.type.startsWith('video');
-
-          const assetId = Date.now().toString() + Math.random().toString();
-
-          const newAsset: Asset = {
-            id: assetId,
-            type: isVideo ? 'video' : type,
-            name: file.name,
-            url,
-            data,
-            mimeType: file.type,
-            isProxyReady: false,
-            tags: [],
-            groupId: assetId, // Start new group
-            version: 1,
-          };
-          addAsset(newAsset);
-
-          if (newAsset.type === 'image' || newAsset.type === 'video') {
-            processAutoTagging(newAsset);
-          }
-
-          if (isVideo) {
-            setProcessingQueue((prev) => [...prev, assetId]);
-            try {
-              const proxyUrl = await generateProxy(file);
-              updateAsset(assetId, { proxyUrl, isProxyReady: true });
-            } catch (err) {
-              logger.warn('Failed to generate proxy for upload', err);
-            } finally {
-              setProcessingQueue((prev) => prev.filter((id) => id !== assetId));
-            }
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    for (const file of files) {
+      setProcessingQueue((prev) => [...prev, file.name]);
+      try {
+        const asset = await mediaAssetService.importLocalFile(file);
+        addAsset(asset);
+        if (asset.type === 'video') {
+          try {
+            const prepared = await mediaAssetService.prepareDesktopProxy(asset);
+            updateAsset(asset.id, {
+              proxyUrl: prepared.proxyUrl,
+              isProxyReady: prepared.isProxyReady,
+            });
+          } catch (error) {
+            logger.warn('Proxy unavailable; original media remains usable', error);
           }
         }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (error) {
+        addToast(error instanceof Error ? error.message : 'Media import failed.', 'error');
+      } finally {
+        setProcessingQueue((prev) => prev.filter((item) => item !== file.name));
+      }
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, asset: Asset) => {
@@ -405,15 +338,6 @@ const AssetLibrary: React.FC<AssetLibraryProps> = ({ isOpen, onClose }) => {
                     <span className="text-[10px] text-yellow-400 animate-pulse flex items-center justify-center gap-1">
                       <Icon name="spinner" className="w-3 h-3 animate-spin" /> Proxies:{' '}
                       {processingQueue.length}
-                    </span>
-                  </div>
-                )}
-
-                {taggingQueue.length > 0 && (
-                  <div className="text-center p-2 bg-purple-900/20 rounded border border-purple-500/20">
-                    <span className="text-[10px] text-purple-400 animate-pulse flex items-center justify-center gap-1">
-                      <Icon name="magic" className="w-3 h-3 animate-pulse" /> AI Tagging:{' '}
-                      {taggingQueue.length}
                     </span>
                   </div>
                 )}

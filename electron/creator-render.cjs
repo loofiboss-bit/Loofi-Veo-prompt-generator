@@ -6,6 +6,7 @@ const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const exec = promisify(execFile);
 const VERSION = '9.0.2';
+const { pathToFileURL, fileURLToPath } = require('node:url');
 const MEDIA_FORMATS =
   'mov,matroska,webm,avi,wav,mp3,flac,ogg,image2,png_pipe,jpeg_pipe,gif,bmp_pipe,webp_pipe';
 function canonical(value) {
@@ -36,8 +37,9 @@ function validatePlan(input) {
     !text(p.projectId, 180) ||
     !p.projectId ||
     !text(p.projectName, 300) ||
-    !number(p.durationSeconds, 1 / 30, 60) ||
+    !number(p.durationSeconds, 1 / 30, 180) ||
     p.fps !== 30 ||
+    (p.purpose !== undefined && !['preview', 'delivery'].includes(p.purpose)) ||
     !['9:16', '16:9', '1:1'].includes(p.aspectRatio) ||
     !['720p', '1080p'].includes(p.resolution) ||
     !['sidecar', 'burn-in'].includes(p.captionsMode) ||
@@ -55,6 +57,15 @@ function validatePlan(input) {
     p.captions.length > 500
   )
     throw new Error('Invalid timeline.');
+  if (
+    p.mediaHashes &&
+    (typeof p.mediaHashes !== 'object' ||
+      Array.isArray(p.mediaHashes) ||
+      Object.entries(p.mediaHashes).some(
+        ([key, hash]) => !/^[\w.:-]{1,180}$/.test(key) || !/^[a-f\d]{64}$/.test(hash),
+      ))
+  )
+    throw new Error('Invalid frozen media hashes.');
   const ids = new Set();
   for (const c of p.clips) {
     if (
@@ -63,8 +74,8 @@ function validatePlan(input) {
       !text(c.mediaId, 180) ||
       !/^[\w.:-]+$/.test(c.mediaId) ||
       !['video', 'image', 'audio'].includes(c.type) ||
-      !number(c.startTime, 0, 60) ||
-      !number(c.duration, 1 / 30, 60) ||
+      !number(c.startTime, 0, 180) ||
+      !number(c.duration, 1 / 30, 180) ||
       c.startTime + c.duration > p.durationSeconds + 0.001 ||
       !number(c.offset, 0, 86400) ||
       !number(c.volume, 0, 4) ||
@@ -184,6 +195,10 @@ class CreatorRenderEngine {
       return;
     }
     for (const name of entries) {
+      if (/^[a-f\d-]{36}\.proxy\.mp4$/.test(name)) {
+        await fs.rm(path.join(this.root, name), { force: true });
+        continue;
+      }
       if (!/^[a-f\d-]{36}$/.test(name)) continue;
       try {
         const j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
@@ -228,7 +243,23 @@ class CreatorRenderEngine {
           throw new Error('Rendering runtime integrity check failed.');
       }
       this.binaryDirectory = directory;
-      return { available: true, version: VERSION };
+      return {
+        available: true,
+        version: VERSION,
+        maxDurationSeconds: 180,
+        aspectRatios: ['9:16', '16:9', '1:1'],
+        resolutions: ['720p', '1080p'],
+        fps: 30,
+        supportedOperations: [
+          'trim',
+          'crop',
+          'dissolve',
+          'fade_black',
+          'audio-mix',
+          'captions',
+          'logo',
+        ],
+      };
     } catch (error) {
       return {
         available: false,
@@ -256,7 +287,7 @@ class CreatorRenderEngine {
     await state.persistence;
   }
   async start(input) {
-    if (this.starting) throw new Error('Another export is starting.');
+    if (this.starting || this.proxyRunning) throw new Error('Another export is starting.');
     this.starting = true;
     try {
       return await this.startReserved(input);
@@ -284,6 +315,9 @@ class CreatorRenderEngine {
         id,
         projectId: plan.projectId,
         contentHash: plan.contentHash,
+        purpose: plan.purpose || 'delivery',
+        createdAt: Date.now(),
+        resolution: plan.resolution,
         status: 'queued',
         progress: 0,
       },
@@ -297,6 +331,112 @@ class CreatorRenderEngine {
   get(id) {
     if (typeof id !== 'string' || !this.jobs.has(id)) throw new Error('Export job not found.');
     return { ...this.jobs.get(id).job };
+  }
+  list(projectId) {
+    if (projectId !== undefined && !text(projectId, 180))
+      throw new Error('Invalid project identity.');
+    return [...this.jobs.values()]
+      .map((state) => ({ ...state.job }))
+      .filter((job) => projectId === undefined || job.projectId === projectId);
+  }
+  async retry(id) {
+    const state = this.jobs.get(id);
+    const job = this.get(id);
+    if (!['failed', 'cancelled'].includes(job.status))
+      throw new Error('Only interrupted jobs can be retried.');
+    const snapshot = JSON.parse(await fs.readFile(path.join(state.directory, 'plan.json'), 'utf8'));
+    return this.start(validatePlan(snapshot));
+  }
+  async preview(id) {
+    const state = this.jobs.get(id);
+    const job = this.get(id);
+    if (job.status !== 'complete') throw new Error('Delivery is not complete.');
+    const output = path.join(state.directory, 'output.mp4');
+    const verified = JSON.parse(
+      await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'),
+    );
+    const hash = crypto
+      .createHash('sha256')
+      .update(await fs.readFile(output))
+      .digest('hex');
+    if (hash !== verified.outputSha256) throw new Error('Delivery checksum verification failed.');
+    return { url: pathToFileURL(output).href, contentHash: job.contentHash };
+  }
+  async inspectMedia(mediaId) {
+    if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');
+    const caps = await this.capabilities();
+    if (!caps.available) return { available: false, reason: caps.reason };
+    const record = await this.getMediaStore().read(mediaId);
+    if (!record) return { available: false, reason: 'Registered media is missing.' };
+    const metadata = await this.probe(fileURLToPath(record.localUrl));
+    return {
+      available: true,
+      durationSeconds: Number(metadata.format.duration) || undefined,
+      mimeType: record.mimeType,
+      sha256: crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex'),
+      streamTypes: metadata.streams.map((stream) => stream.codec_type),
+    };
+  }
+  async proxy(mediaId) {
+    if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');
+    const caps = await this.capabilities();
+    if (!caps.available) throw new Error(caps.reason);
+    const store = this.getMediaStore();
+    const record = await store.read(mediaId);
+    if (!record || !record.mimeType.startsWith('video/'))
+      throw new Error('Video media is missing.');
+    const sha256 = crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex');
+    const key = `proxy:${sha256}:720-v1`;
+    const existing = await store.read(key);
+    if (existing) return { key, url: existing.localUrl, sha256 };
+    if (
+      this.proxyRunning ||
+      this.starting ||
+      this.list().some((job) => ['queued', 'rendering', 'verifying'].includes(job.status))
+    )
+      throw new Error('Another render is running. Retry proxy creation when it finishes.');
+    this.proxyRunning = true;
+    const temporary = path.join(this.root, `${crypto.randomUUID()}.proxy.mp4`);
+    try {
+      await exec(
+        this.binary('ffmpeg'),
+        [
+          '-hide_banner',
+          '-nostdin',
+          '-y',
+          '-protocol_whitelist',
+          'file,pipe',
+          '-format_whitelist',
+          MEDIA_FORMATS,
+          '-i',
+          fileURLToPath(record.localUrl),
+          '-vf',
+          'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
+          '-c:v',
+          'libx264',
+          '-preset',
+          'veryfast',
+          '-crf',
+          '28',
+          '-c:a',
+          'aac',
+          temporary,
+        ],
+        { timeout: 600000, maxBuffer: 2000000, windowsHide: true },
+      );
+      const metadata = await this.probe(temporary);
+      if (!metadata.streams.some((stream) => stream.codec_name === 'h264'))
+        throw new Error('Proxy verification failed.');
+      const proxy = await store.importBytes({
+        key,
+        bytes: await fs.readFile(temporary),
+        mimeType: 'video/mp4',
+      });
+      return { key, url: proxy.localUrl, sha256 };
+    } finally {
+      this.proxyRunning = false;
+      await fs.rm(temporary, { force: true });
+    }
   }
   async cancel(id) {
     const state = this.jobs.get(id);
@@ -329,7 +469,10 @@ class CreatorRenderEngine {
           state.captionFonts.add(match[1]);
         fontTail = fontMessages.slice(-1024);
       });
-      const timeout = setTimeout(() => child.kill(), 300000);
+      const timeout = setTimeout(
+        () => child.kill(),
+        Math.max(300000, state.plan.durationSeconds * 5000),
+      );
       timeout.unref();
       if (progress)
         child.stdout.on('data', (chunk) => {
@@ -407,6 +550,12 @@ class CreatorRenderEngine {
       for (const c of ordered) {
         const record = await this.getMediaStore().read(c.mediaId);
         if (!record) throw new Error(`Missing media for clip ${c.id}.`);
+        if (
+          p.mediaHashes &&
+          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
+            p.mediaHashes[c.mediaId]
+        )
+          throw new Error(`Media changed after delivery check: ${c.id}.`);
         const ext = c.type === 'image' ? '.png' : c.type === 'audio' ? '.audio' : '.video';
         const filename = `input-${index}${ext}`;
         await fs.writeFile(path.join(state.directory, filename), Buffer.from(record.bytes), {
@@ -468,6 +617,12 @@ class CreatorRenderEngine {
         const record = await this.getMediaStore().read(p.style.logoAssetId);
         if (!record || !record.mimeType.startsWith('image/'))
           throw new Error('Style logo media is missing or invalid.');
+        if (
+          p.mediaHashes &&
+          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
+            p.mediaHashes[p.style.logoAssetId]
+        )
+          throw new Error('Style logo changed after delivery check.');
         await fs.writeFile(path.join(state.directory, 'logo.png'), Buffer.from(record.bytes));
         args.push(
           '-protocol_whitelist',

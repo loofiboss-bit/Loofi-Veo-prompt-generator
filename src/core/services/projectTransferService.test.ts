@@ -137,6 +137,50 @@ describe('portable project transfer', () => {
     network.mockRestore();
   });
 
+  it('round trips linked captions without treating caption resource identities as media', async () => {
+    const document = structuredClone(project);
+    document.documentRevision = 42;
+    document.storyboard.timeline.clips = [
+      {
+        id: 'source-clip',
+        resourceId: 'a-video',
+        type: 'video',
+        trackId: 'v',
+        label: 'Source',
+        startTime: 0,
+        duration: 2,
+        offset: 0,
+      },
+      {
+        id: 'caption-clip',
+        resourceId: 'caption-resource',
+        type: 'text',
+        trackId: 'text_main',
+        label: 'Hej',
+        startTime: 0,
+        duration: 2,
+        offset: 0,
+        sourceClipId: 'source-clip',
+        caption: {
+          id: 'caption-resource',
+          text: 'Hej världen',
+          startTime: 0,
+          endTime: 2,
+          style: 'classic',
+        },
+      },
+    ];
+    const blob = await buildPortableProjectBundle(document);
+    const restored = await importPortableProject(
+      new File([await blob.arrayBuffer()], 'captions.loofi-project'),
+    );
+    const [source, caption] = restored.storyboard.timeline.clips;
+    expect(source.id).not.toBe('source-clip');
+    expect(caption.sourceClipId).toBe(source.id);
+    expect(caption.caption?.text).toBe('Hej världen');
+    expect(restored.documentRevision).toBe(0);
+  });
+
   it('includes revision-only media and remaps revision and nested project identities', async () => {
     const draft = createPromptStudioDraft('a');
     draft.video.referenceAssetIds = ['a-video'];

@@ -1,3 +1,4 @@
+import { ProjectSaveStatus } from '@features/project/ProjectSaveStatus';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useViewport } from '@shared/hooks/useViewport';
@@ -208,6 +209,7 @@ export function AppScaffold({
             {t('sidebar.quickNavigation', 'Quick navigation')}
           </button>
         </div>
+        <ProjectSaveStatus />
         <ErrorBoundary panelId="app-routes">
           <Outlet />
         </ErrorBoundary>

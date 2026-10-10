@@ -133,3 +133,128 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+
+/* Local editing keeps source media, transport and the timeline in one workspace. */
+.local-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  color: var(--color-text-primary);
+}
+.local-editor-next {
+  padding: 12px 16px;
+  color: var(--color-text-secondary);
+}
+.local-editor-media,
+.local-editor-workspace {
+  min-width: 0;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+}
+.local-editor-media {
+  padding: 12px;
+}
+.local-editor-media h2 {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.local-editor-media ul {
+  max-height: 420px;
+  overflow-y: auto;
+  margin-top: 16px;
+}
+.local-editor-media li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border-primary);
+}
+.local-editor-media li span {
+  overflow-wrap: anywhere;
+}
+.local-editor-media img {
+  max-height: 100px;
+  object-fit: contain;
+}
+.local-editor-layout button {
+  border: 1px solid var(--color-border-primary);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.local-editor-layout button:disabled {
+  opacity: 0.5;
+}
+.local-editor-layout :focus-visible {
+  outline: 3px solid var(--color-accent-600);
+  outline-offset: 2px;
+}
+.local-editor-workspace {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+}
+.local-editor-viewer {
+  flex: 1;
+  min-width: min(100%, 280px);
+  padding: 12px;
+}
+.local-editor-source {
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+}
+.local-editor-source video,
+.local-editor-source img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.local-editor-viewer p {
+  font-size: 12px;
+  margin: 8px 0;
+  color: var(--color-text-secondary);
+}
+.local-editor-transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.local-editor-transport input {
+  flex: 1;
+  min-width: 100px;
+}
+.local-editor-transport output {
+  font-variant-numeric: tabular-nums;
+}
+.local-editor-timeline {
+  width: 100%;
+  height: 420px;
+  overflow: hidden;
+}
+.local-editor-delivery {
+  margin: 0 16px 20px;
+}
+.local-editor-delivery > summary {
+  padding: 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 800px) {
+  .local-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .local-editor-media ul {
+    max-height: 180px;
+  }
+  .local-editor-source {
+    height: 220px;
+  }
+}

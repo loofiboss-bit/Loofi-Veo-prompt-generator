@@ -113,6 +113,8 @@ describe('useEditorSessionStore', () => {
     const project = makeProject();
 
     useEditorSessionStore.getState().commitProjectDocument(project, 'load');
+    expect(useAppStore.temporal.getState().pastStates).toEqual([]);
+    expect(useComposerStore.temporal.getState().pastStates).toEqual([]);
 
     expect(useAppStore.getState().promptState.idea).toBe('Loaded idea');
     expect(useAppStore.getState().zoomLevel).toBe(48);

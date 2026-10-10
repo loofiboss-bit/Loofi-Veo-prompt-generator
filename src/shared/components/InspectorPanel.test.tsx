@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '../../test-utils';
+import { render, screen, fireEvent } from '../../test-utils';
 import InspectorPanel from './InspectorPanel';
 import type { TimelineClip } from '@core/types';
 
@@ -519,5 +519,24 @@ describe('InspectorPanel', () => {
         expect(btn).not.toBeDisabled();
       });
     });
+  });
+});
+
+describe('delivery inspector', () => {
+  it('exposes only supported editing controls in delivery mode', () => {
+    const onUpdate = vi.fn();
+    render(
+      <InspectorPanel
+        selectedClip={makeVideoClip()}
+        onUpdate={onUpdate}
+        currentTime={0}
+        deliveryMode
+      />,
+    );
+    expect(screen.queryByRole('tab', { name: 'Effects' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Scale (%)')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Duration (seconds)'), { target: { value: '3' } });
+    expect(onUpdate).toHaveBeenCalledWith('clip-1', { duration: 3 });
+    expect(screen.getByLabelText('Volume')).toBeInTheDocument();
   });
 });

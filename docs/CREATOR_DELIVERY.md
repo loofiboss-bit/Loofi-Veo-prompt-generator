@@ -1,7 +1,8 @@
 # Creator delivery in v15 development
 
 This documents the v15 source implementation. It does not announce a public release. The published
-v14.2.1 downloads remain the stable installation path. Desktop MP4 export is available only when a
+v15.0.0 downloads remain the stable installation path. The v16 source implementation is described in
+[Local Creator Editing](CREATOR_V16.md). Desktop MP4 export is available only when a
 verified rendering runtime is provisioned for the running platform.
 
 ## From an idea to a deliverable
