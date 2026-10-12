@@ -1,11 +1,14 @@
 'use strict';
 const fs = require('node:fs/promises');
+const nodeFs = require('node:fs');
+const { pipeline } = require('node:stream/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const exec = promisify(execFile);
 const VERSION = '9.0.2';
+const PROGRESS_THROTTLE_MS = 150;
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const MEDIA_FORMATS =
   'mov,matroska,webm,avi,wav,mp3,flac,ogg,image2,png_pipe,jpeg_pipe,gif,bmp_pipe,webp_pipe';
@@ -25,7 +28,7 @@ function planHash(plan) {
 }
 async function sha256File(filePath) {
   const hash = crypto.createHash('sha256');
-  const stream = require('node:fs').createReadStream(filePath);
+  const stream = nodeFs.createReadStream(filePath);
   for await (const chunk of stream) hash.update(chunk);
   return hash.digest('hex');
 }
@@ -278,6 +281,25 @@ class CreatorRenderEngine {
   async update(state, values) {
     if (state.cancelled && values.status !== 'cancelled') return;
     Object.assign(state.job, values);
+
+    const isPureProgress =
+      values.status === undefined &&
+      values.error === undefined &&
+      values.savedName === undefined &&
+      values.progress !== undefined &&
+      values.progress > 0 &&
+      values.progress < 1;
+
+    const now = Date.now();
+    if (
+      isPureProgress &&
+      state.lastPersistedAt &&
+      now - state.lastPersistedAt < PROGRESS_THROTTLE_MS
+    ) {
+      return;
+    }
+    state.lastPersistedAt = now;
+
     const snapshot = { ...state.job };
     state.persistence = (state.persistence || Promise.resolve())
       .catch(() => {})
@@ -727,10 +749,7 @@ class CreatorRenderEngine {
         throw new Error('Export verification failed.');
       await this.run(state, ['-nostdin', '-v', 'error', '-i', 'output.mp4', '-f', 'null', '-']);
       await this.run(state, ['-nostdin', '-y', '-i', 'output.mp4', '-frames:v', '1', 'cover.png']);
-      state.outputSha256 = crypto
-        .createHash('sha256')
-        .update(await fs.readFile(path.join(state.directory, 'output.mp4')))
-        .digest('hex');
+      state.outputSha256 = await sha256File(path.join(state.directory, 'output.mp4'));
       await fs.writeFile(
         path.join(state.directory, 'verification.json'),
         JSON.stringify({
@@ -779,8 +798,15 @@ class CreatorRenderEngine {
           ['output.mp4', 'video.mp4'],
           ['captions.srt', 'captions.srt'],
           ['cover.png', 'cover.png'],
-        ])
-          zip.file(target, await fs.readFile(path.join(state.directory, source)));
+        ]) {
+          const filePath = path.join(state.directory, source);
+          try {
+            await fs.access(filePath);
+            zip.file(target, nodeFs.createReadStream(filePath));
+          } catch {
+            // Skip missing optional assets
+          }
+        }
         const p =
           state.plan ||
           JSON.parse(await fs.readFile(path.join(state.directory, 'plan.json'), 'utf8'));
@@ -801,10 +827,14 @@ class CreatorRenderEngine {
             2,
           ),
         );
-        await fs.writeFile(temporary, await zip.generateAsync({ type: 'nodebuffer' }), {
-          flag: 'wx',
+        const writeStream = nodeFs.createWriteStream(temporary, {
+          flags: 'wx',
           mode: 0o600,
         });
+        await pipeline(
+          zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true, compression: 'STORE' }),
+          writeStream,
+        );
       } else
         await fs.copyFile(
           path.join(state.directory, 'output.mp4'),
