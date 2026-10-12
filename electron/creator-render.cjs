@@ -23,6 +23,12 @@ function planHash(plan) {
   const { contentHash: _hash, ...snapshot } = plan;
   return crypto.createHash('sha256').update(canonical(snapshot)).digest('hex');
 }
+async function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  const stream = require('node:fs').createReadStream(filePath);
+  for await (const chunk of stream) hash.update(chunk);
+  return hash.digest('hex');
+}
 function text(value, limit = 4000) {
   return typeof value === 'string' && value.length <= limit && !value.includes('\0');
 }
@@ -235,10 +241,7 @@ class CreatorRenderEngine {
         throw new Error('Verified offline rendering runtime is not provisioned.');
       for (const name of ['ffmpeg', 'ffprobe']) {
         const file = path.join(directory, name + (process.platform === 'win32' ? '.exe' : ''));
-        const hash = crypto
-          .createHash('sha256')
-          .update(await fs.readFile(file))
-          .digest('hex');
+        const hash = await sha256File(file);
         if (hash !== manifest.files[name])
           throw new Error('Rendering runtime integrity check failed.');
       }
@@ -355,10 +358,7 @@ class CreatorRenderEngine {
     const verified = JSON.parse(
       await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'),
     );
-    const hash = crypto
-      .createHash('sha256')
-      .update(await fs.readFile(output))
-      .digest('hex');
+    const hash = await sha256File(output);
     if (hash !== verified.outputSha256) throw new Error('Delivery checksum verification failed.');
     return { url: pathToFileURL(output).href, contentHash: job.contentHash };
   }
@@ -366,14 +366,20 @@ class CreatorRenderEngine {
     if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');
     const caps = await this.capabilities();
     if (!caps.available) return { available: false, reason: caps.reason };
-    const record = await this.getMediaStore().read(mediaId);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
     if (!record) return { available: false, reason: 'Registered media is missing.' };
-    const metadata = await this.probe(fileURLToPath(record.localUrl));
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const metadata = await this.probe(filePath);
     return {
       available: true,
       durationSeconds: Number(metadata.format.duration) || undefined,
       mimeType: record.mimeType,
-      sha256: crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex'),
+      sha256:
+        record.sha256 ||
+        (record.bytes
+          ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+          : undefined),
       streamTypes: metadata.streams.map((stream) => stream.codec_type),
     };
   }
@@ -382,10 +388,14 @@ class CreatorRenderEngine {
     const caps = await this.capabilities();
     if (!caps.available) throw new Error(caps.reason);
     const store = this.getMediaStore();
-    const record = await store.read(mediaId);
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
     if (!record || !record.mimeType.startsWith('video/'))
       throw new Error('Video media is missing.');
-    const sha256 = crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex');
+    const sha256 =
+      record.sha256 ||
+      (record.bytes
+        ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+        : undefined);
     const key = `proxy:${sha256}:720-v1`;
     const existing = await store.read(key);
     if (existing) return { key, url: existing.localUrl, sha256 };
@@ -409,7 +419,7 @@ class CreatorRenderEngine {
           '-format_whitelist',
           MEDIA_FORMATS,
           '-i',
-          fileURLToPath(record.localUrl),
+          record.path || fileURLToPath(record.localUrl),
           '-vf',
           'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
           '-c:v',
@@ -548,19 +558,26 @@ class CreatorRenderEngine {
         ...p.clips.filter((c) => c.type === 'audio'),
       ];
       for (const c of ordered) {
-        const record = await this.getMediaStore().read(c.mediaId);
+        const store = this.getMediaStore();
+        const record = store.resolve ? await store.resolve(c.mediaId) : await store.read(c.mediaId);
         if (!record) throw new Error(`Missing media for clip ${c.id}.`);
-        if (
-          p.mediaHashes &&
-          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
-            p.mediaHashes[c.mediaId]
-        )
+        const mediaSha256 =
+          record.sha256 ||
+          (record.bytes
+            ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+            : undefined);
+        if (p.mediaHashes && mediaSha256 !== p.mediaHashes[c.mediaId])
           throw new Error(`Media changed after delivery check: ${c.id}.`);
         const ext = c.type === 'image' ? '.png' : c.type === 'audio' ? '.audio' : '.video';
         const filename = `input-${index}${ext}`;
-        await fs.writeFile(path.join(state.directory, filename), Buffer.from(record.bytes), {
-          mode: 0o600,
-        });
+        const inputTarget = path.join(state.directory, filename);
+        if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
+          await fs.copyFile(record.path || fileURLToPath(record.localUrl), inputTarget);
+        } else {
+          await fs.writeFile(inputTarget, Buffer.from(record.bytes), {
+            mode: 0o600,
+          });
+        }
         let metadata;
         try {
           metadata = await this.probe(path.join(state.directory, filename));
@@ -614,16 +631,25 @@ class CreatorRenderEngine {
         index++;
       }
       if (p.style?.logoAssetId) {
-        const record = await this.getMediaStore().read(p.style.logoAssetId);
+        const store = this.getMediaStore();
+        const record = store.resolve
+          ? await store.resolve(p.style.logoAssetId)
+          : await store.read(p.style.logoAssetId);
         if (!record || !record.mimeType.startsWith('image/'))
           throw new Error('Style logo media is missing or invalid.');
-        if (
-          p.mediaHashes &&
-          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
-            p.mediaHashes[p.style.logoAssetId]
-        )
+        const logoSha256 =
+          record.sha256 ||
+          (record.bytes
+            ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+            : undefined);
+        if (p.mediaHashes && logoSha256 !== p.mediaHashes[p.style.logoAssetId])
           throw new Error('Style logo changed after delivery check.');
-        await fs.writeFile(path.join(state.directory, 'logo.png'), Buffer.from(record.bytes));
+        const logoTarget = path.join(state.directory, 'logo.png');
+        if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
+          await fs.copyFile(record.path || fileURLToPath(record.localUrl), logoTarget);
+        } else {
+          await fs.writeFile(logoTarget, Buffer.from(record.bytes));
+        }
         args.push(
           '-protocol_whitelist',
           'file,pipe',
@@ -742,12 +768,7 @@ class CreatorRenderEngine {
       state.outputSha256 ||
       JSON.parse(await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'))
         .outputSha256;
-    if (
-      crypto
-        .createHash('sha256')
-        .update(await fs.readFile(path.join(state.directory, 'output.mp4')))
-        .digest('hex') !== verification
-    )
+    if ((await sha256File(path.join(state.directory, 'output.mp4'))) !== verification)
       throw new Error('Rendered video integrity verification failed. Retry export.');
     const temporary = `${destination}.${crypto.randomUUID()}.partial`;
     try {

@@ -160,7 +160,7 @@ class DesktopMediaStore {
 
   async importBytes({ key, bytes, mimeType = 'video/mp4', metadata = {} }) {
     if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
-    const buffer = Buffer.from(bytes);
+    const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
     if (buffer.length === 0) throw new Error('Migrated media is empty.');
     const directory = path.join(this.rootPath, 'media');
     await fs.promises.mkdir(directory, { recursive: true });
@@ -259,7 +259,7 @@ class DesktopMediaStore {
     return records;
   }
 
-  async read(key) {
+  async resolve(key) {
     if (typeof key !== 'string') throw new Error('Invalid media key.');
     const record = (await this.records()).find(
       (item) => item.key === key || `desktop:${item.path}` === key || item.localUrl === key,
@@ -270,11 +270,24 @@ class DesktopMediaStore {
     if (!realPath.startsWith(`${mediaDirectory}${path.sep}`))
       throw new Error('Media path outside store.');
     if (!(await this.verify(record))) throw new Error('Stored media checksum verification failed.');
-    const buffer = await fs.promises.readFile(record.path);
+    return {
+      key: record.key,
+      path: realPath,
+      localUrl: pathToFileURL(realPath).href,
+      mimeType: record.mimeType,
+      sha256: record.sha256,
+      sizeBytes: record.sizeBytes,
+    };
+  }
+
+  async read(key) {
+    const resolved = await this.resolve(key);
+    if (!resolved) return null;
+    const buffer = await fs.promises.readFile(resolved.path);
     return {
       bytes: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
-      mimeType: record.mimeType,
-      localUrl: pathToFileURL(realPath).href,
+      mimeType: resolved.mimeType,
+      localUrl: resolved.localUrl,
     };
   }
 

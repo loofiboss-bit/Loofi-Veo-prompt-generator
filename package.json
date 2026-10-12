@@ -61,7 +61,9 @@
     "media-runtime:build:linux": "bash scripts/build-media-runtime-linux.sh",
     "media-runtime:build:windows": "bash scripts/build-media-runtime-windows.sh",
     "media-runtime:check": "node scripts/check-media-runtime.mjs",
-    "media-runtime:provision": "node scripts/provision-media-runtime.mjs"
+    "media-runtime:provision": "node scripts/provision-media-runtime.mjs",
+    "benchmark": "node benchmarks/run-benchmarks.mjs",
+    "benchmark:baseline": "node benchmarks/run-benchmarks.mjs --save-baseline"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

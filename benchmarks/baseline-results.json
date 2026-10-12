@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-10-12T13:53:19.380Z",
+  "media": {
+    "testFileSizeMb": 40,
+    "bufferedSha": {
+      "durationMs": 50,
+      "heapDeltaMb": 0.05
+    },
+    "streamedSha": {
+      "durationMs": 74,
+      "heapDeltaMb": 0.29
+    },
+    "b64Conversion": {
+      "durationMs": 35,
+      "heapDeltaMb": 0.01
+    },
+    "directBinary": {
+      "durationMs": 0,
+      "heapDeltaMb": 0
+    },
+    "hashesMatch": true
+  },
+  "render": {
+    "progressUpdates": {
+      "totalTicks": 500,
+      "unthrottled": {
+        "diskWrites": 500,
+        "ipcEvents": 500,
+        "durationMs": 38
+      },
+      "throttled": {
+        "diskWrites": 2,
+        "ipcEvents": 2,
+        "durationMs": 0
+      },
+      "diskIoReductionPct": 99.6
+    },
+    "zipPackaging": {
+      "payloadSizeMb": 25,
+      "outputSizeMb": 25,
+      "durationMs": 103,
+      "heapDeltaMb": 0
+    }
+  },
+  "startup": {
+    "eagerModules": {
+      "durationMs": 124.11,
+      "heapUsedMb": 3.76,
+      "rssMb": 67.43
+    },
+    "leanStartup": {
+      "durationMs": 0.12,
+      "heapUsedMb": 0,
+      "rssMb": 51.15
+    },
+    "savedDurationMs": 123.99,
+    "savedHeapMb": 3.76
+  },
+  "threejs": {
+    "frames": 100,
+    "currentPattern": {
+      "totalGeometriesCreated": 500,
+      "totalMaterialsCreated": 500,
+      "durationMs": 28.58
+    },
+    "optimizedPattern": {
+      "totalGeometriesCreated": 1,
+      "totalMaterialsCreated": 1,
+      "durationMs": 1.16
+    },
+    "allocationReductionPct": 99.8,
+    "durationReductionPct": 95.9
+  }
+}

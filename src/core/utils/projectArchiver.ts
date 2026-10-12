@@ -203,7 +203,7 @@ export const exportProjectToZip = async (
     if (asset.data || storedBlob) {
       const bytes = asset.data
         ? base64ToBytes(asset.data)
-        : base64ToBytes(await blobToBase64(storedBlob!));
+        : new Uint8Array(await storedBlob!.arrayBuffer());
       const filename = `${asset.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${extensionFor(asset.mimeType)}`;
       const archivePath = `assets/${filename}`;
       if (exportedPaths.has(archivePath))
