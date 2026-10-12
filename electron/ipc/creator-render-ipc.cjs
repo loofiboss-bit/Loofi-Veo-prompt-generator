@@ -12,22 +12,25 @@ function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow })
     if (!engine) throw new Error('Render engine is not ready.');
     return engine;
   };
-  ipcMain.handle('timeline-render-capabilities', (event) => authorize(event).capabilities());
-  ipcMain.handle('timeline-render-start', (event, plan) => authorize(event).start(plan));
-  ipcMain.handle('timeline-render-get', (event, id) => authorize(event).get(id));
-  ipcMain.handle('timeline-render-list', (event, projectId) => authorize(event).list(projectId));
-  ipcMain.handle('timeline-render-retry', (event, id) => authorize(event).retry(id));
-  ipcMain.handle('timeline-render-preview', (event, id) => authorize(event).preview(id));
-  ipcMain.handle('timeline-render-inspect-media', (event, mediaId) =>
-    authorize(event).inspectMedia(mediaId),
-  );
-  ipcMain.handle('timeline-render-proxy', (event, mediaId) => authorize(event).proxy(mediaId));
-  ipcMain.handle('timeline-render-cancel', async (event, id) => {
-    await authorize(event).cancel(id);
-    return true;
-  });
-  ipcMain.handle('timeline-render-save', async (event, input) => {
+  const withReadyEngine = (fn) => (event, ...args) => {
     const engine = authorize(event);
+    return Promise.resolve(engine.ready ? engine.ready() : engine).then(() => fn(engine, ...args));
+  };
+  ipcMain.handle('timeline-render-capabilities', withReadyEngine((engine) => engine.capabilities()));
+  ipcMain.handle('timeline-render-start', withReadyEngine((engine, plan) => engine.start(plan)));
+  ipcMain.handle('timeline-render-get', withReadyEngine((engine, id) => engine.get(id)));
+  ipcMain.handle('timeline-render-list', withReadyEngine((engine, projectId) => engine.list(projectId)));
+  ipcMain.handle('timeline-render-retry', withReadyEngine((engine, id) => engine.retry(id)));
+  ipcMain.handle('timeline-render-preview', withReadyEngine((engine, id) => engine.preview(id)));
+  ipcMain.handle('timeline-render-inspect-media', withReadyEngine((engine, mediaId) =>
+    engine.inspectMedia(mediaId),
+  ));
+  ipcMain.handle('timeline-render-proxy', withReadyEngine((engine, mediaId) => engine.proxy(mediaId)));
+  ipcMain.handle('timeline-render-cancel', withReadyEngine(async (engine, id) => {
+    await engine.cancel(id);
+    return true;
+  }));
+  ipcMain.handle('timeline-render-save', withReadyEngine(async (engine, input) => {
     if (!input || typeof input.id !== 'string' || typeof input.package !== 'boolean')
       throw new Error('Invalid export save request.');
     const job = engine.get(input.id);
@@ -48,6 +51,6 @@ function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow })
         'Delivery could not be saved. Check destination permissions and free space; the previous file is preserved.',
       );
     }
-  });
+  }));
 }
 module.exports = { registerCreatorRenderIpc };

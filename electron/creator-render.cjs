@@ -193,7 +193,15 @@ class CreatorRenderEngine {
     this.onUpdate = onUpdate;
     this.jobs = new Map();
   }
-  async initialize() {
+  initialize() {
+    this.readyPromise = (this.readyPromise || this._initInternal()).catch(() => {});
+    return this.readyPromise;
+  }
+  async ready() {
+    if (this.readyPromise) await this.readyPromise;
+    return this;
+  }
+  async _initInternal() {
     let entries;
     try {
       await fs.mkdir(this.root, { recursive: true });
