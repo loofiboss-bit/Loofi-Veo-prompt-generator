@@ -48,6 +48,18 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
   const isDraggingRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
 
+  // Persistent Three.js renderer, scene & reusable resource refs
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const disposablesRef = useRef<Array<{ dispose: () => void }>>([]);
+  const sceneNodesRef = useRef<{
+    camGroup?: THREE.Group;
+    frustumGeom?: THREE.BufferGeometry;
+    dofPlane?: THREE.Mesh;
+    observerCam?: THREE.PerspectiveCamera;
+    directorCam?: THREE.PerspectiveCamera;
+  }>({});
+
   // Animation frame loop for playback
   useEffect(() => {
     if (!isPlaying) return;
@@ -83,12 +95,131 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
     return () => cancelAnimationFrame(animId);
   }, [isPlaying, rig.trajectorySpeed]);
 
-  // Three.js Scene Setup & Render
+  // Render current frame with updated transforms (no geometry/material reallocation)
+  const renderFrame = useCallback(() => {
+    const renderer = rendererRef.current;
+    const scene = sceneRef.current;
+    if (!renderer || !scene) return;
+
+    const currentTransform = calculateCameraTransform(rig, progress);
+
+    if (activePass === 'staging') {
+      const { camGroup, dofPlane, frustumGeom, observerCam } = sceneNodesRef.current;
+      if (camGroup) {
+        camGroup.position.set(
+          currentTransform.position.x,
+          currentTransform.position.y,
+          currentTransform.position.z,
+        );
+        camGroup.lookAt(
+          currentTransform.target.x,
+          currentTransform.target.y,
+          currentTransform.target.z,
+        );
+        if (currentTransform.rollAngleDegrees) {
+          camGroup.rotateZ((currentTransform.rollAngleDegrees * Math.PI) / 180);
+        }
+      }
+
+      if (frustumGeom) {
+        const frustumDistance = Math.min(currentTransform.focalDistanceMeters, 4.0);
+        const vFovRad = (currentTransform.fov * Math.PI) / 180;
+        const hHeight = Math.tan(vFovRad / 2) * frustumDistance;
+        const hWidth = hHeight * (16 / 9);
+        const posAttr = frustumGeom.getAttribute('position') as THREE.BufferAttribute | undefined;
+        if (posAttr) {
+          const arr = posAttr.array as Float32Array;
+          arr[3] = -hWidth;
+          arr[4] = hHeight;
+          arr[5] = -frustumDistance;
+          arr[9] = hWidth;
+          arr[10] = hHeight;
+          arr[11] = -frustumDistance;
+          arr[15] = hWidth;
+          arr[16] = -hHeight;
+          arr[17] = -frustumDistance;
+          arr[21] = -hWidth;
+          arr[22] = -hHeight;
+          arr[23] = -frustumDistance;
+          arr[24] = -hWidth;
+          arr[25] = hHeight;
+          arr[26] = -frustumDistance;
+          arr[27] = hWidth;
+          arr[28] = hHeight;
+          arr[29] = -frustumDistance;
+          arr[30] = hWidth;
+          arr[31] = hHeight;
+          arr[32] = -frustumDistance;
+          arr[33] = hWidth;
+          arr[34] = -hHeight;
+          arr[35] = -frustumDistance;
+          arr[36] = hWidth;
+          arr[37] = -hHeight;
+          arr[38] = -frustumDistance;
+          arr[39] = -hWidth;
+          arr[40] = -hHeight;
+          arr[41] = -frustumDistance;
+          arr[42] = -hWidth;
+          arr[43] = -hHeight;
+          arr[44] = -frustumDistance;
+          arr[45] = -hWidth;
+          arr[46] = hHeight;
+          arr[47] = -frustumDistance;
+          posAttr.needsUpdate = true;
+        }
+      }
+
+      if (dofPlane) {
+        dofPlane.position.set(
+          currentTransform.target.x,
+          currentTransform.target.y,
+          currentTransform.target.z,
+        );
+        dofPlane.lookAt(
+          currentTransform.position.x,
+          currentTransform.position.y,
+          currentTransform.position.z,
+        );
+      }
+
+      if (observerCam) {
+        const { theta, phi, radius } = stagingOrbitRef.current;
+        observerCam.position.set(
+          radius * Math.sin(phi) * Math.cos(theta),
+          radius * Math.cos(phi),
+          radius * Math.sin(phi) * Math.sin(theta),
+        );
+        observerCam.lookAt(0, 1.1, 0);
+        renderer.render(scene, observerCam);
+      }
+    } else {
+      const { directorCam } = sceneNodesRef.current;
+      if (directorCam) {
+        directorCam.fov = currentTransform.fov;
+        directorCam.position.set(
+          currentTransform.position.x,
+          currentTransform.position.y,
+          currentTransform.position.z,
+        );
+        directorCam.lookAt(
+          currentTransform.target.x,
+          currentTransform.target.y,
+          currentTransform.target.z,
+        );
+        if (currentTransform.rollAngleDegrees) {
+          directorCam.rotation.z = (currentTransform.rollAngleDegrees * Math.PI) / 180;
+        }
+        directorCam.updateProjectionMatrix();
+        renderer.render(scene, directorCam);
+      }
+    }
+  }, [activePass, progress, rig]);
+
+  // Renderer lifecycle: Initialize WebGLRenderer once per canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let renderer: THREE.WebGLRenderer | null = null;
     try {
       const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
       if (!gl) {
@@ -96,7 +227,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
         return;
       }
 
-      renderer = new THREE.WebGLRenderer({
+      const renderer = new THREE.WebGLRenderer({
         canvas,
         antialias: true,
         alpha: true,
@@ -106,16 +237,35 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       const width = canvas.clientWidth || 640;
       const height = canvas.clientHeight || 360;
       renderer.setSize(width, height, false);
+      rendererRef.current = renderer;
       setWebGlSupported(true);
     } catch {
       setWebGlSupported(false);
       return;
     }
 
+    return () => {
+      rendererRef.current?.dispose();
+      rendererRef.current = null;
+    };
+  }, []);
+
+  // Scene lifecycle: Instantiate Scene, Geometries, Materials and Lights (only when pass/subjects/waypoints change)
+  useEffect(() => {
+    // Dispose previous scene resources
+    disposablesRef.current.forEach((d) => d.dispose());
+    disposablesRef.current = [];
+    sceneNodesRef.current = {};
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(
       activePass === 'depth' ? 0x000000 : activePass === 'normal' ? 0x8080ff : 0x070a12,
     );
+
+    const aspect = (canvas.clientWidth || 640) / (canvas.clientHeight || 360);
 
     // Subject Meshes
     subjects.forEach((subj) => {
@@ -136,6 +286,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
         });
       }
 
+      disposablesRef.current.push(geom, mat);
       const mesh = new THREE.Mesh(geom, mat);
       mesh.position.set(subj.position.x, subj.position.y, subj.position.z);
       scene.add(mesh);
@@ -144,6 +295,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
     if (activePass === 'staging') {
       // Cine Floor Grid
       const grid = new THREE.GridHelper(12, 24, 0x38bdf8, 0x1e293b);
+      disposablesRef.current.push(grid.geometry, grid.material as THREE.Material);
       scene.add(grid);
 
       // Trajectory Spline Curve
@@ -155,6 +307,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
         color: 0x06b6d4,
         linewidth: 2,
       });
+      disposablesRef.current.push(curveGeom, curveMat);
       const curveLine = new THREE.Line(curveGeom, curveMat);
       scene.add(curveLine);
 
@@ -219,6 +372,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       ]);
       frustumGeom.setAttribute('position', new THREE.BufferAttribute(frustumVertices, 3));
       const frustumMat = new THREE.LineBasicMaterial({ color: 0xf59e0b });
+      disposablesRef.current.push(frustumGeom, frustumMat);
       const frustumLines = new THREE.LineSegments(frustumGeom, frustumMat);
 
       // Camera Object Group
@@ -232,6 +386,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       // Camera Body Mesh
       const bodyGeom = new THREE.BoxGeometry(0.35, 0.25, 0.45);
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+      disposablesRef.current.push(bodyGeom, bodyMat);
       const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
       bodyMesh.position.set(0, 0, 0.22);
       camGroup.add(bodyMesh);
@@ -240,6 +395,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       const lensGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.2, 16);
       lensGeom.rotateX(Math.PI / 2);
       const lensMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 });
+      disposablesRef.current.push(lensGeom, lensMat);
       const lensMesh = new THREE.Mesh(lensGeom, lensMat);
       lensMesh.position.set(0, 0, -0.1);
       camGroup.add(lensMesh);
@@ -255,6 +411,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
         opacity: 0.15,
         side: THREE.DoubleSide,
       });
+      disposablesRef.current.push(dofPlaneGeom, dofPlaneMat);
       const dofPlane = new THREE.Mesh(dofPlaneGeom, dofPlaneMat);
       dofPlane.position.set(transform.target.x, transform.target.y, transform.target.z);
       dofPlane.lookAt(transform.position.x, transform.position.y, transform.position.z);
@@ -266,21 +423,16 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       keyLight.position.set(6, 10, 6);
       scene.add(ambientLight, keyLight);
 
-      // Exterior Staging Observer Camera controlled by orbit angles
-      const aspect = (canvas.clientWidth || 640) / (canvas.clientHeight || 360);
+      // Observer camera
       const observerCam = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-      const { theta, phi, radius } = stagingOrbitRef.current;
-      observerCam.position.set(
-        radius * Math.sin(phi) * Math.cos(theta),
-        radius * Math.cos(phi),
-        radius * Math.sin(phi) * Math.sin(theta),
-      );
-      observerCam.lookAt(0, 1.1, 0);
 
-      renderer.render(scene, observerCam);
+      sceneNodesRef.current = {
+        camGroup,
+        frustumGeom,
+        dofPlane,
+        observerCam,
+      };
     } else {
-      // Director Viewfinder / Depth / Normal / Wireframe (Through the lens)
-      const aspect = (canvas.clientWidth || 640) / (canvas.clientHeight || 360);
       const directorCam = new THREE.PerspectiveCamera(transform.fov, aspect, 0.1, 100);
       directorCam.position.set(transform.position.x, transform.position.y, transform.position.z);
       directorCam.lookAt(transform.target.x, transform.target.y, transform.target.z);
@@ -295,13 +447,26 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
         scene.add(ambient, dir);
       }
 
-      renderer.render(scene, directorCam);
+      sceneNodesRef.current = {
+        directorCam,
+      };
     }
 
+    sceneRef.current = scene;
+    renderFrame();
+
     return () => {
-      renderer?.dispose();
+      disposablesRef.current.forEach((d) => d.dispose());
+      disposablesRef.current = [];
+      sceneNodesRef.current = {};
+      sceneRef.current = null;
     };
-  }, [rig, progress, activePass, transform, waypoints, subjects]);
+  }, [activePass, subjects, waypoints, transform, renderFrame]);
+
+  // Re-render frame when progress changes (no geometry/material recreation)
+  useEffect(() => {
+    renderFrame();
+  }, [renderFrame]);
 
   // Handle Mouse Drag for Orbiting Exterior View
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -309,32 +474,38 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
     lastMousePosRef.current = { x: e.clientX, y: e.clientY };
   }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDraggingRef.current) return;
-    const dx = e.clientX - lastMousePosRef.current.x;
-    const dy = e.clientY - lastMousePosRef.current.y;
-    lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const dx = e.clientX - lastMousePosRef.current.x;
+      const dy = e.clientY - lastMousePosRef.current.y;
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
 
-    stagingOrbitRef.current.theta += dx * 0.008;
-    stagingOrbitRef.current.phi = Math.max(
-      0.15,
-      Math.min(Math.PI / 2 - 0.05, stagingOrbitRef.current.phi - dy * 0.008),
-    );
-    setProgress((p) => p); // Trigger re-render
-  }, []);
+      stagingOrbitRef.current.theta += dx * 0.008;
+      stagingOrbitRef.current.phi = Math.max(
+        0.15,
+        Math.min(Math.PI / 2 - 0.05, stagingOrbitRef.current.phi - dy * 0.008),
+      );
+      renderFrame();
+    },
+    [renderFrame],
+  );
 
   const handleMouseUp = useCallback(() => {
     isDraggingRef.current = false;
   }, []);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    stagingOrbitRef.current.radius = Math.max(
-      3.0,
-      Math.min(18.0, stagingOrbitRef.current.radius + e.deltaY * 0.01),
-    );
-    setProgress((p) => p);
-  }, []);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      stagingOrbitRef.current.radius = Math.max(
+        3.0,
+        Math.min(18.0, stagingOrbitRef.current.radius + e.deltaY * 0.01),
+      );
+      renderFrame();
+    },
+    [renderFrame],
+  );
 
   // Export current pass as map
   const handleCapturePass = async (passToCapture: SpatialStagingPass) => {
