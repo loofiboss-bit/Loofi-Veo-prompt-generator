@@ -610,7 +610,11 @@ test(
       const first = await engine.proxy('original');
       const second = await engine.proxy('original');
       assert.equal(first.key, second.key);
-      assert.equal(first.url, second.url);
+      const { fileURLToPath } = require('node:url');
+      assert.equal(
+        (await fs.realpath(fileURLToPath(first.url))).toLowerCase(),
+        (await fs.realpath(fileURLToPath(second.url))).toLowerCase(),
+      );
       assert.ok((await store.read('original')).bytes.byteLength > 0);
       assert.equal((await store.records()).length, 2);
     } finally {
