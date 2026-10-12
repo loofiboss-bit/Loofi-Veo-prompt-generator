@@ -89,6 +89,8 @@ export function useProjectAutosave() {
         schedule();
     });
     const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (typeof window !== 'undefined' && (window as unknown as { electron?: unknown }).electron)
+        return;
       const id = useProjectStore.getState().currentProjectId;
       const status = id ? useProjectSaveStore.getState().projects[id]?.status : undefined;
       if (status && status !== 'saved') {
