@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "datasets": [
+    {
+      "file": "2026-10-12-fedora44-wayland.json",
+      "sha256": "8ec84109b2c5339a20f26011793a36b561c57c9bed21941ebc4c759faf324c9c"
+    },
+    {
+      "file": "2026-10-12-empty-projects.json",
+      "sha256": "50c268dd230eef19c06cae5d195f442351d2c42be5a18bf03d6243e9b4a82451"
+    },
+    {
+      "file": "2026-10-12-studio-retry.json",
+      "sha256": "d856bcff1d6f97b8cd720fc0278de68c9b100743a4086e431d8e5830434b238f"
+    }
+  ],
+  "selection": "Initial Projects runs excluded: Electron default project made inventories unequal. Studio uses four initial complete pairs and one complete retry; orphaned native run excluded. All failed attempts remain in raw datasets.",
+  "failedAttempts": 1,
+  "summary": {
+    "native": {
+      "startupMs": {
+        "count": 20,
+        "median": 496.12314600031823,
+        "minimum": 450.5442730002105,
+        "maximum": 673.7915650010109,
+        "p95": 626.945950999856
+      },
+      "resources": {
+        "projects": {
+          "pss_kib": {
+            "count": 5,
+            "median": 160391.0,
+            "minimum": 160154.0,
+            "maximum": 160682.0,
+            "p95": 160682.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 214936.0,
+            "minimum": 214580.0,
+            "maximum": 215104.0,
+            "p95": 215104.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 0.0,
+            "minimum": 0.0,
+            "maximum": 0.0,
+            "p95": 0.0
+          }
+        },
+        "studio": {
+          "pss_kib": {
+            "count": 5,
+            "median": 166372.0,
+            "minimum": 164206.0,
+            "maximum": 166891.0,
+            "p95": 166891.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 218796.0,
+            "minimum": 218492.0,
+            "maximum": 219148.0,
+            "p95": 219148.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 0.0,
+            "minimum": 0.0,
+            "maximum": 0.0,
+            "p95": 0.0
+          }
+        },
+        "video-playing": {
+          "pss_kib": {
+            "count": 5,
+            "median": 172704.0,
+            "minimum": 172226.0,
+            "maximum": 173920.0,
+            "p95": 173920.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 227060.0,
+            "minimum": 226896.0,
+            "maximum": 227396.0,
+            "p95": 227396.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 9.699974927181236,
+            "minimum": 8.799977944028829,
+            "maximum": 11.73329448908854,
+            "p95": 11.73329448908854
+          }
+        },
+        "video-paused": {
+          "pss_kib": {
+            "count": 5,
+            "median": 171358.0,
+            "minimum": 171097.0,
+            "maximum": 174258.0,
+            "p95": 174258.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 226148.0,
+            "minimum": 225828.0,
+            "maximum": 229148.0,
+            "p95": 229148.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 0.0,
+            "minimum": 0.0,
+            "maximum": 0.03333324265358102,
+            "p95": 0.03333324265358102
+          }
+        }
+      }
+    },
+    "electron": {
+      "startupMs": {
+        "count": 20,
+        "median": 1601.7469514999539,
+        "minimum": 1543.0433160010725,
+        "maximum": 2166.866079000756,
+        "p95": 2133.0409989990294
+      },
+      "resources": {
+        "projects": {
+          "pss_kib": {
+            "count": 5,
+            "median": 397797.0,
+            "minimum": 396731.0,
+            "maximum": 398763.0,
+            "p95": 398763.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 823456.0,
+            "minimum": 822828.0,
+            "maximum": 826396.0,
+            "p95": 826396.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 0.7333285573111029,
+            "minimum": 0.46666502735021503,
+            "maximum": 0.8666639791994366,
+            "p95": 0.8666639791994366
+          }
+        },
+        "studio": {
+          "pss_kib": {
+            "count": 5,
+            "median": 391625.0,
+            "minimum": 391316.0,
+            "maximum": 393452.0,
+            "p95": 393452.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 820188.0,
+            "minimum": 819624.0,
+            "maximum": 823466.0,
+            "p95": 823466.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 0.6333309818387253,
+            "minimum": 0.26666587474012937,
+            "maximum": 0.7333306047079067,
+            "p95": 0.7333306047079067
+          }
+        },
+        "video-playing": {
+          "pss_kib": {
+            "count": 5,
+            "median": 459215.0,
+            "minimum": 456673.0,
+            "maximum": 461719.0,
+            "p95": 461719.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 900502.0,
+            "minimum": 896586.0,
+            "maximum": 903098.0,
+            "p95": 903098.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 2.8333263370950834,
+            "minimum": 2.766654808876342,
+            "maximum": 9.899930116723276,
+            "p95": 9.899930116723276
+          }
+        },
+        "video-paused": {
+          "pss_kib": {
+            "count": 5,
+            "median": 448153.0,
+            "minimum": 447105.0,
+            "maximum": 449849.0,
+            "p95": 449849.0
+          },
+          "rss_kib": {
+            "count": 5,
+            "median": 885632.0,
+            "minimum": 883124.0,
+            "maximum": 886884.0,
+            "p95": 886884.0
+          },
+          "cpu_percent_one_core": {
+            "count": 5,
+            "median": 0.8333307358136481,
+            "minimum": 0.39999775726589426,
+            "maximum": 0.8999962822353565,
+            "p95": 0.8999962822353565
+          }
+        }
+      }
+    }
+  }
+}
