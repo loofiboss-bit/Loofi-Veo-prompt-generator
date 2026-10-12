@@ -4,20 +4,16 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v15.0.0 Creator Delivery
+## v16.0.0 Local Creator Editing & Delivery
 
-v15 adds offline short-video creation and delivery: Start, twelve recipes, three original CC0
-example projects, local style snapshots, captions, verified H.264/AAC MP4 rendering and publication
-ZIP packages. Bundled source-built FFmpeg resources support Linux and Windows without a separate
-system FFmpeg installation or startup download. Existing project and archive formats remain compatible.
+v16 connects personal clip imports, durable timeline editing, linked captions, atomic IndexedDB document persistence, conflict recovery, and verified offline MP4 delivery up to three minutes. Bundled source-built FFmpeg resources support Linux and Windows without external dependencies. Existing project and archive formats remain compatible.
 
-See [delivery contracts](CREATOR_DELIVERY.md) and [local verification](CREATOR_V15_VERIFICATION.md).
-Optional Gemini proposals remain approval-gated; social publication is a manual handoff.
+See [v16 workflow](CREATOR_V16.md), [timeline editing](V16_TIMELINE_EDITING.md), and [local verification](CREATOR_V16_VERIFICATION.md).
 
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v15.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
+[v16.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -25,17 +21,17 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-15.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-15.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-16.0.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-16.0.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.
 Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
 
-Local implementation evidence records 4,270 unit/integration tests and 115 desktop tests, plus
-five AI-driven workflow scenarios and an isolated packaged Linux export. The current PR and tag
+Local implementation evidence records 4,305 unit/integration tests and 120 desktop tests, plus
+seven focused Chromium scenarios, refreshed Ubuntu/Linux visual baselines, and isolated packaged Linux exports. The current PR and tag
 workflow must pass independently; these counts do not certify human onboarding or physical platforms.
 
 ## Local release gates
@@ -130,6 +126,10 @@ Automated release evidence does not imply physical desktop qualification. Keep t
 - paid provider execution after a real approval and price review.
 
 ## Historical releases
+
+- [v15.0.0 Creator Delivery](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
+
+- [v14.2.1 Connected Creator Flow](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.1)
 
 - [v14.1.0 Prompt Quality & Safe Iteration](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.1.0)
 

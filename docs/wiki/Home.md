@@ -8,7 +8,7 @@ Loofi Creator Studio is the local-first workspace behind the **Loofi Veo Prompt 
 repository. Draft video direction, compare model-tailored packages, refine lyrics and preserve your
 iterations before handing work to your chosen generator.
 
-This wiki covers **v15.0.0**. Download the desktop app through
+This wiki covers **v16.0.0**. Download the desktop app through
 [Installation and Updates](Installation-and-Updates.md), then follow the Quick Start below.
 
 Start also offers local recipes and offline example projects. Add captions and a saved style, then

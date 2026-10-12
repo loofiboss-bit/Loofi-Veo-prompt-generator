@@ -1,5 +1,13 @@
 # Release Notes
 
+## v16.0.0 — Local Creator Editing
+
+Create and deliver short videos completely offline from your own clips, audio, and images. Features a local timeline editor, atomic IndexedDB document persistence, conflict recovery, linked captions, debounced autosave, and verified 180-second H.264/AAC MP4 exports.
+
+[Download v16.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0)
+
+See the [v16 workflow](../CREATOR_V16.md) and [verification boundaries](../CREATOR_V16_VERIFICATION.md).
+
 ## v15.0.0 — Creator Delivery
 
 Create short videos locally using twelve recipes, three offline examples, saved style profiles and

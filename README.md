@@ -20,7 +20,7 @@
 
 [![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1500)
+[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1600)
 [![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
@@ -29,10 +29,9 @@
 The download counter counts all release assets, including checksums and metadata; it is not a count
 of unique users or installations.
 
-## v16 development: your clips to a finished video
+## v16: your clips to a finished video
 
-The working source targets **16.0.0**, which is not published. The download links below continue to
-point to the published v15 release.
+Loofi Creator Studio v16 adds reliable local editing, atomic project document persistence, linked captions, and verified offline MP4 delivery up to three minutes.
 
 1. On **Start**, choose **Create from your own clips** and select video, images or audio.
 2. Arrange and trim clips in the local editor. Add captions or import SRT with Add/Replace.
@@ -189,19 +188,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v15.0.0
+## Install v16.0.0
 
-Download the [v15.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
+Download the [v16.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-15.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-15.0.0-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-16.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-16.0.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -220,8 +219,8 @@ already installed.
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-15.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.AppImage
 ```
 
 ## v15: from an idea to a video
