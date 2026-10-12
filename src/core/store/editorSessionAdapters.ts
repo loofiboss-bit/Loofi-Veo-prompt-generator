@@ -228,4 +228,7 @@ export function applyProjectDocumentToStores(project: EditorProjectDocument): vo
     lastEvaluation: null,
     isPanelOpen: false,
   }));
+  // Undo history belongs to the loaded document, never the previous project.
+  useAppStore.temporal.getState().clear();
+  useComposerStore.temporal.getState().clear();
 }

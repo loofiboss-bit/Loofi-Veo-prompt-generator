@@ -1,3 +1,4 @@
+import { useProjectAutosave } from '@shared/hooks/useProjectAutosave';
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 
@@ -69,6 +70,7 @@ function getRoutedSection(pathname: string): string {
 }
 
 export function AppRuntime() {
+  useProjectAutosave();
   // ---------- Store & top-level hooks ----------
   const store = useAppStore();
   const {

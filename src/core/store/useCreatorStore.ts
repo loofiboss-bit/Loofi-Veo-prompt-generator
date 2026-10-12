@@ -1,3 +1,4 @@
+import { mediaAssetService } from '@core/services/mediaAssetService';
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import type { Project } from '@core/types';
@@ -9,7 +10,7 @@ import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
-import { resolveProjectAssetBlob } from '@core/utils/projectArchiver';
+import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
 import { useAppStore } from '@core/store/useAppStore';
 
 async function preserveCurrent(): Promise<void> {
@@ -17,14 +18,14 @@ async function preserveCurrent(): Promise<void> {
     throw new Error('Save the Studio draft before continuing.');
   const projects = useProjectStore.getState();
   const current = projects.projects.find((project) => project.id === projects.currentProjectId);
-  if (current)
+  if (current && useProjectSaveStore.getState().projects[current.id]?.status !== 'saved')
     await projectDocumentService.save(
       useEditorSessionStore.getState().captureCurrentProjectDocument(current),
     );
 }
 interface RecentCreatorProject {
-  project: Project;
-  mediaReady: boolean;
+  project: Pick<Project, 'id' | 'name' | 'lastModified'>;
+  mediaReady?: boolean;
   previewUrl?: string;
 }
 interface CreatorStore {
@@ -41,6 +42,7 @@ interface CreatorStore {
     name: string,
     offline?: boolean,
   ) => Promise<boolean>;
+  createFromFiles: (files: File[], name: string) => Promise<boolean>;
   saveStyle: (profile: CreatorStyleProfileV1) => Promise<boolean>;
   applyStyle: (profile: CreatorStyleProfileV1) => Promise<boolean>;
   saveTemplate: (recipe: CreatorRecipeV1, idea: string, title: string) => Promise<void>;
@@ -78,40 +80,14 @@ export const useCreatorStore = create<CreatorStore>()(
         initialize: async () => {
           await run(async () => {
             await useProjectStore.getState().refreshProjects();
-            const recent: RecentCreatorProject[] = [];
-            for (const metadata of useProjectStore
+            const recent = useProjectStore
               .getState()
               .projects.filter((item) => item.status === 'active')
-              .slice(0, 6)) {
-              const project = await projectDocumentService.load(metadata.id);
-              if (!project) continue;
-              await hydrateProjectMedia(project);
-              const shots = project.storyboard.shots;
-              const clips =
-                project.storyboard.timeline?.clips.filter(
-                  (clip) => clip.type === 'video' || clip.type === 'image' || clip.type === 'audio',
-                ) ?? [];
-              const available = await Promise.all(
-                clips.map(async (clip) => {
-                  const shot = shots.find((candidate) => candidate.id === clip.resourceId);
-                  const asset = useAppStore
-                    .getState()
-                    .assets.find(
-                      (candidate) =>
-                        candidate.id === clip.resourceId ||
-                        candidate.id === shot?.stockSourceId ||
-                        candidate.url === shot?.generatedVideoUrl,
-                    );
-                  return Boolean(asset && (await resolveProjectAssetBlob(asset)));
-                }),
-              );
-              const mediaReady = clips.length > 0 && available.every(Boolean);
-              recent.push({
-                project,
-                mediaReady,
-                previewUrl: shots.find((shot) => shot.generatedVideoUrl)?.generatedVideoUrl,
-              });
-            }
+              .sort((a, b) => b.modifiedAt - a.modifiedAt)
+              .slice(0, 6)
+              .map((item) => ({
+                project: { id: item.id, name: item.name, lastModified: item.modifiedAt },
+              }));
             set({ recent, profiles: await creatorStyleService.list() });
           });
         },
@@ -134,6 +110,27 @@ export const useCreatorStore = create<CreatorStore>()(
             assets.forEach((asset) => useAppStore.getState().addAsset(asset));
             await useProjectStore.getState().refreshProjects();
             await activate(project);
+          }),
+        createFromFiles: async (files, name) =>
+          run(async () => {
+            await preserveCurrent();
+            const { project, assets } = await creatorRecipeService.createFromFiles(files, name);
+            assets.forEach((asset) => useAppStore.getState().addAsset(asset));
+            await useProjectStore.getState().refreshProjects();
+            await activate(project);
+            void (async () => {
+              for (const asset of assets) {
+                try {
+                  const prepared = await mediaAssetService.prepareDesktopProxy(asset);
+                  useAppStore.getState().updateAsset(asset.id, {
+                    proxyUrl: prepared.proxyUrl,
+                    isProxyReady: prepared.isProxyReady,
+                  });
+                } catch {
+                  /* Original media remains available when proxy creation fails. */
+                }
+              }
+            })();
           }),
         saveStyle: async (profile) =>
           run(async () => {

@@ -1,6 +1,23 @@
 # Quick Start
 
-Build your first copy-ready pack in the v14.1.0 workspace. Local compilation needs no API key or
+The unpublished v16 source adds a local path from your own clips to verified video delivery.
+Published downloads remain on v15 until a release is approved.
+
+## Finish a local video in v16
+
+1. Open **Start → Create from your own clips** and select video, images or audio.
+2. Trim, split and arrange the timeline. Add captions or import SRT using **Add** or **Replace**.
+3. Choose **Check delivery** and resolve the reported blockers.
+4. In the desktop app, choose **Review delivery** for a real 720p render. Any edit makes that review stale.
+5. Export and save a verified H.264/AAC MP4 or publication ZIP, up to three minutes.
+6. Wait for **Saved** before closing. On a conflict, choose **Load latest** or **Save as copy**.
+
+No account or API key is required for this local flow. **Projects** includes search, rename,
+duplicate, archive and desktop backup recovery. See [the editing contracts](../CREATOR_V16.md).
+
+## Build a copy-ready prompt pack
+
+Build your first copy-ready pack in Prompt Studio. Local compilation needs no API key or
 network connection. Install from the [available releases](Installation-and-Updates.md), or follow
 the [repository development instructions](../../README.md).
 

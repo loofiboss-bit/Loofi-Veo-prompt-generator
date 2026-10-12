@@ -31,8 +31,8 @@ vi.mock('idb-keyval', () => ({
   del: async (key: string, store = 'default') => {
     mocks.db.delete(`${store}:${key}`);
   },
-  update: async (key: string, updater: (value: unknown) => unknown) => {
-    mocks.db.set(`default:${key}`, structuredClone(updater(mocks.db.get(`default:${key}`))));
+  update: async (key: string, updater: (value: unknown) => unknown, store = 'default') => {
+    mocks.db.set(`${store}:${key}`, structuredClone(updater(mocks.db.get(`${store}:${key}`))));
   },
   keys: async () => [],
   clear: async () => mocks.db.clear(),
@@ -140,7 +140,13 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(container.querySelector('.studio-workspace')).toHaveAttribute('data-layout', 'tabs');
     expect(screen.getByRole('button', { name: 'Editor' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByRole('textbox', { name: 'Primary prompt' })).toBeNull();
-    await buildPack(user, 'Retained narrow workspace idea');
+    // This scenario checks layout and retained content; character-by-character typing
+    // is covered by the keyboard flow and adds avoidable coverage instrumentation work.
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'Retained narrow workspace idea' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    await screen.findByRole('textbox', { name: 'Primary prompt' });
     expect(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByRole('textbox', { name: 'Core idea' })).toBeNull();
     await waitFor(() => expect(container.querySelector('.studio-output')).toHaveFocus());

@@ -5,6 +5,9 @@ const mockSafeStore = new Map<string, unknown>();
 
 vi.mock('@core/utils/safeIdbKeyval', () => ({
   createStore: vi.fn(() => ({ name: 'project-snapshots' })),
+  atomicUpdate: vi.fn(async (key: IDBValidKey, updater: (current: unknown) => unknown) => {
+    mockSafeStore.set(String(key), updater(mockSafeStore.get(String(key))));
+  }),
   safeGet: vi.fn((key: IDBValidKey) => Promise.resolve(mockSafeStore.get(String(key)))),
   safeSet: vi.fn((key: IDBValidKey, value: unknown) => {
     mockSafeStore.set(String(key), value);
@@ -235,7 +238,8 @@ describe('useProjectManager', () => {
       );
     });
 
-    const loaded = result.current.loadProject(project!.id);
+    await result.current.flushPersistence();
+    const loaded = await result.current.loadProject(project!.id);
     expect(loaded).toBeDefined();
     expect(loaded!.name).toBe('Loadable');
   });
@@ -243,7 +247,7 @@ describe('useProjectManager', () => {
   it('should return null for non-existent project', async () => {
     const { result } = await renderProjectManagerHook();
 
-    expect(result.current.loadProject('nonexistent')).toBeNull();
+    expect(await result.current.loadProject('nonexistent')).toBeNull();
   });
 
   it('should return null for corrupt project data', async () => {
@@ -255,7 +259,7 @@ describe('useProjectManager', () => {
 
     const { result } = await renderProjectManagerHook();
 
-    expect(result.current.loadProject('bad')).toBeNull();
+    expect(await result.current.loadProject('bad')).toBeNull();
   });
 
   it('should delete a project', async () => {
@@ -322,8 +326,8 @@ describe('useProjectManager', () => {
     const mockRevokeURL = vi.fn();
     globalThis.URL.revokeObjectURL = mockRevokeURL;
 
-    act(() => {
-      result.current.exportProject({
+    await act(async () => {
+      await result.current.exportProject({
         id: project!.id,
         name: 'Export Me',
         lastModified: Date.now(),
@@ -344,12 +348,12 @@ describe('useProjectManager', () => {
   it('should handle export of non-existent project', async () => {
     const { result } = await renderProjectManagerHook();
 
-    act(() => {
-      result.current.exportProject({ id: 'nonexistent', name: 'Ghost', lastModified: 0 });
+    await act(async () => {
+      await result.current.exportProject({ id: 'nonexistent', name: 'Ghost', lastModified: 0 });
     });
   });
 
-  it('should migrate legacy project snapshots into safe storage on hydration', async () => {
+  it('loads legacy project snapshots only on demand', async () => {
     const lastModified = Date.now();
     localStorage.setItem(
       'veo_projects_meta',
@@ -373,6 +377,8 @@ describe('useProjectManager', () => {
 
     expect(result.current.projectList).toHaveLength(1);
     expect(mockSafeStore.get('veo_projects_meta')).toEqual(result.current.projectList);
+    expect(mockSafeStore.has('veo_project_legacy-1')).toBe(false);
+    await result.current.loadProject('legacy-1');
     expect(mockSafeStore.get('veo_project_legacy-1')).toEqual(
       expect.objectContaining({ name: 'Legacy Project' }),
     );

@@ -1,4 +1,5 @@
 import {
+  update as idbUpdate,
   get as idbGet,
   set as idbSet,
   del as idbDel,
@@ -110,3 +111,13 @@ export async function safeClear(store?: UseStore): Promise<void> {
 }
 
 export { createStore, type UseStore };
+
+/** Atomic durable update. Deliberately has no memory fallback or read/write split. */
+export async function atomicUpdate<T>(
+  key: IDBValidKey,
+  updater: (current: T | undefined) => T,
+  store?: UseStore,
+): Promise<void> {
+  await idbUpdate<T>(key, updater, store);
+  fallbackStore.delete(key);
+}

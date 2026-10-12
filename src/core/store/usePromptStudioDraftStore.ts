@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useEditorSessionStore } from './useEditorSessionStore';
 import type {
   MusicPromptArtifactInput,
   PromptArtifactV1,
@@ -30,7 +31,7 @@ interface PromptStudioDraftStore {
       >
     >,
   ) => void;
-  hydrate: (projectId: string) => Promise<boolean>;
+  hydrate: (projectId: string, force?: boolean) => Promise<boolean>;
   flush: (projectId?: string) => Promise<boolean>;
   updateVideo: (updates: Partial<VideoPromptArtifactInput>) => void;
   updateMusic: (updates: Partial<MusicPromptArtifactInput>) => void;
@@ -104,10 +105,14 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
       saving = null;
       return result;
     },
-    hydrate: async (projectId) => {
-      if (get().draft?.projectId === projectId) return true;
+    hydrate: async (projectId, force = false) => {
+      if (!force && get().draft?.projectId === projectId) return true;
       const version = ++hydrateVersion;
-      if (!(await get().flush())) return false;
+      if (force) {
+        clearTimeout(timer);
+        if (saving) await saving;
+        dirty = false;
+      } else if (!(await get().flush())) return false;
       if (version !== hydrateVersion) return false;
       set({ status: 'loading', error: null });
       try {
@@ -132,7 +137,11 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
       set({ status: 'saving', error: null });
       saving = (async () => {
         try {
-          await promptStudioDraftService.save(draft);
+          const snapshot = useEditorSessionStore.getState().projectSnapshot;
+          await promptStudioDraftService.save(
+            draft,
+            snapshot?.id === draft.projectId ? (snapshot.documentRevision ?? 0) : undefined,
+          );
           if (get().draft === draft) {
             dirty = false;
             set({ status: 'saved', error: null });

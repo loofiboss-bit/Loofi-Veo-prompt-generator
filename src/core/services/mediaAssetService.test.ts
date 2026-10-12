@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const records = new Map<string, unknown>();
 
@@ -17,7 +17,34 @@ vi.mock('@core/services/loggerService', () => ({
 import { mediaAssetService } from './mediaAssetService';
 
 describe('mediaAssetService', () => {
+  afterEach(() => vi.useRealTimers());
+  const verifiedDesktop = () => ({
+    importDesktopMedia: vi.fn(async ({ key, bytes }: { key: string; bytes: ArrayBuffer }) => ({
+      key,
+      localUrl: 'file:///projects/original.mp4',
+      sizeBytes: bytes.byteLength,
+      sha256: [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join(''),
+    })),
+    inspectTimelineRenderMedia: vi
+      .fn()
+      .mockResolvedValue({ available: true, durationSeconds: 12, streamTypes: ['video'] }),
+  });
+  const browserMetadata = (event: 'loadedmetadata' | 'error') => {
+    const create = document.createElement.bind(document);
+    vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+    vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+      const element = create(tagName);
+      if (tagName === 'video' || tagName === 'audio') {
+        Object.defineProperty(element, 'duration', { value: 3 });
+        queueMicrotask(() => element.dispatchEvent(new Event(event)));
+      }
+      return element;
+    });
+  };
   beforeEach(() => {
+    mediaAssetService.revokeAllObjectUrls();
     records.clear();
     delete window.electron;
     vi.restoreAllMocks();
@@ -70,6 +97,117 @@ describe('mediaAssetService', () => {
     expect(await mediaAssetService.getRecord('legacy-mismatch')).not.toBeNull();
   });
 
+  it('imports images durably without placing base64 data in the asset', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local-image');
+    const file = new File(['image'], 'photo.png', { type: 'image/png' });
+    const asset = await mediaAssetService.importLocalFile(file);
+    expect(asset).toMatchObject({
+      type: 'image',
+      data: '',
+      name: 'photo.png',
+      url: 'blob:local-image',
+    });
+    expect((await mediaAssetService.getRecord(asset.storageKey!))?.blob).toBe(file);
+  });
+  it('rejects empty and unsupported files before registering an asset', async () => {
+    await expect(
+      mediaAssetService.importLocalFile(new File([], 'empty.mp4', { type: 'video/mp4' })),
+    ).rejects.toThrow('non-empty');
+    await expect(
+      mediaAssetService.importLocalFile(new File(['x'], 'file.txt', { type: 'text/plain' })),
+    ).rejects.toThrow('non-empty');
+    expect(records.size).toBe(0);
+  });
+  it('rejects an unverified desktop import instead of exposing media', async () => {
+    window.electron = {
+      importDesktopMedia: vi.fn().mockResolvedValue({ sha256: 'wrong', sizeBytes: 1 }),
+    } as unknown as NonNullable<typeof window.electron>;
+    await expect(
+      mediaAssetService.importLocalFile(new File(['image'], 'photo.png', { type: 'image/png' })),
+    ).rejects.toThrow('did not match');
+  });
+
+  it('imports verified desktop video with native duration and original identity', async () => {
+    const bridge = verifiedDesktop();
+    window.electron = bridge as unknown as NonNullable<typeof window.electron>;
+    const asset = await mediaAssetService.importLocalFile(
+      new File(['video'], 'source.mp4', { type: 'video/mp4' }),
+    );
+    expect(asset).toMatchObject({
+      durationSeconds: 12,
+      data: '',
+      url: 'file:///projects/original.mp4',
+    });
+    expect(asset.storageKey).toBe(asset.id);
+    expect(bridge.inspectTimelineRenderMedia).toHaveBeenCalledWith(asset.id);
+  });
+  it.each([
+    [{ available: false }, 'decoded'],
+    [{ available: true, streamTypes: ['audio'], durationSeconds: 12 }, 'video stream'],
+    [{ available: true, streamTypes: ['video'], durationSeconds: 0 }, 'valid duration'],
+  ])('rejects invalid native metadata before exposing an asset', async (metadata, message) => {
+    const bridge = verifiedDesktop();
+    bridge.inspectTimelineRenderMedia.mockResolvedValue(metadata);
+    window.electron = bridge as unknown as NonNullable<typeof window.electron>;
+    await expect(
+      mediaAssetService.importLocalFile(new File(['video'], 'source.mp4', { type: 'video/mp4' })),
+    ).rejects.toThrow(message);
+  });
+  it.each(['audio', 'video'] as const)(
+    'reads durable browser %s duration without retaining base64',
+    async (type) => {
+      browserMetadata('loadedmetadata');
+      const asset = await mediaAssetService.importLocalFile(
+        new File(['media'], 'source', { type: `${type}/mp4` }),
+      );
+      expect(asset).toMatchObject({ type, durationSeconds: 3, data: '' });
+      expect(await mediaAssetService.getRecord(asset.storageKey!)).not.toBeNull();
+    },
+  );
+  it('rejects browser decode errors', async () => {
+    browserMetadata('error');
+    await expect(
+      mediaAssetService.importLocalFile(
+        new File(['broken'], 'broken.webm', { type: 'video/webm' }),
+      ),
+    ).rejects.toThrow('decoded');
+  });
+  it('bounds a browser metadata read that never completes', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+    const failure = expect(
+      mediaAssetService.importLocalFile(new File(['media'], 'source.webm', { type: 'video/webm' })),
+    ).rejects.toThrow('metadata');
+    await vi.advanceTimersByTimeAsync(15_001);
+    await failure;
+  });
+  it('uses a desktop editing proxy while preserving the original for export', async () => {
+    window.electron = {
+      createDesktopMediaProxy: vi.fn().mockResolvedValue({ url: 'file:///projects/proxy.mp4' }),
+    } as unknown as NonNullable<typeof window.electron>;
+    const original = {
+      id: 'original',
+      type: 'video',
+      url: 'file:///projects/original.mp4',
+      storageKey: 'original',
+    } as import('@core/types').Asset;
+    const prepared = await mediaAssetService.prepareDesktopProxy(original);
+    expect(prepared).toMatchObject({
+      url: original.url,
+      storageKey: original.storageKey,
+      proxyUrl: 'file:///projects/proxy.mp4',
+      isProxyReady: true,
+    });
+    expect(original.proxyUrl).toBeUndefined();
+    expect(
+      await mediaAssetService.prepareDesktopProxy({ ...original, type: 'image' }),
+    ).toMatchObject({ url: original.url });
+    expect(
+      await mediaAssetService.prepareDesktopProxy({ ...original, storageKey: undefined }),
+    ).toMatchObject({ url: original.url });
+    delete window.electron;
+    expect(await mediaAssetService.prepareDesktopProxy(original)).toBe(original);
+  });
   it('stores and restores Blob media records', async () => {
     const blob = new Blob(['video'], { type: 'video/mp4' });
     await mediaAssetService.storeBlob('media-1', blob);

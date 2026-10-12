@@ -76,7 +76,7 @@ class PromptStudioDraftService {
     return createPromptStudioDraft(projectId);
   }
 
-  async save(draft: PromptStudioDraftV1): Promise<void> {
+  async save(draft: PromptStudioDraftV1, documentRevision?: number): Promise<void> {
     await projectDocumentService.update(draft.projectId, async (existing) => {
       let project = existing;
       if (!project) {
@@ -86,7 +86,12 @@ class PromptStudioDraftService {
           name: draft.projectId === 'default' ? 'My project' : draft.projectId,
         });
       }
-      return { ...project, studioDraft: draft, lastModified: Date.now() };
+      return {
+        ...project,
+        documentRevision: documentRevision ?? project.documentRevision,
+        studioDraft: draft,
+        lastModified: Date.now(),
+      };
     });
   }
 }

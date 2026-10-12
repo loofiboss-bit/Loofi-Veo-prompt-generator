@@ -1,3 +1,4 @@
+import { useRenderJobsStore } from '@core/store/useRenderJobsStore';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,6 +13,7 @@ const mock = vi.hoisted(() => ({
   save: vi.fn(),
   settings: vi.fn(),
   plan: vi.fn(),
+  preflight: vi.fn().mockResolvedValue([]),
   start: vi.fn(),
   publish: vi.fn(),
 }));
@@ -22,7 +24,11 @@ vi.mock('@core/services/creatorDeliveryService', async (original) => {
   const actual = await original<typeof import('@core/services/creatorDeliveryService')>();
   return {
     ...actual,
-    creatorDeliveryService: { saveSettings: mock.settings, buildPlan: mock.plan },
+    creatorDeliveryService: {
+      saveSettings: mock.settings,
+      buildPlan: mock.plan,
+      preflight: mock.preflight,
+    },
   };
 });
 vi.mock('@core/services/creatorPublishingService', () => ({
@@ -49,6 +55,8 @@ const project = {
 describe('CreatorDeliveryPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useRenderJobsStore.setState({ jobs: [] });
+    mock.preflight.mockResolvedValue([]);
     useAppStore.getState().resetAll();
     useAppStore.setState({
       tracks: [{ id: 'v', type: 'video', label: 'Video', trackType: 'dialogue', zIndex: 0 }],

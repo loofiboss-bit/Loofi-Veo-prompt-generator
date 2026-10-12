@@ -274,7 +274,7 @@ class DesktopMediaStore {
     return {
       bytes: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
       mimeType: record.mimeType,
-      localUrl: record.localUrl,
+      localUrl: pathToFileURL(realPath).href,
     };
   }
 

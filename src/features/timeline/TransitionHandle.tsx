@@ -13,6 +13,7 @@ interface TransitionHandleProps {
   zoomLevel: number;
   incomingClipId?: string;
   outgoingClipId?: string;
+  deliveryMode?: boolean;
 }
 
 const TransitionHandle: React.FC<TransitionHandleProps> = ({
@@ -22,6 +23,7 @@ const TransitionHandle: React.FC<TransitionHandleProps> = ({
   zoomLevel,
   incomingClipId,
   outgoingClipId,
+  deliveryMode = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [recommendation, setRecommendation] = useState<TransitionRecommendation | null>(null);
@@ -215,12 +217,14 @@ const TransitionHandle: React.FC<TransitionHandleProps> = ({
               >
                 <Icon name="moon" className="w-3 h-3 text-slate-400" /> Dip to Black
               </button>
-              <button
-                onClick={() => handleSelect('wipe_left')}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-800 text-xs text-slate-300"
-              >
-                <Icon name="arrow-right" className="w-3 h-3 text-fuchsia-400" /> Wipe Left
-              </button>
+              {!deliveryMode && (
+                <button
+                  onClick={() => handleSelect('wipe_left')}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-800 text-xs text-slate-300"
+                >
+                  <Icon name="arrow-right" className="w-3 h-3 text-fuchsia-400" /> Wipe Left
+                </button>
+              )}
             </div>
           </div>
         </>
