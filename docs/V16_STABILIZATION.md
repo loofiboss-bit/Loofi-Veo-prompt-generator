@@ -1,7 +1,8 @@
 # v16 stabilization and performance verification
 
-The stable release is v16.0.0, published 2026-10-12. This document records subsequent local
-stabilization of PR #65, a v16.0.1 release candidate. Remote publication evidence is tracked separately.
+v16.0.1 was published on 2026-10-15 after PR #65 stabilization. This document retains the local
+qualification record. See the separate [public release verification](V16_0_1_RELEASE.md) for
+canonical CI, GitHub assets, COPR and wiki readback.
 The native M0 prototype and v17 features are separate work.
 
 ## Contracts and changes

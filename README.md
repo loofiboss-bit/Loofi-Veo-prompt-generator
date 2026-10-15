@@ -192,7 +192,7 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 
 ## Install v16.0.1
 
-Download the [v16.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.1)
+Download the [v16.0.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.1)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows

@@ -1,6 +1,7 @@
 # Local Creator Editing in v16
 
-v16.0.0 was published on 2026-10-12. See the [GitHub release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0) for installers. Subsequent source changes are separate from that release.
+v16.0.0 was published on 2026-10-12. See the [GitHub release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0) for the original installers. The v16.0.1 stabilization release is tracked in the
+[stabilization report](V16_STABILIZATION.md) and [release notes](../CHANGELOG.md#1601---2026-10-15).
 
 ## The local editing journey
 
