@@ -1,84 +1,84 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { runMediaBenchmark } from './benchmark-media.mjs';
 import { runRenderBenchmark } from './benchmark-render.mjs';
 import { runStartupBenchmark } from './benchmark-startup.mjs';
-import { runThreeJsBenchmark } from './benchmark-threejs.mjs';
+import { runArchiveBenchmark } from './benchmark-archive.mjs';
+import { environment } from './measure.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BASELINE_FILE = path.join(__dirname, 'baseline-results.json');
-const isBaselineMode = process.argv.includes('--save-baseline');
-
+const help = `Usage: npm run benchmark -- [--output PATH] [--runs 5]
+  --baseline-executable PATH --candidate-executable PATH  Include paired packaged startup (5 pairs)
+  --startup-pairs N  Override pair count for harness smoke tests only
+Local production media/render scenarios always run; no comparison is claimed without a measured baseline.
+Three.js lifecycle correctness is covered by production regression tests, not synthetic performance simulations.`;
 async function main() {
-  console.log('====================================================');
-  console.log('   Loofi Creator Studio Performance Benchmark Suite  ');
-  console.log('====================================================\n');
-
-  console.log('⏳ Kör Media-benchmark...');
-  const media = await runMediaBenchmark();
-
-  console.log('⏳ Kör Render Engine & I/O-benchmark...');
-  const render = await runRenderBenchmark();
-
-  console.log('⏳ Kör Startup & Module Evaluation-benchmark...');
-  const startup = await runStartupBenchmark();
-
-  console.log('⏳ Kör Three.js Allocations-benchmark...');
-  const threejs = await runThreeJsBenchmark();
-
-  const currentRun = {
-    timestamp: new Date().toISOString(),
-    media,
-    render,
-    startup,
-    threejs,
+  const args = process.argv.slice(2);
+  if (args.includes('--help')) {
+    console.log(help);
+    return;
+  }
+  const options = {};
+  for (let i = 0; i < args.length; i += 2) {
+    if (
+      ![
+        '--output',
+        '--runs',
+        '--baseline-executable',
+        '--candidate-executable',
+        '--startup-pairs',
+      ].includes(args[i]) ||
+      !args[i + 1]
+    )
+      throw new Error(help);
+    options[args[i].slice(2)] = args[i + 1];
+  }
+  for (const key of ['runs', 'startup-pairs'])
+    if (
+      options[key] &&
+      (!/^\d+$/.test(options[key]) || Number(options[key]) < 1 || Number(options[key]) > 100)
+    )
+      throw new Error(`Invalid --${key}`);
+  if (Boolean(options['baseline-executable']) !== Boolean(options['candidate-executable']))
+    throw new Error('Supply both packaged executables.');
+  const report = {
+    schemaVersion: 2,
+    startedAt: new Date().toISOString(),
+    environment: environment(),
+    methodology:
+      'Production APIs only. Memory bytes include RSS, heap, external and arrayBuffers; 5 ms sampled peak may miss shorter peaks. Absolute process memory includes harness/runtime overhead; GC is requested before local scenarios if available. Fixtures are deterministic and setup is excluded. No performance improvement can be inferred from this candidate-only local run.',
+    scenarios: {},
   };
-
-  if (isBaselineMode) {
-    await fs.writeFile(BASELINE_FILE, JSON.stringify(currentRun, null, 2), 'utf8');
-    console.log(`\n✅ Baseline sparad till ${BASELINE_FILE}\n`);
-  }
-
-  let baseline = null;
   try {
-    baseline = JSON.parse(await fs.readFile(BASELINE_FILE, 'utf8'));
-  } catch {
-    // Ingen tidigare baseline
+    report.scenarios.media = await runMediaBenchmark({ runs: Number(options.runs || 5) });
+    report.scenarios.render = await runRenderBenchmark({ runs: Number(options.runs || 5) });
+    report.scenarios.archive = await runArchiveBenchmark({ runs: Number(options.runs || 5) });
+    report.scenarios.startup = options['baseline-executable']
+      ? await runStartupBenchmark({
+          baselineExecutable: options['baseline-executable'],
+          candidateExecutable: options['candidate-executable'],
+          pairs: Number(options['startup-pairs'] || 5),
+        })
+      : {
+          status: 'not-run',
+          reason: 'Supply both packaged executable paths for paired startup measurements.',
+        };
+    report.status = 'passed';
+  } catch (error) {
+    report.status = 'failed';
+    report.error = error.stack || String(error);
+    process.exitCode = 1;
+  } finally {
+    report.finishedAt = new Date().toISOString();
+    const serialized = `${JSON.stringify(report, null, 2)}\n`;
+    if (options.output) {
+      const destination = path.resolve(options.output);
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      await fs.writeFile(destination, serialized);
+      console.log(`Benchmark report: ${destination} (${report.status})`);
+    } else console.log(serialized);
   }
-
-  // Skriv ut rapport
-  console.log('\n================== MÄTRESULTAT ==================\n');
-
-  console.log('### 1. Mediehantering & Hashing (40 MB payload)');
-  console.log(`- Buffer Sha256:   ${media.bufferedSha.durationMs} ms, Heap Delta: ${media.bufferedSha.heapDeltaMb} MB`);
-  console.log(`- Streamed Sha256: ${media.streamedSha.durationMs} ms, Heap Delta: ${media.streamedSha.heapDeltaMb} MB`);
-  console.log(`- Base64 Roundtrip: ${media.b64Conversion.durationMs} ms, Heap Delta: ${media.b64Conversion.heapDeltaMb} MB`);
-  console.log(`- Direkt Binär:     ${media.directBinary.durationMs} ms, Heap Delta: ${media.directBinary.heapDeltaMb} MB`);
-  console.log(`- Hash Check:       ${media.hashesMatch ? 'MATCH (verifierad)' : 'MISMATCH'}\n`);
-
-  console.log('### 2. Renderingsmotor (500 framstegsticks & 25 MB ZIP)');
-  console.log(`- Othrottlad: ${render.progressUpdates.unthrottled.diskWrites} disk-skrivningar (${render.progressUpdates.unthrottled.durationMs} ms)`);
-  console.log(`- Throttlad:   ${render.progressUpdates.throttled.diskWrites} disk-skrivningar (${render.progressUpdates.throttled.durationMs} ms)`);
-  console.log(`- Minskning disk-I/O: ${render.progressUpdates.diskIoReductionPct} %`);
-  console.log(`- ZIP Packaging: ${render.zipPackaging.durationMs} ms, Heap Delta: ${render.zipPackaging.heapDeltaMb} MB\n`);
-
-  console.log('### 3. Startup & Modulladdning');
-  console.log(`- Eager Modules: ${startup.eagerModules.durationMs} ms, Heap: ${startup.eagerModules.heapUsedMb} MB, RSS: ${startup.eagerModules.rssMb} MB`);
-  console.log(`- Lean Startup:  ${startup.leanStartup.durationMs} ms, Heap: ${startup.leanStartup.heapUsedMb} MB, RSS: ${startup.leanStartup.rssMb} MB`);
-  console.log(`- Besparing:     ${startup.savedDurationMs} ms snabbare, ${startup.savedHeapMb} MB mindre heap\n`);
-
-  console.log('### 4. Three.js Återanvändning (100 frames)');
-  console.log(`- Nuvarande:  ${threejs.currentPattern.totalGeometriesCreated} geometrier skapade (${threejs.currentPattern.durationMs} ms)`);
-  console.log(`- Optimerad:  ${threejs.optimizedPattern.totalGeometriesCreated} geometrier skapade (${threejs.optimizedPattern.durationMs} ms)`);
-  console.log(`- Reduktion allokeringar: ${threejs.allocationReductionPct} %`);
-  console.log(`- Reduktion CPU-tid:      ${threejs.durationReductionPct} %\n`);
-
-  console.log('====================================================\n');
 }
-
-main().catch((err) => {
-  console.error('Benchmark misslyckades:', err);
-  process.exit(1);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
 });

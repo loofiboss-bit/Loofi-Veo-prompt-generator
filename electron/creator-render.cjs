@@ -194,11 +194,15 @@ class CreatorRenderEngine {
     this.jobs = new Map();
   }
   initialize() {
-    this.readyPromise = (this.readyPromise || this._initInternal()).catch(() => {});
+    this.readyPromise ||= this._initInternal().catch(() => {
+      this.initializationError =
+        'Local export storage could not be restored. Check folder permissions and free space.';
+    });
     return this.readyPromise;
   }
   async ready() {
-    if (this.readyPromise) await this.readyPromise;
+    await this.initialize();
+    if (this.initializationError) throw new Error(this.initializationError);
     return this;
   }
   async _initInternal() {
@@ -217,26 +221,29 @@ class CreatorRenderEngine {
         continue;
       }
       if (!/^[a-f\d-]{36}$/.test(name)) continue;
+      let j;
       try {
-        const j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
-        if (['queued', 'rendering', 'verifying'].includes(j.status)) {
-          j.status = 'failed';
-          j.error = 'Rendering interrupted. Retry from the project.';
-          await fs.writeFile(path.join(this.root, name, 'job.json'), JSON.stringify(j), {
-            mode: 0o600,
-          });
-          for (const artifact of await fs.readdir(path.join(this.root, name))) {
-            if (
-              artifact.startsWith('input-') ||
-              ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
-            )
-              await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
-          }
-        }
-        this.jobs.set(j.id, { job: j, directory: path.join(this.root, name) });
-      } catch {
-        /* Incomplete jobs cannot be restored. */
+        j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
+      } catch (error) {
+        if (error instanceof SyntaxError || ['ENOENT', 'ENOTDIR'].includes(error.code)) continue;
+        throw error;
       }
+      if (!j || typeof j !== 'object') continue;
+      if (['queued', 'rendering', 'verifying'].includes(j.status)) {
+        j.status = 'failed';
+        j.error = 'Rendering interrupted. Retry from the project.';
+        await fs.writeFile(path.join(this.root, name, 'job.json'), JSON.stringify(j), {
+          mode: 0o600,
+        });
+        for (const artifact of await fs.readdir(path.join(this.root, name))) {
+          if (
+            artifact.startsWith('input-') ||
+            ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
+          )
+            await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
+        }
+      }
+      this.jobs.set(j.id, { job: j, directory: path.join(this.root, name) });
     }
   }
   async capabilities() {
@@ -288,6 +295,8 @@ class CreatorRenderEngine {
   }
   async update(state, values) {
     if (state.cancelled && values.status !== 'cancelled') return;
+    const hasOnlyProgress = Object.keys(values).length === 1 && values.progress !== undefined;
+    if (hasOnlyProgress && state.job.status !== 'rendering') return;
     Object.assign(state.job, values);
 
     const isPureProgress =
@@ -608,6 +617,8 @@ class CreatorRenderEngine {
             mode: 0o600,
           });
         }
+        if ((await sha256File(inputTarget)) !== (p.mediaHashes?.[c.mediaId] || mediaSha256))
+          throw new Error(`Media changed after delivery check: ${c.id}.`);
         let metadata;
         try {
           metadata = await this.probe(path.join(state.directory, filename));
@@ -680,6 +691,8 @@ class CreatorRenderEngine {
         } else {
           await fs.writeFile(logoTarget, Buffer.from(record.bytes));
         }
+        if ((await sha256File(logoTarget)) !== (p.mediaHashes?.[p.style.logoAssetId] || logoSha256))
+          throw new Error('Style logo changed after delivery check.');
         args.push(
           '-protocol_whitelist',
           'file,pipe',
@@ -798,6 +811,9 @@ class CreatorRenderEngine {
     if ((await sha256File(path.join(state.directory, 'output.mp4'))) !== verification)
       throw new Error('Rendered video integrity verification failed. Retry export.');
     const temporary = `${destination}.${crypto.randomUUID()}.partial`;
+    const sourceStreams = [];
+    let archiveStream;
+    let sourceError;
     try {
       if (asPackage) {
         const JSZip = require('jszip');
@@ -808,12 +824,14 @@ class CreatorRenderEngine {
           ['cover.png', 'cover.png'],
         ]) {
           const filePath = path.join(state.directory, source);
-          try {
-            await fs.access(filePath);
-            zip.file(target, nodeFs.createReadStream(filePath));
-          } catch {
-            // Skip missing optional assets
-          }
+          await fs.access(filePath);
+          const stream = nodeFs.createReadStream(filePath);
+          sourceStreams.push(stream);
+          stream.on('error', (error) => {
+            sourceError = error;
+            archiveStream?.destroy(error);
+          });
+          zip.file(target, stream);
         }
         const p =
           state.plan ||
@@ -835,14 +853,17 @@ class CreatorRenderEngine {
             2,
           ),
         );
+        if (sourceError) throw sourceError;
+        archiveStream = zip.generateNodeStream({
+          type: 'nodebuffer',
+          streamFiles: true,
+          compression: 'STORE',
+        });
         const writeStream = nodeFs.createWriteStream(temporary, {
           flags: 'wx',
           mode: 0o600,
         });
-        await pipeline(
-          zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true, compression: 'STORE' }),
-          writeStream,
-        );
+        await pipeline(archiveStream, writeStream);
       } else
         await fs.copyFile(
           path.join(state.directory, 'output.mp4'),
@@ -850,12 +871,20 @@ class CreatorRenderEngine {
           require('node:fs').constants.COPYFILE_EXCL,
         );
       const handle = await fs.open(temporary, 'r+');
-      await handle.sync();
-      await handle.close();
+      try {
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
       await fs.rename(temporary, destination);
-      await this.update(state, { savedName: path.basename(destination) });
+      try {
+        await this.update(state, { savedName: path.basename(destination) });
+      } catch {
+        console.warn('Delivery saved, but local export metadata could not be updated.');
+      }
       return { saved: true, name: path.basename(destination) };
     } finally {
+      for (const stream of sourceStreams) stream.destroy();
       await fs.rm(temporary, { force: true });
     }
   }

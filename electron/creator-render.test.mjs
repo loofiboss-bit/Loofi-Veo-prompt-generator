@@ -559,6 +559,29 @@ test(
         const expected =
           aspectRatio === '1:1' ? [720, 720] : aspectRatio === '16:9' ? [1280, 720] : [720, 1280];
         assert.deepEqual([metadata.streams[0].width, metadata.streams[0].height], expected);
+        const delivery = path.join(root, `${aspectRatio.replace(':', '-')}.zip`);
+        await engine.save(job.id, delivery, true);
+        const JSZip = require('jszip');
+        const archive = await JSZip.loadAsync(await fs.readFile(delivery));
+        assert.deepEqual(Object.keys(archive.files).sort(), [
+          'captions.srt',
+          'cover.png',
+          'delivery-report.json',
+          'publication.txt',
+          'video.mp4',
+        ]);
+        const videoBytes = await archive.file('video.mp4').async('nodebuffer');
+        const verification = JSON.parse(
+          await fs.readFile(path.join(root, job.id, 'verification.json')),
+        );
+        assert.equal(
+          crypto.createHash('sha256').update(videoBytes).digest('hex'),
+          verification.outputSha256,
+        );
+        assert.equal(
+          JSON.parse(await archive.file('delivery-report.json').async('string')).aspectRatio,
+          aspectRatio,
+        );
       }
     } finally {
       await fs.rm(root, { recursive: true, force: true });
@@ -610,7 +633,11 @@ test(
       const first = await engine.proxy('original');
       const second = await engine.proxy('original');
       assert.equal(first.key, second.key);
-      assert.equal(first.url, second.url);
+      const { fileURLToPath } = require('node:url');
+      assert.equal(
+        (await fs.realpath(fileURLToPath(first.url))).toLowerCase(),
+        (await fs.realpath(fileURLToPath(second.url))).toLowerCase(),
+      );
       assert.ok((await store.read('original')).bytes.byteLength > 0);
       assert.equal((await store.records()).length, 2);
     } finally {
@@ -638,6 +665,287 @@ test('frozen source hashes reject media replacement under a reused identity', as
     assert.equal(engine.get(job.id).status, 'failed');
     assert.match(engine.get(job.id).error, /Media changed.*clip/);
   } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('readiness awaits one restoration and rejects storage and unexpected initialization failures', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-ready-'));
+  try {
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    let release;
+    let count = 0;
+    engine._initInternal = async () => {
+      count++;
+      await new Promise((resolve) => (release = resolve));
+    };
+    const first = engine.ready();
+    const second = engine.ready();
+    assert.equal(count, 1);
+    release();
+    assert.equal(await first, engine);
+    assert.equal(await second, engine);
+    const unavailable = new CreatorRenderEngine({
+      root: path.join(root, 'file'),
+      runtimeRoot: '/unused',
+    });
+    await fs.writeFile(unavailable.root, 'blocked');
+    await unavailable.initialize();
+    await assert.rejects(unavailable.ready(), /storage is unavailable/);
+    assert.equal((await unavailable.capabilities()).available, false);
+    const broken = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    broken._initInternal = async () => {
+      throw new Error('Unexpected restoration failure');
+    };
+    await broken.initialize();
+    await assert.rejects(broken.ready(), /could not be restored/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('authorized IPC commands wait for readiness and propagate initialization failures', async () => {
+  const handlers = {};
+  const window = { webContents: { mainFrame: {} } };
+  const event = { sender: window.webContents, senderFrame: window.webContents.mainFrame };
+  let release;
+  let calls = 0;
+  const gate = new Promise((resolve) => (release = resolve));
+  const engine = {
+    ready: () => gate,
+    list: () => {
+      calls++;
+      return [];
+    },
+  };
+  registerCreatorRenderIpc({
+    ipcMain: { handle: (name, fn) => (handlers[name] = fn) },
+    getEngine: () => engine,
+    getMainWindow: () => window,
+  });
+  const first = handlers['timeline-render-list'](event);
+  const second = handlers['timeline-render-list'](event);
+  assert.equal(calls, 0);
+  assert.throws(() => handlers['timeline-render-list']({ sender: {} }), /Untrusted/);
+  release();
+  await Promise.all([first, second]);
+  assert.equal(calls, 2);
+  engine.ready = async () => {
+    throw new Error('Storage unavailable');
+  };
+  await assert.rejects(handlers['timeline-render-list'](event), /Storage unavailable/);
+  assert.equal(calls, 2);
+});
+
+test('progress is throttled but transitions persist immediately and reject late progress', async (context) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-progress-'));
+  try {
+    let now = 1000;
+    context.mock.method(Date, 'now', () => now);
+    const updates = [];
+    const engine = new CreatorRenderEngine({
+      root,
+      runtimeRoot: '/unused',
+      onUpdate: (job) => updates.push(job),
+    });
+    const state = { directory: root, job: { id: 'job', status: 'rendering', progress: 0 } };
+    await engine.update(state, { progress: 0.1 });
+    await engine.update(state, { progress: 0.2 });
+    assert.equal(updates.length, 1);
+    now += 151;
+    await engine.update(state, { progress: 0.3 });
+    assert.equal(updates.length, 2);
+    await engine.update(state, { status: 'verifying', progress: 0.95 });
+    await engine.update(state, { progress: 0.8 });
+    assert.equal(state.job.progress, 0.95);
+    for (const status of ['complete', 'failed', 'cancelled']) {
+      await engine.update(state, { status, progress: status === 'complete' ? 1 : 0 });
+      const count = updates.length;
+      await engine.update(state, { progress: 0.4 });
+      assert.equal(updates.length, count);
+      assert.equal(JSON.parse(await fs.readFile(path.join(root, 'job.json'))).status, status);
+    }
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+for (const frozen of [true, false])
+  for (const logo of [false, true])
+    test(`render rejects changed copied ${logo ? 'logo' : 'clip'} in ${frozen ? 'frozen' : 'legacy'} plan before FFmpeg`, async (context) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-copy-integrity-'));
+      try {
+        const source = path.join(root, 'source.png');
+        const accepted = Buffer.from('accepted source');
+        await fs.writeFile(source, accepted);
+        const sha256 = crypto.createHash('sha256').update(accepted).digest('hex');
+        const snapshot = plan({
+          ...(frozen ? { mediaHashes: { registered: sha256, logo: sha256 } } : {}),
+          ...(logo ? { style: { logoAssetId: 'logo' } } : {}),
+        });
+        const engine = new CreatorRenderEngine({
+          root,
+          runtimeRoot: '/unused',
+          getMediaStore: () => ({
+            resolve: async () => ({ path: source, sha256, mimeType: 'image/png' }),
+          }),
+        });
+        engine.capabilities = async () => ({ available: true });
+        engine.probe = async () => ({ streams: [{ codec_type: 'video' }], format: {} });
+        let runs = 0;
+        engine.run = async () => {
+          runs++;
+        };
+        const originalCopy = fs.copyFile.bind(fs);
+        context.mock.method(fs, 'copyFile', async (from, to) => {
+          await originalCopy(from, to);
+          if (!logo || path.basename(to) === 'logo.png')
+            await fs.writeFile(to, 'changed after resolve');
+        });
+        const directory = path.join(root, 'job');
+        await fs.mkdir(directory);
+        const state = { directory, plan: snapshot, job: { id: 'job', status: 'queued' } };
+        await engine.render(state);
+        assert.equal(state.job.status, 'failed');
+        assert.match(state.job.error, logo ? /logo changed/ : /Media changed/);
+        assert.equal(runs, 0);
+        assert.equal(
+          (await fs.readdir(directory)).some(
+            (name) => name.startsWith('input-') || name === 'logo.png',
+          ),
+          false,
+        );
+      } finally {
+        context.mock.restoreAll();
+        await fs.rm(root, { recursive: true, force: true });
+      }
+    });
+
+for (const failure of ['missing captions', 'missing cover', 'early read', 'read', 'write'])
+  test(`package ${failure} fails atomically and cleans source streams`, async (context) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-zip-atomic-'));
+    try {
+      const nodeFs = require('node:fs');
+      const { Readable, Writable } = require('node:stream');
+      const directory = path.join(root, 'job');
+      await fs.mkdir(directory);
+      for (const name of ['output.mp4', 'captions.srt', 'cover.png'])
+        await fs.writeFile(path.join(directory, name), name);
+      if (failure.startsWith('missing'))
+        await fs.rm(
+          path.join(directory, failure === 'missing captions' ? 'captions.srt' : 'cover.png'),
+        );
+      const destination = path.join(root, 'previous.zip');
+      await fs.writeFile(destination, 'prior delivery');
+      const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+      engine.jobs.set('job', {
+        directory,
+        plan: plan(),
+        job: { id: 'job', status: 'complete' },
+        outputSha256: crypto.createHash('sha256').update('output.mp4').digest('hex'),
+      });
+      const opened = [];
+      const originalRead = nodeFs.createReadStream.bind(nodeFs);
+      context.mock.method(nodeFs, 'createReadStream', (file, options) => {
+        const stream =
+          failure === 'read' && path.basename(file) === 'cover.png'
+            ? new Readable({
+                read() {
+                  this.destroy(new Error('Injected source read failure'));
+                },
+              })
+            : originalRead(file, options);
+        if (failure === 'early read' && path.basename(file) === 'captions.srt')
+          queueMicrotask(() => stream.destroy(new Error('Injected early source read failure')));
+        opened.push(stream);
+        return stream;
+      });
+      if (failure === 'write')
+        context.mock.method(
+          nodeFs,
+          'createWriteStream',
+          () =>
+            new Writable({
+              write(_chunk, _encoding, callback) {
+                callback(new Error('Injected destination write failure'));
+              },
+            }),
+        );
+      await assert.rejects(engine.save('job', destination, true));
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(await fs.readFile(destination, 'utf8'), 'prior delivery');
+      assert.equal(
+        (await fs.readdir(root)).some((name) => name.endsWith('.partial')),
+        false,
+      );
+      assert.ok(opened.every((stream) => stream.destroyed));
+    } finally {
+      context.mock.restoreAll();
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+test('restoration write failures remain visible while incomplete jobs can be ignored', async (context) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-restore-failure-'));
+  try {
+    const id = crypto.randomUUID();
+    const incomplete = crypto.randomUUID();
+    await fs.mkdir(path.join(root, id));
+    await fs.mkdir(path.join(root, incomplete));
+    await fs.writeFile(
+      path.join(root, id, 'job.json'),
+      JSON.stringify({ id, status: 'rendering' }),
+    );
+    await fs.writeFile(path.join(root, incomplete, 'job.json'), '{broken');
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    context.mock.method(fs, 'writeFile', async () => {
+      throw Object.assign(new Error('No space'), { code: 'ENOSPC' });
+    });
+    await engine.initialize();
+    await assert.rejects(engine.ready(), /could not be restored/);
+    assert.equal((await engine.capabilities()).available, false);
+    assert.equal(
+      JSON.parse(await fs.readFile(path.join(root, id, 'job.json'))).status,
+      'rendering',
+    );
+  } finally {
+    context.mock.restoreAll();
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('committed delivery remains successful if its job metadata cannot be saved', async (context) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-save-journal-'));
+  try {
+    const directory = path.join(root, 'job');
+    await fs.mkdir(directory);
+    const bytes = Buffer.from('verified output');
+    await fs.writeFile(path.join(directory, 'output.mp4'), bytes);
+    const destination = path.join(root, 'delivery.mp4');
+    await fs.writeFile(destination, 'prior delivery');
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    engine.jobs.set('job', {
+      directory,
+      job: { id: 'job', status: 'complete' },
+      outputSha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+    });
+    context.mock.method(fs, 'writeFile', async () => {
+      throw Object.assign(new Error('Private path must not be logged'), { code: 'ENOSPC' });
+    });
+    const warning = context.mock.method(console, 'warn', () => {});
+    assert.deepEqual(await engine.save('job', destination), { saved: true, name: 'delivery.mp4' });
+    assert.deepEqual(await fs.readFile(destination), bytes);
+    assert.equal(engine.get('job').status, 'complete');
+    assert.equal(warning.mock.callCount(), 1);
+    assert.deepEqual(warning.mock.calls[0].arguments, [
+      'Delivery saved, but local export metadata could not be updated.',
+    ]);
+    assert.equal(
+      (await fs.readdir(root)).some((name) => name.endsWith('.partial')),
+      false,
+    );
+  } finally {
+    context.mock.restoreAll();
     await fs.rm(root, { recursive: true, force: true });
   }
 });

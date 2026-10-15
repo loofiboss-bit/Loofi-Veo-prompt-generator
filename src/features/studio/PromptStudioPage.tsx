@@ -189,6 +189,12 @@ export function PromptStudioPage() {
   useEffect(() => {
     const warnUnsaved = (event: BeforeUnloadEvent) => {
       const state = usePromptStudioDraftStore.getState();
+      if (typeof window !== 'undefined' && (window as unknown as { electron?: unknown }).electron) {
+        if (state.status === 'saving' || state.status === 'error') {
+          void state.flush();
+        }
+        return;
+      }
       if (state.status === 'saving' || state.status === 'error') {
         event.preventDefault();
         event.returnValue = '';

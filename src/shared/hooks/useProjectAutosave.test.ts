@@ -69,6 +69,25 @@ describe('canonical project autosave', () => {
     removed.mockRestore();
   });
 
+  it('does not prevent unload when running inside Electron', async () => {
+    vi.useRealTimers();
+    (window as unknown as { electron: unknown }).electron = {};
+    const added = vi.spyOn(window, 'addEventListener');
+    const { unmount } = renderHook(() => useProjectAutosave());
+    await act(async () => {});
+    const listener = added.mock.calls.find(([type]) => String(type) === 'beforeunload')![1] as (
+      event: BeforeUnloadEvent,
+    ) => void;
+    useProjectSaveStore.getState().markDirty('p');
+    const event = new Event('beforeunload', { cancelable: true });
+    Object.defineProperty(event, 'returnValue', { writable: true, value: '' });
+    listener(event as BeforeUnloadEvent);
+    expect(event.defaultPrevented).toBe(false);
+    unmount();
+    delete (window as unknown as { electron?: unknown }).electron;
+    added.mockRestore();
+  });
+
   it('debounces structural edits and advances only the durable revision baseline', async () => {
     renderHook(() => useProjectAutosave());
     act(() =>

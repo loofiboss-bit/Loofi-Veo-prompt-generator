@@ -71,16 +71,26 @@ test('packaged Electron boots with a narrow bridge and restores interrupted jobs
   );
   const electronEnv = { ...process.env };
   delete electronEnv.ELECTRON_RUN_AS_NODE;
-  const launch = () =>
-    electron.launch({
+  const launch = async () => {
+    const instance = await electron.launch({
       executablePath,
       args: [`--user-data-dir=${userDataDir}`],
       env: electronEnv,
     });
+    instance.on('window', (win) => {
+      win.on('dialog', (dialog) => {
+        void dialog.dismiss().catch(() => {});
+      });
+    });
+    return instance;
+  };
 
   let app = await launch();
   try {
     let window = await app.firstWindow();
+    window.on('dialog', (dialog) => {
+      void dialog.dismiss().catch(() => {});
+    });
     await window.evaluate(() => localStorage.setItem('hasSeenWelcome', 'true'));
     await window.reload({ waitUntil: 'domcontentloaded' });
     await expect(window.getByRole('main')).toHaveCount(1);
@@ -130,6 +140,9 @@ test('packaged Electron boots with a narrow bridge and restores interrupted jobs
     await app.close();
     app = await launch();
     window = await app.firstWindow();
+    window.on('dialog', (dialog) => {
+      void dialog.dismiss().catch(() => {});
+    });
     await expect(window.getByRole('main')).toHaveCount(1);
     await expect(window.getByRole('main')).toBeVisible({ timeout: 20_000 });
     await window.evaluate(() => {

@@ -43,6 +43,17 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
   const waypoints = useMemo(() => calculateTrajectoryWaypoints(rig, 32), [rig]);
   const subjects = useMemo(() => buildSpatialSceneSubjects(rig), [rig]);
 
+  // Commit the latest frame independently of GPU resource ownership. Playback updates
+  // transforms, while only a changed scene structure allocates geometry/materials.
+  const frameRef = useRef({ activePass, transform, subjects, waypoints });
+  useEffect(() => {
+    frameRef.current = { activePass, transform, subjects, waypoints };
+  });
+  const sceneStructure = useMemo(
+    () => JSON.stringify([subjects, waypoints.map((waypoint) => waypoint.position)]),
+    [subjects, waypoints],
+  );
+
   // Orbit angles for exterior staging camera
   const stagingOrbitRef = useRef({ theta: 0.8, phi: 0.6, radius: 7.5 });
   const isDraggingRef = useRef(false);
@@ -101,7 +112,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
     const scene = sceneRef.current;
     if (!renderer || !scene) return;
 
-    const currentTransform = calculateCameraTransform(rig, progress);
+    const { activePass, transform: currentTransform } = frameRef.current;
 
     if (activePass === 'staging') {
       const { camGroup, dofPlane, frustumGeom, observerCam } = sceneNodesRef.current;
@@ -170,6 +181,9 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       }
 
       if (dofPlane) {
+        const distance = Math.min(currentTransform.focalDistanceMeters, 4.0);
+        const height = Math.tan((currentTransform.fov * Math.PI) / 360) * distance;
+        dofPlane.scale.set(height * (16 / 9) * 2.5, height * 2.5, 1);
         dofPlane.position.set(
           currentTransform.target.x,
           currentTransform.target.y,
@@ -207,13 +221,13 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
           currentTransform.target.z,
         );
         if (currentTransform.rollAngleDegrees) {
-          directorCam.rotation.z = (currentTransform.rollAngleDegrees * Math.PI) / 180;
+          directorCam.rotation.z += (currentTransform.rollAngleDegrees * Math.PI) / 180;
         }
         directorCam.updateProjectionMatrix();
         renderer.render(scene, directorCam);
       }
     }
-  }, [activePass, progress, rig]);
+  }, []);
 
   // Renderer lifecycle: Initialize WebGLRenderer once per canvas
   useEffect(() => {
@@ -260,6 +274,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const { activePass, transform, subjects, waypoints } = frameRef.current;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(
       activePass === 'depth' ? 0x000000 : activePass === 'normal' ? 0x8080ff : 0x070a12,
@@ -404,7 +419,7 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       scene.add(camGroup);
 
       // Depth of Field Focus Plane visualization
-      const dofPlaneGeom = new THREE.PlaneGeometry(hWidth * 2.5, hHeight * 2.5);
+      const dofPlaneGeom = new THREE.PlaneGeometry(1, 1);
       const dofPlaneMat = new THREE.MeshBasicMaterial({
         color: 0x10b981,
         transparent: true,
@@ -461,12 +476,12 @@ export const SpatialCamera3dViewport: React.FC<SpatialCamera3dViewportProps> = (
       sceneNodesRef.current = {};
       sceneRef.current = null;
     };
-  }, [activePass, subjects, waypoints, transform, renderFrame]);
+  }, [activePass, sceneStructure, renderFrame]);
 
   // Re-render frame when progress changes (no geometry/material recreation)
   useEffect(() => {
     renderFrame();
-  }, [renderFrame]);
+  }, [transform, renderFrame]);
 
   // Handle Mouse Drag for Orbiting Exterior View
   const handleMouseDown = useCallback((e: React.MouseEvent) => {

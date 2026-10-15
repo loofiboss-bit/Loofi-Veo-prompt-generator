@@ -1,5 +1,16 @@
 # Release Notes
 
+## v16.0.1 — Verified Performance and Reliable Export
+
+- Reuse 3D resources through playback while preserving preview/export camera orientation.
+- Verify copied originals and logos, preserve existing destinations on ZIP errors, and report recovery failures accurately.
+- Load optional integrations on demand and retain granular local store subscriptions.
+- Measure actual production APIs and paired packaged startup instead of synthetic speedup claims.
+- Remove the exact historical credential through an owner-authorized history rewrite; an authenticated Google lookup confirms the old key is already purged.
+
+[Download v16.0.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.1).
+See [verification](../V16_STABILIZATION.md) and [history cleanup boundaries](../HISTORY_SANITIZATION.md).
+
 ## v16.0.0 — Local Creator Editing
 
 Create and deliver short videos completely offline from your own clips, audio, and images. Features a local timeline editor, atomic IndexedDB document persistence, conflict recovery, linked captions, debounced autosave, and verified 180-second H.264/AAC MP4 exports.

@@ -1,7 +1,9 @@
 # Creator Studio v16 verification
 
-Source qualification, 2026-10-10. This implementation is unpublished; no commit, remote update,
-release, package publication or physical installation is established by these checks.
+Historical source qualification, 2026-10-10. The record below describes the unpublished candidate
+at the time of those checks and is retained unchanged as historical evidence.
+v16.0.0 was subsequently [published on 2026-10-12](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0).
+Current stabilization evidence is recorded separately in [V16_STABILIZATION.md](V16_STABILIZATION.md).
 
 ## Focused evidence
 

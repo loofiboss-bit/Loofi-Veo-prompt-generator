@@ -1,0 +1,50 @@
+# Individually reviewed historical false positives only.
+# See docs/SECRET_SCAN_REVIEW.md. No rules, paths, or commits are excluded wholesale.
+
+# Mocked AI-client expectation uses an explicitly named test fixture; no provider call is made.
+abe97616e6209f84dca918929547250dbc7f2a36:src/core/services/gemini/aiClient.test.ts:generic-api-key:258
+
+# Security documentation demonstrates a short illustrative Stripe token in a BAD-code example; it is not a production-format credential.
+933d267d2e3f3e660cc55b6060cf1eb83708ed38:.github/instructions/code-review.instructions.md:stripe-access-token:150
+
+# Security documentation demonstrates a short illustrative Stripe token in a BAD-code example; it is not a production-format credential.
+d153833232a8c7b156d2d77f269dcfef17c802e4:.github/instructions/code-review.instructions.md:stripe-access-token:142
+
+# Mocked AI-client expectation uses an explicitly named test fixture; no provider call is made.
+052169d0411064de12b2d6ae3fa02597304cef68:src/core/services/gemini/aiClient.test.ts:generic-api-key:219
+
+# The generic-key finding is the synthetic TEST_API_KEY fixture, not the separate default Google key.
+da69fbb8d20726c02c9feedcee500a8d8519b2bf:src/core/services/apiKeyService.test.ts:generic-api-key:20
+
+# Generated curl example contains a literal API-key placeholder, not a credential.
+29e24312b4e83d522942a63764b1f99ce9fb770f:coverage/lcov-report/src/core/services/apiExportService.ts.html:curl-auth-header:1596
+
+# The keys property contains a keyboard shortcut chord, not an authentication key.
+29e24312b4e83d522942a63764b1f99ce9fb770f:coverage/lcov-report/src/core/services/keyboardShortcutManager.ts.html:generic-api-key:1200
+
+# The keys property contains a keyboard shortcut chord, not an authentication key.
+d8a0f17f2d51dbe0754c53ad53e9e2eb233f485d:src/core/services/keyboardShortcutManager.ts:generic-api-key:151
+
+# Generated curl example contains a literal API-key placeholder, not a credential.
+9e1ad38c0414feb33281ce08198f6667ae1a2401:services/apiExportService.ts:curl-auth-header:369
+
+# The keys property contains a keyboard shortcut chord, not an authentication key.
+526ddeec28d4464094e88e18453cb4278cfef629:services/keyboardShortcutManager.ts:generic-api-key:151
+
+# Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
+5baea28777d0a41a4f3031853f90a1c7d1a4782f:services/promptBuilder.ts:generic-api-key:45
+
+# Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
+b7b6ab423bf95cb09335ec512eb7db9a97667638:services/promptBuilder.ts:generic-api-key:129
+
+# Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
+2bdf7c081b3b554bf7c5ac2e6275d25801a37466:services/promptBuilder.ts:generic-api-key:75
+
+# Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
+d0a134ad759b75d755ec0bda27a0c296fdfbbca0:services/promptBuilder.ts:generic-api-key:75
+
+# Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
+048462364a887e44772f64e0b04c1d5c6964257b:services/promptBuilder.ts:generic-api-key:129
+
+# Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
+d15dda917d7a3f73fff9ed23b0dbd7d012d0b115:services/promptBuilder.ts:generic-api-key:25

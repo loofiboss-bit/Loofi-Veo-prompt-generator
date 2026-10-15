@@ -1,6 +1,6 @@
 # Local Creator Editing in v16
 
-This is an unpublished source implementation. Published v15 downloads remain separate.
+v16.0.0 was published on 2026-10-12. See the [GitHub release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0) for installers. Subsequent source changes are separate from that release.
 
 ## The local editing journey
 
@@ -56,6 +56,9 @@ These are later product stages. v16 has no mandatory cloud service, automatic so
 ## Qualification
 
 Automated and real-render verification is recorded separately in CREATOR_V16_VERIFICATION.md.
-Physical Fedora/KDE and Windows installation, screen readers and the four-of-five human completion
-within ten minutes target require independent manual observations. No such claims follow from CI,
-scripted browser operation or synthetic examples.
+Automated validation is the acceptance gate. Physical installation, screen-reader and hardware
+observations are separate evidence boundaries; CI and scripted examples do not establish them.
+The historical onboarding target is not a required gate for subsequent stabilization work.
+
+See [v16 stabilization](V16_STABILIZATION.md) for current local qualification and
+[historical secret-scan review](SECRET_SCAN_REVIEW.md) for the outstanding credential finding.

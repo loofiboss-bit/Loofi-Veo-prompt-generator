@@ -1,0 +1,405 @@
+{
+  "changedBranches": [
+    "add-claude-github-actions-1770710378407",
+    "add-claude-github-actions-1770710464959",
+    "beta",
+    "claude/automate-agent-workflow-MuhTM",
+    "claude/create-windows-package-and-fedora-rpm",
+    "codex/native-m0",
+    "copilot/sub-pr-4",
+    "copilot/sub-pr-4-again",
+    "copilot/sub-pr-4-another-one",
+    "copilot/sub-pr-4-yet-again",
+    "feat/v15-cinedirector-pro",
+    "main",
+    "perf/creator-studio-optimization",
+    "release/v1.5.0"
+  ],
+  "changedReleaseTags": [
+    "v1.1.0",
+    "v1.2.0",
+    "v1.3.0",
+    "v1.4.0",
+    "v1.4.0-beta.1",
+    "v1.5.0",
+    "v1.5.0-rc.1",
+    "v1.6.0",
+    "v1.6.0-beta.0",
+    "v1.6.0-beta.3",
+    "v1.7.0",
+    "v1.8.0",
+    "v1.9.0",
+    "v10.0.0",
+    "v11.0.0",
+    "v12.0.0",
+    "v13.0.0",
+    "v14.0.0",
+    "v14.0.1",
+    "v14.1.0",
+    "v14.2.0",
+    "v14.2.1",
+    "v15.0.0",
+    "v16.0.0",
+    "v2.0.0",
+    "v2.1.0",
+    "v2.2.0",
+    "v2.3.0",
+    "v2.4.0",
+    "v2.5.0",
+    "v2.7.0",
+    "v2.9.0",
+    "v3.0.0",
+    "v3.1.0",
+    "v3.10.0",
+    "v3.11.0",
+    "v3.12.0",
+    "v3.13.0",
+    "v3.15.1",
+    "v3.16.0",
+    "v3.16.1",
+    "v3.2.0",
+    "v3.3.0",
+    "v3.3.1",
+    "v3.4.0",
+    "v3.5.0",
+    "v3.7.0",
+    "v3.7.1",
+    "v3.8.0",
+    "v3.8.1",
+    "v3.9.0",
+    "v3.9.1",
+    "v4.2.0",
+    "v4.2.1",
+    "v4.2.2",
+    "v4.3.0",
+    "v4.4.0",
+    "v4.4.1",
+    "v4.4.2",
+    "v5.0.0",
+    "v7.0.0",
+    "v7.0.1",
+    "v8.0.0",
+    "v9.0.0"
+  ],
+  "changedPullRefs": 68,
+  "sourceFileCurrentOccurrences": 0,
+  "remoteMutationPerformed": true,
+  "newMain": "b9e9374bc0d8c7f84152b4cffa4404abdf1a98a6",
+  "oldMain": "fac29104eab98fd85e79a2ea9a839710cd5b66b4",
+  "refChanges": {
+    "refs/heads/add-claude-github-actions-1770710378407": {
+      "old": "5c0b38c6cd7b4a006fe3fea0c9321b2580841605",
+      "new": "ca42c68560b59cf1f4cd59cf02c39737feee9442"
+    },
+    "refs/heads/add-claude-github-actions-1770710464959": {
+      "old": "8102abcf717dd74e4e2a7a07784a8f577ed2b7f9",
+      "new": "6d7ba1f4cdb1810c6463e245e1f933ad48d2609f"
+    },
+    "refs/heads/beta": {
+      "old": "38834e3cd508971098f666d64f1267c253884566",
+      "new": "9e8ba3d3a43746330b2a7c9d0610de8bc7188e93"
+    },
+    "refs/heads/claude/automate-agent-workflow-MuhTM": {
+      "old": "fa270304d27dfabc86e8bafb25bb9a38b0900d93",
+      "new": "10da6c36b84802908c74af3958d4e3a43a8486e6"
+    },
+    "refs/heads/claude/create-windows-package-and-fedora-rpm": {
+      "old": "8572453ef36176de59ea74d8edb1cc9d49cbc5e8",
+      "new": "ba29080ccff0d4242d632bac1a27228af4c0b1c0"
+    },
+    "refs/heads/codex/native-m0": {
+      "old": "8e3568c08dea631353feb655d302193e02bd0f09",
+      "new": "cecdbe523ff22bf27c43abb735b8781de4bcc5fc"
+    },
+    "refs/heads/copilot/sub-pr-4": {
+      "old": "45a8da5ccca4d20f04bcdccf7c21131a87d45ddc",
+      "new": "672e01ef5a540aafaa8adb6dfc5bd519ee819b28"
+    },
+    "refs/heads/copilot/sub-pr-4-again": {
+      "old": "1f77b3c384e29cd3665db51290dcd5eef57288bb",
+      "new": "9d15af4e1755359279d77f91f656d99a606b339a"
+    },
+    "refs/heads/copilot/sub-pr-4-another-one": {
+      "old": "1d0ffb5477534fb567839eb8f3cb0b8b37dd18a2",
+      "new": "afb89d3ac7be8fc3318f7c664c9c89a56bb0b0bb"
+    },
+    "refs/heads/copilot/sub-pr-4-yet-again": {
+      "old": "c8f9bed841974455ca97d482d68ddfc7b8e92ca0",
+      "new": "c0e4745a2ca3ec63eabdc911b8915a22564381c1"
+    },
+    "refs/heads/feat/v15-cinedirector-pro": {
+      "old": "cdb860b63cd43e9a0da21886d8cd365cf6f14b5b",
+      "new": "6ba2d230a515ba0a4deb103831811874217cea86"
+    },
+    "refs/heads/main": {
+      "old": "fac29104eab98fd85e79a2ea9a839710cd5b66b4",
+      "new": "b9e9374bc0d8c7f84152b4cffa4404abdf1a98a6"
+    },
+    "refs/heads/perf/creator-studio-optimization": {
+      "old": "f165839e211f8f9a021d7dfd15daba19049e0615",
+      "new": "aa689f89142403b53c56db0aa170f46c0da8570f"
+    },
+    "refs/heads/release/v1.5.0": {
+      "old": "0478cdaab5ec99f9354d79ca806f132f8f560b9b",
+      "new": "794e46dcb56ba653da02b40889794ea356ede640"
+    },
+    "refs/tags/v1.1.0": {
+      "old": "fffc5b41d2399d0fee1cb09e289c893a283708da",
+      "new": "f9a6a1dbfcdaa87b8889e2691d71eca6355bb2c6"
+    },
+    "refs/tags/v1.2.0": {
+      "old": "f625cc0bcbeae91266bb06677c23f7f92b1942b1",
+      "new": "4904c833ea57893fa62dba43d7b61c2721eaaac1"
+    },
+    "refs/tags/v1.3.0": {
+      "old": "91948e949f0c8c7b59b96b028abd60970d996547",
+      "new": "3e305d6d44d2516fa0d7f677e22e44f06a709c95"
+    },
+    "refs/tags/v1.4.0": {
+      "old": "2e2c48bd43c3f3d02bdd9345b03709876887e931",
+      "new": "00b2369849af59579e1cfebbb3cb77b204c5a295"
+    },
+    "refs/tags/v1.4.0-beta.1": {
+      "old": "cc70cdade0739a54819dd313c80641cc73b019a1",
+      "new": "33776a0622bf5396a40120d9184fa376ed4ad7e3"
+    },
+    "refs/tags/v1.5.0": {
+      "old": "f1a0859ce5eecf79a56a141653015dadfc2653d5",
+      "new": "aeef33bfc09a512d1c383a337b0509392e67bb4b"
+    },
+    "refs/tags/v1.5.0-rc.1": {
+      "old": "9cf9ab835759ff6525edaf87402838ededcd612c",
+      "new": "bd0c56fb70e1f53793c4d976bc795a74c96d44cc"
+    },
+    "refs/tags/v1.6.0": {
+      "old": "b6b423138ebc8790a4f1d151abdaeda58f8e30bd",
+      "new": "7b57736af9e8011d959aa4633c9e52765b670876"
+    },
+    "refs/tags/v1.6.0-beta.0": {
+      "old": "2c0697cad88640b7e89b466767592282a8f33531",
+      "new": "ead868aaa161ec59c9d496b2cc833e7a79459e15"
+    },
+    "refs/tags/v1.6.0-beta.3": {
+      "old": "f2b72664c6ec2ad53042f8a43fd3f3b1cf1b6db8",
+      "new": "e244d15e8dfbbcef7a2cfc129a27874e1e7bd083"
+    },
+    "refs/tags/v1.7.0": {
+      "old": "996a4b01cd128dea6cf06341d51b40c6010bcc5c",
+      "new": "c5631c21246a138def17b25924a35692f580942e"
+    },
+    "refs/tags/v1.8.0": {
+      "old": "5ae676526240f685dde7e1ed14f33d731df5a2a0",
+      "new": "726c877c7d0ab48058d54808ae74deeed4124645"
+    },
+    "refs/tags/v1.9.0": {
+      "old": "29eae718b1d75cfa01ccb017735d68f397e871d0",
+      "new": "53b2a8ea8ebb382c162111dcf85019a798f91497"
+    },
+    "refs/tags/v10.0.0": {
+      "old": "454b3fd41af788966d66a02ba055d36ff4a1e311",
+      "new": "0e50847cc5d00444f5b9ebc0115be578ccc28c70"
+    },
+    "refs/tags/v11.0.0": {
+      "old": "1c55280a6a42d3361f9076448a9d37aa674b7238",
+      "new": "fd7995d46cb9c89fb105180da4f04c51d03de3f0"
+    },
+    "refs/tags/v12.0.0": {
+      "old": "d1da41db5676638e32868a611f8304025cbe2ca4",
+      "new": "343e1aaca68f35bea0ffe5d4fd94fa8b525430db"
+    },
+    "refs/tags/v13.0.0": {
+      "old": "134dd95cb9be0e09a0c281a981ab60ccb004992d",
+      "new": "daae4e3c6d4b53a33153f766ccaf1d9fd50c79be"
+    },
+    "refs/tags/v14.0.0": {
+      "old": "afd6ed3210e3d0ad417e2731156725e9a6f8803c",
+      "new": "ffea728e53fa7f109cbccb4122b7d687703e62e1"
+    },
+    "refs/tags/v14.0.1": {
+      "old": "8daa5b455c0834b2ec81f748f88da8fd892659b3",
+      "new": "71497e793fedbf0fb4cebaf6fbc9070140a499f8"
+    },
+    "refs/tags/v14.1.0": {
+      "old": "00ed14ca371491bfb467d9c70b341a9f353e4589",
+      "new": "92aee4928cde22c2a1102a85141c0e0ca45c355e"
+    },
+    "refs/tags/v14.2.0": {
+      "old": "123bf1fc6596980b94c5e3aecabd55fab00eda57",
+      "new": "e8cc9157e650ebd45f9351bc7cffc03291c4dc85"
+    },
+    "refs/tags/v14.2.1": {
+      "old": "24bd8b29e0f4c15591e8f9e97aa9e0a979609109",
+      "new": "035396a90d028ffd957a2267200c5d5a4da7ff06"
+    },
+    "refs/tags/v15.0.0": {
+      "old": "c2a190531b4c051c6070d2eb1041429dc6988a74",
+      "new": "59ab7aee95bcb6308a8cedb969c0f92e809d88ac"
+    },
+    "refs/tags/v16.0.0": {
+      "old": "63a904abb6f4d1597b3b3e2f3dd5da263b0fe914",
+      "new": "794ef62480a3daae74b02cd1b5cd9359ae44854c"
+    },
+    "refs/tags/v2.0.0": {
+      "old": "db00e3ccff6b0fc8c27847d450e3e3fda282b76b",
+      "new": "2d463443948086f38e2c1f61da8965f4c593c695"
+    },
+    "refs/tags/v2.1.0": {
+      "old": "e8c980930df6a8d906daf34d02488191fe123958",
+      "new": "ab0752c134a56131f5aaae6b18b703b3b1af029d"
+    },
+    "refs/tags/v2.2.0": {
+      "old": "36888c6e1bc63d7453ee2b1fe496714ecea5646c",
+      "new": "d2b7308986855872d2daab0b0338f95360ca3ed7"
+    },
+    "refs/tags/v2.3.0": {
+      "old": "7ab5b69d7937e9b785f59aa26c9e21da5f8b2d76",
+      "new": "3186c673ad1a38a8eab43d8bae30edd6c6032bac"
+    },
+    "refs/tags/v2.4.0": {
+      "old": "f460205ea03c5c7e7efd983b676bbe0f2dd1e6ee",
+      "new": "7d1aec3c4ed51c2342e6a09146e206b00b53d4ba"
+    },
+    "refs/tags/v2.5.0": {
+      "old": "e2d494adae12642d6a602cf1c12ba9314f7da950",
+      "new": "f3e6e2e0a0aa7685d3cabe3131a23d5d0051795e"
+    },
+    "refs/tags/v2.7.0": {
+      "old": "7c2319b820f74ef65a4a0a38b52198c08c8d55b3",
+      "new": "60ab576e56799ec06b00d799e2dd5f4f90dae979"
+    },
+    "refs/tags/v2.9.0": {
+      "old": "b7a50153ab346dd044eae0895685832c0782202c",
+      "new": "29044bff39335320b95e0d3bede0300a27455a04"
+    },
+    "refs/tags/v3.0.0": {
+      "old": "8381c1a7273cf70c21c50c3afbaf8715cea521f2",
+      "new": "42b8ed92a9a980702c11b75e2238cb9449c37436"
+    },
+    "refs/tags/v3.1.0": {
+      "old": "a834aa917246172da006a38d88725c86ca304ae1",
+      "new": "3af9c266a8b9ad3cc17a0fb99bd964ee2fda5de6"
+    },
+    "refs/tags/v3.10.0": {
+      "old": "39b5960f3d481fbde8d3665c416459da53f872bc",
+      "new": "a7198e4f94d2dbcc07024cc863072aeed064c628"
+    },
+    "refs/tags/v3.11.0": {
+      "old": "5bc80e8bc76d5264f396dec6399dadb3f43fed82",
+      "new": "871958e4de39d81eb7066e51b15133dc392ed70c"
+    },
+    "refs/tags/v3.12.0": {
+      "old": "01fdaa9bc1ea02c4048a5cb4f075496146091c92",
+      "new": "26ee69a69bdb770c2f60964d74d20f2d1c1ec3c8"
+    },
+    "refs/tags/v3.13.0": {
+      "old": "9b8624c42a3ebf82fb797166ba0e043047257c49",
+      "new": "76ea2d62ef1e84b961759122a2a9e759a7b67f39"
+    },
+    "refs/tags/v3.15.1": {
+      "old": "f5f48a6f565d446a14191c49e3d31311de39313a",
+      "new": "b16a4a87c7c479e96fc43f263c7fbd201028d2bb"
+    },
+    "refs/tags/v3.16.0": {
+      "old": "42d1d3be231664307117879faee48892da831136",
+      "new": "efa10ede9f713aaed033ce93a8c6da8b3316000b"
+    },
+    "refs/tags/v3.16.1": {
+      "old": "f52418a4f02dded50282cb80d1e9c995e3b402b3",
+      "new": "b2b1d0dccd0c8bf971cc7aead741dd92dcd54bec"
+    },
+    "refs/tags/v3.2.0": {
+      "old": "e1c7997fde859b5b307bc14eeabdb92f5f4c079e",
+      "new": "a4fd0215f3f1df6191838a60e32603186aa21414"
+    },
+    "refs/tags/v3.3.0": {
+      "old": "a528b48aef9d5381a5702d3e8d90d58071446ea4",
+      "new": "09fc766cc7a1a0f3e65f72c1dcbce1d34c49c779"
+    },
+    "refs/tags/v3.3.1": {
+      "old": "b1392b3eb1431a97125c0dc75a4d84b90634a1e3",
+      "new": "452cde50f8266ab741b06369c53bf342bf4d00bd"
+    },
+    "refs/tags/v3.4.0": {
+      "old": "11a546a5f4a4c7a527eb3b47e5037f08c2c606af",
+      "new": "6f78d7b418e3969121de858709816ffee7fc8da7"
+    },
+    "refs/tags/v3.5.0": {
+      "old": "d025681742784f6d4362c8633023e0b19cce552b",
+      "new": "2647079c4c86c43b21c2057e255c5ae72c459550"
+    },
+    "refs/tags/v3.7.0": {
+      "old": "0335348f9801dac3ad15f3d0009a36e830a8808e",
+      "new": "c718b60328ab6050aea2f23e5a64e314bc27ebdf"
+    },
+    "refs/tags/v3.7.1": {
+      "old": "f9c2345e40ae7bf1b61bda1e52f5ec16425f87ce",
+      "new": "0569e38a62dbd9da3f68d63f225c4a443c94fedd"
+    },
+    "refs/tags/v3.8.0": {
+      "old": "f1b28c12e3bc5e50e99ac977f38c9bcf2726de02",
+      "new": "f8167ed1cf5482558a35392315d9dbafed5a79ca"
+    },
+    "refs/tags/v3.8.1": {
+      "old": "e2b517ef558bb603f77e01ff7f21d90413571ab9",
+      "new": "1c42ed2107be42a2fa822c3759e65add3df5e76c"
+    },
+    "refs/tags/v3.9.0": {
+      "old": "4bdd575af865fe99aea7cb3de9ff6fe1d9afddc5",
+      "new": "c4c53689bd7048948292ada33399d7ac136500df"
+    },
+    "refs/tags/v3.9.1": {
+      "old": "63266234ab2adea2162490704dec5aa6ac686362",
+      "new": "a0162a82ad331d58867975df6b71a8fe921b4c8a"
+    },
+    "refs/tags/v4.2.0": {
+      "old": "76286584d2bfda7ef2e908e27828cbec5c550ed0",
+      "new": "b71033e07e79b4f76c9d78d8275b16ba50acf70b"
+    },
+    "refs/tags/v4.2.1": {
+      "old": "1aebc6cadc5eacbe4ab1008512869d8e2001e7ac",
+      "new": "a34e7d141d9a706707150a79c083dff6177be145"
+    },
+    "refs/tags/v4.2.2": {
+      "old": "6d5c93d12b743daa2a695017e6aa0b18dec5f7b0",
+      "new": "bada41a1116c7e11e8aca4a2a18e9965c54a6fa6"
+    },
+    "refs/tags/v4.3.0": {
+      "old": "49a9f808ce812653964f9af0d8007af46a09ad5f",
+      "new": "a8c8e358590468036f2649938c7c23eaed95ca38"
+    },
+    "refs/tags/v4.4.0": {
+      "old": "0eb18647a6f8e8c093f73433b4d71ab80e1875cb",
+      "new": "3594467dbe55ecc130f57885d8801496e1411eda"
+    },
+    "refs/tags/v4.4.1": {
+      "old": "775db914c03d83886f5dfe970c817a2c9de04609",
+      "new": "c0e58a7f05f13f5a778ffcd7579fce03fa6e6a3b"
+    },
+    "refs/tags/v4.4.2": {
+      "old": "b5a436fd4524a3d17aa72c38b43a51cd4f6a2245",
+      "new": "c60d845db9cff4eef10ecf45135af30bea0d61c7"
+    },
+    "refs/tags/v5.0.0": {
+      "old": "94fed10392ffb23f3312d078e0f4f1f045959ba5",
+      "new": "800a238f08e579d33698e23b7bef2a17fefc31f5"
+    },
+    "refs/tags/v7.0.0": {
+      "old": "4b00e1c825afdc75282c97711a9f9130aa0edf9a",
+      "new": "426d30fec061af8ccaafabdb39addfef6f5dcb54"
+    },
+    "refs/tags/v7.0.1": {
+      "old": "dc0c7d9bb9598068a69ebb49f780027624805b7d",
+      "new": "9ef6280db9167f0b19bb256f5267620a1fd52660"
+    },
+    "refs/tags/v8.0.0": {
+      "old": "f791561b4f4d6ed2325d7487f3a3501c55957d6a",
+      "new": "434ce85a32fde1caaf8ef9799830d512e94c21e3"
+    },
+    "refs/tags/v9.0.0": {
+      "old": "c415f7b988727c76e194b7d3caf7c43808900f1c",
+      "new": "3065acc61c094a2caa6ccaa6e3b177c993e6ef64"
+    }
+  },
+  "changedPullHeadRefs": 66,
+  "changedPullMergeRefs": 2
+}

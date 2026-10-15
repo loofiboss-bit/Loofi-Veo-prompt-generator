@@ -14,38 +14,8 @@ const fs = require('fs');
 const os = require('os');
 const { execFile } = require('child_process');
 const keytar = require('keytar');
-let _JSZip = null;
-function getJSZip() {
-  if (!_JSZip) _JSZip = require('jszip');
-  return _JSZip;
-}
-const JSZip = new Proxy(function () {}, {
-  construct(_target, args) {
-    const RealJSZip = getJSZip();
-    return new RealJSZip(...args);
-  },
-  get(_target, prop) {
-    const RealJSZip = getJSZip();
-    const value = RealJSZip[prop];
-    return typeof value === 'function' ? value.bind(RealJSZip) : value;
-  },
-});
-
-let _vertexAuth = null;
-function getVertexAuth() {
-  if (!_vertexAuth) {
-    const { GoogleAuth } = require('google-auth-library');
-    _vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
-  }
-  return _vertexAuth;
-}
-const vertexAuth = new Proxy({}, {
-  get(_target, prop) {
-    const instance = getVertexAuth();
-    const value = instance[prop];
-    return typeof value === 'function' ? value.bind(instance) : value;
-  },
-});
+const { createLazyDesktopDependencies } = require('./lazy-desktop-dependencies.cjs');
+const { JSZip, vertexAuth } = createLazyDesktopDependencies();
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 const { registerProviderIpc } = require('./ipc/provider-ipc.cjs');
 const { registerPaidJobsIpc } = require('./ipc/paid-jobs-ipc.cjs');
@@ -534,7 +504,14 @@ app.whenReady().then(async () => {
         mainWindow.webContents.send('timeline-render-update', job);
     },
   });
-  void creatorRenderEngine.initialize();
+  void creatorRenderEngine.initialize().then(() => {
+    if (creatorRenderEngine.initializationError) {
+      console.error(
+        'Creator render initialization failed:',
+        creatorRenderEngine.initializationError,
+      );
+    }
+  });
   createWindow();
   void paidJobEngine.resumeAll();
 

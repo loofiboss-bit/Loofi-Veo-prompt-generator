@@ -123,11 +123,12 @@ class DesktopMediaStore {
       throw new Error('Downloaded media checksum readback failed or media is empty.');
     }
     await fs.promises.rename(temporaryPath, finalPath);
+    const storedPath = await fs.promises.realpath(finalPath);
     const record = {
       schemaVersion: 1,
       key,
-      path: finalPath,
-      localUrl: pathToFileURL(finalPath).href,
+      path: storedPath,
+      localUrl: pathToFileURL(storedPath).href,
       sha256,
       sizeBytes,
       mimeType,
@@ -174,11 +175,12 @@ class DesktopMediaStore {
       throw new Error('Migrated media checksum readback failed.');
     }
     await fs.promises.rename(temporaryPath, finalPath);
+    const storedPath = await fs.promises.realpath(finalPath);
     const record = {
       schemaVersion: 1,
       key,
-      path: finalPath,
-      localUrl: pathToFileURL(finalPath).href,
+      path: storedPath,
+      localUrl: pathToFileURL(storedPath).href,
       sha256,
       sizeBytes: buffer.length,
       mimeType,

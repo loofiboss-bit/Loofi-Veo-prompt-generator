@@ -8,7 +8,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "16.0.0",
+  "version": "16.0.1",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -30,7 +30,7 @@
     "lint:changed:strict": "node scripts/lint-changed-strict.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node node_modules/vitest/vitest.mjs run --environment jsdom",
-    "test:ci": "npm run test:coverage && npm run coverage:check && npm run test:desktop",
+    "test:ci": "npm run test:coverage && npm run coverage:check && npm run test:desktop && npm run test:benchmark",
     "preview": "vite preview",
     "start": "vite preview --host --port 8080",
     "electron": "vite build && electron .",
@@ -40,7 +40,7 @@
     "validate": "npm run theme:check && npm run models:check && npm run i18n:create:check && npm run i18n:studio:check && npm run i18n:creator:check && npm run lint:ci && npm run typecheck && npm run test && npm run test:desktop && npm run format:check",
     "models:check": "node scripts/check-executable-models.mjs",
     "i18n:create:check": "node scripts/check-create-translations.mjs",
-    "validate:release": "npm run media-runtime:check && npm run package:rpm:check && npm run pre-release:check && npm run validate && npm run build",
+    "validate:release": "npm run media-runtime:check && npm run package:rpm:check && npm run theme:check && npm run models:check && npm run i18n:create:check && npm run i18n:studio:check && npm run i18n:creator:check && npm run pre-release:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",
@@ -63,7 +63,9 @@
     "media-runtime:check": "node scripts/check-media-runtime.mjs",
     "media-runtime:provision": "node scripts/provision-media-runtime.mjs",
     "benchmark": "node benchmarks/run-benchmarks.mjs",
-    "benchmark:baseline": "node benchmarks/run-benchmarks.mjs --save-baseline"
+    "test:benchmark": "node --test benchmarks/benchmark.test.mjs",
+    "secrets:check": "node scripts/check-secret-scan.mjs",
+    "secrets:self-test": "node scripts/check-secret-scan.mjs --self-test"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

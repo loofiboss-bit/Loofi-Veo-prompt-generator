@@ -46,11 +46,13 @@ for package availability and the implementation records for qualification eviden
 Documentation changes should update this index when a new canonical page is added. Prefer linking to
 one canonical page instead of copying the same instructions into several files.
 
-## v15 development guides
+## Creator workflow guides (v15 and v16)
 
 - [Creator delivery behavior and limits](CREATOR_DELIVERY.md)
 - [Export your first offline video](guides/FIRST_OFFLINE_VIDEO.md)
 - [Captions and personal style](guides/CAPTIONS_AND_STYLE.md)
 - [Publication package](guides/PUBLICATION_PACKAGE.md)
 
-These guides describe the development workspace, not published v14.2.1 installers.
+v16.0.0 installers were published on 2026-10-12. Later source changes and historical
+verification records are separate from the published packages.
+See [v16 stabilization](V16_STABILIZATION.md) and [secret-scan review](SECRET_SCAN_REVIEW.md).

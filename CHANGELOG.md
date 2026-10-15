@@ -7,6 +7,25 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [16.0.1] - 2026-10-15
+
+### Fixed
+
+- Await successful render-engine restoration and expose initialization failures while keeping window startup asynchronous.
+- Verify copied original media and logos against frozen render-plan or stored-original checksums, including legacy plans.
+- Require delivery package assets, propagate ZIP stream failures and preserve destination files.
+- Persist terminal render states immediately and ignore late progress after completion or cancellation.
+- Reuse 3D renderer, scene geometry and materials during playback and scrub updates; dispose on actual scene changes.
+- Retain published v16 canonical media paths and packaged-window unload behavior on the performance branch.
+
+### Changed
+
+- Load ZIP and provider authentication integrations on first use with tested constructor, static and bound-method behavior.
+- Replace synthetic performance claims with production API benchmarks and paired packaged Electron startup measurements.
+- Avoid duplicate release tests and builds: pre-release already covers lint, types, coverage, desktop, benchmarks, formatting and build; retain all media, metadata, theme, model and translation checks without duplicate native renders.
+- Keep full-history secret scanning with individually documented historical false-positive fingerprints and a synthetic detection self-test. Remove the exact historical Google credential through an explicitly authorized rewrite of all published branch/tag history; an authenticated provider lookup confirms the old key is already purged.
+- Correct source documentation to identify v16.0.0 as published, retaining earlier qualification records as dated evidence.
+
 ## [16.0.0] - 2026-10-12
 
 ### Added — Local Creator Editing
@@ -44,8 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Qualification
 
-- This is an unpublished development version. Physical Fedora/KDE and Windows operation and
-  five-person usability acceptance require separate observations; automated tests cannot prove them.
+- Published on 2026-10-12. The original source checks are retained in `docs/CREATOR_V16_VERIFICATION.md`; release availability and physical-platform qualification are separate claims.
 
 ## [15.0.0] - 2026-10-08
 
