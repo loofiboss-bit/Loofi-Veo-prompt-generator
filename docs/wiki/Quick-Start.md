@@ -1,7 +1,7 @@
 # Quick Start
 
-The unpublished v16 source adds a local path from your own clips to verified video delivery.
-Published downloads remain on v15 until a release is approved.
+Creator Studio v16 adds a local path from your own clips to verified video delivery.
+v16.0.1 stabilizes rendering, export, startup and playback resource use.
 
 ## Finish a local video in v16
 

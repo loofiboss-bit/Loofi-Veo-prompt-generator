@@ -14,9 +14,8 @@ const fs = require('fs');
 const os = require('os');
 const { execFile } = require('child_process');
 const keytar = require('keytar');
-const JSZip = require('jszip');
-const { GoogleAuth } = require('google-auth-library');
-const vertexAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+const { createLazyDesktopDependencies } = require('./lazy-desktop-dependencies.cjs');
+const { JSZip, vertexAuth } = createLazyDesktopDependencies();
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
 const { registerProviderIpc } = require('./ipc/provider-ipc.cjs');
 const { registerPaidJobsIpc } = require('./ipc/paid-jobs-ipc.cjs');
@@ -505,7 +504,14 @@ app.whenReady().then(async () => {
         mainWindow.webContents.send('timeline-render-update', job);
     },
   });
-  await creatorRenderEngine.initialize();
+  void creatorRenderEngine.initialize().then(() => {
+    if (creatorRenderEngine.initializationError) {
+      console.error(
+        'Creator render initialization failed:',
+        creatorRenderEngine.initializationError,
+      );
+    }
+  });
   createWindow();
   void paidJobEngine.resumeAll();
 

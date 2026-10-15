@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-15",
+  "sourceHead": "f165839e211f8f9a021d7dfd15daba19049e0615",
+  "dirty": true,
+  "checks": {
+    "validate:release": {
+      "exitCode": 0,
+      "includes": [
+        "test:ci",
+        "lint:ci",
+        "typecheck",
+        "format:check",
+        "build",
+        "media-runtime:check",
+        "package:rpm:check",
+        "theme:check",
+        "models:check",
+        "translation gates"
+      ],
+      "expectedWarnings": [
+        "uncommitted changes",
+        "optional generic E2E disabled; executed separately"
+      ]
+    },
+    "chromium": {
+      "passed": 112,
+      "failed": 0
+    },
+    "frozenProductionCreator": {
+      "passed": 7,
+      "failed": 0
+    },
+    "finalPackagedRecovery": {
+      "passed": 1,
+      "failed": 0
+    },
+    "focusedRendererMedia": {
+      "passed": 43,
+      "failed": 0,
+      "excludes": "separately validated three-minute case"
+    },
+    "benchmarkSelfTests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "fullHistorySecretScan": {
+      "exitCode": 1,
+      "openFindings": 3,
+      "uniqueHistoricalCredentialValues": 1,
+      "revocation": "unknown; user confirmed",
+      "ignoredFalsePositiveFingerprints": 16
+    },
+    "syntheticHistorySecretTest": {
+      "exitCode": 0
+    }
+  },
+  "sourceEvidenceBoundary": "Local dirty working tree. Earlier hashes in paired benchmark identify measured packages. Documentation and release-script updates after packaging do not change measured runtime behavior.",
+  "logSha256": {
+    "validate-release.log": "694876203f88b621e81743e910def16816eaa194e6b408ee75c908fbab8b4489",
+    "chromium-e2e.log": "bcd10daad5d18dddb4de73ea1b079f51555536315f0b481f32618a99faa40290",
+    "creator-production-e2e.log": "69a8e7c8aab56247b1e50d1c6b2f15f089c567d085db7e3048c44c5d0518666f",
+    "packaged-final-e2e.log": "6801956e5de2de9ec84318aac9a64f5bc606058602ff19baba0afed30eca5479",
+    "render-final-focused.log": "09e3893e7a2fc2ac00acdeac94cc2ffe27a853b23b7621c680a56a2f9b253d72"
+  }
+}

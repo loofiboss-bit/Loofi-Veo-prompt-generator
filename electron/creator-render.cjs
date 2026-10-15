@@ -1,11 +1,14 @@
 'use strict';
 const fs = require('node:fs/promises');
+const nodeFs = require('node:fs');
+const { pipeline } = require('node:stream/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const exec = promisify(execFile);
 const VERSION = '9.0.2';
+const PROGRESS_THROTTLE_MS = 150;
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const MEDIA_FORMATS =
   'mov,matroska,webm,avi,wav,mp3,flac,ogg,image2,png_pipe,jpeg_pipe,gif,bmp_pipe,webp_pipe';
@@ -22,6 +25,12 @@ function canonical(value) {
 function planHash(plan) {
   const { contentHash: _hash, ...snapshot } = plan;
   return crypto.createHash('sha256').update(canonical(snapshot)).digest('hex');
+}
+async function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  const stream = nodeFs.createReadStream(filePath);
+  for await (const chunk of stream) hash.update(chunk);
+  return hash.digest('hex');
 }
 function text(value, limit = 4000) {
   return typeof value === 'string' && value.length <= limit && !value.includes('\0');
@@ -184,7 +193,19 @@ class CreatorRenderEngine {
     this.onUpdate = onUpdate;
     this.jobs = new Map();
   }
-  async initialize() {
+  initialize() {
+    this.readyPromise ||= this._initInternal().catch(() => {
+      this.initializationError =
+        'Local export storage could not be restored. Check folder permissions and free space.';
+    });
+    return this.readyPromise;
+  }
+  async ready() {
+    await this.initialize();
+    if (this.initializationError) throw new Error(this.initializationError);
+    return this;
+  }
+  async _initInternal() {
     let entries;
     try {
       await fs.mkdir(this.root, { recursive: true });
@@ -200,26 +221,29 @@ class CreatorRenderEngine {
         continue;
       }
       if (!/^[a-f\d-]{36}$/.test(name)) continue;
+      let j;
       try {
-        const j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
-        if (['queued', 'rendering', 'verifying'].includes(j.status)) {
-          j.status = 'failed';
-          j.error = 'Rendering interrupted. Retry from the project.';
-          await fs.writeFile(path.join(this.root, name, 'job.json'), JSON.stringify(j), {
-            mode: 0o600,
-          });
-          for (const artifact of await fs.readdir(path.join(this.root, name))) {
-            if (
-              artifact.startsWith('input-') ||
-              ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
-            )
-              await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
-          }
-        }
-        this.jobs.set(j.id, { job: j, directory: path.join(this.root, name) });
-      } catch {
-        /* Incomplete jobs cannot be restored. */
+        j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
+      } catch (error) {
+        if (error instanceof SyntaxError || ['ENOENT', 'ENOTDIR'].includes(error.code)) continue;
+        throw error;
       }
+      if (!j || typeof j !== 'object') continue;
+      if (['queued', 'rendering', 'verifying'].includes(j.status)) {
+        j.status = 'failed';
+        j.error = 'Rendering interrupted. Retry from the project.';
+        await fs.writeFile(path.join(this.root, name, 'job.json'), JSON.stringify(j), {
+          mode: 0o600,
+        });
+        for (const artifact of await fs.readdir(path.join(this.root, name))) {
+          if (
+            artifact.startsWith('input-') ||
+            ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
+          )
+            await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
+        }
+      }
+      this.jobs.set(j.id, { job: j, directory: path.join(this.root, name) });
     }
   }
   async capabilities() {
@@ -235,10 +259,7 @@ class CreatorRenderEngine {
         throw new Error('Verified offline rendering runtime is not provisioned.');
       for (const name of ['ffmpeg', 'ffprobe']) {
         const file = path.join(directory, name + (process.platform === 'win32' ? '.exe' : ''));
-        const hash = crypto
-          .createHash('sha256')
-          .update(await fs.readFile(file))
-          .digest('hex');
+        const hash = await sha256File(file);
         if (hash !== manifest.files[name])
           throw new Error('Rendering runtime integrity check failed.');
       }
@@ -274,7 +295,28 @@ class CreatorRenderEngine {
   }
   async update(state, values) {
     if (state.cancelled && values.status !== 'cancelled') return;
+    const hasOnlyProgress = Object.keys(values).length === 1 && values.progress !== undefined;
+    if (hasOnlyProgress && state.job.status !== 'rendering') return;
     Object.assign(state.job, values);
+
+    const isPureProgress =
+      values.status === undefined &&
+      values.error === undefined &&
+      values.savedName === undefined &&
+      values.progress !== undefined &&
+      values.progress > 0 &&
+      values.progress < 1;
+
+    const now = Date.now();
+    if (
+      isPureProgress &&
+      state.lastPersistedAt &&
+      now - state.lastPersistedAt < PROGRESS_THROTTLE_MS
+    ) {
+      return;
+    }
+    state.lastPersistedAt = now;
+
     const snapshot = { ...state.job };
     state.persistence = (state.persistence || Promise.resolve())
       .catch(() => {})
@@ -355,10 +397,7 @@ class CreatorRenderEngine {
     const verified = JSON.parse(
       await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'),
     );
-    const hash = crypto
-      .createHash('sha256')
-      .update(await fs.readFile(output))
-      .digest('hex');
+    const hash = await sha256File(output);
     if (hash !== verified.outputSha256) throw new Error('Delivery checksum verification failed.');
     return { url: pathToFileURL(output).href, contentHash: job.contentHash };
   }
@@ -366,14 +405,20 @@ class CreatorRenderEngine {
     if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');
     const caps = await this.capabilities();
     if (!caps.available) return { available: false, reason: caps.reason };
-    const record = await this.getMediaStore().read(mediaId);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
     if (!record) return { available: false, reason: 'Registered media is missing.' };
-    const metadata = await this.probe(fileURLToPath(record.localUrl));
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const metadata = await this.probe(filePath);
     return {
       available: true,
       durationSeconds: Number(metadata.format.duration) || undefined,
       mimeType: record.mimeType,
-      sha256: crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex'),
+      sha256:
+        record.sha256 ||
+        (record.bytes
+          ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+          : undefined),
       streamTypes: metadata.streams.map((stream) => stream.codec_type),
     };
   }
@@ -382,10 +427,14 @@ class CreatorRenderEngine {
     const caps = await this.capabilities();
     if (!caps.available) throw new Error(caps.reason);
     const store = this.getMediaStore();
-    const record = await store.read(mediaId);
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
     if (!record || !record.mimeType.startsWith('video/'))
       throw new Error('Video media is missing.');
-    const sha256 = crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex');
+    const sha256 =
+      record.sha256 ||
+      (record.bytes
+        ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+        : undefined);
     const key = `proxy:${sha256}:720-v1`;
     const existing = await store.read(key);
     if (existing) return { key, url: existing.localUrl, sha256 };
@@ -409,7 +458,7 @@ class CreatorRenderEngine {
           '-format_whitelist',
           MEDIA_FORMATS,
           '-i',
-          fileURLToPath(record.localUrl),
+          record.path || fileURLToPath(record.localUrl),
           '-vf',
           'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
           '-c:v',
@@ -548,19 +597,28 @@ class CreatorRenderEngine {
         ...p.clips.filter((c) => c.type === 'audio'),
       ];
       for (const c of ordered) {
-        const record = await this.getMediaStore().read(c.mediaId);
+        const store = this.getMediaStore();
+        const record = store.resolve ? await store.resolve(c.mediaId) : await store.read(c.mediaId);
         if (!record) throw new Error(`Missing media for clip ${c.id}.`);
-        if (
-          p.mediaHashes &&
-          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
-            p.mediaHashes[c.mediaId]
-        )
+        const mediaSha256 =
+          record.sha256 ||
+          (record.bytes
+            ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+            : undefined);
+        if (p.mediaHashes && mediaSha256 !== p.mediaHashes[c.mediaId])
           throw new Error(`Media changed after delivery check: ${c.id}.`);
         const ext = c.type === 'image' ? '.png' : c.type === 'audio' ? '.audio' : '.video';
         const filename = `input-${index}${ext}`;
-        await fs.writeFile(path.join(state.directory, filename), Buffer.from(record.bytes), {
-          mode: 0o600,
-        });
+        const inputTarget = path.join(state.directory, filename);
+        if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
+          await fs.copyFile(record.path || fileURLToPath(record.localUrl), inputTarget);
+        } else {
+          await fs.writeFile(inputTarget, Buffer.from(record.bytes), {
+            mode: 0o600,
+          });
+        }
+        if ((await sha256File(inputTarget)) !== (p.mediaHashes?.[c.mediaId] || mediaSha256))
+          throw new Error(`Media changed after delivery check: ${c.id}.`);
         let metadata;
         try {
           metadata = await this.probe(path.join(state.directory, filename));
@@ -614,16 +672,27 @@ class CreatorRenderEngine {
         index++;
       }
       if (p.style?.logoAssetId) {
-        const record = await this.getMediaStore().read(p.style.logoAssetId);
+        const store = this.getMediaStore();
+        const record = store.resolve
+          ? await store.resolve(p.style.logoAssetId)
+          : await store.read(p.style.logoAssetId);
         if (!record || !record.mimeType.startsWith('image/'))
           throw new Error('Style logo media is missing or invalid.');
-        if (
-          p.mediaHashes &&
-          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
-            p.mediaHashes[p.style.logoAssetId]
-        )
+        const logoSha256 =
+          record.sha256 ||
+          (record.bytes
+            ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+            : undefined);
+        if (p.mediaHashes && logoSha256 !== p.mediaHashes[p.style.logoAssetId])
           throw new Error('Style logo changed after delivery check.');
-        await fs.writeFile(path.join(state.directory, 'logo.png'), Buffer.from(record.bytes));
+        const logoTarget = path.join(state.directory, 'logo.png');
+        if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
+          await fs.copyFile(record.path || fileURLToPath(record.localUrl), logoTarget);
+        } else {
+          await fs.writeFile(logoTarget, Buffer.from(record.bytes));
+        }
+        if ((await sha256File(logoTarget)) !== (p.mediaHashes?.[p.style.logoAssetId] || logoSha256))
+          throw new Error('Style logo changed after delivery check.');
         args.push(
           '-protocol_whitelist',
           'file,pipe',
@@ -701,10 +770,7 @@ class CreatorRenderEngine {
         throw new Error('Export verification failed.');
       await this.run(state, ['-nostdin', '-v', 'error', '-i', 'output.mp4', '-f', 'null', '-']);
       await this.run(state, ['-nostdin', '-y', '-i', 'output.mp4', '-frames:v', '1', 'cover.png']);
-      state.outputSha256 = crypto
-        .createHash('sha256')
-        .update(await fs.readFile(path.join(state.directory, 'output.mp4')))
-        .digest('hex');
+      state.outputSha256 = await sha256File(path.join(state.directory, 'output.mp4'));
       await fs.writeFile(
         path.join(state.directory, 'verification.json'),
         JSON.stringify({
@@ -742,14 +808,12 @@ class CreatorRenderEngine {
       state.outputSha256 ||
       JSON.parse(await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'))
         .outputSha256;
-    if (
-      crypto
-        .createHash('sha256')
-        .update(await fs.readFile(path.join(state.directory, 'output.mp4')))
-        .digest('hex') !== verification
-    )
+    if ((await sha256File(path.join(state.directory, 'output.mp4'))) !== verification)
       throw new Error('Rendered video integrity verification failed. Retry export.');
     const temporary = `${destination}.${crypto.randomUUID()}.partial`;
+    const sourceStreams = [];
+    let archiveStream;
+    let sourceError;
     try {
       if (asPackage) {
         const JSZip = require('jszip');
@@ -758,8 +822,17 @@ class CreatorRenderEngine {
           ['output.mp4', 'video.mp4'],
           ['captions.srt', 'captions.srt'],
           ['cover.png', 'cover.png'],
-        ])
-          zip.file(target, await fs.readFile(path.join(state.directory, source)));
+        ]) {
+          const filePath = path.join(state.directory, source);
+          await fs.access(filePath);
+          const stream = nodeFs.createReadStream(filePath);
+          sourceStreams.push(stream);
+          stream.on('error', (error) => {
+            sourceError = error;
+            archiveStream?.destroy(error);
+          });
+          zip.file(target, stream);
+        }
         const p =
           state.plan ||
           JSON.parse(await fs.readFile(path.join(state.directory, 'plan.json'), 'utf8'));
@@ -780,10 +853,17 @@ class CreatorRenderEngine {
             2,
           ),
         );
-        await fs.writeFile(temporary, await zip.generateAsync({ type: 'nodebuffer' }), {
-          flag: 'wx',
+        if (sourceError) throw sourceError;
+        archiveStream = zip.generateNodeStream({
+          type: 'nodebuffer',
+          streamFiles: true,
+          compression: 'STORE',
+        });
+        const writeStream = nodeFs.createWriteStream(temporary, {
+          flags: 'wx',
           mode: 0o600,
         });
+        await pipeline(archiveStream, writeStream);
       } else
         await fs.copyFile(
           path.join(state.directory, 'output.mp4'),
@@ -791,12 +871,20 @@ class CreatorRenderEngine {
           require('node:fs').constants.COPYFILE_EXCL,
         );
       const handle = await fs.open(temporary, 'r+');
-      await handle.sync();
-      await handle.close();
+      try {
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
       await fs.rename(temporary, destination);
-      await this.update(state, { savedName: path.basename(destination) });
+      try {
+        await this.update(state, { savedName: path.basename(destination) });
+      } catch {
+        console.warn('Delivery saved, but local export metadata could not be updated.');
+      }
       return { saved: true, name: path.basename(destination) };
     } finally {
+      for (const stream of sourceStreams) stream.destroy();
       await fs.rm(temporary, { force: true });
     }
   }

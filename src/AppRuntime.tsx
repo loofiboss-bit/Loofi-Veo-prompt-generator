@@ -71,21 +71,34 @@ function getRoutedSection(pathname: string): string {
 
 export function AppRuntime() {
   useProjectAutosave();
-  // ---------- Store & top-level hooks ----------
-  const store = useAppStore();
-  const {
-    promptState,
-    setPromptState,
-    _hasHydrated,
-    openModal,
-    openStudio,
-    activeStudio,
-    setTheme,
-    theme,
-    setNewProjectWizardOpen,
-  } = store;
+  // ---------- Store & top-level hooks (granular selectors) ----------
+  const promptState = useAppStore((state) => state.promptState);
+  const setPromptState = useAppStore((state) => state.setPromptState);
+  const _hasHydrated = useAppStore((state) => state._hasHydrated);
+  const openModal = useAppStore((state) => state.openModal);
+  const openStudio = useAppStore((state) => state.openStudio);
+  const activeStudio = useAppStore((state) => state.activeStudio);
+  const setTheme = useAppStore((state) => state.setTheme);
+  const theme = useAppStore((state) => state.theme);
+  const setNewProjectWizardOpen = useAppStore((state) => state.setNewProjectWizardOpen);
+  const setSbShots = useAppStore((state) => state.setSbShots);
 
-  const projectStore = useProjectStore();
+  const isHistoryOpen = useAppStore((state) => state.isHistoryOpen);
+  const isTemplatesOpen = useAppStore((state) => state.isTemplatesOpen);
+  const isDNAModalOpen = useAppStore((state) => state.isDNAModalOpen);
+  const isCharacterBankOpen = useAppStore((state) => state.isCharacterBankOpen);
+  const isLocationBankOpen = useAppStore((state) => state.isLocationBankOpen);
+  const isProjectManagerOpen = useAppStore((state) => state.isProjectManagerOpen);
+  const isWizardOpen = useAppStore((state) => state.isWizardOpen);
+  const isSeriesBibleOpen = useAppStore((state) => state.isSeriesBibleOpen);
+
+  const optimizationShots = useAppStore((state) => state.sbShots ?? []);
+  const optimizationAssets = useAppStore((state) => state.assets ?? []);
+
+  const currentProjectId = useProjectStore((state) => state.currentProjectId);
+  const currentProjectName = useProjectStore(
+    (state) => state.projects.find((p) => p.id === state.currentProjectId)?.name ?? null,
+  );
   const { restartTutorial } = useOnboarding();
   const isSyncConnected = useAppSync();
   const criticalBootstrapComplete = useStartupStore((state) => state.criticalBootstrapComplete);
@@ -111,9 +124,10 @@ export function AppRuntime() {
     useHelpPanel();
 
   // ---------- Diagnostics (v1.8.0) ----------
-  const diagnosticsStore = useDiagnosticsStore();
-  const isDiagnosticsOpen = diagnosticsStore.isPanelOpen;
-  const diagnosticIssueCount = diagnosticsStore.result?.allIssues.length;
+  const isDiagnosticsOpen = useDiagnosticsStore((state) => state.isPanelOpen);
+  const diagnosticIssueCount = useDiagnosticsStore((state) => state.result?.allIssues.length);
+  const openDiagnostics = useDiagnosticsStore((state) => state.openPanel);
+  const closeDiagnostics = useDiagnosticsStore((state) => state.closePanel);
 
   // ---------- Jobs Panel (v1.8.0) ----------
   const pendingJobCount = useJobQueueStore((s) => s.pendingCount);
@@ -175,9 +189,6 @@ export function AppRuntime() {
   const { t } = useTranslation(['common', 'toasts']);
 
   // ---------- Derived state ----------
-  const currentProjectId = projectStore.currentProjectId;
-  const currentProjectName =
-    projectStore.projects.find((p) => p.id === currentProjectId)?.name ?? null;
   const isGeneratingVideo = useVideoStore((state) => state.isGenerating);
   const hydrateEditorSession = useEditorSessionStore((state) => state.hydrateFromCurrentStores);
 
@@ -193,8 +204,6 @@ export function AppRuntime() {
   const promptOptions = usePromptOptions(promptState.language);
 
   const optimizationProjectId = currentProjectId || 'default';
-  const optimizationShots = useMemo(() => store.sbShots ?? [], [store.sbShots]);
-  const optimizationAssets = useMemo(() => store.assets ?? [], [store.assets]);
 
   useOptimizationAnalysis({
     projectId: optimizationProjectId,
@@ -371,24 +380,24 @@ export function AppRuntime() {
 
   const modalState = useMemo(
     () => ({
-      isHistoryOpen: store.isHistoryOpen,
-      isTemplatesOpen: store.isTemplatesOpen,
-      isDNAModalOpen: store.isDNAModalOpen,
-      isCharacterBankOpen: store.isCharacterBankOpen,
-      isLocationBankOpen: store.isLocationBankOpen,
-      isProjectManagerOpen: store.isProjectManagerOpen,
-      isWizardOpen: store.isWizardOpen,
-      isSeriesBibleOpen: store.isSeriesBibleOpen,
+      isHistoryOpen,
+      isTemplatesOpen,
+      isDNAModalOpen,
+      isCharacterBankOpen,
+      isLocationBankOpen,
+      isProjectManagerOpen,
+      isWizardOpen,
+      isSeriesBibleOpen,
     }),
     [
-      store.isHistoryOpen,
-      store.isTemplatesOpen,
-      store.isDNAModalOpen,
-      store.isCharacterBankOpen,
-      store.isLocationBankOpen,
-      store.isProjectManagerOpen,
-      store.isWizardOpen,
-      store.isSeriesBibleOpen,
+      isHistoryOpen,
+      isTemplatesOpen,
+      isDNAModalOpen,
+      isCharacterBankOpen,
+      isLocationBankOpen,
+      isProjectManagerOpen,
+      isWizardOpen,
+      isSeriesBibleOpen,
     ],
   );
 
@@ -573,12 +582,12 @@ export function AppRuntime() {
       }
 
       if (result.shots) {
-        store.setSbShots(result.shots);
+        setSbShots(result.shots);
       }
 
       addToast('Optimization suggestion applied.', 'success');
     },
-    [addToast, optimizationShots, promptState, setPromptState, store],
+    [addToast, optimizationShots, promptState, setPromptState, setSbShots],
   );
 
   const handleCloseWelcome = useCallback(() => {
@@ -592,8 +601,8 @@ export function AppRuntime() {
   }, []);
 
   const handleCloseDiagnostics = useCallback(() => {
-    diagnosticsStore.closePanel();
-  }, [diagnosticsStore]);
+    closeDiagnostics();
+  }, [closeDiagnostics]);
 
   const handleCloseBatchModal = useCallback(() => {
     setIsBatchModalOpen(false);
@@ -704,7 +713,7 @@ export function AppRuntime() {
           onOpenTemplates: () => openModal('isTemplatesOpen'),
           onOpenSettings: () => openSettingsPage(),
           onOpenPlugins: () => openSettingsPage('?tab=plugins'),
-          onOpenDiagnostics: () => diagnosticsStore.openPanel(),
+          onOpenDiagnostics: () => openDiagnostics(),
           onOpenBatchGenerator: () => setIsBatchModalOpen(true),
           onOpenJobsPanel: () => setIsJobsPanelOpen(true),
           onOpenWorkspaceManager: () => setIsWorkspaceManagerOpen(true),

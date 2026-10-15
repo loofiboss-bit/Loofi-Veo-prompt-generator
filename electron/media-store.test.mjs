@@ -215,3 +215,25 @@ test('reads only checksum verified local media by key or durable desktop referen
   await fs.writeFile(record.path, 'corrupt');
   await assert.rejects(store.read('portable:take'), /checksum/);
 });
+
+test('resolves metadata and verified paths without buffering bytes in memory', async (t) => {
+  const store = await fixture(t, () => {
+    throw new Error('Network must not be used');
+  });
+  const record = await store.importBytes({
+    key: 'metadata-test',
+    bytes: Buffer.from('metadata-test-payload'),
+    mimeType: 'video/mp4',
+  });
+  const resolved = await store.resolve('metadata-test');
+  assert.ok(resolved);
+  assert.equal(resolved.key, 'metadata-test');
+  assert.equal(resolved.mimeType, 'video/mp4');
+  assert.equal(resolved.sha256, record.sha256);
+  assert.equal(resolved.sizeBytes, 'metadata-test-payload'.length);
+  assert.equal(resolved.path, record.path);
+  assert.equal(resolved.bytes, undefined);
+  assert.equal(await store.resolve('missing:key'), null);
+  await fs.writeFile(record.path, 'corrupted-data');
+  await assert.rejects(store.resolve('metadata-test'), /checksum/);
+});
