@@ -87,13 +87,148 @@ export function importCreatorSrt(text: string, duration: number): Caption[] {
     });
   return validateCreatorCaptions(entries, duration);
 }
+export interface ProposeLocalCaptionsInput {
+  mediaId?: string;
+  blob?: Blob | null;
+  clipOffset: number;
+  clipDuration: number;
+  transcriptScript?: string;
+  silenceThresholdDb?: number;
+  minSpeechDuration?: number;
+  maxSegmentDuration?: number;
+}
+
+export function calculateSpeechIntervals(input: {
+  silenceIntervals: Array<{ start: number; end: number }>;
+  rangeStart: number;
+  rangeEnd: number;
+  minSpeechDuration?: number;
+  maxSegmentDuration?: number;
+}): Array<{ start: number; end: number }> {
+  const minDur = input.minSpeechDuration ?? 0.3;
+  const maxDur = input.maxSegmentDuration ?? 4.0;
+  const rangeStart = Math.max(0, input.rangeStart);
+  const rangeEnd = Math.max(rangeStart, input.rangeEnd);
+
+  const silences = input.silenceIntervals
+    .map((s) => ({
+      start: Math.max(rangeStart, s.start),
+      end: Math.min(rangeEnd, s.end),
+    }))
+    .filter((s) => s.end > s.start)
+    .sort((a, b) => a.start - b.start);
+
+  const speechSegments: Array<{ start: number; end: number }> = [];
+  let currentPos = rangeStart;
+
+  for (const silence of silences) {
+    if (silence.start > currentPos) {
+      const segDur = silence.start - currentPos;
+      if (segDur >= minDur) {
+        speechSegments.push({ start: currentPos, end: silence.start });
+      }
+    }
+    currentPos = Math.max(currentPos, silence.end);
+  }
+
+  if (rangeEnd > currentPos) {
+    const segDur = rangeEnd - currentPos;
+    if (segDur >= minDur) {
+      speechSegments.push({ start: currentPos, end: rangeEnd });
+    }
+  }
+
+  if (speechSegments.length === 0 && rangeEnd - rangeStart >= minDur) {
+    speechSegments.push({ start: rangeStart, end: rangeEnd });
+  }
+
+  const splitSegments: Array<{ start: number; end: number }> = [];
+  for (const seg of speechSegments) {
+    let s = seg.start;
+    while (seg.end - s > maxDur) {
+      splitSegments.push({ start: s, end: s + maxDur });
+      s += maxDur;
+    }
+    if (seg.end - s >= minDur || splitSegments.length === 0) {
+      splitSegments.push({ start: s, end: seg.end });
+    } else {
+      splitSegments[splitSegments.length - 1].end = seg.end;
+    }
+  }
+
+  return splitSegments;
+}
+
 class CreatorCaptionService {
   private static instance: CreatorCaptionService;
   static getInstance() {
     return (this.instance ??= new CreatorCaptionService());
   }
+
   async propose(blob: Blob, duration: number): Promise<Caption[]> {
     return validateCreatorCaptions(await transcribeAudio(blob), duration);
+  }
+
+  async proposeLocal(input: ProposeLocalCaptionsInput): Promise<Caption[]> {
+    const {
+      mediaId,
+      clipOffset = 0,
+      clipDuration,
+      transcriptScript,
+      silenceThresholdDb = -32,
+      minSpeechDuration = 0.3,
+      maxSegmentDuration = 4.0,
+    } = input;
+
+    if (clipDuration <= 0) throw new Error('Clip duration must be positive.');
+
+    let silenceIntervals: Array<{ start: number; end: number }> = [];
+
+    if (mediaId && window.electron?.detectTimelineSilence) {
+      try {
+        const detected = await window.electron.detectTimelineSilence({
+          mediaId,
+          noiseThresholdDb: silenceThresholdDb,
+          minDurationSeconds: 0.3,
+        });
+        if (Array.isArray(detected)) {
+          silenceIntervals = detected;
+        }
+      } catch {
+        /* Fall back to speech segment defaults */
+      }
+    }
+
+    const rawSpeechSegments = calculateSpeechIntervals({
+      silenceIntervals,
+      rangeStart: clipOffset,
+      rangeEnd: clipOffset + clipDuration,
+      minSpeechDuration,
+      maxSegmentDuration,
+    });
+
+    const scriptLines = transcriptScript
+      ? transcriptScript
+          .split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+
+    const captions: Caption[] = rawSpeechSegments.map((seg, index) => {
+      const relStart = Math.max(0, Number((seg.start - clipOffset).toFixed(3)));
+      const relEnd = Math.min(clipDuration, Number((seg.end - clipOffset).toFixed(3)));
+      const text = scriptLines[index] ?? `[Dialogue ${index + 1}]`;
+
+      return {
+        id: crypto.randomUUID(),
+        text,
+        startTime: relStart,
+        endTime: relEnd,
+        style: 'classic',
+      };
+    });
+
+    return validateCreatorCaptions(captions, clipDuration);
   }
 }
 export const creatorCaptionService = CreatorCaptionService.getInstance();
