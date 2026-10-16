@@ -14,6 +14,11 @@ export function defaultCreatorDelivery(project: Project): CreatorDeliveryV1 {
     captionStyle: 'classic',
     safeMargin: 0.08,
     crops: {},
+    audioProcessing: {
+      normalizeLoudness: true,
+      speechDucking: false,
+      duckingGainDb: -12,
+    },
     title: project.name,
     description: project.storyboard.shots
       .map((shot) => shot.action)
@@ -533,6 +538,7 @@ class CreatorDeliveryService {
       captionStyle: settings.captionStyle,
       safeMargin: settings.safeMargin,
       style: settings.style,
+      audioProcessing: settings.audioProcessing,
       title: settings.title,
       description: settings.description,
     };

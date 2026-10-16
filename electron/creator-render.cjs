@@ -59,6 +59,19 @@ function validatePlan(input) {
   )
     throw new Error('Invalid render settings.');
   if (
+    p.audioProcessing !== undefined &&
+    (typeof p.audioProcessing !== 'object' ||
+      p.audioProcessing === null ||
+      Array.isArray(p.audioProcessing) ||
+      (p.audioProcessing.normalizeLoudness !== undefined &&
+        typeof p.audioProcessing.normalizeLoudness !== 'boolean') ||
+      (p.audioProcessing.speechDucking !== undefined &&
+        typeof p.audioProcessing.speechDucking !== 'boolean') ||
+      (p.audioProcessing.duckingGainDb !== undefined &&
+        !number(p.audioProcessing.duckingGainDb, -40, 0)))
+  )
+    throw new Error('Invalid audio processing settings.');
+  if (
     !Array.isArray(p.clips) ||
     !p.clips.length ||
     p.clips.length > 120 ||
@@ -277,6 +290,8 @@ class CreatorRenderEngine {
           'dissolve',
           'fade_black',
           'audio-mix',
+          'audio-loudnorm',
+          'speech-ducking',
           'captions',
           'logo',
         ],
@@ -596,6 +611,23 @@ class CreatorRenderEngine {
         ...p.clips.filter((c) => c.type !== 'audio').sort((a, b) => a.startTime - b.startTime),
         ...p.clips.filter((c) => c.type === 'audio'),
       ];
+      const speechIntervals = [];
+      if (p.captions && p.captions.length) {
+        for (const cap of p.captions) {
+          if (
+            number(cap.startTime, 0, p.durationSeconds) &&
+            number(cap.endTime, cap.startTime, p.durationSeconds)
+          ) {
+            speechIntervals.push([cap.startTime, cap.endTime]);
+          }
+        }
+      } else {
+        for (const cl of ordered) {
+          if (cl.type === 'video') {
+            speechIntervals.push([cl.startTime, cl.startTime + cl.duration]);
+          }
+        }
+      }
       for (const c of ordered) {
         const store = this.getMediaStore();
         const record = store.resolve ? await store.resolve(c.mediaId) : await store.read(c.mediaId);
@@ -664,8 +696,22 @@ class CreatorRenderEngine {
           const fadeOut = c.fadeOutSeconds
             ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
             : '';
+          let ducking = '';
+          if (
+            c.type === 'audio' &&
+            p.audioProcessing?.speechDucking &&
+            speechIntervals.length > 0
+          ) {
+            const duckDb =
+              typeof p.audioProcessing.duckingGainDb === 'number'
+                ? p.audioProcessing.duckingGainDb
+                : -12;
+            const duckFactor = Math.pow(10, duckDb / 20).toFixed(4);
+            const conditions = speechIntervals.map(([s, e]) => `between(t,${s},${e})`).join('+');
+            ducking = `,volume='if(${conditions},${duckFactor},1)':eval=frame`;
+          }
           filters.push(
-            `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
+            `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut}${ducking},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
           );
           audio.push(`[${label}]`);
         }
@@ -721,13 +767,18 @@ class CreatorRenderEngine {
       filters.push(
         `${audio.join('')}[silence]amix=inputs=${audio.length + 1}:normalize=0,alimiter=limit=0.95[amixed]`,
       );
+      let masterAudio = 'amixed';
+      if (p.audioProcessing?.normalizeLoudness) {
+        filters.push('[amixed]loudnorm=I=-14:TP=-1.5:LRA=11[anorm]');
+        masterAudio = 'anorm';
+      }
       args.push(
         '-filter_complex',
         filters.join(';'),
         '-map',
         `[${base}]`,
         '-map',
-        '[amixed]',
+        `[${masterAudio}]`,
         '-t',
         String(p.durationSeconds),
         '-r',

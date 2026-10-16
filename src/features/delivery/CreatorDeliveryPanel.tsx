@@ -413,6 +413,40 @@ export function CreatorDeliveryPanel() {
           {Math.round(settings.safeMargin * 100)}%
         </label>
       </div>
+      <div className="flex flex-wrap items-center gap-6 rounded-lg bg-slate-950/40 p-3 text-sm text-slate-300">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
+            checked={settings.audioProcessing?.normalizeLoudness ?? true}
+            onChange={(event) =>
+              change({
+                audioProcessing: {
+                  ...settings.audioProcessing,
+                  normalizeLoudness: event.target.checked,
+                },
+              })
+            }
+          />
+          <span>{t('delivery.normalizeLoudness', 'Normalize loudness (EBU R128 -14 LUFS)')}</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
+            checked={settings.audioProcessing?.speechDucking ?? false}
+            onChange={(event) =>
+              change({
+                audioProcessing: {
+                  ...settings.audioProcessing,
+                  speechDucking: event.target.checked,
+                },
+              })
+            }
+          />
+          <span>{t('delivery.speechDucking', 'Lower music during speech (-12 dB)')}</span>
+        </label>
+      </div>
       <p>
         {t('delivery.limit', 'Up to 180 seconds · 30 fps · H.264/AAC · no watermark')}:{' '}
         {duration.toFixed(1)}s
