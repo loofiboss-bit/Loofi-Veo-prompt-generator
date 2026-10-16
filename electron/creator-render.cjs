@@ -437,6 +437,74 @@ class CreatorRenderEngine {
       streamTypes: metadata.streams.map((stream) => stream.codec_type),
     };
   }
+  async detectSilence(input) {
+    const mediaId = typeof input === 'string' ? input : input?.mediaId;
+    if (!text(mediaId, 180) || !/^[\w.:-]+$/.test(mediaId))
+      throw new Error('Invalid media identity.');
+    const noiseDb =
+      typeof input?.noiseThresholdDb === 'number' &&
+      input.noiseThresholdDb >= -80 &&
+      input.noiseThresholdDb <= -10
+        ? input.noiseThresholdDb
+        : -35;
+    const minDuration =
+      typeof input?.minDurationSeconds === 'number' &&
+      input.minDurationSeconds >= 0.1 &&
+      input.minDurationSeconds <= 10
+        ? input.minDurationSeconds
+        : 0.5;
+    const caps = await this.capabilities();
+    if (!caps.available) throw new Error(caps.reason);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
+    if (!record) throw new Error('Registered media is missing.');
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const { stderr } = await exec(
+      this.binary('ffmpeg'),
+      [
+        '-hide_banner',
+        '-nostdin',
+        '-protocol_whitelist',
+        'file,pipe',
+        '-format_whitelist',
+        MEDIA_FORMATS,
+        '-i',
+        filePath,
+        '-af',
+        `silencedetect=noise=${noiseDb}dB:d=${minDuration}`,
+        '-f',
+        'null',
+        '-',
+      ],
+      { timeout: 60000, maxBuffer: 2000000, windowsHide: true },
+    );
+    const intervals = [];
+    let currentStart = null;
+    const lines = stderr.split('\n');
+    for (const line of lines) {
+      const startMatch = line.match(/silence_start:\s*(-?[\d.]+)/);
+      if (startMatch) {
+        currentStart = Math.max(0, parseFloat(startMatch[1]));
+      }
+      const endMatch = line.match(
+        /silence_end:\s*(-?[\d.]+)\s*\|\s*silence_duration:\s*(-?[\d.]+)/,
+      );
+      if (endMatch) {
+        const end = parseFloat(endMatch[1]);
+        const dur = parseFloat(endMatch[2]);
+        const start = currentStart !== null ? currentStart : Math.max(0, end - dur);
+        if (dur >= minDuration) {
+          intervals.push({
+            start: Number(start.toFixed(3)),
+            end: Number(end.toFixed(3)),
+            duration: Number(dur.toFixed(3)),
+          });
+        }
+        currentStart = null;
+      }
+    }
+    return intervals;
+  }
   async proxy(mediaId) {
     if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');
     const caps = await this.capabilities();

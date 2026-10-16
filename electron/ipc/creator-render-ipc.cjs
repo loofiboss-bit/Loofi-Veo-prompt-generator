@@ -53,6 +53,10 @@ function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow })
     withReadyEngine((engine, mediaId) => engine.proxy(mediaId)),
   );
   ipcMain.handle(
+    'timeline-render-detect-silence',
+    withReadyEngine((engine, input) => engine.detectSilence(input)),
+  );
+  ipcMain.handle(
     'timeline-render-cancel',
     withReadyEngine(async (engine, id) => {
       await engine.cancel(id);

@@ -24,6 +24,11 @@ interface ElectronAPI {
   createDesktopMediaProxy?: (
     mediaId: string,
   ) => Promise<{ key: string; url: string; sha256: string }>;
+  detectTimelineSilence?: (input: {
+    mediaId: string;
+    noiseThresholdDb?: number;
+    minDurationSeconds?: number;
+  }) => Promise<Array<{ start: number; end: number; duration: number }>>;
   getTimelineRenderCapabilities?: () => Promise<
     import('./src/core/types').TimelineRenderCapabilities
   >;

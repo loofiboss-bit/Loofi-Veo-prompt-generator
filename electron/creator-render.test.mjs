@@ -553,6 +553,71 @@ test(
     }
   },
 );
+test(
+  'detectSilence parses silence intervals from media with FFmpeg',
+  { skip: !realBinary },
+  async () => {
+    const { promisify } = await import('node:util');
+    const { execFile } = await import('node:child_process');
+    const exec = promisify(execFile);
+    const binary = path.join(realBinary, 'ffmpeg' + (process.platform === 'win32' ? '.exe' : ''));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-silence-'));
+    try {
+      const audioFile = path.join(root, 'with-silence.wav');
+      await exec(binary, [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:duration=1',
+        '-f',
+        'lavfi',
+        '-i',
+        'anullsrc=duration=1',
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:duration=1',
+        '-filter_complex',
+        '[0:a][1:a][2:a]concat=n=3:v=0:a=1[out]',
+        '-map',
+        '[out]',
+        audioFile,
+      ]);
+      const engine = new CreatorRenderEngine({
+        root: path.join(root, 'jobs'),
+        runtimeRoot: path.resolve('packaging/media-runtime'),
+        getMediaStore: () => ({
+          read: async (key) =>
+            key === 'sound'
+              ? {
+                  bytes: await fs.readFile(audioFile),
+                  path: audioFile,
+                  mimeType: 'audio/wav',
+                }
+              : null,
+        }),
+      });
+      await engine.initialize();
+      engine.binaryDirectory = realBinary;
+
+      await assert.rejects(engine.detectSilence('/etc/passwd'), /identity/);
+      await assert.rejects(engine.detectSilence('missing'), /missing/);
+
+      const silences = await engine.detectSilence({
+        mediaId: 'sound',
+        noiseThresholdDb: -30,
+        minDurationSeconds: 0.5,
+      });
+
+      assert.ok(silences.length >= 1);
+      assert.ok(Math.abs(silences[0].start - 1.0) < 0.1);
+      assert.ok(Math.abs(silences[0].duration - 1.0) < 0.1);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);
 test('cancellation remains terminal and removes render artifacts', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-cancel-'));
   try {
