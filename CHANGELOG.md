@@ -7,6 +7,17 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.0.0] - 2026-10-16
+
+### Added — Smart Local Editing
+
+- **Microphone Voiceover Recording**: Record audio directly into the timeline from connected microphones using the Web Audio API with real-time waveform visualization, device selection, take naming, and automatic insertion into a dedicated dialogue track.
+- **Reviewable Silence-Cut Suggestions**: Detect audio pauses and silences across media clips using bundled offline FFmpeg `silencedetect`. Review individual pauses in a dedicated modal with adjustable noise floor (-60 dB to -20 dB) and minimum duration thresholds, and apply ripple cuts cleanly.
+- **Local Offline Speech-to-Text & Linked Captions**: Propose caption segments locally from dialogue speech intervals and optional script text without sending audio to cloud services. Generates aligned, non-overlapping caption blocks linked to source clips.
+- **EBU R128 Loudness Normalization**: Integrated broadcast-standard EBU R128 audio normalization (`loudnorm=I=-14:TP=-1.5:LRA=11`) into the native FFmpeg rendering pipeline for balanced delivery exports.
+- **Speech-Driven Audio Ducking**: Sidechain envelope volume ducking attenuating background music tracks by -14 dB during dialogue and voiceover intervals with smooth 200 ms attack/decay transitions.
+- **Save-on-Close Flush Resilience**: Immediate synchronous/microtask flush of pending debounced project autosaves on `beforeunload`, `pagehide`, and component unmount events to ensure zero edit loss when closing or navigating.
+
 ## [16.0.1] - 2026-10-15
 
 ### Fixed

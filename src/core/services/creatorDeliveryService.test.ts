@@ -92,6 +92,30 @@ describe('creator render plans', () => {
     p.storyboard.timeline.clips[0].duration = 10;
     expect(plan.clips[0].duration).toBe(3);
     expect(plan.contentHash).toHaveLength(64);
+    expect(plan.audioProcessing).toEqual({
+      normalizeLoudness: true,
+      speechDucking: false,
+      duckingGainDb: -12,
+    });
+  });
+  it('includes audioProcessing in render plan and changes contentHash upon toggle', async () => {
+    const p = makeProject();
+    p.creatorDelivery = defaultCreatorDelivery(p);
+    const plan1 = await creatorDeliveryService.buildPlan(p, [asset]);
+
+    p.creatorDelivery.audioProcessing = {
+      normalizeLoudness: false,
+      speechDucking: true,
+      duckingGainDb: -14,
+    };
+    const plan2 = await creatorDeliveryService.buildPlan(p, [asset]);
+
+    expect(plan1.contentHash).not.toBe(plan2.contentHash);
+    expect(plan2.audioProcessing).toEqual({
+      normalizeLoudness: false,
+      speechDucking: true,
+      duckingGainDb: -14,
+    });
   });
   it('rejects unsupported effects instead of silently omitting them', async () => {
     await expect(

@@ -28,6 +28,11 @@ export interface CreatorCropV1 {
   x: number;
   y: number;
 }
+export interface CreatorAudioProcessingV1 {
+  normalizeLoudness?: boolean;
+  speechDucking?: boolean;
+  duckingGainDb?: number;
+}
 export interface CreatorDeliveryV1 {
   schemaVersion: 1;
   editorMode?: 'delivery' | 'advanced';
@@ -40,6 +45,7 @@ export interface CreatorDeliveryV1 {
   safeMargin: number;
   crops: Record<string, CreatorCropV1>;
   audioFades?: Record<string, { inSeconds: number; outSeconds: number }>;
+  audioProcessing?: CreatorAudioProcessingV1;
   title: string;
   description: string;
   updatedAt: number;
@@ -75,6 +81,7 @@ export interface TimelineRenderPlanV1 {
   captionStyle: 'classic' | 'pop' | 'karaoke';
   safeMargin: number;
   style?: CreatorStyleProfileV1;
+  audioProcessing?: CreatorAudioProcessingV1;
   title: string;
   description: string;
 }

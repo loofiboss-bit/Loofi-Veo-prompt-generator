@@ -49,6 +49,34 @@ test('validates frozen canonical snapshot and rejects mutated hash', () => {
   assert.throws(() => validatePlan(p), /hash/);
   assert.equal(planHash(plan()), planHash({ ...plan(), description: 'Description' }));
 });
+test('validates audioProcessing settings and includes in canonical planHash', () => {
+  const p1 = plan({
+    audioProcessing: {
+      normalizeLoudness: true,
+      speechDucking: true,
+      duckingGainDb: -14,
+    },
+  });
+  assert.deepEqual(validatePlan(p1), p1);
+
+  const p2 = plan({
+    audioProcessing: {
+      normalizeLoudness: false,
+      speechDucking: false,
+    },
+  });
+  assert.notEqual(p1.contentHash, p2.contentHash);
+
+  for (const bad of [
+    { audioProcessing: 'invalid' },
+    { audioProcessing: { normalizeLoudness: 'yes' } },
+    { audioProcessing: { speechDucking: 'no' } },
+    { audioProcessing: { duckingGainDb: 5 } },
+    { audioProcessing: { duckingGainDb: -50 } },
+  ]) {
+    assert.throws(() => validatePlan(plan(bad)), /audio processing/);
+  }
+});
 test('rejects unsupported bounds, paths, timings and overlap with clip identity', () => {
   for (const changes of [
     { fps: 60 },
@@ -416,6 +444,175 @@ test(
       assert.match(engine.get(failed.id).error, /Missing media.*missing/);
       await assert.rejects(engine.save(failed.id, old));
       assert.equal(await fs.readFile(old, 'utf8'), 'previous delivery');
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  'real render applies EBU R128 loudness normalization and speech ducking',
+  { skip: !realBinary },
+  async () => {
+    const { promisify } = await import('node:util');
+    const { execFile } = await import('node:child_process');
+    const exec = promisify(execFile);
+    const binary = path.join(realBinary, 'ffmpeg' + (process.platform === 'win32' ? '.exe' : ''));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-audio-proc-'));
+    try {
+      const video = path.join(root, 'video.mp4');
+      const music = path.join(root, 'music.wav');
+      await exec(binary, [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        'color=blue:s=160x90:r=30:d=2',
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        video,
+      ]);
+      await exec(binary, [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:sample_rate=48000:duration=2',
+        music,
+      ]);
+      const sources = { video, music };
+      const engine = new CreatorRenderEngine({
+        root: path.join(root, 'jobs'),
+        runtimeRoot: path.resolve('packaging/media-runtime'),
+        fontsRoot: path.resolve('public/creator-fonts'),
+        getMediaStore: () => ({
+          read: async (key) =>
+            sources[key]
+              ? {
+                  bytes: await fs.readFile(sources[key]),
+                  mimeType: key === 'music' ? 'audio/wav' : 'video/mp4',
+                }
+              : null,
+        }),
+      });
+      await engine.initialize();
+      engine.binaryDirectory = realBinary;
+      const caps = await engine.capabilities();
+      assert.ok(caps.supportedOperations.includes('audio-loudnorm'));
+      assert.ok(caps.supportedOperations.includes('speech-ducking'));
+      const p = plan({
+        durationSeconds: 2,
+        audioProcessing: {
+          normalizeLoudness: true,
+          speechDucking: true,
+          duckingGainDb: -12,
+        },
+        captions: [
+          { id: 'c1', text: 'Speech active', startTime: 0.5, endTime: 1.5, style: 'classic' },
+        ],
+        clips: [
+          {
+            id: 'v1',
+            mediaId: 'video',
+            type: 'video',
+            startTime: 0,
+            duration: 2,
+            offset: 0,
+            volume: 1,
+            crop: { mode: 'fit', x: 0.5, y: 0.5 },
+          },
+          {
+            id: 'm1',
+            mediaId: 'music',
+            type: 'audio',
+            startTime: 0,
+            duration: 2,
+            offset: 0,
+            volume: 1,
+            crop: { mode: 'fit', x: 0.5, y: 0.5 },
+          },
+        ],
+      });
+      const job = await engine.start(p);
+      while (['queued', 'rendering', 'verifying'].includes(engine.get(job.id).status))
+        await new Promise((r) => setTimeout(r, 50));
+      assert.equal(engine.get(job.id).status, 'complete', engine.get(job.id).error);
+      const outputFile = path.join(root, 'jobs', job.id, 'output.mp4');
+      const metadata = await engine.probe(outputFile);
+      assert.equal(
+        metadata.streams.some((s) => s.codec_name === 'h264'),
+        true,
+      );
+      assert.equal(
+        metadata.streams.some((s) => s.codec_name === 'aac'),
+        true,
+      );
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  'detectSilence parses silence intervals from media with FFmpeg',
+  { skip: !realBinary },
+  async () => {
+    const { promisify } = await import('node:util');
+    const { execFile } = await import('node:child_process');
+    const exec = promisify(execFile);
+    const binary = path.join(realBinary, 'ffmpeg' + (process.platform === 'win32' ? '.exe' : ''));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-silence-'));
+    try {
+      const audioFile = path.join(root, 'with-silence.wav');
+      await exec(binary, [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:duration=1',
+        '-f',
+        'lavfi',
+        '-i',
+        'anullsrc=duration=1',
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:duration=1',
+        '-filter_complex',
+        '[0:a][1:a][2:a]concat=n=3:v=0:a=1[out]',
+        '-map',
+        '[out]',
+        audioFile,
+      ]);
+      const engine = new CreatorRenderEngine({
+        root: path.join(root, 'jobs'),
+        runtimeRoot: path.resolve('packaging/media-runtime'),
+        getMediaStore: () => ({
+          read: async (key) =>
+            key === 'sound'
+              ? {
+                  bytes: await fs.readFile(audioFile),
+                  path: audioFile,
+                  mimeType: 'audio/wav',
+                }
+              : null,
+        }),
+      });
+      await engine.initialize();
+      engine.binaryDirectory = realBinary;
+
+      await assert.rejects(engine.detectSilence('/etc/passwd'), /identity/);
+      await assert.rejects(engine.detectSilence('missing'), /missing/);
+
+      const silences = await engine.detectSilence({
+        mediaId: 'sound',
+        noiseThresholdDb: -30,
+        minDurationSeconds: 0.5,
+      });
+
+      assert.ok(silences.length >= 1);
+      assert.ok(Math.abs(silences[0].start - 1.0) < 0.1);
+      assert.ok(Math.abs(silences[0].duration - 1.0) < 0.1);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

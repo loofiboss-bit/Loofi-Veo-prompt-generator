@@ -413,6 +413,40 @@ export function CreatorDeliveryPanel() {
           {Math.round(settings.safeMargin * 100)}%
         </label>
       </div>
+      <div className="flex flex-wrap items-center gap-6 rounded-lg bg-slate-950/40 p-3 text-sm text-slate-300">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
+            checked={settings.audioProcessing?.normalizeLoudness ?? true}
+            onChange={(event) =>
+              change({
+                audioProcessing: {
+                  ...settings.audioProcessing,
+                  normalizeLoudness: event.target.checked,
+                },
+              })
+            }
+          />
+          <span>{t('delivery.normalizeLoudness', 'Normalize loudness (EBU R128 -14 LUFS)')}</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
+            checked={settings.audioProcessing?.speechDucking ?? false}
+            onChange={(event) =>
+              change({
+                audioProcessing: {
+                  ...settings.audioProcessing,
+                  speechDucking: event.target.checked,
+                },
+              })
+            }
+          />
+          <span>{t('delivery.speechDucking', 'Lower music during speech (-12 dB)')}</span>
+        </label>
+      </div>
       <p>
         {t('delivery.limit', 'Up to 180 seconds · 30 fps · H.264/AAC · no watermark')}:{' '}
         {duration.toFixed(1)}s
@@ -924,76 +958,125 @@ export function CreatorDeliveryPanel() {
             />{' '}
             {t('delivery.consent', 'I approve sending this audio for a caption proposal.')}
           </label>
-          <button
-            className={buttonClass}
-            disabled={
-              busy ||
-              !consent ||
-              !selectedAudio ||
-              !selectedAudioClip ||
-              audioDuration <= 0 ||
-              !window.electron?.approveProviderCost
-            }
-            onClick={() =>
-              void act(async (id) => {
-                const before = binding();
-                const blob = await resolveProjectAssetBlob(selectedAudio!);
-                if (!blob) throw new Error('Local audio is missing.');
-                const sourceCaptions = await creatorCaptionService.propose(blob, audioDuration);
-                const audioClip = selectedAudioClip!;
-                const values = sourceCaptions
-                  .filter(
-                    (caption) =>
-                      caption.endTime > audioClip.offset &&
-                      caption.startTime < audioClip.offset + audioClip.duration,
-                  )
-                  .map((caption) => ({
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={busy || !selectedAudio || !selectedAudioClip || audioDuration <= 0}
+              onClick={() =>
+                void act(async (id) => {
+                  const before = binding();
+                  const audioClip = selectedAudioClip!;
+                  const sourceCaptions = await creatorCaptionService.proposeLocal({
+                    mediaId: selectedAudio!.storageKey || selectedAudio!.id,
+                    clipOffset: audioClip.offset,
+                    clipDuration: audioClip.duration,
+                  });
+                  const values = sourceCaptions.map((caption) => ({
                     ...caption,
-                    startTime:
-                      audioClip.startTime + Math.max(0, caption.startTime - audioClip.offset),
-                    endTime:
-                      audioClip.startTime +
-                      Math.min(audioClip.duration, caption.endTime - audioClip.offset),
+                    startTime: audioClip.startTime + caption.startTime,
+                    endTime: audioClip.startTime + caption.endTime,
                   }));
-                validateCreatorCaptions(values, duration);
-                if (idRef.current === id && before === binding())
-                  setProposal({ captions: values, binding: before });
-                else throw new Error('Project or captions changed. Request a new proposal.');
-              })
-            }
-          >
-            {t('delivery.propose', 'Request Gemini proposal')}
-          </button>
+                  validateCreatorCaptions(values, duration);
+                  if (idRef.current === id && before === binding())
+                    setProposal({ captions: values, binding: before });
+                  else throw new Error('Project or captions changed. Request a new proposal.');
+                })
+              }
+            >
+              {t('delivery.proposeLocal', 'Generate local captions (offline)')}
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={
+                busy ||
+                !consent ||
+                !selectedAudio ||
+                !selectedAudioClip ||
+                audioDuration <= 0 ||
+                !window.electron?.approveProviderCost
+              }
+              onClick={() =>
+                void act(async (id) => {
+                  const before = binding();
+                  const blob = await resolveProjectAssetBlob(selectedAudio!);
+                  if (!blob) throw new Error('Local audio is missing.');
+                  const sourceCaptions = await creatorCaptionService.propose(blob, audioDuration);
+                  const audioClip = selectedAudioClip!;
+                  const values = sourceCaptions
+                    .filter(
+                      (caption) =>
+                        caption.endTime > audioClip.offset &&
+                        caption.startTime < audioClip.offset + audioClip.duration,
+                    )
+                    .map((caption) => ({
+                      ...caption,
+                      startTime:
+                        audioClip.startTime + Math.max(0, caption.startTime - audioClip.offset),
+                      endTime:
+                        audioClip.startTime +
+                        Math.min(audioClip.duration, caption.endTime - audioClip.offset),
+                    }));
+                  validateCreatorCaptions(values, duration);
+                  if (idRef.current === id && before === binding())
+                    setProposal({ captions: values, binding: before });
+                  else throw new Error('Project or captions changed. Request a new proposal.');
+                })
+              }
+            >
+              {t('delivery.propose', 'Request Gemini proposal')}
+            </button>
+          </div>
         </div>
         {proposal && (
-          <div>
-            <p>{t('delivery.reviewProposal', 'Review caption proposal before accepting')}</p>
-            {proposal.captions.map((caption) => (
-              <p key={caption.id}>
-                {caption.startTime}–{caption.endTime}: {caption.text}
-              </p>
-            ))}
-            <button
-              className={buttonClass}
-              onClick={() => {
-                if (proposal.binding !== binding())
-                  setError(
-                    t(
-                      'delivery.staleProposal',
-                      'Project or captions changed. Request a new proposal.',
-                    ),
-                  );
-                else {
-                  addCaptions(proposal.captions, 'append', selectedAudioClip?.id);
-                  setProposal(null);
-                }
-              }}
-            >
-              {t('delivery.acceptProposal', 'Accept proposal')}
-            </button>
-            <button className={buttonClass} onClick={() => setProposal(null)}>
-              {t('delivery.discard', 'Discard')}
-            </button>
+          <div className="space-y-3 rounded-lg bg-slate-800/40 p-3 border border-slate-700/60 my-3">
+            <p className="font-semibold text-sm text-slate-200">
+              {t('delivery.reviewProposal', 'Review caption proposal before accepting')}
+            </p>
+            <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+              {proposal.captions.map((caption, idx) => (
+                <div key={caption.id} className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-sky-400 shrink-0">
+                    {caption.startTime.toFixed(2)}s–{caption.endTime.toFixed(2)}s:
+                  </span>
+                  <input
+                    type="text"
+                    value={caption.text}
+                    onChange={(e) => {
+                      const next = [...proposal.captions];
+                      next[idx] = { ...next[idx], text: e.target.value };
+                      setProposal({ ...proposal, captions: next });
+                    }}
+                    className={`${inputClass} text-xs flex-1 py-1`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                className={buttonClass}
+                onClick={() => {
+                  if (proposal.binding !== binding())
+                    setError(
+                      t(
+                        'delivery.staleProposal',
+                        'Project or captions changed. Request a new proposal.',
+                      ),
+                    );
+                  else {
+                    addCaptions(proposal.captions, 'append', selectedAudioClip?.id);
+                    setProposal(null);
+                  }
+                }}
+              >
+                {t('delivery.acceptProposal', 'Accept proposal')}
+              </button>
+              <button type="button" className={buttonClass} onClick={() => setProposal(null)}>
+                {t('delivery.discard', 'Discard')}
+              </button>
+            </div>
           </div>
         )}
       </details>

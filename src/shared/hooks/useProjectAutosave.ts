@@ -15,8 +15,9 @@ export function useProjectAutosave() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
     let inFlight = false;
+    let flushing = false;
     const persist = async (id: string) => {
-      if (stopped || useProjectStore.getState().currentProjectId !== id) return;
+      if ((stopped && !flushing) || useProjectStore.getState().currentProjectId !== id) return;
       // Loading a document updates stores before the session marks it saved. A
       // pending timer must never write that clean load and invalidate another window.
       if (useProjectSaveStore.getState().projects[id]?.status !== 'unsaved') return;
@@ -45,7 +46,18 @@ export function useProjectAutosave() {
         logger.warn('Project autosave paused', error);
       } finally {
         inFlight = false;
+        flushing = false;
       }
+    };
+    const flush = () => {
+      const id = useProjectStore.getState().currentProjectId;
+      const snapId = useEditorSessionStore.getState().projectSnapshot?.id;
+      const status = id ? useProjectSaveStore.getState().projects[id]?.status : undefined;
+      if (!id || snapId !== id) return;
+      if (status !== 'unsaved') return;
+      clearTimeout(timer);
+      flushing = true;
+      void persist(id);
     };
     const schedule = () => {
       const id = useProjectStore.getState().currentProjectId;
@@ -89,17 +101,23 @@ export function useProjectAutosave() {
         schedule();
     });
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (typeof window !== 'undefined' && (window as unknown as { electron?: unknown }).electron)
-        return;
       const id = useProjectStore.getState().currentProjectId;
       const status = id ? useProjectSaveStore.getState().projects[id]?.status : undefined;
+      flush();
+      if (typeof window !== 'undefined' && (window as unknown as { electron?: unknown }).electron)
+        return;
       if (status && status !== 'saved') {
         event.preventDefault();
         event.returnValue = '';
       }
     };
+    const pageHide = () => {
+      flush();
+    };
     window.addEventListener('beforeunload', beforeUnload);
+    window.addEventListener('pagehide', pageHide);
     return () => {
+      flush();
       stopped = true;
       clearTimeout(timer);
       unsubscribeApp();
@@ -107,6 +125,7 @@ export function useProjectAutosave() {
       unsubscribeLocation();
       unsubscribeSession();
       window.removeEventListener('beforeunload', beforeUnload);
+      window.removeEventListener('pagehide', pageHide);
     };
   }, []);
 }

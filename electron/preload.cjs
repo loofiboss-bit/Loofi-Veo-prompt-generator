@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('electron', {
   inspectTimelineRenderMedia: (mediaId) =>
     ipcRenderer.invoke('timeline-render-inspect-media', mediaId),
   createDesktopMediaProxy: (mediaId) => ipcRenderer.invoke('timeline-render-proxy', mediaId),
+  detectTimelineSilence: (input) => ipcRenderer.invoke('timeline-render-detect-silence', input),
   cancelTimelineRender: (id) => ipcRenderer.invoke('timeline-render-cancel', id),
   saveTimelineRender: (input) => ipcRenderer.invoke('timeline-render-save', input),
   onTimelineRenderUpdate: (callback) => {
