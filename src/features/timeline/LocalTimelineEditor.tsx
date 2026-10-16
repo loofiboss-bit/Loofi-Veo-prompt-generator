@@ -6,6 +6,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import InspectorPanel from '@shared/components/InspectorPanel';
 import { TimelineSurface } from './components/TimelineSurface';
 import { SilenceCutModal } from './components/SilenceCutModal';
+import { VoiceoverRecorderModal } from './components/VoiceoverRecorderModal';
 
 /** Source playback aids editing; native delivery review is the composited output. */
 export function LocalTimelineEditor() {
@@ -25,6 +26,7 @@ export function LocalTimelineEditor() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [showSilenceModal, setShowSilenceModal] = useState(false);
+  const [showVoiceoverModal, setShowVoiceoverModal] = useState(false);
   const mediaRef = useRef<HTMLVideoElement>(null);
   const duration = Math.max(0, ...clips.map((clip) => clip.startTime + clip.duration));
   const active = clips.find(
@@ -116,6 +118,13 @@ export function LocalTimelineEditor() {
           <button disabled={!canRedo} onClick={() => useAppStore.temporal.getState().redo()}>
             {t('v16.redo', 'Redo')}
           </button>
+          <button
+            onClick={() => setShowVoiceoverModal(true)}
+            className="flex items-center gap-1.5 rounded border border-rose-600/50 bg-rose-950/40 px-2 py-1 text-xs font-medium text-rose-300 hover:bg-rose-900/60 transition-colors"
+          >
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            {t('voiceover.recordButton', 'Record voiceover')}
+          </button>
           {selected && (selected.type === 'video' || selected.type === 'audio') && (
             <button
               onClick={() => setShowSilenceModal(true)}
@@ -143,6 +152,18 @@ export function LocalTimelineEditor() {
           allClips={clips}
           onApplyCuts={(newClips) => {
             useAppStore.setState({ clips: newClips });
+          }}
+        />
+      )}
+      {showVoiceoverModal && (
+        <VoiceoverRecorderModal
+          isOpen={showVoiceoverModal}
+          onClose={() => setShowVoiceoverModal(false)}
+          currentTime={currentTime}
+          tracks={tracks}
+          clips={clips}
+          onVoiceoverAdded={(newClip) => {
+            setSelectedId(newClip.id);
           }}
         />
       )}
