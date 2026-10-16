@@ -61,10 +61,13 @@ describe('canonical project autosave', () => {
     expect(useProjectSaveStore.getState().projects.p.status).toBe('unsaved');
     const event = new Event('beforeunload', { cancelable: true });
     Object.defineProperty(event, 'returnValue', { writable: true, value: '' });
+    expect(mocks.save).not.toHaveBeenCalled();
     listener(event as BeforeUnloadEvent);
     expect(event.defaultPrevented).toBe(true);
+    expect(mocks.save).toHaveBeenCalledOnce();
     unmount();
     expect(removed).toHaveBeenCalledWith('beforeunload', listener);
+    expect(removed).toHaveBeenCalledWith('pagehide', expect.any(Function));
     added.mockRestore();
     removed.mockRestore();
   });
@@ -89,7 +92,7 @@ describe('canonical project autosave', () => {
   });
 
   it('debounces structural edits and advances only the durable revision baseline', async () => {
-    renderHook(() => useProjectAutosave());
+    const { unmount } = renderHook(() => useProjectAutosave());
     act(() =>
       useAppStore.setState({
         clips: [
@@ -113,9 +116,10 @@ describe('canonical project autosave', () => {
     expect(mocks.save).toHaveBeenCalledOnce();
     expect(useEditorSessionStore.getState().projectSnapshot?.documentRevision).toBe(1);
     expect(useAppStore.getState().clips[0].id).toBe('clip');
+    unmount();
   });
   it('does not write after a project switch or while conflict recovery is pending', async () => {
-    renderHook(() => useProjectAutosave());
+    const { unmount } = renderHook(() => useProjectAutosave());
     act(() => useAppStore.setState({ tracks: [] }));
     useProjectSaveStore.getState().setStatus('p', { status: 'conflict' });
     await act(async () => {
@@ -128,14 +132,16 @@ describe('canonical project autosave', () => {
       await vi.advanceTimersByTimeAsync(700);
     });
     expect(mocks.save).not.toHaveBeenCalled();
+    unmount();
   });
   it('does not save a clean document after hydration or a manual save supersedes a timer', async () => {
-    renderHook(() => useProjectAutosave());
+    const { unmount } = renderHook(() => useProjectAutosave());
     act(() => useAppStore.setState({ tracks: [] }));
     useProjectSaveStore.getState().setStatus('p', { status: 'saved' });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(700);
     });
     expect(mocks.save).not.toHaveBeenCalled();
+    unmount();
   });
 });
