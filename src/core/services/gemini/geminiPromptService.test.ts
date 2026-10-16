@@ -38,9 +38,13 @@ vi.mock('@core/providers/desktopGeminiProxy', () => ({
   }),
 }));
 
-vi.mock('@core/utils/retry', () => ({
-  retryOperation: vi.fn((fn: () => unknown) => fn()),
-}));
+vi.mock('@core/utils/retry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@core/utils/retry')>();
+  return {
+    ...actual,
+    retryOperation: vi.fn((fn: () => unknown) => fn()),
+  };
+});
 
 vi.mock('@core/utils/streaming', () => ({
   streamGenerateContent: mockStreamGenerateContent,
@@ -50,11 +54,15 @@ vi.mock('../promptBuilder', () => ({
   buildGeminiPrompt: vi.fn().mockReturnValue('built prompt'),
 }));
 
-vi.mock('@core/utils/apiErrors', () => ({
-  parseAndThrowApiError: vi.fn((error: unknown) => {
-    throw error;
-  }),
-}));
+vi.mock('@core/utils/apiErrors', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@core/utils/apiErrors')>();
+  return {
+    ...actual,
+    parseAndThrowApiError: vi.fn((error: unknown) => {
+      throw error;
+    }),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Imports
@@ -98,7 +106,10 @@ import {
 // ---------------------------------------------------------------------------
 
 describe('geminiPromptService — integration', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGenerateContent.mockReset().mockResolvedValue({ text: '{}' });
+  });
 
   // ── Core generation ───────────────────────────────────────────
   describe('generateVeoPrompt', () => {
@@ -141,6 +152,28 @@ describe('geminiPromptService — integration', () => {
           useGoogleMaps: false,
         } as Parameters<typeof generateVeoPrompt>[0]),
       ).rejects.toThrow('Quota exceeded');
+    });
+
+    it('falls back to secondary model when primary model encounters high demand', async () => {
+      mockGenerateContent
+        .mockRejectedValueOnce(
+          new Error(
+            'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
+          ),
+        )
+        .mockResolvedValueOnce({
+          text: 'Fallback model successfully generated prompt.',
+          candidates: [{ groundingMetadata: { groundingChunks: [] } }],
+        });
+
+      const result = await generateVeoPrompt({
+        idea: 'test idea',
+        useGoogleSearch: false,
+        useGoogleMaps: false,
+      } as Parameters<typeof generateVeoPrompt>[0]);
+
+      expect(result.prompt).toBe('Fallback model successfully generated prompt.');
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -25,7 +25,7 @@ export interface RetryConfig {
 /**
  * Determines if an error is transient and should trigger a retry.
  */
-function isRetryableError(error: unknown): boolean {
+export function isRetryableError(error: unknown): boolean {
   if (error instanceof ApiError) {
     return [
       ApiErrorType.RateLimitExceeded,
@@ -41,7 +41,20 @@ function isRetryableError(error: unknown): boolean {
     return [429, 500, 502, 503, 504].includes(error.status);
   }
 
-  // Handle standard Error objects (often network related)
+  const errObj = error as Record<string, unknown> | null | undefined;
+  if (errObj && typeof errObj === 'object') {
+    const status = Number(errObj.status ?? errObj.statusCode);
+    if ([429, 500, 502, 503, 504].includes(status)) {
+      return true;
+    }
+
+    const kind = String(errObj.kind ?? '');
+    if (['provider-incident', 'rate-limit', 'model-unavailable'].includes(kind)) {
+      return true;
+    }
+  }
+
+  // Handle standard Error objects (network, timeout, rate-limits, and provider overload)
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
     return (
@@ -49,8 +62,22 @@ function isRetryableError(error: unknown): boolean {
       msg.includes('failed to fetch') ||
       msg.includes('timeout') ||
       msg.includes('rate limit') ||
+      msg.includes('rate_limit') ||
+      msg.includes('resource_exhausted') ||
+      msg.includes('resource exhausted') ||
+      msg.includes('high demand') ||
+      msg.includes('spikes in demand') ||
+      msg.includes('unavailable') ||
+      msg.includes('temporarily') ||
+      msg.includes('try again') ||
+      msg.includes('overloaded') ||
+      msg.includes('econnreset') ||
+      msg.includes('etimedout') ||
       msg.includes('503') ||
-      msg.includes('500')
+      msg.includes('500') ||
+      msg.includes('502') ||
+      msg.includes('504') ||
+      msg.includes('429')
     );
   }
 

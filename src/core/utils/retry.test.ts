@@ -180,4 +180,33 @@ describe('retryOperation', () => {
     const result = await retryOperation(operation, 3, 10);
     expect(result).toBe('ok');
   });
+
+  it('should retry when Google API returns high demand / spikes in demand error', async () => {
+    const highDemandError = new Error(
+      'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
+    );
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(highDemandError)
+      .mockResolvedValueOnce('recovered-after-spike');
+
+    const result = await retryOperation(operation, 3, 10);
+    expect(result).toBe('recovered-after-spike');
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+
+  it('should retry when ProviderExecutionError has kind provider-incident', async () => {
+    const providerIncidentError = Object.assign(
+      new Error('Provider execution failed: provider-incident'),
+      { kind: 'provider-incident' },
+    );
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(providerIncidentError)
+      .mockResolvedValueOnce('success');
+
+    const result = await retryOperation(operation, 3, 10);
+    expect(result).toBe('success');
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
 });

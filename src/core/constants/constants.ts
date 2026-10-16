@@ -94,7 +94,7 @@ export const INITIAL_STATE: PromptState = {
   audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
-  model: 'gemini-3.5-flash',
+  model: 'gemini-3.6-flash',
   targetModel: 'flow-veo',
   flowVeoOutputMode: 'flow-scene-pack',
   sunoExportMode: 'custom-mode-prompt',

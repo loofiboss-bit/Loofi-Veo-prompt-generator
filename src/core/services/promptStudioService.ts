@@ -20,6 +20,7 @@ import { compileSpatialCameraRig } from './spatialCameraService';
 import { transpilePrompt } from './modelTranspilerService';
 import { validateStudioVideo, validateStudioMusic } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
+import { DEFAULT_PROMPT_MODEL } from './gemini/aiClient';
 
 const DEFAULT_NEGATIVE =
   'unintended text, subtitles, logos, watermarks, extra limbs, visual glitches';
@@ -851,6 +852,7 @@ export const regenerateLyrics = (
 
 const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState => ({
   ...INITIAL_STATE,
+  model: DEFAULT_PROMPT_MODEL,
   idea: input.idea,
   environment: input.environment ?? '',
   characterActions: input.action ?? '',

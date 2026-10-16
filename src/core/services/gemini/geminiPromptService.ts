@@ -15,6 +15,10 @@ import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { buildGeminiPrompt } from '../promptBuilder';
 import { getAiClientAsync, cleanJson, resilientCall, getPromptModel } from './aiClient';
 import { streamGenerateContent, type StreamChunkCallback } from '@core/utils/streaming';
+import { isRetryableError } from '@core/utils/retry';
+import { modelFallbackService } from '../modelFallbackService';
+import { resolveProviderModelId } from '@core/models/catalog';
+import { logger } from '../loggerService';
 
 // ---------------------------------------------------------------------------
 // Domain-specific parameter interfaces (replaces `any` params)
@@ -85,41 +89,58 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
     tools.push({ googleSearch: {} });
   }
 
-  const modelName = getPromptModel(state.model);
+  const initialModel = getPromptModel(state.model);
+  const chain = modelFallbackService.getChain('prompt-generation');
+  const candidateModels = chain?.models?.length
+    ? [
+        initialModel,
+        ...chain.models.map((id) => resolveProviderModelId(id)).filter((m) => m !== initialModel),
+      ]
+    : [initialModel];
 
-  try {
-    const response = await resilientCall(
-      () =>
-        ai.models.generateContent({
-          model: modelName,
-          contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
-            Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
+  let lastError: unknown;
 
-            User Input Structure:
-            ${constructedPrompt}
+  for (const modelName of candidateModels) {
+    try {
+      const response = await resilientCall(
+        () =>
+          ai.models.generateContent({
+            model: modelName,
+            contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
+              Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
 
-            Requirements:
-            1. Consolidate into a cohesive paragraph.
-            2. Enhance visual descriptions (lighting, texture, camera movement).
-            3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
-            4. Keep it under 300 words unless the input is a scene pack.
-            `,
-          config: {
-            tools: tools.length > 0 ? tools : undefined,
-            toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
-          },
-        }),
-      { endpoint: 'gemini-prompt', model: modelName },
-    );
+              User Input Structure:
+              ${constructedPrompt}
 
-    return {
-      prompt: response.text || '',
-      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
-    };
-  } catch (error) {
-    parseAndThrowApiError(error);
-    return { prompt: constructedPrompt };
+              Requirements:
+              1. Consolidate into a cohesive paragraph.
+              2. Enhance visual descriptions (lighting, texture, camera movement).
+              3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
+              4. Keep it under 300 words unless the input is a scene pack.
+              `,
+            config: {
+              tools: tools.length > 0 ? tools : undefined,
+              toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
+            },
+          }),
+        { endpoint: 'gemini-prompt', model: modelName },
+      );
+
+      return {
+        prompt: response.text || '',
+        groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
+      };
+    } catch (error) {
+      lastError = error;
+      logger.warn(`[geminiPromptService] Model ${modelName} failed prompt generation:`, error);
+      if (!isRetryableError(error)) {
+        break;
+      }
+    }
   }
+
+  parseAndThrowApiError(lastError);
+  return { prompt: constructedPrompt };
 };
 
 // ---------------------------------------------------------------------------
