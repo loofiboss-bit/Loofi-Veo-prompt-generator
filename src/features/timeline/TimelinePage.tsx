@@ -1,7 +1,7 @@
 import { EditorMediaPanel } from './EditorMediaPanel';
 import { LocalTimelineEditor } from './LocalTimelineEditor';
 import '@features/creator/creator.css';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -21,8 +21,14 @@ import {
 import { TimelineExportRecovery } from '@shared/components/TimelineExportRecovery';
 
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
-import { CreatorDeliveryPanel } from '@features/delivery/CreatorDeliveryPanel';
+import { ModalSkeleton } from '@shared/components/ui/Skeleton';
 import TimelinePlayer from './TimelinePlayer';
+
+const CreatorDeliveryPanel = React.lazy(() =>
+  import('@features/delivery/CreatorDeliveryPanel').then((m) => ({
+    default: m.CreatorDeliveryPanel,
+  })),
+);
 
 export const TimelinePage: React.FC = () => {
   const { t } = useTranslation('common');
@@ -180,14 +186,18 @@ export const TimelinePage: React.FC = () => {
           <details className="local-editor-delivery" open>
             <summary>{creatorT('v16.captionDelivery', 'Captions and delivery')}</summary>
             <ErrorBoundary panelId="creator-delivery">
-              <CreatorDeliveryPanel />
+              <Suspense fallback={<ModalSkeleton />}>
+                <CreatorDeliveryPanel />
+              </Suspense>
             </ErrorBoundary>
           </details>
         </>
       ) : (
         <>
           <ErrorBoundary panelId="creator-delivery">
-            <CreatorDeliveryPanel />
+            <Suspense fallback={<ModalSkeleton />}>
+              <CreatorDeliveryPanel />
+            </Suspense>
           </ErrorBoundary>
           <TimelinePlayer embedded shots={shots} onClose={handleExitTimeline} />
         </>
