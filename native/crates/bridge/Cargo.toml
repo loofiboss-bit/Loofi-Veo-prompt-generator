@@ -1,0 +1,15 @@
+[package]
+name = "creator_native_bridge"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.93"
+license = "GPL-3.0-only"
+[lib]
+crate-type = ["staticlib", "rlib"]
+[dependencies]
+creator-native-core = { path = "../core" }
+cxx = { workspace = true }
+cxx-qt = { workspace = true }
+cxx-qt-lib = { workspace = true }
+[build-dependencies]
+cxx-qt-build = { workspace = true }
