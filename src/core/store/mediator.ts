@@ -15,6 +15,7 @@
  */
 
 import { logger } from '@core/services/loggerService';
+import type { LocationProfile, Asset, Shot, TimelineTrack, TimelineClip } from '@core/types';
 
 // ─── Event Map ───────────────────────────────────────────────────────────────
 
@@ -29,10 +30,21 @@ export interface StoreMediatorEvents {
   'project:saved': { projectId: string };
   'project:closed': undefined;
 
+  // Location domain
+  'locations:updated': { locations: LocationProfile[] };
+
+  // Asset domain
+  'asset:upserted': { asset: Asset };
+
   // Timeline domain
   'timeline:shotAdded': { shotId: number };
   'timeline:shotRemoved': { shotId: number };
   'timeline:clipMoved': { clipId: string; trackId: string };
+  'timeline:synced': {
+    shots: Shot[];
+    tracks: TimelineTrack[];
+    clips: TimelineClip[];
+  };
 
   // History domain
   'history:entryAdded': { entryId: string };

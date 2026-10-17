@@ -8,6 +8,7 @@
 
 import { GoogleGenAI, Type, Modality } from '@google/genai';
 import { getStoredApiKeyAsync } from '@core/services/apiKeyService';
+import { getDesktopGeminiProxy } from '@core/providers/desktopGeminiProxy';
 import { useAppStore } from '@core/store/useAppStore';
 import { logger } from '@core/services/loggerService';
 import { compileSpatialCameraRig, DEFAULT_SPATIAL_CAMERA_RIG } from './spatialCameraService';
@@ -132,154 +133,197 @@ export class AiCoDirectorService {
     this.actionListeners.forEach((cb) => cb(action));
   }
 
+  private activateOfflineFallback(): boolean {
+    this.setStatus('listening');
+    this.emitMessage({
+      id: `sys-${Date.now()}`,
+      sender: 'system',
+      text: 'AI Co-Director ansluten i lokalt direktörsläge (offline intent engine). Redo för röst- och textregi!',
+      timestamp: Date.now(),
+    });
+    return true;
+  }
+
   /**
    * Connects to the Gemini Live session, with graceful offline fallback.
    */
   public async connect(): Promise<boolean> {
     this.setStatus('connecting');
 
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
-      // Local offline engine ready
-      this.setStatus('listening');
-      this.emitMessage({
-        id: `sys-${Date.now()}`,
-        sender: 'system',
-        text: 'AI Co-Director ansluten i lokalt direktörsläge (offline intent engine). Redo för röst- och textregi!',
-        timestamp: Date.now(),
-      });
-      return true;
+    const electron = typeof window !== 'undefined' ? window.electron : undefined;
+    const isDesktop = Boolean(electron || getDesktopGeminiProxy());
+
+    if (isDesktop) {
+      if (!electron?.approveProviderCost) {
+        logger.warn(
+          'Desktop environment cannot approve provider cost; falling back to offline intent engine.',
+        );
+        return this.activateOfflineFallback();
+      }
+
+      try {
+        await electron.approveProviderCost({
+          provider: 'gemini-api',
+          providerModelId: this.config.model,
+          operation: 'plan',
+          prompt: 'AI Co-Director Live Session',
+          costApproval: {
+            maximumChargeUsd: 0,
+            currency: 'USD',
+            confidence: 'exact',
+            sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+            verifiedDate: '2026-08-01',
+            providerModelId: this.config.model,
+            calculationInputs: { estimatedInputTokens: 0, estimatedOutputTokens: 0 },
+          },
+        });
+      } catch (error) {
+        logger.warn(
+          'Desktop provider cost approval was unapproved or rejected for AI Co-Director:',
+          error,
+        );
+        return this.activateOfflineFallback();
+      }
+    }
+
+    const desktopProxy = getDesktopGeminiProxy();
+    let ai: GoogleGenAI | null = desktopProxy;
+
+    if (!ai?.live?.connect) {
+      const apiKey = await getStoredApiKeyAsync();
+      if (apiKey) {
+        ai = new GoogleGenAI({ apiKey });
+      }
+    }
+
+    if (!ai?.live?.connect) {
+      return this.activateOfflineFallback();
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      if (ai.live?.connect) {
-        const session = await ai.live.connect({
-          model: this.config.model,
-          config: {
-            responseModalities: [Modality.AUDIO],
-            systemInstruction: { parts: [{ text: CO_DIRECTOR_SYSTEM_INSTRUCTION }] },
-            tools: [
-              {
-                functionDeclarations: [
-                  {
-                    name: 'setCameraRig',
-                    description: 'Updates 3D camera lens, aperture, height, and trajectory motion.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        shotId: { type: Type.NUMBER, description: 'Shot ID to modify' },
-                        lens: {
-                          type: Type.STRING,
-                          enum: [
-                            '16mm-ultra-wide',
-                            '24mm-wide',
-                            '35mm-cinematic',
-                            '50mm-natural',
-                            '85mm-portrait',
-                            '135mm-telephoto',
-                            'anamorphic-2.39',
-                          ],
-                        },
-                        aperture: {
-                          type: Type.STRING,
-                          enum: ['f/1.2', 'f/1.8', 'f/2.8', 'f/4', 'f/8', 'f/16'],
-                        },
-                        trajectory: {
-                          type: Type.STRING,
-                          enum: [
-                            'static',
-                            'push-in',
-                            'pull-out',
-                            'pan-left',
-                            'pan-right',
-                            'tilt-up',
-                            'tilt-down',
-                            'crane-up',
-                            'crane-down',
-                            'orbit-clockwise',
-                            'orbit-counter-clockwise',
-                            'dolly-zoom-vertigo',
-                            'fpv-drone-dive',
-                            'dutch-angle-tracking',
-                            'steadicam-follow',
-                          ],
-                        },
-                        heightLevel: {
-                          type: Type.STRING,
-                          enum: [
-                            'ground-level',
-                            'knee-level',
-                            'waist-level',
-                            'eye-level',
-                            'high-angle',
-                            'birds-eye',
-                            'aerial-drone',
-                          ],
-                        },
+      const session = await ai.live.connect({
+        model: this.config.model,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: { parts: [{ text: CO_DIRECTOR_SYSTEM_INSTRUCTION }] },
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: 'setCameraRig',
+                  description: 'Updates 3D camera lens, aperture, height, and trajectory motion.',
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      shotId: { type: Type.NUMBER, description: 'Shot ID to modify' },
+                      lens: {
+                        type: Type.STRING,
+                        enum: [
+                          '16mm-ultra-wide',
+                          '24mm-wide',
+                          '35mm-cinematic',
+                          '50mm-natural',
+                          '85mm-portrait',
+                          '135mm-telephoto',
+                          'anamorphic-2.39',
+                        ],
+                      },
+                      aperture: {
+                        type: Type.STRING,
+                        enum: ['f/1.2', 'f/1.8', 'f/2.8', 'f/4', 'f/8', 'f/16'],
+                      },
+                      trajectory: {
+                        type: Type.STRING,
+                        enum: [
+                          'static',
+                          'push-in',
+                          'pull-out',
+                          'pan-left',
+                          'pan-right',
+                          'tilt-up',
+                          'tilt-down',
+                          'crane-up',
+                          'crane-down',
+                          'orbit-clockwise',
+                          'orbit-counter-clockwise',
+                          'dolly-zoom-vertigo',
+                          'fpv-drone-dive',
+                          'dutch-angle-tracking',
+                          'steadicam-follow',
+                        ],
+                      },
+                      heightLevel: {
+                        type: Type.STRING,
+                        enum: [
+                          'ground-level',
+                          'knee-level',
+                          'waist-level',
+                          'eye-level',
+                          'high-angle',
+                          'birds-eye',
+                          'aerial-drone',
+                        ],
                       },
                     },
                   },
-                  {
-                    name: 'setSceneAesthetics',
-                    description: 'Updates lighting style, mood, and environment ambiance.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        shotId: { type: Type.NUMBER },
-                        lighting: { type: Type.STRING },
-                        mood: { type: Type.STRING },
-                        environment: { type: Type.STRING },
-                      },
+                },
+                {
+                  name: 'setSceneAesthetics',
+                  description: 'Updates lighting style, mood, and environment ambiance.',
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      shotId: { type: Type.NUMBER },
+                      lighting: { type: Type.STRING },
+                      mood: { type: Type.STRING },
+                      environment: { type: Type.STRING },
                     },
                   },
-                  {
-                    name: 'createOrModifyShot',
-                    description: 'Creates a new shot or modifies action and dialogue on a shot.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        action: { type: Type.STRING },
-                        shotId: { type: Type.NUMBER },
-                        camera: { type: Type.STRING },
-                        duration: { type: Type.NUMBER },
-                        dialogue: { type: Type.STRING },
-                      },
-                      required: ['action'],
+                },
+                {
+                  name: 'createOrModifyShot',
+                  description: 'Creates a new shot or modifies action and dialogue on a shot.',
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      action: { type: Type.STRING },
+                      shotId: { type: Type.NUMBER },
+                      camera: { type: Type.STRING },
+                      duration: { type: Type.NUMBER },
+                      dialogue: { type: Type.STRING },
                     },
+                    required: ['action'],
                   },
-                ],
-              },
-            ],
+                },
+              ],
+            },
+          ],
+        },
+        callbacks: {
+          onopen: () => {
+            this.setStatus('listening');
           },
-          callbacks: {
-            onopen: () => {
-              this.setStatus('listening');
-            },
-            onmessage: (msg: unknown) => {
-              this.handleLiveMessage(msg as Record<string, unknown>);
-            },
-            onerror: (err: unknown) => {
-              logger.warn('Gemini Live connection warning, falling back to local NLP:', err);
-              this.setStatus('listening');
-            },
-            onclose: () => {
-              this.setStatus('disconnected');
-            },
+          onmessage: (msg: unknown) => {
+            this.handleLiveMessage(msg as Record<string, unknown>);
           },
-        });
+          onerror: (err: unknown) => {
+            logger.warn('Gemini Live connection warning, falling back to local NLP:', err);
+            this.setStatus('listening');
+          },
+          onclose: () => {
+            this.setStatus('disconnected');
+          },
+        },
+      });
 
-        this.session = session;
-        this.setStatus('listening');
-        return true;
-      }
+      this.session = session;
+      this.setStatus('listening');
+      return true;
     } catch (error) {
       logger.warn('Could not initialize Gemini Live WebSocket session:', error);
     }
 
-    // Graceful local engine activation
-    this.setStatus('listening');
-    return true;
+    return this.activateOfflineFallback();
   }
 
   public disconnect(): void {

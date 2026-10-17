@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { LocationProfile } from '@core/types';
 import { logger } from '@core/services/loggerService';
-import { continuityService } from '@core/services/continuityService';
-import { useAppStore } from './useAppStore';
+import { storeMediator } from './mediator';
 
 interface LocationStore {
   locations: LocationProfile[];
@@ -25,23 +24,7 @@ const getSavedLocations = (): LocationProfile[] => {
 };
 
 const syncLocationProfiles = (locations: LocationProfile[]) => {
-  const appState = useAppStore.getState();
-  const locationIds = new Set(locations.map((location) => location.id));
-  const retainedProfiles = appState.productionBible.profiles.filter(
-    (profile) =>
-      profile.kind !== 'location' ||
-      profile.provenance.source !== 'legacy-location-bank' ||
-      Boolean(profile.provenance.sourceId && locationIds.has(profile.provenance.sourceId)),
-  );
-  const bible = locations.reduce(
-    (current, location) =>
-      continuityService.upsertProfile(
-        current,
-        continuityService.createProfileFromLocation(location),
-      ),
-    { ...appState.productionBible, profiles: retainedProfiles },
-  );
-  appState.setProductionBible(bible);
+  storeMediator.emit('locations:updated', { locations });
 };
 
 export const useLocationStore = create<LocationStore>((set) => ({

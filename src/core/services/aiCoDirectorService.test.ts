@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AiCoDirectorService } from './aiCoDirectorService';
 import { useAppStore } from '@core/store/useAppStore';
 
@@ -11,6 +11,10 @@ describe('aiCoDirectorService', () => {
 
   beforeEach(() => {
     service = new AiCoDirectorService();
+  });
+
+  afterEach(() => {
+    delete (window as unknown as { electron?: unknown }).electron;
   });
 
   it('initializes in disconnected status', () => {
@@ -114,5 +118,72 @@ describe('aiCoDirectorService', () => {
         text: 'Byt till 85mm porträttobjektiv',
       }),
     );
+  });
+
+  describe('desktop provider cost approval gating', () => {
+    it('routes connection through approveProviderCost and falls back cleanly when rejected', async () => {
+      const approveProviderCost = vi.fn().mockRejectedValue(new Error('User rejected cost'));
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost,
+      };
+
+      const messageListener = vi.fn();
+      service.onMessage(messageListener);
+
+      const connected = await service.connect();
+
+      expect(connected).toBe(true);
+      expect(approveProviderCost).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: 'gemini-api',
+          providerModelId: 'gemini-3.8-live',
+          operation: 'plan',
+          prompt: 'AI Co-Director Live Session',
+        }),
+      );
+      expect(service.getStatus()).toBe('listening');
+      expect(messageListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sender: 'system',
+          text: expect.stringContaining('offline intent engine'),
+        }),
+      );
+    });
+
+    it('prevents direct renderer WebSocket connections when desktop lacks approval capability', async () => {
+      (window as unknown as { electron?: unknown }).electron = {};
+
+      const messageListener = vi.fn();
+      service.onMessage(messageListener);
+
+      const connected = await service.connect();
+
+      expect(connected).toBe(true);
+      expect(service.getStatus()).toBe('listening');
+      expect(messageListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sender: 'system',
+          text: expect.stringContaining('offline intent engine'),
+        }),
+      );
+    });
+
+    it('proceeds through approval gate when approved by desktop provider', async () => {
+      const approveProviderCost = vi.fn().mockResolvedValue('approval-live-ok');
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost,
+      };
+
+      const connected = await service.connect();
+
+      expect(connected).toBe(true);
+      expect(approveProviderCost).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: 'gemini-api',
+          providerModelId: 'gemini-3.8-live',
+        }),
+      );
+      expect(service.getStatus()).toBe('listening');
+    });
   });
 });

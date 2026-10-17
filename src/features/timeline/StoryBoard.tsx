@@ -363,8 +363,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
     addToast(`Queuing ${promptsAndShots.length} shots for generation...`, 'info');
 
     try {
+      let anyQueued = false;
       for (const item of promptsAndShots) {
-        await videoGenerationService.startGeneration(
+        const taskId = await videoGenerationService.startGeneration(
           item.prompt,
           {
             aspectRatio: '16:9',
@@ -375,8 +376,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           undefined, // image
           (msg, type) => addToast(msg, type),
         );
+        if (!taskId) {
+          anyQueued = false;
+          onClose();
+          navigate(ROUTES.CREATE);
+          return;
+        }
+        anyQueued = true;
       }
-      addToast('All shots queued in background studio.', 'success');
+      if (anyQueued) {
+        addToast('All shots queued in background studio.', 'success');
+      }
     } catch (e) {
       logger.error('Batch generation incomplete', e);
       addToast('Batch generation incomplete.', 'error');
