@@ -4,8 +4,9 @@ import { render, screen, waitFor } from '@/test-utils';
 import { CreatePage } from './CreatePage';
 
 vi.mock('@core/store/useProjectStore', () => ({
-  useProjectStore: (selector: (state: { currentProjectId: string }) => unknown) =>
-    selector({ currentProjectId: 'project-a' }),
+  useProjectStore: (
+    selector: (state: { currentProjectId: string; projects: unknown[] }) => unknown,
+  ) => selector({ currentProjectId: 'project-a', projects: [] }),
 }));
 vi.mock('@core/store/useProductionRunStore', () => ({
   useProductionRunStore: (selector: (state: Record<string, unknown>) => unknown) =>
