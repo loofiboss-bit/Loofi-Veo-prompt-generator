@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Asset, PromptArtifactV1 } from '@core/types';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
 import { externalStudioResultService } from '@core/services/externalStudioResultService';
+import { storeMediator } from '@core/store/mediator';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 
@@ -48,9 +49,7 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
           data: '',
           url: '',
         };
-        const app = useAppStore.getState();
-        if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
-        else app.addAsset(asset);
+        storeMediator.emit('asset:upserted', { asset });
       }
     }
   };
@@ -130,8 +129,8 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
               },
             );
             if (isCurrent())
-              useAppStore.setState({
-                sbShots: project.storyboard.shots,
+              storeMediator.emit('timeline:synced', {
+                shots: project.storyboard.shots,
                 tracks: project.storyboard.timeline.tracks,
                 clips: project.storyboard.timeline.clips,
               });

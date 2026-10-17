@@ -15,6 +15,7 @@ import { UiSlice, createUiSlice } from './slices/uiSlice';
 import { TimelineSlice, createTimelineSlice } from './slices/timelineSlice';
 import { PromptSlice, createPromptSlice } from './slices/promptSlice';
 import { AssetSlice, createAssetSlice } from './slices/assetSlice';
+import { storeMediator } from './mediator';
 
 // Combined State Interface
 export type AppState = UiSlice &
@@ -220,3 +221,59 @@ export const useAppStore = create<AppState>()(
     },
   ),
 ) as unknown as UseBoundStore<StoreApi<AppState>> & { temporal: StoreApi<TemporalState<AppState>> };
+
+// ─── Store Mediator Listeners ────────────────────────────────────────────────
+
+let appStoreMediatorUnsubs: (() => void)[] = [];
+
+export const registerAppStoreMediator = (): (() => void) => {
+  appStoreMediatorUnsubs.forEach((unsub) => unsub());
+  appStoreMediatorUnsubs = [];
+
+  const unsubs: (() => void)[] = [
+    storeMediator.on('locations:updated', ({ locations }) => {
+      const appState = useAppStore.getState();
+      const locationIds = new Set(locations.map((loc) => loc.id));
+      const retainedProfiles = appState.productionBible.profiles.filter(
+        (profile) =>
+          profile.kind !== 'location' ||
+          profile.provenance.source !== 'legacy-location-bank' ||
+          Boolean(profile.provenance.sourceId && locationIds.has(profile.provenance.sourceId)),
+      );
+      const bible = locations.reduce(
+        (current, location) =>
+          continuityService.upsertProfile(
+            current,
+            continuityService.createProfileFromLocation(location),
+          ),
+        { ...appState.productionBible, profiles: retainedProfiles },
+      );
+      appState.setProductionBible(bible);
+    }),
+
+    storeMediator.on('asset:upserted', ({ asset }) => {
+      const app = useAppStore.getState();
+      if (app.assets.some((item) => item.id === asset.id)) {
+        app.updateAsset(asset.id, asset);
+      } else {
+        app.addAsset(asset);
+      }
+    }),
+
+    storeMediator.on('timeline:synced', ({ shots, tracks, clips }) => {
+      useAppStore.setState({
+        sbShots: shots,
+        tracks,
+        clips,
+      });
+    }),
+  ];
+
+  appStoreMediatorUnsubs = unsubs;
+  return () => {
+    unsubs.forEach((unsub) => unsub());
+    appStoreMediatorUnsubs = [];
+  };
+};
+
+registerAppStoreMediator();

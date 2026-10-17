@@ -180,4 +180,77 @@ describe('storeMediator singleton', () => {
 
     expect(handler).toHaveBeenCalledWith({ projectId: 'test-123' });
   });
+
+  it('should dispatch locations:updated synchronously with typed payload', () => {
+    const handler = vi.fn();
+    storeMediator.on('locations:updated', handler);
+    const mockLocations = [
+      {
+        id: 'loc-1',
+        name: 'Cabin',
+        description: 'Cozy cabin in the woods',
+        visualTags: ['wood', 'forest'],
+      },
+    ];
+
+    storeMediator.emit('locations:updated', { locations: mockLocations });
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(handler).toHaveBeenCalledWith({ locations: mockLocations });
+  });
+
+  it('should dispatch asset:upserted synchronously with typed payload', () => {
+    const handler = vi.fn();
+    storeMediator.on('asset:upserted', handler);
+    const mockAsset = {
+      id: 'a1',
+      storageKey: 'a1',
+      name: 'Rendered Take',
+      type: 'video' as const,
+      mimeType: 'video/mp4',
+      data: '',
+      url: 'blob:video',
+    };
+
+    storeMediator.emit('asset:upserted', { asset: mockAsset });
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(handler).toHaveBeenCalledWith({ asset: mockAsset });
+  });
+
+  it('should dispatch timeline:synced synchronously with typed payload', () => {
+    const handler = vi.fn();
+    storeMediator.on('timeline:synced', handler);
+    const mockPayload = {
+      shots: [
+        { id: 1, type: 'video' as const, action: 'Run', takes: [] },
+      ] as unknown as import('@core/types').Shot[],
+      tracks: [
+        {
+          id: 'video_main',
+          label: 'Video',
+          type: 'video' as const,
+          trackType: 'dialogue' as const,
+          zIndex: 1,
+        },
+      ],
+      clips: [
+        {
+          id: 'c1',
+          trackId: 'video_main',
+          resourceId: 'res-1',
+          label: 'Clip 1',
+          startTime: 0,
+          duration: 5,
+          offset: 0,
+          type: 'video' as const,
+        },
+      ],
+    };
+
+    storeMediator.emit('timeline:synced', mockPayload);
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(handler).toHaveBeenCalledWith(mockPayload);
+  });
 });
