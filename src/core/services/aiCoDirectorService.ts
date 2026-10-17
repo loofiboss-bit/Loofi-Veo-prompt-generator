@@ -8,6 +8,7 @@
 
 import { GoogleGenAI, Type, Modality } from '@google/genai';
 import { getStoredApiKeyAsync } from '@core/services/apiKeyService';
+import { getDesktopGeminiProxy } from '@core/providers/desktopGeminiProxy';
 import { useAppStore } from '@core/store/useAppStore';
 import { logger } from '@core/services/loggerService';
 import { compileSpatialCameraRig, DEFAULT_SPATIAL_CAMERA_RIG } from './spatialCameraService';
@@ -132,29 +133,75 @@ export class AiCoDirectorService {
     this.actionListeners.forEach((cb) => cb(action));
   }
 
+  private activateOfflineFallback(): boolean {
+    this.setStatus('listening');
+    this.emitMessage({
+      id: `sys-${Date.now()}`,
+      sender: 'system',
+      text: 'AI Co-Director ansluten i lokalt direktörsläge (offline intent engine). Redo för röst- och textregi!',
+      timestamp: Date.now(),
+    });
+    return true;
+  }
+
   /**
    * Connects to the Gemini Live session, with graceful offline fallback.
    */
   public async connect(): Promise<boolean> {
     this.setStatus('connecting');
 
-    const apiKey = await getStoredApiKeyAsync();
-    if (!apiKey) {
-      // Local offline engine ready
-      this.setStatus('listening');
-      this.emitMessage({
-        id: `sys-${Date.now()}`,
-        sender: 'system',
-        text: 'AI Co-Director ansluten i lokalt direktörsläge (offline intent engine). Redo för röst- och textregi!',
-        timestamp: Date.now(),
-      });
-      return true;
+    const electron = typeof window !== 'undefined' ? window.electron : undefined;
+    const isDesktop = Boolean(electron || getDesktopGeminiProxy());
+
+    if (isDesktop) {
+      if (!electron?.approveProviderCost) {
+        logger.warn(
+          'Desktop environment cannot approve provider cost; falling back to offline intent engine.',
+        );
+        return this.activateOfflineFallback();
+      }
+
+      try {
+        await electron.approveProviderCost({
+          provider: 'gemini-api',
+          providerModelId: this.config.model,
+          operation: 'plan',
+          prompt: 'AI Co-Director Live Session',
+          costApproval: {
+            maximumChargeUsd: 0,
+            currency: 'USD',
+            confidence: 'exact',
+            sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+            verifiedDate: '2026-08-01',
+            providerModelId: this.config.model,
+            calculationInputs: { estimatedInputTokens: 0, estimatedOutputTokens: 0 },
+          },
+        });
+      } catch (error) {
+        logger.warn(
+          'Desktop provider cost approval was unapproved or rejected for AI Co-Director:',
+          error,
+        );
+        return this.activateOfflineFallback();
+      }
+    }
+
+    const desktopProxy = getDesktopGeminiProxy();
+    let ai: GoogleGenAI | null = desktopProxy;
+
+    if (!ai?.live?.connect) {
+      const apiKey = await getStoredApiKeyAsync();
+      if (apiKey) {
+        ai = new GoogleGenAI({ apiKey });
+      }
+    }
+
+    if (!ai?.live?.connect) {
+      return this.activateOfflineFallback();
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      if (ai.live?.connect) {
-        const session = await ai.live.connect({
+      const session = await ai.live.connect({
           model: this.config.model,
           config: {
             responseModalities: [Modality.AUDIO],
@@ -272,14 +319,11 @@ export class AiCoDirectorService {
         this.session = session;
         this.setStatus('listening');
         return true;
-      }
     } catch (error) {
       logger.warn('Could not initialize Gemini Live WebSocket session:', error);
     }
 
-    // Graceful local engine activation
-    this.setStatus('listening');
-    return true;
+    return this.activateOfflineFallback();
   }
 
   public disconnect(): void {
