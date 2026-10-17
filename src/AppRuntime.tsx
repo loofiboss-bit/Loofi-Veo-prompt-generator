@@ -5,16 +5,11 @@ import { useProjectAutosave } from '@shared/hooks/useProjectAutosave';
 import { NAVIGATION_DESTINATIONS } from '@core/config/navigation';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useStore } from 'zustand';
 import { useTranslation } from 'react-i18next';
 import type { CommandPaletteCommand } from '@shared/components/layout/CommandPalette';
 
-import { useHistoryState } from '@shared/hooks/useHistoryState';
-import { usePromptLogic } from '@shared/hooks/usePromptLogic';
 import { useAppStore } from '@core/store/useAppStore';
-import { useVideoStore } from '@core/store/useVideoStore';
 import { useAppSync } from '@shared/hooks/useAppSync';
-import { useAutoSaveHistory } from '@shared/hooks/useAutoSaveHistory';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useOnboarding } from '@shared/contexts/OnboardingContext';
@@ -22,12 +17,10 @@ import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { themeService } from '@core/services/themeService';
 
 import { AppLoadingGate, AppScaffold } from '@shared/components/layout';
-import { PromptLogicProvider } from '@shared/contexts/PromptLogicContext';
 
 // Extracted hooks
 import { useAppInitialization } from '@shared/hooks/useAppInitialization';
 import { useAppHandlers } from '@shared/hooks/useAppHandlers';
-import { usePromptOptions } from '@shared/hooks/usePromptOptions';
 import { useHelpPanel } from '@shared/hooks/useHelpPanel';
 import { useSafeMode } from '@shared/hooks/useSafeMode';
 import { useGenerationState } from '@shared/hooks/useGenerationState';
@@ -40,10 +33,8 @@ import { useFallbackNotifications } from '@shared/hooks/useFallbackNotifications
 import { useAppCollaborationState } from '@shared/hooks/useAppCollaborationState';
 import { useAppPanelsProps } from '@shared/hooks/useAppPanelsProps';
 import { useAppOverlaysProps } from '@shared/hooks/useAppOverlaysProps';
-import { useOptimizationAnalysis } from '@shared/hooks/useOptimizationAnalysis';
 import { ROUTES } from '@core/config/routes';
-import { optimizationOrchestratorService } from '@core/services/optimizationOrchestratorService';
-import type { PromptSuggestion } from '@core/types';
+import type { VeoPromptResponse } from '@core/types';
 
 function getRoutedSection(pathname: string): string {
   switch (pathname) {
@@ -81,7 +72,6 @@ export function AppRuntime() {
   const setTheme = useAppStore((state) => state.setTheme);
   const theme = useAppStore((state) => state.theme);
   const setNewProjectWizardOpen = useAppStore((state) => state.setNewProjectWizardOpen);
-  const setSbShots = useAppStore((state) => state.setSbShots);
 
   const isHistoryOpen = useAppStore((state) => state.isHistoryOpen);
   const isTemplatesOpen = useAppStore((state) => state.isTemplatesOpen);
@@ -91,9 +81,6 @@ export function AppRuntime() {
   const isProjectManagerOpen = useAppStore((state) => state.isProjectManagerOpen);
   const isWizardOpen = useAppStore((state) => state.isWizardOpen);
   const isSeriesBibleOpen = useAppStore((state) => state.isSeriesBibleOpen);
-
-  const optimizationShots = useAppStore((state) => state.sbShots ?? []);
-  const optimizationAssets = useAppStore((state) => state.assets ?? []);
 
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const currentProjectName = useProjectStore(
@@ -110,13 +97,6 @@ export function AppRuntime() {
   const navigationState = location.state as {
     reopenStudio?: NonNullable<typeof activeStudio>;
   } | null;
-
-  // Undo/Redo via Zundo temporal store
-  const temporalStore = useAppStore.temporal;
-  const canUndoPromptState = useStore(temporalStore, (state) => state.pastStates.length > 0);
-  const canRedoPromptState = useStore(temporalStore, (state) => state.futureStates.length > 0);
-  const undoPromptState = useCallback(() => temporalStore.getState().undo(), [temporalStore]);
-  const redoPromptState = useCallback(() => temporalStore.getState().redo(), [temporalStore]);
 
   const { toasts, addToast, dismissToast } = useToastManager();
   const { safeModeStatus, handleExitSafeMode } = useSafeMode();
@@ -160,36 +140,20 @@ export function AppRuntime() {
       return false;
     }
   });
-  const [isExamplesVisible, setIsExamplesVisible] = useState(true);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWorkspaceManagerOpen, setIsWorkspaceManagerOpen] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isEnhancingIdea, setIsEnhancingIdea] = useState(false);
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [openSections, setOpenSections] = useState<string[]>(['core-concept']);
   const [activeSection, setActiveSection] = useState<string>(() =>
     getRoutedSection(location.pathname),
   );
   const ideaInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const {
-    state: editedPrompt,
-    setState: setEditedPrompt,
-    undo: undoEdit,
-    redo: redoEdit,
-    reset: resetEditHistory,
-    canUndo: canUndoEdit,
-    canRedo: canRedoEdit,
-  } = useHistoryState('');
-
   // ---------- Translations ----------
   const { t } = useTranslation(['common', 'toasts']);
 
   // ---------- Derived state ----------
-  const isGeneratingVideo = useVideoStore((state) => state.isGenerating);
   const hydrateEditorSession = useEditorSessionStore((state) => state.hydrateFromCurrentStores);
 
   const handleThemeToggle = useCallback(() => {
@@ -199,21 +163,7 @@ export function AppRuntime() {
   }, [setTheme, theme]);
 
   // ---------- Domain hooks ----------
-  const promptLogic = usePromptLogic({ promptState, setPromptState, addToast });
   const generationState = useGenerationState({ promptState, addToast });
-  const promptOptions = usePromptOptions(promptState.language);
-
-  const optimizationProjectId = currentProjectId || 'default';
-
-  useOptimizationAnalysis({
-    projectId: optimizationProjectId,
-    promptId: optimizationProjectId,
-    promptState,
-    shots: optimizationShots,
-    assets: optimizationAssets,
-    generatedPrompt: promptLogic.generatedPrompt?.prompt,
-    enabled: _hasHydrated && criticalBootstrapComplete,
-  });
 
   // ---------- Initialization ----------
   useAppInitialization({
@@ -256,32 +206,21 @@ export function AppRuntime() {
     openStudioSafely,
   ]);
 
-  // ---------- Handlers hook ----------
-  const {
-    handleInputChange,
-    handleCheckboxChange,
-    handleAudioMixChange,
-    handleImageUpload,
-    handleImageClear,
-    handleAudioUpload,
-    handleAudioClear,
-    handleResetAll,
-    handleNewPrompt,
-    handleSavePrompt,
-    saveToHistory,
-    handleShare,
-    handleDownloadPrompt,
-    handleTargetModelChange,
-    handleEnhanceIdea,
-    handleUseExample,
-    modalHandlers,
-  } = useAppHandlers({
+  // ---------- Handlers hook stubs & execution ----------
+  const [generatedPrompt, setGeneratedPrompt] = useState<VeoPromptResponse | null>(null);
+  const emptyErrors = useMemo(() => ({}), []);
+  const noopSetErrors = useCallback(() => {}, []);
+  const noopResetEditHistory = useCallback(() => {}, []);
+  const noopSetIsEditing = useCallback(() => {}, []);
+  const noopSetIsEnhancingIdea = useCallback(() => {}, []);
+
+  const { modalHandlers } = useAppHandlers({
     promptState,
     setPromptState,
-    generatedPrompt: promptLogic.generatedPrompt,
-    setGeneratedPrompt: promptLogic.setGeneratedPrompt,
-    errors: promptLogic.errors,
-    setErrors: promptLogic.setErrors,
+    generatedPrompt,
+    setGeneratedPrompt,
+    errors: emptyErrors,
+    setErrors: noopSetErrors,
     addToast,
     promptVariations: generationState.promptVariations,
     isGeneratingVariations: generationState.isGeneratingVariations,
@@ -293,11 +232,11 @@ export function AppRuntime() {
     setStoryboardImages: generationState.setStoryboardImages,
     uploadedImageUrl,
     setUploadedImageUrl,
-    isEditing,
-    setIsEditing,
-    isEnhancingIdea,
-    setIsEnhancingIdea,
-    resetEditHistory,
+    isEditing: false,
+    setIsEditing: noopSetIsEditing,
+    isEnhancingIdea: false,
+    setIsEnhancingIdea: noopSetIsEnhancingIdea,
+    resetEditHistory: noopResetEditHistory,
     ideaInputRef,
     safeModeStatus,
     openStudioSafely,
@@ -306,19 +245,6 @@ export function AppRuntime() {
   });
 
   // ---------- Side effects ----------
-  // Sync edit state with generated prompt
-  useEffect(() => {
-    if (promptLogic.generatedPrompt && !isEditing) {
-      resetEditHistory(promptLogic.generatedPrompt.prompt);
-    }
-  }, [promptLogic.generatedPrompt, isEditing, resetEditHistory]);
-
-  // Character detail suggestion trigger
-  const { handleTriggerCharacterDetails } = promptLogic;
-  useEffect(() => {
-    handleTriggerCharacterDetails();
-  }, [handleTriggerCharacterDetails]);
-
   // Refresh API key badge state when route changes (settings flow)
   useEffect(() => {
     let isCancelled = false;
@@ -334,9 +260,6 @@ export function AppRuntime() {
       isCancelled = true;
     };
   }, [location.pathname]);
-
-  // Auto-save generated prompts to history (debounced)
-  useAutoSaveHistory(promptLogic.generatedPrompt, promptState);
 
   useEffect(() => {
     if (!_hasHydrated) {
@@ -402,21 +325,14 @@ export function AppRuntime() {
   );
 
   useAppKeyboardShortcuts({
-    onGeneratePrompt: promptLogic.handleGeneratePrompt,
-    isLoading: promptLogic.isLoading,
+    onGeneratePrompt: () => {},
+    isLoading: false,
     onOpenHelpPanel: openHelpPanel,
     onOpenSavePresetModal: handleOpenSavePresetModal,
     onToggleCommandPalette: handleToggleCommandPalette,
     activeStudio,
     modalState,
   });
-
-  // ---------- Section toggle helper ----------
-  const handleToggleSection = useCallback((section: string) => {
-    setOpenSections((prev) =>
-      prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section],
-    );
-  }, []);
 
   const handleSidebarNavigate = useCallback(
     (section: string) => {
@@ -559,37 +475,6 @@ export function AppRuntime() {
     [openModal, navigate, openSettingsPage, openHelpPanel, setIsShareDialogOpen, t],
   );
 
-  const handleSetIsEditing = useCallback(
-    (editing: boolean) => {
-      setIsEditing(editing);
-      if (editing && promptLogic.generatedPrompt) {
-        setEditedPrompt(promptLogic.generatedPrompt.prompt);
-      }
-    },
-    [promptLogic.generatedPrompt, setEditedPrompt],
-  );
-
-  const handleAcceptOptimizationSuggestion = useCallback(
-    (suggestion: PromptSuggestion) => {
-      const result = optimizationOrchestratorService.applySuggestionPatch({
-        promptState,
-        shots: optimizationShots,
-        suggestion,
-      });
-
-      if (Object.keys(result.promptStatePatch).length > 0) {
-        setPromptState(result.promptStatePatch);
-      }
-
-      if (result.shots) {
-        setSbShots(result.shots);
-      }
-
-      addToast('Optimization suggestion applied.', 'success');
-    },
-    [addToast, optimizationShots, promptState, setPromptState, setSbShots],
-  );
-
   const handleCloseWelcome = useCallback(() => {
     try {
       localStorage.setItem('hasSeenWelcome', 'true');
@@ -697,134 +582,66 @@ export function AppRuntime() {
   if (!_hasHydrated || !criticalBootstrapComplete) return <AppLoadingGate />;
 
   return (
-    <PromptLogicProvider value={promptLogic}>
-      <AppScaffold
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        skipToContentLabel={t('common:skipToContent', 'Skip to main content')}
-        pathname={location.pathname}
-        isChildRoute={isChildRoute}
-        activeSection={activeSection}
-        sidebarProps={{
-          onNavigate: handleSidebarNavigate,
-          onOpenProject: () => navigate(ROUTES.PROJECTS),
-          onOpenAssets: () => navigate(ROUTES.ASSETS),
-          onOpenActivity: () => navigate(ROUTES.ACTIVITY),
-          onOpenHistory: () => openModal('isHistoryOpen'),
-          onOpenTemplates: () => openModal('isTemplatesOpen'),
-          onOpenSettings: () => openSettingsPage(),
-          onOpenPlugins: () => openSettingsPage('?tab=plugins'),
-          onOpenDiagnostics: () => openDiagnostics(),
-          onOpenBatchGenerator: () => setIsBatchModalOpen(true),
-          onOpenJobsPanel: () => setIsJobsPanelOpen(true),
-          onOpenWorkspaceManager: () => setIsWorkspaceManagerOpen(true),
-          onOpenQueue: () => setIsQueuePanelOpen(true),
-          onOpenHelpPanel: () => openHelpPanel(),
-          onOpenOptimize: () => navigate(ROUTES.OPTIMIZE),
-          onOpenDirector: () => navigate(ROUTES.CREATE),
-          onOpenCollaborate: () => setIsShareDialogOpen(true),
-          onOpenComments: () => setIsCommentPanelOpen(true),
-          onOpenRoles: () => setIsRoleManagerOpen(true),
-          diagnosticIssueCount,
-          pendingJobCount,
-          isApiConfigured: apiKeyConfigured,
-        }}
-        headerProps={{
-          onShowHistory: () => openModal('isHistoryOpen'),
-          historyButtonText: t('common:historyButton'),
-          onShowImageStudio: () => openStudioSafely('image'),
-          imageStudioButtonText: t('common:imageStudioButton'),
-          onShowSunoStudio: () => navigate(`${ROUTES.STUDIO}?mode=music`),
-          sunoStudioButtonText: t('common:sunoStudioButton'),
-          onShowVideoAnalysis: () => openStudioSafely('analysis'),
-          isSyncConnected,
-          theme,
-          onThemeToggle: handleThemeToggle,
-          onStartTutorial: restartTutorial,
-          onResetAll: handleResetAll,
-          onShowSearch: () => openModal('isSearchOpen'),
-          onShowVideoStudio: () => openStudioSafely('video'),
-          onOpenWizard: () => openModal('isWizardOpen'),
-          onOpenStoryBoard: () => openStudioSafely('story'),
-          onOpenCharacterBank: () => openModal('isCharacterBankOpen'),
-          onOpenLocationBank: () => openModal('isLocationBankOpen'),
-          onOpenProjectManager: () => openModal('isProjectManagerOpen'),
-          onOpenSeriesBible: () => openModal('isSeriesBibleOpen'),
-          onOpenVariablesPanel: () => openModal('isVariablesPanelOpen'),
-          onOpenScriptStudio: () => openStudioSafely('script'),
-          onOpenWritersRoom: () => setIsWritersRoomOpen(true),
-          currentProjectName,
-        }}
-        promptWorkspaceProps={{
-          promptState,
-          promptId: currentProjectId || 'default',
-          handleInputChange,
-          handleCheckboxChange,
-          handleTargetModelChange,
-          handleImageUpload,
-          handleImageClear,
-          uploadedImageUrl,
-          handleAudioMixChange,
-          handleAudioUpload,
-          handleAudioClear,
-          errors: promptLogic.errors,
-          addToast,
-          openHelpPanel,
-          ideaInputRef,
-          openSections,
-          onToggleSection: handleToggleSection,
-          activeTabIndex,
-          onTabChange: setActiveTabIndex,
-          openStudioSafely,
-          promptOptions,
-          isBrainstorming: generationState.isBrainstorming,
-          isAutoFilling: promptLogic.isAutoFilling,
-          handleBrainstormIdeas: generationState.handleBrainstormIdeas,
-          handleAutoFillModifiers: promptLogic.handleAutoFillModifiers,
-          handleEnhanceIdea,
-          isEnhancingIdea,
-          isEditing,
-          editedPrompt,
-          onSetIsEditing: handleSetIsEditing,
-          onSetEditedPrompt: setEditedPrompt,
-          canUndoEdit,
-          onUndoEdit: undoEdit,
-          canRedoEdit,
-          onRedoEdit: redoEdit,
-          canUndoPromptState,
-          onUndoPromptState: undoPromptState,
-          canRedoPromptState,
-          onRedoPromptState: redoPromptState,
-          isGeneratingArt: generationState.isGeneratingArt,
-          onGenerateArt: generationState.handleGenerateArt,
-          isGeneratingVideo,
-          onGenerateVideo: () => openStudioSafely('video'),
-          isGeneratingStoryboard: generationState.isGeneratingStoryboard,
-          onGenerateStoryboard: generationState.handleGenerateStoryboard,
-          onOpenStoryBoardStudio: () => openStudioSafely('story'),
-          isGeneratingVariations: generationState.isGeneratingVariations,
-          onGenerateVariations: generationState.handleGenerateVariations,
-          handleNewPrompt,
-          handleSavePrompt,
-          saveToHistory,
-          handleShare,
-          handleDownloadPrompt,
-          onOpenSavePresetModal: () => openModal('isSavePresetModalOpen'),
-          onOpenTemplatesPanel: () => openModal('isTemplatesOpen'),
-          onCompareModels: () => openStudioSafely('compare'),
-          onOpenVisualDNA: () => openModal('isDNAModalOpen'),
-          storyboardImages: generationState.storyboardImages,
-          conceptArtImage: generationState.conceptArtImage,
-          isExamplesVisible,
-          onCloseExamples: () => setIsExamplesVisible(false),
-          examplePrompts: promptOptions.examplePrompts,
-          handleUseExample,
-          onAcceptOptimizationSuggestion: handleAcceptOptimizationSuggestion,
-        }}
-        modalManagerProps={{ addToast, handlers: modalHandlers }}
-        collaborationPanelsProps={collaborationPanelsProps}
-        appPanelsProps={appPanelsProps}
-        appOverlaysProps={appOverlaysProps}
-      />
-    </PromptLogicProvider>
+    <AppScaffold
+      onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      skipToContentLabel={t('common:skipToContent', 'Skip to main content')}
+      pathname={location.pathname}
+      isChildRoute={isChildRoute}
+      activeSection={activeSection}
+      sidebarProps={{
+        onNavigate: handleSidebarNavigate,
+        onOpenProject: () => navigate(ROUTES.PROJECTS),
+        onOpenAssets: () => navigate(ROUTES.ASSETS),
+        onOpenActivity: () => navigate(ROUTES.ACTIVITY),
+        onOpenHistory: () => openModal('isHistoryOpen'),
+        onOpenTemplates: () => openModal('isTemplatesOpen'),
+        onOpenSettings: () => openSettingsPage(),
+        onOpenPlugins: () => openSettingsPage('?tab=plugins'),
+        onOpenDiagnostics: () => openDiagnostics(),
+        onOpenBatchGenerator: () => setIsBatchModalOpen(true),
+        onOpenJobsPanel: () => setIsJobsPanelOpen(true),
+        onOpenWorkspaceManager: () => setIsWorkspaceManagerOpen(true),
+        onOpenQueue: () => setIsQueuePanelOpen(true),
+        onOpenHelpPanel: () => openHelpPanel(),
+        onOpenOptimize: () => navigate(ROUTES.OPTIMIZE),
+        onOpenDirector: () => navigate(ROUTES.CREATE),
+        onOpenCollaborate: () => setIsShareDialogOpen(true),
+        onOpenComments: () => setIsCommentPanelOpen(true),
+        onOpenRoles: () => setIsRoleManagerOpen(true),
+        diagnosticIssueCount,
+        pendingJobCount,
+        isApiConfigured: apiKeyConfigured,
+      }}
+      headerProps={{
+        onShowHistory: () => openModal('isHistoryOpen'),
+        historyButtonText: t('common:historyButton'),
+        onShowImageStudio: () => openStudioSafely('image'),
+        imageStudioButtonText: t('common:imageStudioButton'),
+        onShowSunoStudio: () => navigate(`${ROUTES.STUDIO}?mode=music`),
+        sunoStudioButtonText: t('common:sunoStudioButton'),
+        onShowVideoAnalysis: () => openStudioSafely('analysis'),
+        isSyncConnected,
+        theme,
+        onThemeToggle: handleThemeToggle,
+        onStartTutorial: restartTutorial,
+        onResetAll: modalHandlers.handleResetAll,
+        onShowSearch: () => openModal('isSearchOpen'),
+        onShowVideoStudio: () => openStudioSafely('video'),
+        onOpenWizard: () => openModal('isWizardOpen'),
+        onOpenStoryBoard: () => openStudioSafely('story'),
+        onOpenCharacterBank: () => openModal('isCharacterBankOpen'),
+        onOpenLocationBank: () => openModal('isLocationBankOpen'),
+        onOpenProjectManager: () => openModal('isProjectManagerOpen'),
+        onOpenSeriesBible: () => openModal('isSeriesBibleOpen'),
+        onOpenVariablesPanel: () => openModal('isVariablesPanelOpen'),
+        onOpenScriptStudio: () => openStudioSafely('script'),
+        onOpenWritersRoom: () => setIsWritersRoomOpen(true),
+        currentProjectName,
+      }}
+      modalManagerProps={{ addToast, handlers: modalHandlers }}
+      collaborationPanelsProps={collaborationPanelsProps}
+      appPanelsProps={appPanelsProps}
+      appOverlaysProps={appOverlaysProps}
+    />
   );
 }

@@ -7,7 +7,6 @@ import { getNavigationDestination } from '@core/config/navigation';
 import Icon from '@shared/components/ui/Icon';
 import { Outlet } from 'react-router';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
-import { PromptWorkspace } from '@features/prompt/PromptWorkspace';
 import Header from './Header';
 import { Sidebar } from './Sidebar';
 import ModalManager from './ModalManager';
@@ -24,7 +23,6 @@ export interface AppScaffoldProps {
   activeSection: string;
   sidebarProps: React.ComponentProps<typeof Sidebar>;
   headerProps: React.ComponentProps<typeof Header>;
-  promptWorkspaceProps: React.ComponentProps<typeof PromptWorkspace>;
   modalManagerProps: React.ComponentProps<typeof ModalManager>;
   collaborationPanelsProps: React.ComponentProps<typeof AppCollaborationPanels>;
   appPanelsProps: React.ComponentProps<typeof AppPanels>;
