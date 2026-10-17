@@ -202,123 +202,123 @@ export class AiCoDirectorService {
 
     try {
       const session = await ai.live.connect({
-          model: this.config.model,
-          config: {
-            responseModalities: [Modality.AUDIO],
-            systemInstruction: { parts: [{ text: CO_DIRECTOR_SYSTEM_INSTRUCTION }] },
-            tools: [
-              {
-                functionDeclarations: [
-                  {
-                    name: 'setCameraRig',
-                    description: 'Updates 3D camera lens, aperture, height, and trajectory motion.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        shotId: { type: Type.NUMBER, description: 'Shot ID to modify' },
-                        lens: {
-                          type: Type.STRING,
-                          enum: [
-                            '16mm-ultra-wide',
-                            '24mm-wide',
-                            '35mm-cinematic',
-                            '50mm-natural',
-                            '85mm-portrait',
-                            '135mm-telephoto',
-                            'anamorphic-2.39',
-                          ],
-                        },
-                        aperture: {
-                          type: Type.STRING,
-                          enum: ['f/1.2', 'f/1.8', 'f/2.8', 'f/4', 'f/8', 'f/16'],
-                        },
-                        trajectory: {
-                          type: Type.STRING,
-                          enum: [
-                            'static',
-                            'push-in',
-                            'pull-out',
-                            'pan-left',
-                            'pan-right',
-                            'tilt-up',
-                            'tilt-down',
-                            'crane-up',
-                            'crane-down',
-                            'orbit-clockwise',
-                            'orbit-counter-clockwise',
-                            'dolly-zoom-vertigo',
-                            'fpv-drone-dive',
-                            'dutch-angle-tracking',
-                            'steadicam-follow',
-                          ],
-                        },
-                        heightLevel: {
-                          type: Type.STRING,
-                          enum: [
-                            'ground-level',
-                            'knee-level',
-                            'waist-level',
-                            'eye-level',
-                            'high-angle',
-                            'birds-eye',
-                            'aerial-drone',
-                          ],
-                        },
+        model: this.config.model,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: { parts: [{ text: CO_DIRECTOR_SYSTEM_INSTRUCTION }] },
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: 'setCameraRig',
+                  description: 'Updates 3D camera lens, aperture, height, and trajectory motion.',
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      shotId: { type: Type.NUMBER, description: 'Shot ID to modify' },
+                      lens: {
+                        type: Type.STRING,
+                        enum: [
+                          '16mm-ultra-wide',
+                          '24mm-wide',
+                          '35mm-cinematic',
+                          '50mm-natural',
+                          '85mm-portrait',
+                          '135mm-telephoto',
+                          'anamorphic-2.39',
+                        ],
+                      },
+                      aperture: {
+                        type: Type.STRING,
+                        enum: ['f/1.2', 'f/1.8', 'f/2.8', 'f/4', 'f/8', 'f/16'],
+                      },
+                      trajectory: {
+                        type: Type.STRING,
+                        enum: [
+                          'static',
+                          'push-in',
+                          'pull-out',
+                          'pan-left',
+                          'pan-right',
+                          'tilt-up',
+                          'tilt-down',
+                          'crane-up',
+                          'crane-down',
+                          'orbit-clockwise',
+                          'orbit-counter-clockwise',
+                          'dolly-zoom-vertigo',
+                          'fpv-drone-dive',
+                          'dutch-angle-tracking',
+                          'steadicam-follow',
+                        ],
+                      },
+                      heightLevel: {
+                        type: Type.STRING,
+                        enum: [
+                          'ground-level',
+                          'knee-level',
+                          'waist-level',
+                          'eye-level',
+                          'high-angle',
+                          'birds-eye',
+                          'aerial-drone',
+                        ],
                       },
                     },
                   },
-                  {
-                    name: 'setSceneAesthetics',
-                    description: 'Updates lighting style, mood, and environment ambiance.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        shotId: { type: Type.NUMBER },
-                        lighting: { type: Type.STRING },
-                        mood: { type: Type.STRING },
-                        environment: { type: Type.STRING },
-                      },
+                },
+                {
+                  name: 'setSceneAesthetics',
+                  description: 'Updates lighting style, mood, and environment ambiance.',
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      shotId: { type: Type.NUMBER },
+                      lighting: { type: Type.STRING },
+                      mood: { type: Type.STRING },
+                      environment: { type: Type.STRING },
                     },
                   },
-                  {
-                    name: 'createOrModifyShot',
-                    description: 'Creates a new shot or modifies action and dialogue on a shot.',
-                    parameters: {
-                      type: Type.OBJECT,
-                      properties: {
-                        action: { type: Type.STRING },
-                        shotId: { type: Type.NUMBER },
-                        camera: { type: Type.STRING },
-                        duration: { type: Type.NUMBER },
-                        dialogue: { type: Type.STRING },
-                      },
-                      required: ['action'],
+                },
+                {
+                  name: 'createOrModifyShot',
+                  description: 'Creates a new shot or modifies action and dialogue on a shot.',
+                  parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                      action: { type: Type.STRING },
+                      shotId: { type: Type.NUMBER },
+                      camera: { type: Type.STRING },
+                      duration: { type: Type.NUMBER },
+                      dialogue: { type: Type.STRING },
                     },
+                    required: ['action'],
                   },
-                ],
-              },
-            ],
+                },
+              ],
+            },
+          ],
+        },
+        callbacks: {
+          onopen: () => {
+            this.setStatus('listening');
           },
-          callbacks: {
-            onopen: () => {
-              this.setStatus('listening');
-            },
-            onmessage: (msg: unknown) => {
-              this.handleLiveMessage(msg as Record<string, unknown>);
-            },
-            onerror: (err: unknown) => {
-              logger.warn('Gemini Live connection warning, falling back to local NLP:', err);
-              this.setStatus('listening');
-            },
-            onclose: () => {
-              this.setStatus('disconnected');
-            },
+          onmessage: (msg: unknown) => {
+            this.handleLiveMessage(msg as Record<string, unknown>);
           },
-        });
+          onerror: (err: unknown) => {
+            logger.warn('Gemini Live connection warning, falling back to local NLP:', err);
+            this.setStatus('listening');
+          },
+          onclose: () => {
+            this.setStatus('disconnected');
+          },
+        },
+      });
 
-        this.session = session;
-        this.setStatus('listening');
-        return true;
+      this.session = session;
+      this.setStatus('listening');
+      return true;
     } catch (error) {
       logger.warn('Could not initialize Gemini Live WebSocket session:', error);
     }
