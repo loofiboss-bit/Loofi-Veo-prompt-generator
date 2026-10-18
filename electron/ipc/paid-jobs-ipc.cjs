@@ -2,13 +2,18 @@
 
 const { randomUUID } = require('crypto');
 const { validatePaidTask } = require('../paid-job-engine.cjs');
-const { calculateMaximumCharge } = require('../paid-job-pricing.cjs');
+const {
+  calculateMaximumCharge,
+  computeJobPayloadHash,
+  extractJobPayloadFields,
+} = require('../paid-job-pricing.cjs');
 const { validatePaidTaskInput } = require('./ipc-validator.cjs');
 
 function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
   async function authorizePaidTask(task) {
     validatePaidTask(task);
     const maximumChargeUsd = calculateMaximumCharge(task);
+    const payloadHash = computeJobPayloadHash(extractJobPayloadFields(task));
     const result = await dialog.showMessageBox(getMainWindow(), {
       type: 'warning',
       buttons: ['Approve maximum', 'Cancel'],
@@ -26,6 +31,7 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
         ...task.costApproval,
         approvalId: randomUUID(),
         approvedAt: Date.now(),
+        payloadHash,
       },
     };
   }

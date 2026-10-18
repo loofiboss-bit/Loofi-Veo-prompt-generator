@@ -13,15 +13,8 @@ import type { WritersRoomRole, WritersRoomMessage, WritersRoomLANConfig } from '
 /** Team workspace role levels (ascending privilege) */
 export type CollaborationRole = 'viewer' | 'editor' | 'admin';
 
-/** Permission actions that can be checked against a role */
-export type PermissionAction =
-  | 'read'
-  | 'write'
-  | 'comment'
-  | 'delete'
-  | 'manage_roles'
-  | 'share'
-  | 'export';
+export type { PermissionAction } from './collaborationPermissions';
+import type { PermissionAction } from './collaborationPermissions';
 
 /** Maps roles to their allowed actions */
 export const ROLE_PERMISSIONS: Record<CollaborationRole, PermissionAction[]> = {

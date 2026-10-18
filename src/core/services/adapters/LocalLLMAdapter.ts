@@ -1,6 +1,6 @@
 import { VideoModelAdapter } from './VideoModelAdapter';
 import { PromptState } from '@core/types';
-import { interpolateVariables } from '../promptBuilder';
+import { interpolateVariables } from '../../utils/interpolateVariables';
 
 /**
  * Adapter for local LLM inference (Ollama / Llama.cpp compatible).

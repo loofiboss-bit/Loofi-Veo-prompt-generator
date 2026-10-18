@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const PRICING_SOURCE_URL = 'https://ai.google.dev/gemini-api/docs/pricing';
 const PRICING_VERIFIED_DATE = '2026-08-01';
 
@@ -59,6 +60,30 @@ const PROVIDER_PRICING = Object.freeze({
   }),
 });
 
+function computeJobPayloadHash({ prompt, model, duration, resolution, count = 1 }) {
+  const normalized = [
+    String(prompt || '').trim(),
+    String(model || '').trim(),
+    Number.isFinite(duration) ? Number(duration) : 0,
+    String(resolution || '').trim(),
+    Number.isFinite(count) ? Number(count) : 1,
+  ].join('::');
+
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+}
+
+function extractJobPayloadFields(task) {
+  const request = task?.request || {};
+  const settings = task?.settings || {};
+  return {
+    prompt: request.prompt || task?.prompt || '',
+    model: request.modelId || settings.veoModel || '',
+    duration: request.durationSeconds ?? settings.durationSeconds ?? 0,
+    resolution: request.resolution || settings.resolution || '',
+    count: request.sampleCount || request.count || 1,
+  };
+}
+
 function calculateMaximumCharge(task) {
   const request = task?.request;
   if (task?.jobKind === 'music') {
@@ -75,7 +100,7 @@ function calculateMaximumCharge(task) {
   return rate * request.durationSeconds;
 }
 
-function validateCostApproval(task) {
+function validateCostApproval(task, options = {}) {
   const approval = task?.costApproval;
   if (!approval || typeof approval !== 'object') {
     throw new Error('An auditable cost approval is required for paid execution.');
@@ -99,6 +124,13 @@ function validateCostApproval(task) {
     approval.maximumChargeUsd + Number.EPSILON < calculatedMaximumChargeUsd
   ) {
     throw new Error('The approved maximum charge is below the trusted conservative estimate.');
+  }
+  const expectedPayloadHash = computeJobPayloadHash(extractJobPayloadFields(task));
+  if (approval.payloadHash && approval.payloadHash !== expectedPayloadHash) {
+    throw new Error('Payload hash mismatch: job parameters were modified after cost approval.');
+  }
+  if (options.requirePayloadHash && !approval.payloadHash) {
+    throw new Error('Cost approval must contain a cryptographic payloadHash.');
   }
   return calculatedMaximumChargeUsd;
 }
@@ -176,7 +208,7 @@ function calculateProviderMaximumCharge(input) {
   return maximumChargeUsd;
 }
 
-function validateProviderCostApproval(input) {
+function validateProviderCostApproval(input, options = {}) {
   const approval = input?.costApproval;
   if (!approval || typeof approval !== 'object') {
     throw new Error('An auditable cost approval is required for provider execution.');
@@ -198,6 +230,20 @@ function validateProviderCostApproval(input) {
   ) {
     throw new Error('The approved provider maximum is below the trusted conservative estimate.');
   }
+  const calculation = approval?.calculationInputs || {};
+  const providerExpectedHash = computeJobPayloadHash({
+    prompt: input.prompt || '',
+    model: input.providerModelId || '',
+    duration: calculation.videoDurationSeconds || calculation.audioOutputSeconds || 0,
+    resolution: calculation.videoResolution || calculation.imageResolution || '',
+    count: calculation.imageCount || 1,
+  });
+  if (approval.payloadHash && approval.payloadHash !== providerExpectedHash) {
+    throw new Error('Payload hash mismatch: provider job parameters were modified after cost approval.');
+  }
+  if (options.requirePayloadHash && !approval.payloadHash) {
+    throw new Error('Provider cost approval must contain a cryptographic payloadHash.');
+  }
   return calculatedMaximumChargeUsd;
 }
 
@@ -208,6 +254,8 @@ module.exports = {
   MUSIC_USD_PER_REQUEST,
   TEXT_USD_PER_MILLION_TOKENS,
   PROVIDER_PRICING,
+  computeJobPayloadHash,
+  extractJobPayloadFields,
   calculateMaximumCharge,
   calculateProviderMaximumCharge,
   validateCostApproval,

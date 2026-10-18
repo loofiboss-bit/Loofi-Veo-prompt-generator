@@ -106,7 +106,7 @@ export interface VideoPromptArtifactInput {
   lastFrameAssetId?: string;
   referenceAssetIds?: string[];
   extensionSourceTakeId?: string;
-  extensionArtifact?: import('./production').VeoProviderArtifact;
+  extensionArtifact?: import('./providerArtifact').VeoProviderArtifact;
 }
 
 export interface MusicPromptArtifactInput {

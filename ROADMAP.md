@@ -29,61 +29,61 @@
 
 ---
 
-## Phase 1: State Isolation & Non-Blocking Persistence (P0 — Immediate Priority)
+## Phase 1: State Isolation & Non-Blocking Persistence (P0 — Completed)
 
 _Goal: Zero UI frame drops during timeline/node editing and 100% decoupled Zustand stores._
 
-- [ ] **1.1 Non-Blocking Autosave & Dirty Versioning (`useProjectAutosave`, `projectDocumentService.ts`):**
+- [x] **1.1 Non-Blocking Autosave & Dirty Versioning (`useProjectAutosave`, `projectDocumentService.ts`):**
   - Replace synchronous deep-diffing and heavy array comparisons on the main thread in `captureProjectDocumentFromStores` with lightweight, monotonic store `mutationVersion` counters.
   - Schedule snapshot capture via `requestIdleCallback` (or debounced idle slices) and offload JSON serialization/hashing off the critical UI path.
-- [ ] **1.2 Strict `storeMediator` Decoupling:**
+- [x] **1.2 Strict `storeMediator` Decoupling:**
   - Refactor `useLocationStore` and `useExternalStudioResultStore` to eliminate direct mutations on `useAppStore`. Route all cross-store state synchronization through typed events in `storeMediator`.
   - Add static lint enforcement (`no-restricted-imports` / boundary rules) to prevent store-to-store imports.
-- [ ] **1.3 `AppRuntime` De-bloat & Render Isolation:**
+- [x] **1.3 `AppRuntime` De-bloat & Render Isolation:**
   - Strip redundant root hooks and unused prop generation from `AppRuntime`.
   - Enforce strict `React.lazy` / `Suspense` boundaries for heavy delivery panels and modal workflows.
 
 ---
 
-## Phase 2: Atomic Disk I/O, Schema Migrations & IPC Hardening (P1)
+## Phase 2: Atomic Disk I/O, Schema Migrations & IPC Hardening (P1 — Completed)
 
 _Goal: Eliminate corrupt project saves, unhandled schema drift, and unvalidated IPC calls._
 
-- [ ] **2.1 Atomic File Persistence & Rolling Backups (Electron Main):**
+- [x] **2.1 Atomic File Persistence & Rolling Backups (Electron Main):**
   - Replace direct file overwrites with an atomic write pipeline: write to `<project>.tmp` -> `fsync` -> verify JSON parse integrity -> rotate existing file to `<project>.bak` -> atomic `fs.rename` to target path.
-- [ ] **2.2 Deterministic Project Schema Migrations (`projectDocumentService.ts`):**
+- [x] **2.2 Deterministic Project Schema Migrations (`projectDocumentService.ts`):**
   - Enforce strict runtime schema validation (Zod) with explicit `schemaVersion` metadata on every project document.
   - Build pure, unit-tested migration pipelines (`v16 -> v17 -> v18`) so legacy project files upgrade deterministically without runtime undefined errors.
-- [ ] **2.3 Full Electron IPC Contract Parity:**
+- [x] **2.3 Full Electron IPC Contract Parity:**
   - Enforce shared runtime validation schemas across preload and Electron main IPC handlers (`paid-jobs-ipc.cjs`, filesystem channels, and studio bridges). Reject malformed payloads before executing handler logic.
 
 ---
 
-## Phase 3: Deterministic Prompt Compiler & NLE Timeline Engine (P2)
+## Phase 3: Deterministic Prompt Compiler & NLE Timeline Engine (P2 — Completed)
 
 _Goal: Replace guesswork with a rule-based static prompt analyzer and frame-accurate timeline math._
 
-- [ ] **3.1 Rule-Based Prompt AST & Static Conflict Linter (100% Local Logic):**
+- [x] **3.1 Rule-Based Prompt AST & Static Conflict Linter (100% Local Logic):**
   - Build a zero-LLM static analyzer for node graphs and camera/lighting parameters that flags physical or cinematic contradictions in real time (e.g., `Static Tripod` camera move combined with `FPV Whip Pan` subject tracking, or conflicting lighting setups).
   - Validate token budgets, aspect ratios, frame rates, and duration limits against target Google Veo, Flow, and Lyria hardware/API constraints prior to job quoting.
-- [ ] **3.2 Frame-Accurate Timeline Math (Integer Ticks):**
+- [x] **3.2 Frame-Accurate Timeline Math (Integer Ticks):**
   - Standardize NLE timeline calculations on integer ticks/frames rather than floating-point seconds to eliminate rounding drift between Veo video cuts and Lyria audio stems.
-- [ ] **3.3 Bounded Patch/Command Undo-Redo Stack:**
+- [x] **3.3 Bounded Patch/Command Undo-Redo Stack:**
   - Implement a deterministic Undo/Redo engine for NLE timeline and node-graph operations using lightweight command patches, isolated from full-document autosave serialization.
-- [ ] **3.4 Deterministic Continuity & Seed Registry:**
+- [x] **3.4 Deterministic Continuity & Seed Registry:**
   - Lock character, lens, environment descriptors, and seed values across multi-scene timeline sequences via immutable reference IDs.
 
 ---
 
-## Phase 4: Idempotent Job Queue, Cost Locking & Architecture CI Gates (P3)
+## Phase 4: Idempotent Job Queue, Cost Locking & Architecture CI Gates (P3 — Completed)
 
 _Goal: Crash-recoverable paid job execution, cryptographic quote locking, and automated architecture checks._
 
-- [ ] **4.1 Persistent Paid-Job State Machine (FSM):**
+- [x] **4.1 Persistent Paid-Job State Machine (FSM):**
   - Persist job lifecycle states (`DRAFT -> QUOTED -> APPROVED -> DISPATCHING -> RUNNING -> COMPLETED | FAILED | CANCELLED`) in a local disk journal so in-flight jobs recover cleanly after an Electron restart without double-dispatching.
-- [ ] **4.2 Payload-Hashed Approval Gate (`paid-job-pricing.cjs`):**
+- [x] **4.2 Payload-Hashed Approval Gate (`paid-job-pricing.cjs`):**
   - Bind every cost approval token to a deterministic SHA-256 hash of the exact job payload (`prompt + model + duration + resolution + count`). Any parameter change immediately invalidates the approval state.
-- [ ] **4.3 Automated Architecture & Performance CI Gates:**
+- [x] **4.3 Automated Architecture & Performance CI Gates:**
   - Add CI checks for zero circular dependencies (`npx madge --circular --extensions ts,tsx src/`).
   - Add a benchmark assertion ensuring `captureProjectDocumentFromStores` dirty-check overhead stays under `< 5ms` on the main thread.
   - Keep `ARCHITECTURE.md` and `ROADMAP.md` strictly synchronized with v18+ module boundaries.

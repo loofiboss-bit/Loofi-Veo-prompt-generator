@@ -1,4 +1,4 @@
-import type { Caption, TimelineClip, TimelineTrack } from './index';
+import type { Caption, TimelineClip, TimelineTrack } from './timeline';
 
 export type CreatorAspectRatio = '9:16' | '16:9' | '1:1';
 export interface CreatorStyleProfileV1 {

@@ -154,3 +154,20 @@ Studio revisions use the canonical project document service's serialized writes.
 - **Node Test Runner**: Electron main IPC, price mirror, durable jobs, and media store.
 - **Playwright**: End-to-end browser workflows, RTL layout, accessibility compliance, and screenshot regression.
 - **CI Release Smoke**: RPM dependency metadata checks, package build, AppImage extraction smoke, Windows smoke.
+
+---
+
+## 8. v18+ Architecture CI Gates, Job FSM & Cost Security (Phase 4 Qualified)
+
+- **Persistent Paid-Job State Machine (FSM)**:
+  - Explicit lifecycle states: `DRAFT -> QUOTED -> APPROVED -> DISPATCHING -> RUNNING -> COMPLETED | FAILED | CANCELLED`.
+  - Disk journaling via `DesktopPaidJobFsm` and `paidJobFsmService`: in-flight jobs recover cleanly upon Electron or window restart.
+  - Crash recovery guarantees that any jobs interrupted in `DISPATCHING` or `RUNNING` transition to `RECOVERED_FAILED` or resume state, preventing double-dispatching and duplicate credit consumption.
+- **Payload-Hashed Cost Approval Gate**:
+  - Bound approval tokens: every cost authorization token is cryptographically bound to a deterministic SHA-256 hash of `prompt + model + duration + resolution + count`.
+  - Parameter tamper resistance: any client-side or in-flight mutation of job parameters immediately breaks hash equality, triggering `ERR_PAYLOAD_TAMPERED` and invalidating the quote approval prior to submission.
+- **Zero Circular Dependencies**:
+  - Automated CI gate via `npm run check:circular` (`npx madge --circular --extensions ts,tsx src/`).
+  - Architecture contracts enforce 0 circular dependencies across all 1000+ TypeScript/React files.
+- **Non-Blocking Persistence & Main-Thread Benchmark Ceiling**:
+  - Store snapshotting and dirty-check overhead (`captureProjectDocumentFromStores` / `buildProjectDocument`) are guarded by automated benchmarks asserting execution under `< 5ms` for full 20-shot, multi-track timeline documents.

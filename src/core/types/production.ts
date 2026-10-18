@@ -1,12 +1,12 @@
 import type {
-  Asset,
   ContinuityReport,
   ContinuitySnapshot,
   ContinuityOverrideRecord,
-  PromptState,
-  Shot,
   ShotContinuityBinding,
-} from './index';
+} from './continuity';
+import type { Asset, PromptState, Shot } from './projectPrompt';
+import type { VeoProviderArtifact } from './providerArtifact';
+import type { PaidCostApproval } from './costApproval';
 
 export type ProductionRunStatus =
   | 'draft'
@@ -47,12 +47,7 @@ export type VeoModelId = 'veo-3.1-quality' | 'veo-3.1-fast' | 'veo-3.1-lite';
 export type VeoResolution = '720p' | '1080p' | '4k';
 export type VeoDuration = 4 | 6 | 8;
 
-export interface VeoProviderArtifact {
-  operationName: string;
-  mediaUri?: string;
-  createdAt: number;
-  expiresAt: number;
-}
+export type { VeoProviderArtifact } from './providerArtifact';
 
 export interface VeoGenerationRequest {
   mode: VeoGenerationMode;
@@ -182,16 +177,7 @@ export interface ProductionTake {
   completedAt?: number;
 }
 
-export interface PaidCostApproval {
-  approvalId: string;
-  modelId: string;
-  maximumChargeUsd: number;
-  currency: 'USD';
-  confidence?: 'exact' | 'upper-bound';
-  sourceUrl?: string;
-  verifiedDate?: string;
-  approvedAt: number;
-}
+export type { PaidCostApproval } from './costApproval';
 
 export interface ProductionShot {
   id: number;

@@ -55,6 +55,13 @@ export function cloneProjectDocument(project: Project, id: string, name: string)
   return copy;
 }
 
+type DocumentRegisterCallback = (doc: Project) => Promise<void> | void;
+let documentRegisterCallback: DocumentRegisterCallback | null = null;
+
+export function setDocumentRegisterCallback(cb: DocumentRegisterCallback | null): void {
+  documentRegisterCallback = cb;
+}
+
 export class ProjectPersistenceError extends Error {
   constructor(public readonly result: PersistenceResult) {
     super(result.error ?? 'Project could not be saved to persistent storage.');
@@ -174,8 +181,9 @@ class ProjectDocumentService {
     const id = crypto.randomUUID();
     const copy = cloneProjectDocument(project, id, name);
     await this.save(copy);
-    const { projectService } = await import('./projectService');
-    await projectService.registerDocument(copy);
+    if (documentRegisterCallback) {
+      await documentRegisterCallback(copy);
+    }
     return copy;
   }
 

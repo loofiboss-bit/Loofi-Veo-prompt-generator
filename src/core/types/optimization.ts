@@ -4,7 +4,7 @@
  * quality scoring, cost estimation, and narrative analysis.
  */
 
-import type { Asset, PromptState, Shot } from './index';
+import type { PromptState, Shot, Asset } from './projectPrompt';
 
 // Suggestion categories for prompt refinement
 export type SuggestionCategory = 'style' | 'camera' | 'lighting' | 'specificity' | 'syntax';
@@ -15,15 +15,15 @@ export type OptimizationPatchTarget = 'prompt' | 'shot';
 
 export interface PromptOptimizationPatch {
   target: 'prompt';
-  field: keyof PromptState;
-  value: PromptState[keyof PromptState];
+  field: string;
+  value: unknown;
   append?: boolean;
 }
 
 export interface ShotOptimizationPatch {
   target: 'shot';
   shotId: number;
-  field: keyof Pick<Shot, 'action' | 'camera' | 'duration'>;
+  field: 'action' | 'camera' | 'duration';
   value: string | number;
   append?: boolean;
 }
@@ -110,12 +110,12 @@ export interface OptimizationHistoryEntry {
   action: OptimizationAction;
 }
 
-export interface OptimizationAnalysisInput {
+export interface OptimizationAnalysisInput<TPrompt = PromptState, TShot = Shot, TAsset = Asset> {
   projectId: string;
   promptId: string;
-  promptState: PromptState;
-  shots?: Shot[];
-  assets?: Asset[];
+  promptState: TPrompt;
+  shots?: TShot[];
+  assets?: TAsset[];
   generatedPrompt?: string;
 }
 
