@@ -10,6 +10,8 @@ import {
   migratePromptStateTarget,
 } from '@core/utils/videoTargetMigration';
 
+import { storeMediator } from './mediator';
+
 // Slices
 import { UiSlice, createUiSlice } from './slices/uiSlice';
 import { TimelineSlice, createTimelineSlice } from './slices/timelineSlice';
@@ -25,7 +27,24 @@ export type AppState = UiSlice &
     setHasHydrated: (state: boolean) => void;
     resetAll: () => void;
     setFullState: (newState: Partial<AppState>) => void;
+    mutationVersion: number;
   };
+
+const DOCUMENT_MUTATION_KEYS = [
+  'promptState',
+  'clips',
+  'tracks',
+  'sbShots',
+  'sbGlobalContext',
+  'characterBank',
+  'visualDNA',
+  'productionBible',
+] as const;
+
+function hasDocumentMutation(update: unknown): boolean {
+  if (!update || typeof update !== 'object') return false;
+  return DOCUMENT_MUTATION_KEYS.some((key) => key in (update as Record<string, unknown>));
+}
 
 const markAppStoreHydrated = (error?: unknown) => {
   if (error) {
@@ -39,23 +58,39 @@ export const useAppStore = create<AppState>()(
   temporal(
     persist(
       (set, get, api) => {
+        const versionedSet: typeof set = (next, replace) => {
+          (set as (...args: unknown[]) => void)((state: AppState) => {
+            const patch =
+              typeof next === 'function'
+                ? (next as (s: AppState) => Partial<AppState>)(state)
+                : next;
+            if (patch && hasDocumentMutation(patch) && patch.mutationVersion === undefined) {
+              return {
+                ...patch,
+                mutationVersion: (state.mutationVersion ?? 0) + 1,
+              };
+            }
+            return patch;
+          }, replace);
+        };
+
         const uiSlice = createUiSlice(
-          set as Parameters<typeof createUiSlice>[0],
+          versionedSet as Parameters<typeof createUiSlice>[0],
           get as Parameters<typeof createUiSlice>[1],
           api as Parameters<typeof createUiSlice>[2],
         );
         const timelineSlice = createTimelineSlice(
-          set as Parameters<typeof createTimelineSlice>[0],
+          versionedSet as Parameters<typeof createTimelineSlice>[0],
           get as Parameters<typeof createTimelineSlice>[1],
           api as Parameters<typeof createTimelineSlice>[2],
         );
         const promptSlice = createPromptSlice(
-          set as Parameters<typeof createPromptSlice>[0],
+          versionedSet as Parameters<typeof createPromptSlice>[0],
           get as Parameters<typeof createPromptSlice>[1],
           api as Parameters<typeof createPromptSlice>[2],
         );
         const assetSlice = createAssetSlice(
-          set as Parameters<typeof createAssetSlice>[0],
+          versionedSet as Parameters<typeof createAssetSlice>[0],
           get as Parameters<typeof createAssetSlice>[1],
           api as Parameters<typeof createAssetSlice>[2],
         );
@@ -68,19 +103,22 @@ export const useAppStore = create<AppState>()(
 
           _hasHydrated: false,
           setHasHydrated: (state) => set({ _hasHydrated: state }),
+          mutationVersion: 0,
 
           // Bulk Sync for Collaboration
           setFullState: (newState) =>
-            set((state) => ({
+            versionedSet((state) => ({
               ...state,
               ...newState,
               promptState: newState.promptState
                 ? migratePromptStateTarget(newState.promptState)
                 : state.promptState,
+              mutationVersion: (state.mutationVersion ?? 0) + 1,
             })),
 
           resetAll: () =>
-            set({
+            versionedSet({
+              mutationVersion: 0,
               promptState: INITIAL_STATE,
               sbGlobalContext: { style: '', character: '', setting: '' },
               sbShots: [
@@ -220,3 +258,53 @@ export const useAppStore = create<AppState>()(
     },
   ),
 ) as unknown as UseBoundStore<StoreApi<AppState>> & { temporal: StoreApi<TemporalState<AppState>> };
+
+const rawSetState = useAppStore.setState;
+useAppStore.setState = (next, replace) => {
+  const current = useAppStore.getState();
+  const patch = typeof next === 'function' ? next(current) : next;
+  if (patch && hasDocumentMutation(patch) && patch.mutationVersion === undefined) {
+    (rawSetState as (...args: unknown[]) => void)(
+      {
+        ...patch,
+        mutationVersion: (current.mutationVersion ?? 0) + 1,
+      },
+      replace,
+    );
+  } else {
+    (rawSetState as (...args: unknown[]) => void)(next, replace);
+  }
+};
+
+storeMediator.on('location:bankChanged', ({ locations }) => {
+  const appState = useAppStore.getState();
+  const locationIds = new Set(locations.map((loc) => loc.id));
+  const retainedProfiles = appState.productionBible.profiles.filter(
+    (profile) =>
+      profile.kind !== 'location' ||
+      profile.provenance.source !== 'legacy-location-bank' ||
+      Boolean(profile.provenance.sourceId && locationIds.has(profile.provenance.sourceId)),
+  );
+  const bible = locations.reduce(
+    (current, loc) =>
+      continuityService.upsertProfile(current, continuityService.createProfileFromLocation(loc)),
+    { ...appState.productionBible, profiles: retainedProfiles },
+  );
+  appState.setProductionBible(bible);
+});
+
+storeMediator.on('studioResult:assetsSynchronized', ({ assets }) => {
+  const app = useAppStore.getState();
+  for (const asset of assets) {
+    if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
+    else app.addAsset(asset);
+  }
+});
+
+storeMediator.on('studioResult:timelineAccepted', ({ shots, tracks, clips }) => {
+  useAppStore.setState({
+    sbShots: shots,
+    tracks,
+    clips,
+  });
+});

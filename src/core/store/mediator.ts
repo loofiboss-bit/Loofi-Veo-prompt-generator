@@ -58,6 +58,21 @@ export interface StoreMediatorEvents {
   // Settings domain
   'settings:changed': { key: string; value: unknown };
 
+  // Location domain
+  'location:bankChanged': { locations: import('@core/types').LocationProfile[] };
+
+  // Studio Result domain
+  'studioResult:assetsSynchronized': {
+    projectId: string;
+    assets: import('@core/types').Asset[];
+  };
+  'studioResult:timelineAccepted': {
+    projectId: string;
+    shots: import('@core/types').Shot[];
+    tracks: import('@core/types').TimelineTrack[];
+    clips: import('@core/types').TimelineClip[];
+  };
+
   // Collaboration domain
   'collaboration:peerJoined': { peerId: string };
   'collaboration:peerLeft': { peerId: string };

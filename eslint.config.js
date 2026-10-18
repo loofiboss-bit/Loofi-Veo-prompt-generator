@@ -113,4 +113,27 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Enforce store boundary guardrail: stores must communicate via storeMediator
+    files: ['src/core/store/useLocationStore.ts', 'src/core/store/useExternalStudioResultStore.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                './useAppStore',
+                '@core/store/useAppStore',
+                './useProjectStore',
+                '@core/store/useProjectStore',
+              ],
+              message:
+                'Zustand stores must not import or mutate other stores directly. Route cross-store communication through storeMediator.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

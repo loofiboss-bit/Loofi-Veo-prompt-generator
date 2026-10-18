@@ -7,24 +7,18 @@ const mocks = vi.hoisted(() => ({
   importVideo: vi.fn(),
   confirm: vi.fn(),
   accept: vi.fn(),
-  current: { currentProjectId: 'p1' },
-  app: { assets: [], addAsset: vi.fn(), updateAsset: vi.fn() },
-  setApp: vi.fn(),
+  emit: vi.fn(),
 }));
 vi.mock('@core/services/externalStudioResultService', () => ({
   externalStudioResultService: mocks,
 }));
-vi.mock('@core/store/useProjectStore', () => ({
-  useProjectStore: { getState: () => mocks.current },
-}));
-vi.mock('@core/store/useAppStore', () => ({
-  useAppStore: { getState: () => mocks.app, setState: mocks.setApp },
+vi.mock('@core/store/mediator', () => ({
+  storeMediator: { emit: mocks.emit },
 }));
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.list.mockResolvedValue([]);
   mocks.resolveAsset.mockResolvedValue(null);
-  mocks.current.currentProjectId = 'p1';
   useExternalStudioResultStore.setState({
     projectId: null,
     results: [],
@@ -43,7 +37,6 @@ describe('useExternalStudioResultStore', () => {
         }),
     );
     const pending = useExternalStudioResultStore.getState().hydrate('p1');
-    mocks.current.currentProjectId = 'p2';
     await useExternalStudioResultStore.getState().hydrate('p2');
     release([{ id: 'old', projectId: 'p1', assetId: 'a' } as ExternalStudioResultV1]);
     await pending;
@@ -52,7 +45,10 @@ describe('useExternalStudioResultStore', () => {
       results: [],
       pending: false,
     });
-    expect(mocks.app.addAsset).not.toHaveBeenCalled();
+    expect(mocks.emit).not.toHaveBeenCalledWith(
+      'studioResult:assetsSynchronized',
+      expect.objectContaining({ projectId: 'p1' }),
+    );
   });
   it('blocks duplicate mutations while retaining actionable errors', async () => {
     await useExternalStudioResultStore.getState().hydrate('p1');

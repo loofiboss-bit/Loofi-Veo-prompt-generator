@@ -13,9 +13,20 @@ import { logger } from '@core/services/loggerService';
 export function useProjectAutosave() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let idleHandle: number | undefined;
     let stopped = false;
     let inFlight = false;
     let flushing = false;
+
+    const cancelIdle = () => {
+      if (idleHandle !== undefined) {
+        if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+          window.cancelIdleCallback(idleHandle);
+        }
+        idleHandle = undefined;
+      }
+    };
+
     const persist = async (id: string) => {
       if ((stopped && !flushing) || useProjectStore.getState().currentProjectId !== id) return;
       // Loading a document updates stores before the session marks it saved. A
@@ -49,6 +60,22 @@ export function useProjectAutosave() {
         flushing = false;
       }
     };
+
+    const schedulePersist = (id: string) => {
+      cancelIdle();
+      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+        idleHandle = window.requestIdleCallback(
+          () => {
+            idleHandle = undefined;
+            void persist(id);
+          },
+          { timeout: 800 },
+        );
+      } else {
+        void persist(id);
+      }
+    };
+
     const flush = () => {
       const id = useProjectStore.getState().currentProjectId;
       const snapId = useEditorSessionStore.getState().projectSnapshot?.id;
@@ -56,41 +83,62 @@ export function useProjectAutosave() {
       if (!id || snapId !== id) return;
       if (status !== 'unsaved') return;
       clearTimeout(timer);
+      cancelIdle();
       flushing = true;
       void persist(id);
     };
+
     const schedule = () => {
       const id = useProjectStore.getState().currentProjectId;
       if (!id || useEditorSessionStore.getState().projectSnapshot?.id !== id) return;
       useProjectSaveStore.getState().markDirty(id);
       clearTimeout(timer);
-      timer = setTimeout(() => void persist(id), 700);
+      cancelIdle();
+      timer = setTimeout(() => schedulePersist(id), 700);
     };
+
     const unsubscribeApp = useAppStore.subscribe((state, previous) => {
       if (
-        state.promptState !== previous.promptState ||
-        state.clips !== previous.clips ||
-        state.tracks !== previous.tracks ||
-        state.sbShots !== previous.sbShots ||
-        state.sbGlobalContext !== previous.sbGlobalContext ||
-        state.characterBank !== previous.characterBank ||
-        state.visualDNA !== previous.visualDNA ||
-        state.productionBible !== previous.productionBible
+        (state.mutationVersion !== undefined &&
+          previous.mutationVersion !== undefined &&
+          state.mutationVersion !== previous.mutationVersion) ||
+        (state.mutationVersion === undefined &&
+          (state.promptState !== previous.promptState ||
+            state.clips !== previous.clips ||
+            state.tracks !== previous.tracks ||
+            state.sbShots !== previous.sbShots ||
+            state.sbGlobalContext !== previous.sbGlobalContext ||
+            state.characterBank !== previous.characterBank ||
+            state.visualDNA !== previous.visualDNA ||
+            state.productionBible !== previous.productionBible))
       )
         schedule();
     });
+
     const unsubscribeComposer = useComposerStore.subscribe((state, previous) => {
       if (
-        state.blocks !== previous.blocks ||
-        state.connections !== previous.connections ||
-        state.snapshots !== previous.snapshots ||
-        state.timelineLinks !== previous.timelineLinks
+        (state.mutationVersion !== undefined &&
+          previous.mutationVersion !== undefined &&
+          state.mutationVersion !== previous.mutationVersion) ||
+        (state.mutationVersion === undefined &&
+          (state.blocks !== previous.blocks ||
+            state.connections !== previous.connections ||
+            state.snapshots !== previous.snapshots ||
+            state.timelineLinks !== previous.timelineLinks))
       )
         schedule();
     });
+
     const unsubscribeLocation = useLocationStore.subscribe((state, previous) => {
-      if (state.locations !== previous.locations) schedule();
+      if (
+        (state.mutationVersion !== undefined &&
+          previous.mutationVersion !== undefined &&
+          state.mutationVersion !== previous.mutationVersion) ||
+        state.locations !== previous.locations
+      )
+        schedule();
     });
+
     const unsubscribeSession = useEditorSessionStore.subscribe((state, previous) => {
       if (
         state.transitionVersion === previous.transitionVersion &&
@@ -100,6 +148,7 @@ export function useProjectAutosave() {
       )
         schedule();
     });
+
     const beforeUnload = (event: BeforeUnloadEvent) => {
       const id = useProjectStore.getState().currentProjectId;
       const status = id ? useProjectSaveStore.getState().projects[id]?.status : undefined;
@@ -111,15 +160,19 @@ export function useProjectAutosave() {
         event.returnValue = '';
       }
     };
+
     const pageHide = () => {
       flush();
     };
+
     window.addEventListener('beforeunload', beforeUnload);
     window.addEventListener('pagehide', pageHide);
+
     return () => {
       flush();
       stopped = true;
       clearTimeout(timer);
+      cancelIdle();
       unsubscribeApp();
       unsubscribeComposer();
       unsubscribeLocation();

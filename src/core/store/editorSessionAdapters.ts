@@ -146,15 +146,25 @@ export function captureProjectDocumentFromStores(
 ): EditorProjectDocument {
   const appState = useAppStore.getState();
   const { locations } = useLocationStore.getState();
-  const normalizedBible = continuityService.normalizeBible(
-    {
-      productionBible: appState.productionBible,
-      characterBank: appState.characterBank,
-      locationBank: locations,
-      visualDNA: appState.visualDNA,
-    },
-    Date.now(),
-  ).productionBible;
+  const canReuseBible =
+    baseDocument?.id === meta.id &&
+    baseDocument.productionBible &&
+    baseDocument.productionBible === appState.productionBible &&
+    baseDocument.characterBank === appState.characterBank &&
+    baseDocument.locationBank === locations &&
+    baseDocument.visualDNA === appState.visualDNA;
+
+  const normalizedBible = canReuseBible
+    ? baseDocument.productionBible
+    : continuityService.normalizeBible(
+        {
+          productionBible: appState.productionBible,
+          characterBank: appState.characterBank,
+          locationBank: locations,
+          visualDNA: appState.visualDNA,
+        },
+        Date.now(),
+      ).productionBible;
 
   return buildProjectDocument({
     baseDocument: baseDocument?.id === meta.id ? baseDocument : undefined,

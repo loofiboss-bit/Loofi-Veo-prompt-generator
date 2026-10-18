@@ -119,7 +119,20 @@ function ExternalResultCard({
       <button
         type="button"
         disabled={disabled || pending || !asset || !reviewed}
-        onClick={() => void accept(result.id, shot ? Number(shot) : undefined)}
+        onClick={() => {
+          const app = useAppStore.getState();
+          void accept(result.id, shot ? Number(shot) : undefined, {
+            editorSnapshot: {
+              shots: app.sbShots,
+              timeline: {
+                clips: app.clips,
+                tracks: app.tracks,
+                zoomLevel: app.zoomLevel,
+                currentTime: app.currentTime,
+              },
+            },
+          });
+        }}
         className="studio-primary disabled:opacity-50"
       >
         {t('externalResults.useTimeline')}

@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { LocationProfile } from '@core/types';
 import { logger } from '@core/services/loggerService';
-import { continuityService } from '@core/services/continuityService';
-import { useAppStore } from './useAppStore';
+import { storeMediator } from './mediator';
 
 interface LocationStore {
   locations: LocationProfile[];
+  mutationVersion: number;
   addLocation: (location: LocationProfile) => void;
   updateLocation: (id: string, updates: Partial<LocationProfile>) => void;
   deleteLocation: (id: string) => void;
@@ -25,34 +25,19 @@ const getSavedLocations = (): LocationProfile[] => {
 };
 
 const syncLocationProfiles = (locations: LocationProfile[]) => {
-  const appState = useAppStore.getState();
-  const locationIds = new Set(locations.map((location) => location.id));
-  const retainedProfiles = appState.productionBible.profiles.filter(
-    (profile) =>
-      profile.kind !== 'location' ||
-      profile.provenance.source !== 'legacy-location-bank' ||
-      Boolean(profile.provenance.sourceId && locationIds.has(profile.provenance.sourceId)),
-  );
-  const bible = locations.reduce(
-    (current, location) =>
-      continuityService.upsertProfile(
-        current,
-        continuityService.createProfileFromLocation(location),
-      ),
-    { ...appState.productionBible, profiles: retainedProfiles },
-  );
-  appState.setProductionBible(bible);
+  storeMediator.emit('location:bankChanged', { locations });
 };
 
 export const useLocationStore = create<LocationStore>((set) => ({
   locations: getSavedLocations(),
+  mutationVersion: 0,
 
   addLocation: (location) =>
     set((state) => {
       const updated = [location, ...state.locations];
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       syncLocationProfiles(updated);
-      return { locations: updated };
+      return { locations: updated, mutationVersion: (state.mutationVersion ?? 0) + 1 };
     }),
 
   updateLocation: (id, updates) =>
@@ -60,7 +45,7 @@ export const useLocationStore = create<LocationStore>((set) => ({
       const updated = state.locations.map((loc) => (loc.id === id ? { ...loc, ...updates } : loc));
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       syncLocationProfiles(updated);
-      return { locations: updated };
+      return { locations: updated, mutationVersion: (state.mutationVersion ?? 0) + 1 };
     }),
 
   deleteLocation: (id) =>
@@ -68,13 +53,13 @@ export const useLocationStore = create<LocationStore>((set) => ({
       const updated = state.locations.filter((loc) => loc.id !== id);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
       syncLocationProfiles(updated);
-      return { locations: updated };
+      return { locations: updated, mutationVersion: (state.mutationVersion ?? 0) + 1 };
     }),
 
   setLocations: (locations) =>
-    set(() => {
+    set((state) => {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(locations));
       syncLocationProfiles(locations);
-      return { locations };
+      return { locations, mutationVersion: (state.mutationVersion ?? 0) + 1 };
     }),
 }));

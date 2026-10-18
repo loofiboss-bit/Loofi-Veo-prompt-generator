@@ -69,6 +69,32 @@ function getRoutedSection(pathname: string): string {
   }
 }
 
+function OptimizationAnalysisTracker({
+  projectId,
+  enabled,
+  generatedPrompt,
+}: {
+  projectId: string;
+  enabled: boolean;
+  generatedPrompt?: string;
+}) {
+  const promptState = useAppStore((state) => state.promptState);
+  const shots = useAppStore((state) => state.sbShots ?? []);
+  const assets = useAppStore((state) => state.assets ?? []);
+
+  useOptimizationAnalysis({
+    projectId,
+    promptId: projectId,
+    promptState,
+    shots,
+    assets,
+    generatedPrompt,
+    enabled,
+  });
+
+  return null;
+}
+
 export function AppRuntime() {
   useProjectAutosave();
   // ---------- Store & top-level hooks (granular selectors) ----------
@@ -91,9 +117,6 @@ export function AppRuntime() {
   const isProjectManagerOpen = useAppStore((state) => state.isProjectManagerOpen);
   const isWizardOpen = useAppStore((state) => state.isWizardOpen);
   const isSeriesBibleOpen = useAppStore((state) => state.isSeriesBibleOpen);
-
-  const optimizationShots = useAppStore((state) => state.sbShots ?? []);
-  const optimizationAssets = useAppStore((state) => state.assets ?? []);
 
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const currentProjectName = useProjectStore(
@@ -202,18 +225,6 @@ export function AppRuntime() {
   const promptLogic = usePromptLogic({ promptState, setPromptState, addToast });
   const generationState = useGenerationState({ promptState, addToast });
   const promptOptions = usePromptOptions(promptState.language);
-
-  const optimizationProjectId = currentProjectId || 'default';
-
-  useOptimizationAnalysis({
-    projectId: optimizationProjectId,
-    promptId: optimizationProjectId,
-    promptState,
-    shots: optimizationShots,
-    assets: optimizationAssets,
-    generatedPrompt: promptLogic.generatedPrompt?.prompt,
-    enabled: _hasHydrated && criticalBootstrapComplete,
-  });
 
   // ---------- Initialization ----------
   useAppInitialization({
@@ -571,9 +582,10 @@ export function AppRuntime() {
 
   const handleAcceptOptimizationSuggestion = useCallback(
     (suggestion: PromptSuggestion) => {
+      const shots = useAppStore.getState().sbShots ?? [];
       const result = optimizationOrchestratorService.applySuggestionPatch({
         promptState,
-        shots: optimizationShots,
+        shots,
         suggestion,
       });
 
@@ -587,7 +599,7 @@ export function AppRuntime() {
 
       addToast('Optimization suggestion applied.', 'success');
     },
-    [addToast, optimizationShots, promptState, setPromptState, setSbShots],
+    [addToast, promptState, setPromptState, setSbShots],
   );
 
   const handleCloseWelcome = useCallback(() => {
@@ -698,6 +710,11 @@ export function AppRuntime() {
 
   return (
     <PromptLogicProvider value={promptLogic}>
+      <OptimizationAnalysisTracker
+        projectId={currentProjectId || 'default'}
+        enabled={_hasHydrated && criticalBootstrapComplete}
+        generatedPrompt={promptLogic.generatedPrompt?.prompt}
+      />
       <AppScaffold
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         skipToContentLabel={t('common:skipToContent', 'Skip to main content')}

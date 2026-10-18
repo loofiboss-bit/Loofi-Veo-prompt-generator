@@ -1,9 +1,8 @@
 import { create } from 'zustand';
-import type { Asset, PromptArtifactV1 } from '@core/types';
+import type { Asset, PromptArtifactV1, Shot, TimelineState } from '@core/types';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
 import { externalStudioResultService } from '@core/services/externalStudioResultService';
-import { useAppStore } from '@core/store/useAppStore';
-import { useProjectStore } from '@core/store/useProjectStore';
+import { storeMediator } from '@core/store/mediator';
 
 interface ExternalStudioResultState {
   projectId: string | null;
@@ -20,7 +19,14 @@ interface ExternalStudioResultState {
   ) => Promise<void>;
   confirm: (resultId: string, notes: string) => Promise<void>;
   replaceVideo: (resultId: string, file: File) => Promise<void>;
-  accept: (resultId: string, shotId?: number) => Promise<void>;
+  accept: (
+    resultId: string,
+    shotId?: number,
+    options?: {
+      editorSnapshot?: { shots: Shot[]; timeline: TimelineState };
+      isCurrent?: () => boolean;
+    },
+  ) => Promise<void>;
 }
 
 let hydration = 0;
@@ -36,9 +42,9 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
     if (version !== hydration || get().projectId !== projectId) return;
     const assets = Object.fromEntries(entries.filter((entry) => entry !== null));
     set({ results, assets });
-    if (useProjectStore.getState().currentProjectId === projectId) {
-      for (const result of results) {
-        const asset = assets[result.id] ?? {
+    const resolvedAssets: Asset[] = results.map(
+      (result) =>
+        assets[result.id] ?? {
           id: result.assetId,
           storageKey: result.assetId,
           groupId: projectId,
@@ -47,12 +53,12 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
           mimeType: result.mimeType,
           data: '',
           url: '',
-        };
-        const app = useAppStore.getState();
-        if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
-        else app.addAsset(asset);
-      }
-    }
+        },
+    );
+    storeMediator.emit('studioResult:assetsSynchronized', {
+      projectId,
+      assets: resolvedAssets,
+    });
   };
   const operate = async (projectId: string, operation: () => Promise<unknown>) => {
     if (get().pending || get().projectId !== projectId) return;
@@ -103,38 +109,24 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
           )
         : Promise.resolve();
     },
-    accept: (resultId, shotId) => {
+    accept: (resultId, shotId, options) => {
       const projectId = get().projectId;
       return projectId
         ? operate(projectId, async () => {
-            const editor = useAppStore.getState();
-            const isCurrent = () =>
-              get().projectId === projectId &&
-              useProjectStore.getState().currentProjectId === projectId &&
-              useAppStore.getState().sbShots === editor.sbShots &&
-              useAppStore.getState().clips === editor.clips &&
-              useAppStore.getState().tracks === editor.tracks;
+            const isCurrent = options?.isCurrent ?? (() => get().projectId === projectId);
             const project = await externalStudioResultService.accept(
               projectId,
               resultId,
               shotId,
               isCurrent,
-              {
-                shots: editor.sbShots,
-                timeline: {
-                  clips: editor.clips,
-                  tracks: editor.tracks,
-                  zoomLevel: editor.zoomLevel,
-                  currentTime: editor.currentTime,
-                },
-              },
+              options?.editorSnapshot,
             );
-            if (isCurrent())
-              useAppStore.setState({
-                sbShots: project.storyboard.shots,
-                tracks: project.storyboard.timeline.tracks,
-                clips: project.storyboard.timeline.clips,
-              });
+            storeMediator.emit('studioResult:timelineAccepted', {
+              projectId,
+              shots: project.storyboard.shots,
+              tracks: project.storyboard.timeline.tracks,
+              clips: project.storyboard.timeline.clips,
+            });
           })
         : Promise.resolve();
     },

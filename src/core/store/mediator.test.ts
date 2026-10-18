@@ -180,4 +180,41 @@ describe('storeMediator singleton', () => {
 
     expect(handler).toHaveBeenCalledWith({ projectId: 'test-123' });
   });
+
+  it('should dispatch location:bankChanged events', () => {
+    const handler = vi.fn();
+    storeMediator.on('location:bankChanged', handler);
+    const mockLocations = [
+      { id: 'l1', name: 'Studio' },
+    ] as unknown as import('@core/types').LocationProfile[];
+    storeMediator.emit('location:bankChanged', { locations: mockLocations });
+
+    expect(handler).toHaveBeenCalledWith({ locations: mockLocations });
+  });
+
+  it('should dispatch studioResult:assetsSynchronized and studioResult:timelineAccepted events', () => {
+    const assetHandler = vi.fn();
+    const timelineHandler = vi.fn();
+    storeMediator.on('studioResult:assetsSynchronized', assetHandler);
+    storeMediator.on('studioResult:timelineAccepted', timelineHandler);
+
+    storeMediator.emit('studioResult:assetsSynchronized', {
+      projectId: 'p1',
+      assets: [],
+    });
+    storeMediator.emit('studioResult:timelineAccepted', {
+      projectId: 'p1',
+      shots: [],
+      tracks: [],
+      clips: [],
+    });
+
+    expect(assetHandler).toHaveBeenCalledWith({ projectId: 'p1', assets: [] });
+    expect(timelineHandler).toHaveBeenCalledWith({
+      projectId: 'p1',
+      shots: [],
+      tracks: [],
+      clips: [],
+    });
+  });
 });
