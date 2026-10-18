@@ -18,6 +18,7 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { useAppStore, type AppState } from './useAppStore';
+import { storeMediator } from './mediator';
 import { GlobalContext, PromptState, Shot, TimelineTrack, VisualDNA } from '@core/types';
 
 /**
@@ -201,5 +202,82 @@ describe('useAppStore hydration', () => {
 
     toggleTheme();
     expect(useAppStore.getState().theme).toBe('dark');
+  });
+
+  describe('storeMediator listeners', () => {
+    it('syncs location profiles into productionBible when locations:updated is emitted', () => {
+      const location = {
+        id: 'loc-alpine',
+        name: 'Alpine Pass',
+        description: 'Snowy winding road',
+        visualTags: ['snow', 'mountain'],
+      };
+
+      storeMediator.emit('locations:updated', { locations: [location] });
+
+      const bible = useAppStore.getState().productionBible;
+      const profile = bible.profiles.find((p) => p.provenance.sourceId === 'loc-alpine');
+      expect(profile).toBeDefined();
+      expect(profile?.name).toBe('Alpine Pass');
+      expect(profile?.kind).toBe('location');
+    });
+
+    it('adds and updates assets when asset:upserted is emitted', () => {
+      const asset = {
+        id: 'asset-synth-1',
+        name: 'Synth Background',
+        type: 'audio' as const,
+        mimeType: 'audio/mpeg',
+        storageKey: 'key-1',
+        data: '',
+        url: 'blob:synth',
+      };
+
+      storeMediator.emit('asset:upserted', { asset });
+      expect(useAppStore.getState().assets.some((a) => a.id === 'asset-synth-1')).toBe(true);
+
+      const updatedAsset = { ...asset, name: 'Synth Background Extended' };
+      storeMediator.emit('asset:upserted', { asset: updatedAsset });
+      const found = useAppStore.getState().assets.find((a) => a.id === 'asset-synth-1');
+      expect(found?.name).toBe('Synth Background Extended');
+    });
+
+    it('updates sbShots, tracks, and clips when timeline:synced is emitted', () => {
+      const mockShots = [
+        { id: 99, type: 'video' as const, action: 'Synced Action', takes: [] },
+      ] as unknown as Shot[];
+      const mockTracks = [
+        {
+          id: 'video_main',
+          label: 'Video',
+          type: 'video' as const,
+          trackType: 'dialogue' as const,
+          zIndex: 1,
+        },
+      ];
+      const mockClips = [
+        {
+          id: 'clip-99',
+          trackId: 'video_main',
+          resourceId: 'res-99',
+          label: 'Clip 99',
+          startTime: 0,
+          duration: 10,
+          offset: 0,
+          type: 'video' as const,
+        },
+      ];
+
+      storeMediator.emit('timeline:synced', {
+        shots: mockShots,
+        tracks: mockTracks,
+        clips: mockClips,
+      });
+
+      const state = useAppStore.getState();
+      expect(state.sbShots).toEqual(mockShots);
+      expect(state.tracks).toEqual(mockTracks);
+      expect(state.clips).toEqual(mockClips);
+    });
   });
 });

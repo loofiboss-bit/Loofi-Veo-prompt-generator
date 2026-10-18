@@ -26,6 +26,7 @@ const getSavedLocations = (): LocationProfile[] => {
 
 const syncLocationProfiles = (locations: LocationProfile[]) => {
   storeMediator.emit('location:bankChanged', { locations });
+  storeMediator.emit('locations:updated', { locations });
 };
 
 export const useLocationStore = create<LocationStore>((set) => ({

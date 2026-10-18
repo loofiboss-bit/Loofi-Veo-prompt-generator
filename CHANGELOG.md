@@ -7,7 +7,7 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [17.0.0] - 2026-10-16
+## [17.0.0] - 2026-10-17
 
 ### Added — Smart Local Editing
 
@@ -17,6 +17,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EBU R128 Loudness Normalization**: Integrated broadcast-standard EBU R128 audio normalization (`loudnorm=I=-14:TP=-1.5:LRA=11`) into the native FFmpeg rendering pipeline for balanced delivery exports.
 - **Speech-Driven Audio Ducking**: Sidechain envelope volume ducking attenuating background music tracks by -14 dB during dialogue and voiceover intervals with smooth 200 ms attack/decay transitions.
 - **Save-on-Close Flush Resilience**: Immediate synchronous/microtask flush of pending debounced project autosaves on `beforeunload`, `pagehide`, and component unmount events to ensure zero edit loss when closing or navigating.
+- **Desktop Gemini Streaming Proxy**: Real-time token streaming support over IPC between Electron main and renderer with abort signal support for prompt generation and analysis.
+- **Dynamic Lyria Model Catalog**: Derive Lyria music generator options and duration limits dynamically from `MODEL_CATALOG` rather than hardcoded lists.
+
+### Fixed
+
+- **AI Co-Director Connection Gate**: Enforce explicit desktop user approval before initiating Co-Director WebSocket and Live sessions, preventing unprompted background connections.
+- **Legacy Quick-Generation Safe Redirect**: Safely redirect legacy quick-generation requests to the Create workspace with an informative toast notification instead of unhandled exceptions.
+- **Enhance with AI Resilience**: Add exponential backoff with jitter on 429/503 errors and robust model routing for Gemini 2.5 and 1.5 Flash models.
+- **Create Page Export Step Mock**: Supply initialized project state in `CreatePage.test.tsx` to ensure `CreatorDeliveryPanel` renders without unhandled exceptions during step navigation.
+
+### Changed & Performance
+
+- **Bundle Code-Splitting (React.lazy)**: Code-split `CreatorDeliveryPanel`, `ModalManager`, and CreatePage wizard steps (`BriefStep`, `ScenesStep`, `AssetsStep`, `GenerateStep`, `ReviewStep`, `ExportStep`), reducing initial bundle load.
+- **Root Shell Decoupling**: Prune dead `promptWorkspaceProps` and redundant top-level hooks from `AppRuntime.tsx` and `AppScaffold.tsx`.
+- **Decoupled Cross-Store State via storeMediator**: Decouple `useLocationStore` and `useExternalStudioResultStore` from direct `useAppStore` mutations using strongly-typed mediator events (`locations:updated`, `asset:upserted`, `timeline:synced`).
 
 ## [16.0.1] - 2026-10-15
 
