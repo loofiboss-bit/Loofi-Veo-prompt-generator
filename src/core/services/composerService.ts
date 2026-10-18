@@ -14,6 +14,7 @@ import {
   wouldCreateCycle,
 } from './composerGraphUtils';
 import { evaluateComposerBlock } from './composerBlockEvaluationUtils';
+import { promptAstLinterService } from './promptAstLinterService';
 import type {
   BlockDefinition,
   BlockType,
@@ -842,6 +843,16 @@ class ComposerService {
         }
       }
       compiledPrompt = promptParts.join('. ');
+    }
+
+    if (compiledPrompt) {
+      const lintResult = promptAstLinterService.lintPromptText(compiledPrompt);
+      for (const err of lintResult.errors) {
+        allErrors.push(`[${err.code}] ${err.message}`);
+      }
+      for (const warn of lintResult.warnings) {
+        allWarnings.push(`[${warn.code}] ${warn.message}`);
+      }
     }
 
     logger.info(`Composer evaluated ${order.length} blocks → ${compiledPrompt.length} chars`);
