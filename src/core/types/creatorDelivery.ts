@@ -44,8 +44,12 @@ export interface CreatorDeliveryV1 {
   captionStyle: 'classic' | 'pop' | 'karaoke';
   safeMargin: number;
   crops: Record<string, CreatorCropV1>;
+  formatCrops?: Partial<Record<CreatorAspectRatio, Record<string, CreatorCropV1>>>;
+  batchFormats?: CreatorAspectRatio[];
   audioFades?: Record<string, { inSeconds: number; outSeconds: number }>;
   audioProcessing?: CreatorAudioProcessingV1;
+  coverTimestamp?: number;
+  coverAssetId?: string;
   title: string;
   description: string;
   updatedAt: number;
@@ -82,6 +86,8 @@ export interface TimelineRenderPlanV1 {
   safeMargin: number;
   style?: CreatorStyleProfileV1;
   audioProcessing?: CreatorAudioProcessingV1;
+  coverTimestamp?: number;
+  coverAssetId?: string;
   title: string;
   description: string;
 }
@@ -100,6 +106,7 @@ export interface TimelineRenderJobV1 {
   purpose?: 'preview' | 'delivery';
   projectId: string;
   contentHash: string;
+  aspectRatio?: CreatorAspectRatio;
   status: 'queued' | 'rendering' | 'verifying' | 'complete' | 'failed' | 'cancelled';
   progress: number;
   error?: string;

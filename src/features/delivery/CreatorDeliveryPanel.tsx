@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Caption, Project } from '@core/types';
 import type {
+  CreatorAspectRatio,
   CreatorDeliveryV1,
   TimelineRenderCapabilities,
   TimelineRenderJobV1,
@@ -43,6 +44,7 @@ export function CreatorDeliveryPanel() {
     'Project';
   const clips = useAppStore((state) => state.clips);
   const assets = useAppStore((state) => state.assets);
+  const currentTime = useAppStore((state) => state.currentTime);
   const [settings, setSettings] = useState<CreatorDeliveryV1 | null>(null);
   const [capabilities, setCapabilities] = useState<TimelineRenderCapabilities>({
     available: false,
@@ -66,6 +68,11 @@ export function CreatorDeliveryPanel() {
   const [errorClip, setErrorClip] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [resolution, setResolution] = useState<'720p' | '1080p'>('1080p');
+  const [batchProgress, setBatchProgress] = useState<{
+    current: number;
+    total: number;
+    format: CreatorAspectRatio;
+  } | null>(null);
   const [audioId, setAudioId] = useState('');
   const [consent, setConsent] = useState(false);
   const [audioDuration, setAudioDuration] = useState(0);
@@ -296,6 +303,66 @@ export function CreatorDeliveryPanel() {
       const latest = await window.electron.getTimelineRenderJob?.(started.id);
       if (latest && idRef.current === id) setJob(latest);
     });
+  const renderBatch = () =>
+    act(async (id) => {
+      if (!settings || !window.electron?.startTimelineRender)
+        throw new Error('Local export requires the desktop app.');
+      const requested = settingsRef.current!;
+      const targetFormats = (
+        requested.batchFormats?.length ? requested.batchFormats : [requested.aspectRatio]
+      ) as CreatorAspectRatio[];
+      await capture(id);
+      const savedSettings = await creatorDeliveryService.saveSettings(id, requested);
+      if (idRef.current !== id || settingsRef.current !== requested) return;
+      setSettings(savedSettings);
+      settingsRef.current = savedSettings;
+      const project = (await projectDocumentService.load(id))!;
+      const run = useProductionRunStore.getState().activeRun;
+      const check = await creatorDeliveryService.preflight(
+        project,
+        assets,
+        run?.projectId === id ? run : null,
+      );
+      if (idRef.current !== id) return;
+      setDiagnostics(check);
+      setDiagnosticBinding(timelineBinding());
+      if (check.length) return;
+      const frozenBinding = timelineBinding();
+      const plans = await creatorDeliveryService.buildBatchPlans(
+        project,
+        assets,
+        targetFormats,
+        run?.projectId === id ? run : null,
+        resolution,
+        'delivery',
+      );
+      if (idRef.current !== id || timelineBinding() !== frozenBinding) return;
+
+      for (let i = 0; i < plans.length; i++) {
+        if (idRef.current !== id) break;
+        const plan = plans[i];
+        setBatchProgress({ current: i + 1, total: plans.length, format: plan.aspectRatio });
+        const started = await useRenderJobsStore.getState().start(plan);
+        if (idRef.current !== id) break;
+        setJob(started);
+        jobRef.current = started;
+
+        let currentJob = started;
+        while (['queued', 'rendering', 'verifying'].includes(currentJob.status)) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          if (idRef.current !== id) break;
+          const poll = await window.electron.getTimelineRenderJob?.(currentJob.id);
+          if (poll) {
+            currentJob = poll;
+            setJob(poll);
+          }
+        }
+        if (currentJob.status !== 'complete') {
+          break;
+        }
+      }
+      setBatchProgress(null);
+    });
   const addCaptions = (
     values: Caption[],
     mode: 'append' | 'replace' = 'append',
@@ -412,6 +479,61 @@ export function CreatorDeliveryPanel() {
           />{' '}
           {Math.round(settings.safeMargin * 100)}%
         </label>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-400">
+            {t('delivery.batchFormats', 'Batch export formats')}
+          </span>
+          <div className="flex items-center gap-3">
+            {(['9:16', '16:9', '1:1'] as const).map((ratio) => {
+              const active = settings.batchFormats ?? [settings.aspectRatio];
+              const checked = active.includes(ratio);
+              return (
+                <label key={ratio} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
+                    checked={checked}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? [...active, ratio]
+                        : active.filter((r) => r !== ratio);
+                      change({ batchFormats: next.length ? next : [ratio] });
+                    }}
+                  />
+                  <span>{ratio}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-slate-400">
+            {t('delivery.coverPoster', 'Poster cover frame')}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => change({ coverTimestamp: currentTime })}
+            >
+              {t('delivery.setPosterAtPlayhead', 'Set at playhead')} ({currentTime.toFixed(2)}s)
+            </button>
+            {settings.coverTimestamp !== undefined && (
+              <button
+                type="button"
+                className={buttonClass}
+                onClick={() => change({ coverTimestamp: undefined })}
+              >
+                {t('delivery.resetPoster', 'Reset to 0s')}
+              </button>
+            )}
+            <span className="text-xs text-slate-400">
+              {settings.coverTimestamp !== undefined
+                ? `${settings.coverTimestamp.toFixed(2)}s`
+                : 'Start (0.00s)'}
+            </span>
+          </div>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-6 rounded-lg bg-slate-950/40 p-3 text-sm text-slate-300">
         <label className="flex items-center gap-2 cursor-pointer">
@@ -1189,11 +1311,21 @@ export function CreatorDeliveryPanel() {
         </button>
         <button
           className={buttonClass}
-          disabled={busy || !!running || !capabilities.available}
+          aria-label={t('delivery.render', 'Export video')}
+          disabled={busy || !!running || batchProgress !== null || !capabilities.available}
           onClick={() => void render()}
         >
           {t('delivery.render', 'Export video')}
         </button>
+        {(settings.batchFormats?.length ?? 1) > 1 && (
+          <button
+            className={buttonClass}
+            disabled={busy || !!running || batchProgress !== null || !capabilities.available}
+            onClick={() => void renderBatch()}
+          >
+            {t('delivery.renderBatch', 'Batch export')} ({settings.batchFormats?.length} formats)
+          </button>
+        )}
         {running && (
           <button
             className={buttonClass}
@@ -1294,8 +1426,9 @@ export function CreatorDeliveryPanel() {
               <option key={item.id} value={item.id}>
                 {item.purpose === 'preview'
                   ? t('v16.reviewDelivery', 'Review delivery')
-                  : t('delivery.render', 'Export video')}{' '}
-                — {t(`delivery.status.${item.status}`, item.status)} —{' '}
+                  : t('delivery.render', 'Export video')}
+                {item.aspectRatio ? ` (${item.aspectRatio})` : ''} —{' '}
+                {t(`delivery.status.${item.status}`, item.status)} —{' '}
                 {item.createdAt
                   ? new Date(item.createdAt).toLocaleString(i18n?.language)
                   : projectJobs.indexOf(item) + 1}
@@ -1303,6 +1436,17 @@ export function CreatorDeliveryPanel() {
             ))}
           </select>
         </label>
+      )}
+      {batchProgress && (
+        <div
+          role="status"
+          className="rounded-lg bg-sky-950/40 p-3 border border-sky-800 text-sky-200"
+        >
+          <p className="font-medium text-sm">
+            {t('delivery.batchExporting', 'Batch exporting')}: {batchProgress.current} of{' '}
+            {batchProgress.total} ({batchProgress.format})
+          </p>
+        </div>
       )}
       {job && ['failed', 'cancelled'].includes(job.status) && (
         <button

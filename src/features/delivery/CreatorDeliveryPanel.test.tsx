@@ -6,6 +6,7 @@ import type { Project } from '@core/types';
 import type { TimelineRenderPlanV1 } from '@core/types/creatorDelivery';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { defaultCreatorDelivery } from '@core/services/creatorDeliveryService';
 import { CreatorDeliveryPanel } from './CreatorDeliveryPanel';
 
 const mock = vi.hoisted(() => ({
@@ -13,6 +14,7 @@ const mock = vi.hoisted(() => ({
   save: vi.fn(),
   settings: vi.fn(),
   plan: vi.fn(),
+  batchPlans: vi.fn(),
   preflight: vi.fn().mockResolvedValue([]),
   start: vi.fn(),
   publish: vi.fn(),
@@ -27,6 +29,7 @@ vi.mock('@core/services/creatorDeliveryService', async (original) => {
     creatorDeliveryService: {
       saveSettings: mock.settings,
       buildPlan: mock.plan,
+      buildBatchPlans: mock.batchPlans,
       preflight: mock.preflight,
     },
   };
@@ -165,5 +168,72 @@ describe('CreatorDeliveryPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Publication text or project changed',
     );
+  });
+
+  it('supports selecting batch formats and triggers sequential batch export', async () => {
+    mock.load.mockResolvedValue({
+      ...project,
+      creatorDelivery: {
+        ...defaultCreatorDelivery(project),
+        batchFormats: ['9:16', '16:9'],
+      },
+    });
+    mock.settings.mockImplementation((_id: string, value: unknown) => Promise.resolve(value));
+    const plan916 = {
+      contentHash: 'hash-916',
+      aspectRatio: '9:16' as const,
+      durationSeconds: 5,
+      clips: [],
+      captions: [],
+    };
+    const plan169 = {
+      contentHash: 'hash-169',
+      aspectRatio: '16:9' as const,
+      durationSeconds: 5,
+      clips: [],
+      captions: [],
+    };
+    mock.batchPlans.mockResolvedValue([plan916, plan169]);
+
+    const start = vi
+      .fn()
+      .mockImplementation((plan: { contentHash: string; aspectRatio?: string }) =>
+        Promise.resolve({
+          id: `job-${plan.contentHash}`,
+          projectId: 'p',
+          contentHash: plan.contentHash,
+          aspectRatio: plan.aspectRatio,
+          status: 'complete',
+          progress: 1,
+        }),
+      );
+    const getJob = vi.fn().mockImplementation((id: string) =>
+      Promise.resolve({
+        id,
+        projectId: 'p',
+        contentHash: id,
+        status: 'complete',
+        progress: 1,
+      }),
+    );
+
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        getTimelineRenderCapabilities: vi.fn().mockResolvedValue({ available: true }),
+        inspectTimelineRenderCapabilities: vi.fn().mockResolvedValue({ available: true }),
+        startTimelineRender: start,
+        getTimelineRenderJob: getJob,
+      },
+    });
+
+    render(<CreatorDeliveryPanel />);
+    const batchButton = await screen.findByRole('button', { name: /Batch export/i });
+    expect(batchButton).toBeInTheDocument();
+    await waitFor(() => expect(batchButton).toBeEnabled());
+    await userEvent.click(batchButton);
+
+    await waitFor(() => expect(mock.batchPlans).toHaveBeenCalled());
+    expect(start).toHaveBeenCalledTimes(2);
   });
 });

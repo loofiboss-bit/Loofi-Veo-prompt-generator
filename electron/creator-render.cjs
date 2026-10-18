@@ -72,6 +72,16 @@ function validatePlan(input) {
   )
     throw new Error('Invalid audio processing settings.');
   if (
+    p.coverTimestamp !== undefined &&
+    !number(p.coverTimestamp, 0, p.durationSeconds)
+  )
+    throw new Error('Invalid cover timestamp.');
+  if (
+    p.coverAssetId !== undefined &&
+    (!text(p.coverAssetId, 180) || !/^[\w.:-]+$/.test(p.coverAssetId))
+  )
+    throw new Error('Invalid cover asset identity.');
+  if (
     !Array.isArray(p.clips) ||
     !p.clips.length ||
     p.clips.length > 120 ||
@@ -375,6 +385,7 @@ class CreatorRenderEngine {
         purpose: plan.purpose || 'delivery',
         createdAt: Date.now(),
         resolution: plan.resolution,
+        aspectRatio: plan.aspectRatio,
         status: 'queued',
         progress: 0,
       },
@@ -888,7 +899,20 @@ class CreatorRenderEngine {
       )
         throw new Error('Export verification failed.');
       await this.run(state, ['-nostdin', '-v', 'error', '-i', 'output.mp4', '-f', 'null', '-']);
-      await this.run(state, ['-nostdin', '-y', '-i', 'output.mp4', '-frames:v', '1', 'cover.png']);
+      const coverTimestamp =
+        typeof p.coverTimestamp === 'number' && Number.isFinite(p.coverTimestamp)
+          ? Math.max(0, Math.min(p.durationSeconds, p.coverTimestamp))
+          : 0;
+      await this.run(state, [
+        '-nostdin',
+        '-y',
+        ...(coverTimestamp > 0 ? ['-ss', String(coverTimestamp)] : []),
+        '-i',
+        'output.mp4',
+        '-frames:v',
+        '1',
+        'cover.png',
+      ]);
       state.outputSha256 = await sha256File(path.join(state.directory, 'output.mp4'));
       await fs.writeFile(
         path.join(state.directory, 'verification.json'),

@@ -1,5 +1,9 @@
 import type { Asset, ProductionRun, Project, TimelineClip } from '@core/types';
-import type { CreatorDeliveryV1, TimelineRenderPlanV1 } from '@core/types/creatorDelivery';
+import type {
+  CreatorAspectRatio,
+  CreatorDeliveryV1,
+  TimelineRenderPlanV1,
+} from '@core/types/creatorDelivery';
 import { projectDocumentService } from '@core/services/projectDocumentService';
 import { resolveOtioSelection } from '@core/services/otioExportService';
 import { resolveProjectAssetBlob } from '@core/utils/projectArchiver';
@@ -14,6 +18,8 @@ export function defaultCreatorDelivery(project: Project): CreatorDeliveryV1 {
     captionStyle: 'classic',
     safeMargin: 0.08,
     crops: {},
+    formatCrops: {},
+    batchFormats: ['9:16'],
     audioProcessing: {
       normalizeLoudness: true,
       speechDucking: false,
@@ -332,10 +338,12 @@ class CreatorDeliveryService {
     run?: ProductionRun | null,
     resolution: '720p' | '1080p' = '1080p',
     purpose: 'preview' | 'delivery' = 'delivery',
+    targetAspectRatio?: CreatorAspectRatio,
   ): Promise<TimelineRenderPlanV1> {
     if (run && run.projectId !== project.id)
       throw new Error('Production run belongs to another project.');
     const settings = structuredClone(project.creatorDelivery ?? defaultCreatorDelivery(project));
+    const activeAspectRatio = targetAspectRatio || settings.aspectRatio;
     const timeline = structuredClone(project.storyboard.timeline);
     const clips = timeline.clips.filter((clip) => clip.type !== 'text');
     if (!clips.length) throw new Error('Add media to the timeline before exporting.');
@@ -493,7 +501,8 @@ class CreatorDeliveryService {
         duration: clip.duration,
         offset: clip.offset,
         volume: clip.volume ?? 1,
-        crop: settings.crops[clip.id] ?? { mode: 'fit', x: 0.5, y: 0.5 },
+        crop: (targetAspectRatio && settings.formatCrops?.[targetAspectRatio]?.[clip.id]) ??
+          settings.crops[clip.id] ?? { mode: 'fit', x: 0.5, y: 0.5 },
         ...(fades ? { fadeInSeconds: fades.inSeconds, fadeOutSeconds: fades.outSeconds } : {}),
         ...(transition?.type === 'dissolve' ? { crossfadeSeconds: transition.duration } : {}),
         ...(transition?.type === 'fade_black'
@@ -528,7 +537,7 @@ class CreatorDeliveryService {
       projectName: project.name,
       durationSeconds: duration,
       fps: 30 as const,
-      aspectRatio: settings.aspectRatio,
+      aspectRatio: activeAspectRatio,
       resolution,
       purpose,
       clips: output,
@@ -539,10 +548,30 @@ class CreatorDeliveryService {
       safeMargin: settings.safeMargin,
       style: settings.style,
       audioProcessing: settings.audioProcessing,
+      coverTimestamp: settings.coverTimestamp,
+      coverAssetId: settings.coverAssetId,
       title: settings.title,
       description: settings.description,
     };
     return structuredClone({ ...base, contentHash: await hashRenderContent(base) });
+  }
+
+  async buildBatchPlans(
+    project: Project,
+    assets: Asset[],
+    formats: CreatorAspectRatio[],
+    run?: ProductionRun | null,
+    resolution: '720p' | '1080p' = '1080p',
+    purpose: 'preview' | 'delivery' = 'delivery',
+  ): Promise<TimelineRenderPlanV1[]> {
+    if (!Array.isArray(formats) || !formats.length) {
+      throw new Error('At least one format must be selected for batch export.');
+    }
+    const plans: TimelineRenderPlanV1[] = [];
+    for (const format of formats) {
+      plans.push(await this.buildPlan(project, assets, run, resolution, purpose, format));
+    }
+    return plans;
   }
 }
 export const creatorDeliveryService = CreatorDeliveryService.getInstance();

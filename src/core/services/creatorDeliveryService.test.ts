@@ -214,6 +214,38 @@ describe('creator render plans', () => {
       mediaId: 'audio-key',
     });
   });
+
+  it('builds sequential batch plans across multiple aspect ratios with format-specific crops', async () => {
+    const p = makeProject([clip]);
+    p.creatorDelivery = {
+      ...defaultCreatorDelivery(p),
+      crops: { clip: { mode: 'fit', x: 0.5, y: 0.5 } },
+      formatCrops: {
+        '16:9': { clip: { mode: 'fill', x: 0.2, y: 0.8 } },
+        '1:1': { clip: { mode: 'fill', x: 0.4, y: 0.4 } },
+      },
+      coverTimestamp: 1.5,
+    };
+    const plans = await creatorDeliveryService.buildBatchPlans(p, [asset], ['9:16', '16:9', '1:1']);
+    expect(plans).toHaveLength(3);
+    expect(plans[0].aspectRatio).toBe('9:16');
+    expect(plans[0].coverTimestamp).toBe(1.5);
+    // 9:16 falls back to generic crops
+    expect(plans[0].clips[0].crop).toEqual({ mode: 'fit', x: 0.5, y: 0.5 });
+
+    expect(plans[1].aspectRatio).toBe('16:9');
+    expect(plans[1].clips[0].crop).toEqual({ mode: 'fill', x: 0.2, y: 0.8 });
+
+    expect(plans[2].aspectRatio).toBe('1:1');
+    expect(plans[2].clips[0].crop).toEqual({ mode: 'fill', x: 0.4, y: 0.4 });
+  });
+
+  it('rejects batch export when no formats are provided', async () => {
+    const p = makeProject([clip]);
+    await expect(creatorDeliveryService.buildBatchPlans(p, [asset], [])).rejects.toThrow(
+      'At least one format must be selected for batch export.',
+    );
+  });
 });
 describe('read-only delivery preflight', () => {
   it('collects independent clip blockers without importing media', async () => {
