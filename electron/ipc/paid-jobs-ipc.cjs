@@ -3,6 +3,7 @@
 const { randomUUID } = require('crypto');
 const { validatePaidTask } = require('../paid-job-engine.cjs');
 const { calculateMaximumCharge } = require('../paid-job-pricing.cjs');
+const { validatePaidTaskInput } = require('./ipc-validator.cjs');
 
 function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
   async function authorizePaidTask(task) {
@@ -32,7 +33,8 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
   ipcMain.handle('paid-job-submit', async (_, task) => {
     const engine = getEngine();
     if (!engine) throw new Error('Paid job engine is not ready.');
-    const existing = await engine.store.get(task?.id);
+    validatePaidTaskInput(task);
+    const existing = await engine.store.get(task.id);
     if (existing) return existing;
     return engine.submit(await authorizePaidTask(task));
   });

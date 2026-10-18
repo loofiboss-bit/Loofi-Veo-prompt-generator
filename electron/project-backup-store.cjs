@@ -6,6 +6,47 @@ const path = require('path');
 
 const SAFE_PROJECT_ID = /^[a-zA-Z0-9_-]{1,160}$/;
 
+/**
+ * Atomic write pipeline for disk persistence:
+ * 1. Write content to `<target>.tmp`
+ * 2. `fsync` to flush filesystem buffers to physical disk
+ * 3. Verify JSON parse integrity on written disk bytes
+ * 4. If target exists, rotate existing file to `<target>.bak`
+ * 5. Atomic `fs.rename` to target path
+ */
+async function atomicWriteJsonFile(targetPath, data) {
+  const directory = path.dirname(targetPath);
+  await fs.promises.mkdir(directory, { recursive: true, mode: 0o700 });
+  const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  const tempPath = `${targetPath}.${process.pid}.${Date.now()}-${crypto.randomBytes(3).toString('hex')}.tmp`;
+
+  const handle = await fs.promises.open(tempPath, 'w', 0o600);
+  try {
+    await handle.writeFile(content, 'utf8');
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+
+  const readBack = await fs.promises.readFile(tempPath, 'utf8');
+  try {
+    JSON.parse(readBack);
+  } catch (parseError) {
+    await fs.promises.rm(tempPath, { force: true });
+    throw new Error(`Atomic write failed JSON parse integrity check: ${parseError.message}`);
+  }
+
+  const bakPath = `${targetPath}.bak`;
+  try {
+    await fs.promises.access(targetPath, fs.constants.F_OK);
+    await fs.promises.copyFile(targetPath, bakPath);
+  } catch {
+    // target does not exist yet; no rotation needed
+  }
+
+  await fs.promises.rename(tempPath, targetPath);
+}
+
 class ProjectBackupStore {
   constructor(rootPath, retention = 5) {
     this.rootPath = rootPath;
@@ -29,9 +70,14 @@ class ProjectBackupStore {
     const record = { schemaVersion: 1, projectId, createdAt, sha256, payload };
     const filename = `${String(createdAt).padStart(16, '0')}-${crypto.randomBytes(3).toString('hex')}.backup.json`;
     const target = path.join(directory, filename);
-    const temporary = `${target}.${process.pid}.tmp`;
-    await fs.promises.writeFile(temporary, JSON.stringify(record), { mode: 0o600, flag: 'wx' });
-    await fs.promises.rename(temporary, target);
+
+    // 1. Atomic write of timestamped backup record
+    await atomicWriteJsonFile(target, record);
+
+    // 2. Atomic write of primary project snapshot with .bak rotation
+    const primaryTarget = path.join(directory, 'project.json');
+    await atomicWriteJsonFile(primaryTarget, record);
+
     await this.rotate(projectId);
     return { id: filename, projectId, createdAt, sha256 };
   }
@@ -83,6 +129,41 @@ class ProjectBackupStore {
     return { snapshot, verified: true, sha256: record.sha256, createdAt: record.createdAt };
   }
 
+  async loadLatest(projectId) {
+    const directory = this.directory(projectId);
+    const primary = path.join(directory, 'project.json');
+    const backup = path.join(directory, 'project.json.bak');
+
+    try {
+      const record = JSON.parse(await fs.promises.readFile(primary, 'utf8'));
+      if (record && record.payload) {
+        const snapshot = JSON.parse(record.payload);
+        return { snapshot, source: 'primary', sha256: record.sha256 };
+      }
+    } catch {
+      // Primary corrupted or missing; proceed to fallback
+    }
+
+    try {
+      const record = JSON.parse(await fs.promises.readFile(backup, 'utf8'));
+      if (record && record.payload) {
+        const snapshot = JSON.parse(record.payload);
+        return { snapshot, source: 'backup_copy', sha256: record.sha256 };
+      }
+    } catch {
+      // Rotated backup corrupted or missing; proceed to rolling backups
+    }
+
+    const summaries = await this.list(projectId);
+    const valid = summaries.find((s) => !s.corrupt);
+    if (valid) {
+      const restored = await this.restore(projectId, valid.id);
+      return { snapshot: restored.snapshot, source: 'rolling_backup', sha256: restored.sha256 };
+    }
+
+    return null;
+  }
+
   async rotate(projectId) {
     const backups = await this.list(projectId);
     for (const backup of backups.slice(this.retention)) {
@@ -91,4 +172,4 @@ class ProjectBackupStore {
   }
 }
 
-module.exports = { ProjectBackupStore };
+module.exports = { ProjectBackupStore, atomicWriteJsonFile, SAFE_PROJECT_ID };

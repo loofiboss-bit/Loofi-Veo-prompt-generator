@@ -1,3 +1,9 @@
+const {
+  validateProjectId,
+  validateProjectBackupSaveInput,
+  validateProjectBackupRestoreInput,
+} = require('./ipc-validator.cjs');
+
 function registerProjectIpc({
   ipcMain,
   dialog,
@@ -11,18 +17,24 @@ function registerProjectIpc({
     return store;
   };
 
-  ipcMain.handle('project-backup-save', async (_, input) =>
-    requireStore().save(input?.projectId, input?.snapshot),
-  );
+  ipcMain.handle('project-backup-save', async (_, input) => {
+    const store = requireStore();
+    const valid = validateProjectBackupSaveInput(input);
+    return store.save(valid.projectId, valid.snapshot);
+  });
 
   ipcMain.handle('project-backup-list', async (_, projectId) => {
     const store = getProjectBackupStore();
-    return store ? store.list(projectId) : [];
+    if (!store) return [];
+    const validId = validateProjectId(projectId);
+    return store.list(validId);
   });
 
-  ipcMain.handle('project-backup-restore', async (_, input) =>
-    requireStore().restore(input?.projectId, input?.id),
-  );
+  ipcMain.handle('project-backup-restore', async (_, input) => {
+    const store = requireStore();
+    const valid = validateProjectBackupRestoreInput(input);
+    return store.restore(valid.projectId, valid.id);
+  });
 
   ipcMain.handle('select-project-folder', async () => {
     const result = await dialog.showOpenDialog(getMainWindow(), {

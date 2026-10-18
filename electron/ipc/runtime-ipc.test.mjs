@@ -86,3 +86,46 @@ test('update IPC cannot install before a checksum-verified download', async () =
 
   await assert.rejects(handlers.get('install-update')(), /No verified update/);
 });
+
+test('IPC contract parity: validates inputs and rejects malformed payloads before execution', async () => {
+  const { handlers, ipcMain } = ipcFixture();
+  const mockStore = {
+    save: async () => ({ ok: true }),
+    list: async () => [],
+    restore: async () => ({ verified: true }),
+  };
+  const mockMediaStore = {
+    read: async () => null,
+    relink: async () => ({ relinked: true }),
+    setAccepted: async () => true,
+    cacheRemote: async () => ({ cached: true }),
+  };
+
+  registerProjectIpc({
+    ipcMain,
+    dialog: { showOpenDialog: async () => ({ canceled: true, filePaths: [] }) },
+    getMainWindow: () => null,
+    getProjectBackupStore: () => mockStore,
+    configureRoot: async () => {},
+  });
+
+  registerMediaIpc({
+    ipcMain,
+    getMediaStore: () => mockMediaStore,
+    getApiKey: async () => 'test-key',
+  });
+
+  // Project IPC contract validation
+  await assert.rejects(handlers.get('project-backup-save')(null, null), /must be an object/);
+  await assert.rejects(handlers.get('project-backup-save')(null, { projectId: '' }), /alphanumeric/);
+  await assert.rejects(handlers.get('project-backup-save')(null, { projectId: 'p1', snapshot: null }), /snapshot must be an object/);
+  await assert.rejects(handlers.get('project-backup-list')(null, '../traversal'), /alphanumeric/);
+  await assert.rejects(handlers.get('project-backup-restore')(null, { projectId: 'p1', id: 'bad-id' }), /Invalid backup ID/);
+
+  // Media IPC contract validation
+  await assert.rejects(handlers.get('desktop-media-read')(null, ''), /Invalid media storage key/);
+  await assert.rejects(handlers.get('desktop-media-cache')(null, { url: '' }), /missing URL/);
+  await assert.rejects(handlers.get('desktop-media-relink')(null, { key: 'valid-key', candidatePath: '' }), /candidatePath must be a string/);
+  await assert.rejects(handlers.get('desktop-media-set-accepted')(null, null), /accepted payload/);
+});
+

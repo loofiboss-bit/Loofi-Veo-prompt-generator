@@ -9,6 +9,7 @@ import {
 
 import { logger } from './loggerService';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { projectMigrationService, CURRENT_PROJECT_SCHEMA_VERSION } from './projectMigrationService';
 
 const META_KEY = 'veo_projects_meta';
 const PROJECT_PREFIX = 'veo_project_';
@@ -101,20 +102,22 @@ class ProjectDocumentService {
     const key = projectStorageKey(id);
     const store = getProjectSnapshotStore();
     const stored = await safeGet<Project>(key, store);
-    if (stored) return stored;
+    if (stored) {
+      const migration = projectMigrationService.migrateProjectDocument(stored);
+      if (migration.migrated) {
+        void atomicUpdate<Project>(key, () => migration.project, store).catch((error) => {
+          logger.warn(`Could not persist migrated schema for project ${id}`, error);
+        });
+      }
+      return migration.project;
+    }
 
     const legacy = readLegacyJson<Project>(key);
     if (!legacy) return null;
     try {
-      let migrated = legacy;
-      await atomicUpdate<Project>(
-        key,
-        (current) => {
-          migrated = current ?? legacy;
-          return migrated;
-        },
-        store,
-      );
+      const migration = projectMigrationService.migrateProjectDocument(legacy);
+      const migrated = migration.project;
+      await atomicUpdate<Project>(key, (current) => current ?? migrated, store);
       return migrated;
     } catch (error) {
       logger.warn('Legacy project migration could not be persisted', error);
@@ -187,6 +190,7 @@ class ProjectDocumentService {
   private async saveNow(project: Project): Promise<PersistenceResult> {
     const status = useProjectSaveStore.getState();
     status.setStatus(project.id, { status: 'saving' });
+    const validated = projectMigrationService.validateProjectDocumentForSave(project);
     let snapshot!: Project;
     try {
       await atomicUpdate<Project>(
@@ -198,7 +202,8 @@ class ProjectDocumentService {
           }
           snapshot = {
             ...existing,
-            ...project,
+            ...validated,
+            schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
             documentRevision: (project.documentRevision ?? 0) + 1,
           };
           // Delivery controls can save while an older editor snapshot is still pending.
@@ -250,6 +255,7 @@ class ProjectDocumentService {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+    project.schemaVersion = snapshot.schemaVersion;
     project.documentRevision = snapshot.documentRevision;
     this.committedRevisions.set(project.id, snapshot.documentRevision!);
     const result: PersistenceResult = { durable: true };

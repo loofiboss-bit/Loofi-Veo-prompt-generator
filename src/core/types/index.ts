@@ -383,6 +383,10 @@ export interface ProjectMetadata {
 
 export interface Project {
   [key: string]: unknown;
+  /** Explicit schema version; v18 is current. */
+  schemaVersion?: number;
+  /** Monotonic document mutation counter for non-blocking persistence. */
+  mutationVersion?: number;
   /** Optimistic concurrency token; legacy documents begin at zero. */
   documentRevision?: number;
   creatorDelivery?: CreatorDeliveryV1;
