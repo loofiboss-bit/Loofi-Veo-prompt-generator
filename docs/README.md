@@ -30,6 +30,7 @@ Current stable publication: [v16.0.1 verification](V16_0_1_RELEASE.md).
 ## Technical references
 
 - [Architecture](./ARCHITECTURE.md)
+- [Engineering Roadmap (v18+)](../ROADMAP.md)
 - [Architecture diagrams](./ARCHITECTURE_DIAGRAMS.md)
 - [Auto-update security](./AUTO_UPDATE.md)
 - [Fedora setup](./FEDORA_SETUP.md)

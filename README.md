@@ -277,6 +277,7 @@ npm run screenshots
 - [Suno handoff](docs/wiki/Suno-Handoff.md)
 - [Production workflow](docs/wiki/Production-Workflow.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](ROADMAP.md)
 - [Release process and evidence](docs/RELEASE.md)
 - [Installation and updates](docs/wiki/Installation-and-Updates.md)
 - [Release notes](docs/wiki/Release-Notes.md)

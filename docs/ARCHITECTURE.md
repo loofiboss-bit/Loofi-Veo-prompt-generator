@@ -1,29 +1,32 @@
 # Loofi Creator Studio Architecture
 
-> v14 qualification: the advanced modules described below are implementation components, not a
-> claim that their complete user workflows are qualified. ComfyUI rendering, Live audio, LAN
-> collaboration and Foley generation are disabled experiments. FCPXML import is unverified.
-> [V14_IMPLEMENTATION.md](V14_IMPLEMENTATION.md) describes the current persistence, recovery,
-> capability and portable export contracts.
+> **Baseline Status (v17.0.0 Qualified & v18+ Deterministic Architecture):**
+> Loofi Creator Studio v17.0.0 Smart Local Editing is fully qualified and released with local
+> video editing, microphone voiceover recording, reviewable silence-cut trimming, local offline
+> speech-to-text / linked captions, EBU R128 loudness normalization, and save-on-close flush resilience.
+> The v18+ engineering roadmap establishes strict architectural guardrails: deterministic systems,
+> thread isolation, non-blocking persistence, rule-based compilation, and zero AI slop.
+> See [ROADMAP.md](../ROADMAP.md) for active v18+ engineering targets and architectural guardrails.
 
 ## 1. Runtime Shape
 
 ```text
-React Feature Pages (Modular Studio, 3D Previz Viewport, Co-Director, Timeline)
-  -> Zustand/Zundo Stores (EditorSession, ProductionRun, JobQueue, Diagnostics)
-  -> Singleton Services (Transpiler, Continuity, ComfyUI, SFX, Collaboration, Previz)
-  -> Typed Preload Boundary (Electron IPC, Keytar, Media Storage)
-  -> Electron Main IPC Modules (paid-job-engine, media-store, window-lifecycle, credentials)
-  -> External Engines (Google Vertex/Gemini Live, Local ComfyUI, LAN WebRTC Mesh)
+React Feature Pages (Modular Studio, 3D Previz Viewport, Co-Director, Timeline, Creator Delivery)
+  -> Zustand/Zundo Stores (EditorSession, ProductionRun, JobQueue, Diagnostics, Delivery)
+  -> Store Mediator (`storeMediator.ts` typed cross-store event bus)
+  -> Singleton Services (Transpiler, Continuity, CreatorDelivery, ComfyUI, SFX, Previz)
+  -> Typed Preload Boundary (Electron IPC, Keytar, Media Storage, Render Jobs)
+  -> Electron Main IPC Modules (paid-job-engine, media-store, window-lifecycle, credentials, creator-render)
+  -> External Engines (Google Vertex/Gemini Live, Local ComfyUI, Bundled FFmpeg, LAN WebRTC Mesh)
 ```
 
-The web renderer remains usable for local planning, prompt transpilation, 3D staging, script breakdown, and NLE export. Paid provider execution is guarded strictly in Electron main, where credentials, approval tokens, pricing mirrors, and durable media writes are enforced. Local ComfyUI generation operates over localhost HTTP without external credentials.
+The web renderer remains usable for local planning, prompt transpilation, 3D staging, script breakdown, and NLE export. Paid provider execution is guarded strictly in Electron main, where credentials, approval tokens, pricing mirrors, and durable media writes are enforced. Local ComfyUI generation operates over localhost HTTP without external credentials. Bundled FFmpeg handles local MP4 exports, speech silence detection, loudness normalization, and caption alignment entirely on device.
 
 ---
 
 ## 2. Product Surfaces & Modular Information Architecture
 
-The application layout centers on seven primary destinations:
+The application layout centers on eight primary destinations:
 
 1. **Prompt Studio** (`/` or `/studio`): Default first-run surface. Modularized into:
    - `VideoPromptStudio.tsx`: Core prompt form, Universal Model Target selector, 3D camera rig binding, reference manager.
@@ -34,8 +37,9 @@ The application layout centers on seven primary destinations:
 3. **Projects** (`/hubs/projects`): Local project library, backups, and `.loofi-project` bundle import/export.
 4. **Assets & Continuity** (`/hubs/assets`): Production Bible v2, 4-angle turnaround sheets, reference hash manager.
 5. **Timeline & Previz** (`/hubs/timeline`): Previz Animatic Player, multi-track audio/video arrangement, OTIO/FCPXML 1.11 export.
-6. **Activity & Jobs** (`/hubs/activity`): Durable queue, ComfyUI render status, and retry controls.
-7. **Settings** (`/settings`): OS vault credentials, ComfyUI local GPU setup, and system diagnostics.
+6. **Creator Delivery** (`/delivery` or within Timeline): Native FFmpeg delivery pipeline, multi-format rendering (9:16, 16:9, 1:1), linked captions, EBU R128 loudness normalization, and speech ducking.
+7. **Activity & Jobs** (`/hubs/activity`): Durable queue, ComfyUI render status, and retry controls.
+8. **Settings** (`/settings`): OS vault credentials, ComfyUI local GPU setup, and system diagnostics.
 
 Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to `/create`.
 
@@ -97,6 +101,17 @@ Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to
 - **Parser**: Fountain (`.fountain`) and Screenplay Markdown parser extracting scene headers, actions, dialogues, characters, and Foley cues.
 - **Style Presets**: Villeneuve, Anderson, Nolan, Fincher, and Cyberpunk Neon Noir.
 - **Animatic**: Canvas-based 2D motion simulation, BPM beat-sync grid snapping, and Web Speech API zero-cost scratch voiceover.
+
+### 3.8 Creator Delivery & Smart Local Editing (v17.0.0 Baseline)
+
+- **Service**: `creatorDeliveryService.ts` / `creator-render.cjs`
+- **Capabilities**:
+  - Local MP4 video rendering with bundled FFmpeg (`720p` / `1080p`, 30 fps, H.264/AAC).
+  - Web Audio API microphone voiceover recording directly into the dialogue timeline track.
+  - Offline silence detection with `silencedetect` filter, interactive review modal, and non-destructive ripple cuts.
+  - Local speech-to-text transcription and linked caption generation with atomic split/merge/shift and SRT import.
+  - Broadcast-standard EBU R128 loudness normalization (`-14 LUFS`) and dynamic sidechain music ducking (`-14 dB`).
+  - Save-on-close flush resilience guaranteeing uncommitted debounced autosaves flush to disk before window unload.
 
 ---
 

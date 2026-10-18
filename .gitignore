@@ -118,7 +118,6 @@ tmpclaude-*
 /wiki/
 /QA_CHECKLIST.md
 /RELEASE.md
-/ROADMAP.md
 
 # Private workspace-only automation
 /scripts/customization-hook.mjs
