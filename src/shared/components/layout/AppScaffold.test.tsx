@@ -28,10 +28,6 @@ vi.mock('./Header', () => ({
   default: () => <div data-testid="header" />,
 }));
 
-vi.mock('@features/prompt/PromptWorkspace', () => ({
-  PromptWorkspace: () => <div data-testid="prompt-workspace" />,
-}));
-
 vi.mock('./ModalManager', () => ({
   default: () => <div data-testid="modal-manager" />,
 }));
@@ -85,7 +81,6 @@ function scaffold(pathname: string, activeSection = 'prompt') {
         isApiConfigured: true,
       }}
       headerProps={{} as never}
-      promptWorkspaceProps={{} as never}
       modalManagerProps={{} as never}
       collaborationPanelsProps={{} as never}
       appPanelsProps={{} as never}

@@ -236,14 +236,37 @@ describe('VideoGenerationService', () => {
       count: 1,
     };
 
-    it('blocks legacy quick generation before queueing or provider execution', async () => {
+    it('blocks legacy quick generation and safely redirects without throwing or queueing', async () => {
       const onToast = vi.fn();
+      window.location.hash = '';
 
-      await expect(
-        videoGenerationService.startGeneration('Test video prompt', settings, undefined, onToast),
-      ).rejects.toThrow('Open Create');
+      const result = await videoGenerationService.startGeneration(
+        'Test video prompt',
+        settings,
+        undefined,
+        onToast,
+      );
+
+      expect(result).toBeNull();
+      expect(onToast).toHaveBeenCalledWith(expect.stringContaining('Open Create'), 'info');
+      expect(window.location.hash).toBe('#/create');
       expect(mockEnqueue).not.toHaveBeenCalled();
       expect(mockAddTask).not.toHaveBeenCalled();
+    });
+
+    it('returns a safe structured result pointing to ROUTES.CREATE from createCompatibilityRun', async () => {
+      const compatibility = await (
+        videoGenerationService as unknown as {
+          createCompatibilityRun: (
+            prompts: string[],
+            settings: VideoGenerationSettings,
+          ) => Promise<{ ok: boolean; message: string; redirectTo: string }>;
+        }
+      ).createCompatibilityRun(['Test video prompt'], settings);
+
+      expect(compatibility.ok).toBe(false);
+      expect(compatibility.message).toContain('Open Create');
+      expect(compatibility.redirectTo).toBe('/create');
     });
 
     it('should return null if API key is missing', async () => {

@@ -276,35 +276,81 @@ useAppStore.setState = (next, replace) => {
   }
 };
 
-storeMediator.on('location:bankChanged', ({ locations }) => {
-  const appState = useAppStore.getState();
-  const locationIds = new Set(locations.map((loc) => loc.id));
-  const retainedProfiles = appState.productionBible.profiles.filter(
-    (profile) =>
-      profile.kind !== 'location' ||
-      profile.provenance.source !== 'legacy-location-bank' ||
-      Boolean(profile.provenance.sourceId && locationIds.has(profile.provenance.sourceId)),
-  );
-  const bible = locations.reduce(
-    (current, loc) =>
-      continuityService.upsertProfile(current, continuityService.createProfileFromLocation(loc)),
-    { ...appState.productionBible, profiles: retainedProfiles },
-  );
-  appState.setProductionBible(bible);
-});
+// ─── Store Mediator Listeners ────────────────────────────────────────────────
 
-storeMediator.on('studioResult:assetsSynchronized', ({ assets }) => {
-  const app = useAppStore.getState();
-  for (const asset of assets) {
-    if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
-    else app.addAsset(asset);
-  }
-});
+let appStoreMediatorUnsubs: (() => void)[] = [];
 
-storeMediator.on('studioResult:timelineAccepted', ({ shots, tracks, clips }) => {
-  useAppStore.setState({
-    sbShots: shots,
+export const registerAppStoreMediator = (): (() => void) => {
+  appStoreMediatorUnsubs.forEach((unsub) => unsub());
+  appStoreMediatorUnsubs = [];
+
+  const handleLocations = ({
+    locations,
+  }: {
+    locations: import('@core/types').LocationProfile[];
+  }) => {
+    const appState = useAppStore.getState();
+    const locationIds = new Set(locations.map((loc) => loc.id));
+    const retainedProfiles = appState.productionBible.profiles.filter(
+      (profile) =>
+        profile.kind !== 'location' ||
+        profile.provenance.source !== 'legacy-location-bank' ||
+        Boolean(profile.provenance.sourceId && locationIds.has(profile.provenance.sourceId)),
+    );
+    const bible = locations.reduce(
+      (current, loc) =>
+        continuityService.upsertProfile(current, continuityService.createProfileFromLocation(loc)),
+      { ...appState.productionBible, profiles: retainedProfiles },
+    );
+    appState.setProductionBible(bible);
+  };
+
+  const handleTimelineSync = ({
+    shots,
     tracks,
     clips,
-  });
-});
+  }: {
+    shots: import('@core/types').Shot[];
+    tracks: import('@core/types').TimelineTrack[];
+    clips: import('@core/types').TimelineClip[];
+  }) => {
+    useAppStore.setState({
+      sbShots: shots,
+      tracks,
+      clips,
+    });
+  };
+
+  const unsubs: (() => void)[] = [
+    storeMediator.on('locations:updated', handleLocations),
+    storeMediator.on('location:bankChanged', handleLocations),
+
+    storeMediator.on('asset:upserted', ({ asset }) => {
+      const app = useAppStore.getState();
+      if (app.assets.some((item) => item.id === asset.id)) {
+        app.updateAsset(asset.id, asset);
+      } else {
+        app.addAsset(asset);
+      }
+    }),
+
+    storeMediator.on('studioResult:assetsSynchronized', ({ assets }) => {
+      const app = useAppStore.getState();
+      for (const asset of assets) {
+        if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
+        else app.addAsset(asset);
+      }
+    }),
+
+    storeMediator.on('timeline:synced', handleTimelineSync),
+    storeMediator.on('studioResult:timelineAccepted', handleTimelineSync),
+  ];
+
+  appStoreMediatorUnsubs = unsubs;
+  return () => {
+    unsubs.forEach((unsub) => unsub());
+    appStoreMediatorUnsubs = [];
+  };
+};
+
+registerAppStoreMediator();

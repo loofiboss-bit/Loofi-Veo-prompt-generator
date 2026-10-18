@@ -59,6 +59,9 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
       projectId,
       assets: resolvedAssets,
     });
+    for (const asset of resolvedAssets) {
+      storeMediator.emit('asset:upserted', { asset });
+    }
   };
   const operate = async (projectId: string, operation: () => Promise<unknown>) => {
     if (get().pending || get().projectId !== projectId) return;
@@ -121,12 +124,19 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
               isCurrent,
               options?.editorSnapshot,
             );
-            storeMediator.emit('studioResult:timelineAccepted', {
-              projectId,
-              shots: project.storyboard.shots,
-              tracks: project.storyboard.timeline.tracks,
-              clips: project.storyboard.timeline.clips,
-            });
+            if (isCurrent()) {
+              storeMediator.emit('studioResult:timelineAccepted', {
+                projectId,
+                shots: project.storyboard.shots,
+                tracks: project.storyboard.timeline.tracks,
+                clips: project.storyboard.timeline.clips,
+              });
+              storeMediator.emit('timeline:synced', {
+                shots: project.storyboard.shots,
+                tracks: project.storyboard.timeline.tracks,
+                clips: project.storyboard.timeline.clips,
+              });
+            }
           })
         : Promise.resolve();
     },
