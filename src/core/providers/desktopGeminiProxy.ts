@@ -117,6 +117,13 @@ export const createDesktopGeminiProxy = (bridge: GeminiBridge): GoogleGenAI => {
     } as GenerateContentResponse;
   };
 
+  const generateContentStream = async function* (
+    parameters: unknown,
+  ): AsyncGenerator<GenerateContentResponse> {
+    const response = await generateContent(parameters);
+    yield response;
+  };
+
   const chats = {
     create: (parameters: unknown) => {
       const params = (parameters ?? {}) as Record<string, unknown>;
@@ -139,7 +146,10 @@ export const createDesktopGeminiProxy = (bridge: GeminiBridge): GoogleGenAI => {
     },
   };
 
-  return { models: { generateContent }, chats } as unknown as GoogleGenAI;
+  return {
+    models: { generateContent, generateContentStream },
+    chats,
+  } as unknown as GoogleGenAI;
 };
 
 export const getDesktopGeminiProxy = (): GoogleGenAI | null => {

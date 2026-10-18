@@ -21,12 +21,14 @@ import {
 import { TimelineExportRecovery } from '@shared/components/TimelineExportRecovery';
 
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
+import { ModalSkeleton } from '@shared/components/ui/Skeleton';
+import TimelinePlayer from './TimelinePlayer';
+
 const CreatorDeliveryPanel = React.lazy(() =>
   import('@features/delivery/CreatorDeliveryPanel').then((m) => ({
     default: m.CreatorDeliveryPanel,
   })),
 );
-import TimelinePlayer from './TimelinePlayer';
 
 export const TimelinePage: React.FC = () => {
   const { t } = useTranslation('common');
@@ -184,11 +186,7 @@ export const TimelinePage: React.FC = () => {
           <details className="local-editor-delivery" open>
             <summary>{creatorT('v16.captionDelivery', 'Captions and delivery')}</summary>
             <ErrorBoundary panelId="creator-delivery">
-              <Suspense
-                fallback={
-                  <div className="p-4 text-sm text-slate-400">Loading delivery panel...</div>
-                }
-              >
+              <Suspense fallback={<ModalSkeleton />}>
                 <CreatorDeliveryPanel />
               </Suspense>
             </ErrorBoundary>
@@ -197,9 +195,7 @@ export const TimelinePage: React.FC = () => {
       ) : (
         <>
           <ErrorBoundary panelId="creator-delivery">
-            <Suspense
-              fallback={<div className="p-4 text-sm text-slate-400">Loading delivery panel...</div>}
-            >
+            <Suspense fallback={<ModalSkeleton />}>
               <CreatorDeliveryPanel />
             </Suspense>
           </ErrorBoundary>

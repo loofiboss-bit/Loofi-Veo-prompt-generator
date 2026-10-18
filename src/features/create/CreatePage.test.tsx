@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { render, screen } from '@/test-utils';
+import { render, screen, waitFor } from '@/test-utils';
 import { CreatePage } from './CreatePage';
 
 vi.mock('@core/store/useProjectStore', () => ({
-  useProjectStore: (selector: (state: { currentProjectId: string }) => unknown) =>
-    selector({ currentProjectId: 'project-a' }),
+  useProjectStore: (
+    selector: (state: { currentProjectId: string; projects: unknown[] }) => unknown,
+  ) => selector({ currentProjectId: 'project-a', projects: [] }),
 }));
 vi.mock('@core/store/useProductionRunStore', () => ({
   useProductionRunStore: (selector: (state: Record<string, unknown>) => unknown) =>
@@ -29,11 +30,13 @@ describe('Production workspace navigation', () => {
   it('allows direct step navigation and restores the selected step after remount', async () => {
     const { user, unmount } = render(<CreatePage />);
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    expect(screen.getByText('Editing export')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Export' })).toHaveFocus();
+    expect(await screen.findByText('Editing export')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'Export' })).toHaveFocus();
+    });
     unmount();
     render(<CreatePage />);
-    expect(screen.getByText('Editing export')).toBeInTheDocument();
+    expect(await screen.findByText('Editing export')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute('aria-current', 'step');
   });
 });
