@@ -5,7 +5,7 @@ Use this index to navigate stable Loofi Creator Studio documentation and unrelea
 The source workspace version can differ from the published installers. Use the installation guide
 for package availability and the implementation records for qualification evidence.
 
-Current stable publication: [v16.0.1 verification](V16_0_1_RELEASE.md).
+Current stable publication: [v17.0.0 verification](V17_0_0_RELEASE.md).
 
 ## Start here
 
