@@ -166,28 +166,29 @@ export async function importPortableProject(file: File): Promise<Project> {
   collect([imported.project, imported.assets, runs, artifacts, handoffs]);
   for (const asset of imported.assets)
     if (asset.storageKey) ids.set(asset.storageKey, `import:${crypto.randomUUID()}`);
-  const restoredAssets: Asset[] = [];
-  for (const asset of imported.assets) {
-    if (!asset.data) throw new Error(`Imported archive is missing local bytes: ${asset.name}`);
-    const key = ids.get(asset.id)!;
-    const bytes = Uint8Array.from(atob(asset.data), (character) => character.charCodeAt(0));
-    const blob = new Blob([bytes], { type: asset.mimeType });
-    const desktop = window.electron?.importDesktopMedia;
-    let url: string;
-    if (desktop)
-      url = (await desktop({ key, bytes: bytes.buffer, mimeType: asset.mimeType })).localUrl;
-    else {
-      await mediaAssetService.storeBlob(key, blob);
-      url = (await mediaAssetService.getObjectUrl(key))!;
-    }
-    restoredAssets.push({
-      ...remapImportedReferences(asset, ids),
-      id: key,
-      storageKey: key,
-      url,
-      data: asset.type === 'image' ? asset.data : '',
-    });
-  }
+  const restoredAssets: Asset[] = await Promise.all(
+    imported.assets.map(async (asset) => {
+      if (!asset.data) throw new Error(`Imported archive is missing local bytes: ${asset.name}`);
+      const key = ids.get(asset.id)!;
+      const bytes = Uint8Array.from(atob(asset.data), (character) => character.charCodeAt(0));
+      const blob = new Blob([bytes], { type: asset.mimeType });
+      const desktop = window.electron?.importDesktopMedia;
+      let url: string;
+      if (desktop)
+        url = (await desktop({ key, bytes: bytes.buffer, mimeType: asset.mimeType })).localUrl;
+      else {
+        await mediaAssetService.storeBlob(key, blob);
+        url = (await mediaAssetService.getObjectUrl(key))!;
+      }
+      return {
+        ...remapImportedReferences(asset, ids),
+        id: key,
+        storageKey: key,
+        url,
+        data: asset.type === 'image' ? asset.data : '',
+      };
+    }),
+  );
   const importedUrls = new Map(
     imported.assets.map((asset, index) => [asset.url, restoredAssets[index].url]),
   );
@@ -251,23 +252,28 @@ export async function importPortableProject(file: File): Promise<Project> {
     name: inventory.name,
     migrationHistory: imported.migrationHistory,
   };
-  await projectDocumentService.save(document);
-  for (const run of restoredRuns) await productionRunService.saveRun(run);
-  await promptStudioHandoffService.saveArtifacts(
-    remapImportedReferences<PromptArtifactV1[]>(artifacts, ids).map((artifact) => ({
+  const remappedArtifacts = remapImportedReferences<PromptArtifactV1[]>(artifacts, ids).map(
+    (artifact) => ({
       ...artifact,
       projectId: inventory.id,
-    })),
+    }),
   );
-  const restoredArtifacts = remapImportedReferences<PromptArtifactV1[]>(artifacts, ids);
-  for (const handoff of remapImportedReferences<PromptStudioHandoff[]>(handoffs, ids)) {
-    const artifact = restoredArtifacts.find((candidate) => candidate.id === handoff.artifactId);
-    if (!artifact) throw new Error(`Imported handoff artifact missing: ${handoff.artifactId}`);
-    await promptStudioHandoffService.saveDraft(
-      { ...handoff, projectId: inventory.id },
-      { ...artifact, projectId: inventory.id },
-    );
-  }
+  await Promise.all([
+    projectDocumentService.save(document),
+    ...restoredRuns.map((run) => productionRunService.saveRun(run)),
+    promptStudioHandoffService.saveArtifacts(remappedArtifacts),
+  ]);
+  const remappedHandoffs = remapImportedReferences<PromptStudioHandoff[]>(handoffs, ids);
+  await Promise.all(
+    remappedHandoffs.map((handoff) => {
+      const artifact = remappedArtifacts.find((candidate) => candidate.id === handoff.artifactId);
+      if (!artifact) throw new Error(`Imported handoff artifact missing: ${handoff.artifactId}`);
+      return promptStudioHandoffService.saveDraft(
+        { ...handoff, projectId: inventory.id },
+        artifact,
+      );
+    }),
+  );
   for (const asset of restoredAssets) useAppStore.getState().addAsset(asset);
   return document;
 }
