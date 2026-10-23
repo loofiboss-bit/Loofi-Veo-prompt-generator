@@ -3,6 +3,66 @@
   "description": "Audit allowlist for known-accepted npm advisories. Each entry must have a justification and expiration date.",
   "allowedAdvisories": [
     {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "Transitive dependency via jsPDF for local export; no untrusted HTML processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "Transitive dependency via jsPDF for local export; no untrusted HTML processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "Transitive dependency via jsPDF for local export; no untrusted HTML processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency in HTTP client stack; no untrusted cross-origin requests made.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency in HTTP client stack; no untrusted cross-origin requests made.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Dev-only dev server dependency. Not exposed in production.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Dev-only dev server dependency. Not exposed in production.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Dev-only dev server dependency. Not exposed in production.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Dev-only dev server dependency. Not exposed in production.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Dev-only dev server dependency. Not exposed in production.",
+      "expires": "2027-05-19"
+    },
+    {
       "id": 1103308,
       "package": "jspdf",
       "justification": "jsPDF used only for local PDF export; no user-supplied HTML/untrusted input processed. Monitoring for upstream fix.",
@@ -363,6 +423,6 @@
       "expires": "2027-05-19"
     }
   ],
-  "lastReviewed": "2026-10-07",
-  "reviewedBy": "loofi"
+  "lastReviewed": "2026-10-23",
+  "reviewedBy": "jules"
 }
