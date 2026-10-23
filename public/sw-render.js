@@ -176,7 +176,8 @@ self.addEventListener('message', async (event) => {
           const safeText = clip.dialogueText
             .replace(/\\/g, '\\\\')
             .replace(/'/g, "\\'")
-            .replace(/:/g, '\\:');
+            .replace(/:/g, '\\:')
+            .replace(/%/g, '\\%');
           const fontSize = cropConfig ? 80 : 48;
           const yPos = cropConfig ? 'h-th-400' : 'h-th-50';
           filterParts.push(
