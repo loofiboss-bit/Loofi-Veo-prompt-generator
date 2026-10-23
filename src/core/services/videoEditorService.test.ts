@@ -317,9 +317,13 @@ describe('videoEditorService', () => {
     });
 
     it('should sanitize malicious hex color and style inputs', async () => {
-      const styles = { background: '#000000:eval=1', color: '#ffffff:drawtext=text=hacked', fontSize: NaN };
+      const styles = {
+        background: '#000000:eval=1',
+        color: '#ffffff:drawtext=text=hacked',
+        fontSize: NaN,
+      };
 
-      await renderTitleCard("Test Title", 3, styles);
+      await renderTitleCard('Test Title', 3, styles);
 
       const execCall = mockExec.mock.calls[0][0];
       const colorArg = execCall.find((arg: string) => arg.includes('color=c='));
@@ -392,7 +396,9 @@ describe('videoEditorService', () => {
 
   describe('security helpers', () => {
     it('should properly escape drawtext control characters and expansion percentage signs', () => {
-      expect(escapeDrawText("Hello: World's \\ %{eif:1:d}")).toBe("Hello\\: World\\'s \\\\ \\%{eif\\:1\\:d}");
+      expect(escapeDrawText("Hello: World's \\ %{eif:1:d}")).toBe(
+        "Hello\\: World\\'s \\\\ \\%{eif\\:1\\:d}",
+      );
     });
 
     it('should sanitize hex colors and fallback to default on invalid input', () => {

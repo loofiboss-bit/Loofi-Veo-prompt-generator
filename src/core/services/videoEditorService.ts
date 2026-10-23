@@ -207,11 +207,7 @@ export const stitchVideos = async (
 // For now, keeping renderAudioVisualizer local as it's often used for quick previews.
 
 export const escapeDrawText = (text: string): string => {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/:/g, '\\:')
-    .replace(/%/g, '\\%');
+  return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:').replace(/%/g, '\\%');
 };
 
 export const sanitizeHexColor = (color: string, defaultColor: string = '000000'): string => {
