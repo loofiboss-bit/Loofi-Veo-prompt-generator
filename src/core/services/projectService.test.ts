@@ -61,6 +61,7 @@ vi.mock('./presetManager', () => ({
 
 vi.mock('./projectDocumentService', () => ({
   cloneProjectDocument: vi.fn(),
+  setDocumentRegisterCallback: vi.fn(),
   projectDocumentService: {
     listMetadata: mockListProjectMetadata,
     load: vi.fn().mockResolvedValue(null),
