@@ -379,6 +379,48 @@
       "package": "dompurify",
       "justification": "DOMPurify SMIL attributeName advisory accepted; local desktop app.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency via axios in dev/build tools. Local desktop app flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency via axios in dev/build tools. Local desktop app flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Vite dev server launch-editor advisory; dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
     }
   ],
   "lastReviewed": "2026-10-07",
