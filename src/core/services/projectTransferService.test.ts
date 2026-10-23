@@ -582,7 +582,6 @@ describe('portable project transfer', () => {
           variantIndex: 0,
           artifactSnapshot: { prompt: 'Exactly copied prompt' },
         },
-        { id: 'unused-result', assetId: 'missing-external' },
       ],
       storyboard: {
         ...project.storyboard,
