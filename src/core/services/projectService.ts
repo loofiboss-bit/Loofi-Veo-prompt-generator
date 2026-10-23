@@ -617,4 +617,6 @@ class ProjectService {
 }
 
 export const projectService = new ProjectService();
-setDocumentRegisterCallback((doc) => projectService.registerDocument(doc));
+if (typeof setDocumentRegisterCallback === 'function') {
+  setDocumentRegisterCallback((doc) => projectService.registerDocument(doc));
+}

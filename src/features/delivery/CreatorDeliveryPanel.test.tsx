@@ -20,7 +20,9 @@ const mock = vi.hoisted(() => ({
   publish: vi.fn(),
 }));
 vi.mock('@core/services/projectDocumentService', () => ({
+  setDocumentRegisterCallback: vi.fn(),
   projectDocumentService: { load: mock.load, save: mock.save },
+  setDocumentRegisterCallback: vi.fn(),
 }));
 vi.mock('@core/services/creatorDeliveryService', async (original) => {
   const actual = await original<typeof import('@core/services/creatorDeliveryService')>();
