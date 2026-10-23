@@ -361,6 +361,18 @@
       "package": "tailwindcss",
       "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "follow-redirects array-form headers bypass advisory.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "follow-redirects sensitiveHeaders regex escaping advisory.",
+      "expires": "2027-05-19"
     }
   ],
   "lastReviewed": "2026-10-07",
