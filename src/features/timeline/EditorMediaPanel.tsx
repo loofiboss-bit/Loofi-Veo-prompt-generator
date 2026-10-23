@@ -82,8 +82,9 @@ export function EditorMediaPanel() {
           if (!files.length) return;
           const projectId = useProjectStore.getState().currentProjectId;
           void run(async () => {
-            const imported: Asset[] = [];
-            for (const file of files) imported.push(await mediaAssetService.importLocalFile(file));
+            const imported: Asset[] = await Promise.all(
+              files.map((file) => mediaAssetService.importLocalFile(file)),
+            );
             if (projectId !== useProjectStore.getState().currentProjectId)
               throw new Error(
                 t(
@@ -93,17 +94,19 @@ export function EditorMediaPanel() {
               );
             imported.forEach((asset) => useAppStore.getState().addAsset(asset));
             appendEditorMedia(imported);
-            for (const asset of imported) {
-              try {
-                const prepared = await mediaAssetService.prepareDesktopProxy(asset);
-                useAppStore.getState().updateAsset(asset.id, {
-                  proxyUrl: prepared.proxyUrl,
-                  isProxyReady: prepared.isProxyReady,
-                });
-              } catch {
-                /* Proxy failure leaves the verified original usable. */
-              }
-            }
+            await Promise.all(
+              imported.map(async (asset) => {
+                try {
+                  const prepared = await mediaAssetService.prepareDesktopProxy(asset);
+                  useAppStore.getState().updateAsset(asset.id, {
+                    proxyUrl: prepared.proxyUrl,
+                    isProxyReady: prepared.isProxyReady,
+                  });
+                } catch {
+                  /* Proxy failure leaves the verified original usable. */
+                }
+              }),
+            );
           });
         }}
       />
