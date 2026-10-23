@@ -6,15 +6,10 @@
  * Manages plugin loading, lifecycle, and sandboxing
  */
 
-import { get, set, del, keys } from 'idb-keyval';
 import type {
   Plugin,
   PluginManifest,
   PluginContext,
-  PluginAPI,
-  PluginStorage,
-  PluginEvents,
-  PluginLogger,
   PluginLoadResult,
   PluginRegistry,
   PluginPermission,
@@ -24,11 +19,11 @@ import type {
   StudioConfig,
 } from '../types/plugin';
 import { satisfiesSemver } from '../utils/semver';
-import { determinePluginTrustLevel } from '../utils/pluginCrypto';
 import { logger } from './loggerService';
-import { historyService } from './historyService';
-import { projectService } from './projectService';
-import { getUserTemplates } from './templateManager';
+import { pluginStorageManager } from './plugin/pluginStorageManager';
+import { pluginHealthManager } from './plugin/pluginHealthManager';
+import { pluginTrustManager } from './plugin/pluginTrustManager';
+import { pluginContextFactory } from './plugin/pluginContextFactory';
 
 /** App version from build-time define (falls back for tests) */
 const APP_VERSION: string =
@@ -54,11 +49,11 @@ class PluginService implements PluginRegistry {
     logger.info('PluginService initializing...');
 
     // Load enabled plugins from storage
-    const enabledPlugins = await this.getEnabledPlugins();
+    const enabledPlugins = await pluginStorageManager.getEnabledPlugins();
 
     for (const pluginId of enabledPlugins) {
       try {
-        const manifest = await this.loadManifest(pluginId);
+        const manifest = await pluginStorageManager.loadManifest(pluginId);
         if (manifest) {
           await this.load(manifest);
           await this.activate(pluginId);
@@ -96,7 +91,7 @@ class PluginService implements PluginRegistry {
       }
 
       // Determine trust level from signature verification
-      const trustLevel = await this.evaluateTrustLevel(manifest);
+      const trustLevel = await pluginTrustManager.evaluateTrustLevel(manifest);
 
       // Create plugin instance
       const plugin: Plugin = {
@@ -113,7 +108,7 @@ class PluginService implements PluginRegistry {
       this.permissionCache.set(manifest.id, new Set(manifest.permissions));
 
       // Save manifest to storage
-      await this.saveManifest(manifest);
+      await pluginStorageManager.saveManifest(manifest);
 
       logger.info(`Plugin loaded successfully: ${manifest.id} (trust: ${trustLevel})`);
 
@@ -185,7 +180,7 @@ class PluginService implements PluginRegistry {
     this.permissionCache.delete(pluginId);
 
     // Remove from storage
-    await this.deleteManifest(pluginId);
+    await pluginStorageManager.deleteManifest(pluginId);
 
     logger.info(`Plugin unloaded: ${pluginId}`);
   }
@@ -221,7 +216,7 @@ class PluginService implements PluginRegistry {
       }
 
       // Add to enabled plugins
-      await this.addEnabledPlugin(pluginId);
+      await pluginStorageManager.addEnabledPlugin(pluginId);
 
       logger.info(`Plugin activated: ${pluginId}`);
       this.notifyListeners();
@@ -260,7 +255,7 @@ class PluginService implements PluginRegistry {
       plugin.context = undefined;
 
       // Remove from enabled plugins
-      await this.removeEnabledPlugin(pluginId);
+      await pluginStorageManager.removeEnabledPlugin(pluginId);
 
       logger.info(`Plugin deactivated: ${pluginId}`);
       this.notifyListeners();
@@ -325,9 +320,6 @@ class PluginService implements PluginRegistry {
   }
 
   /**
-   * Create plugin context
-   */
-  /**
    * Subscribe to registry changes
    */
   subscribe(listener: () => void): () => void {
@@ -340,272 +332,16 @@ class PluginService implements PluginRegistry {
   }
 
   private createPluginContext(plugin: Plugin): PluginContext {
-    const pluginId = plugin.manifest.id;
-
-    return {
-      manifest: plugin.manifest,
-      api: this.createPluginAPI(pluginId),
-      storage: this.createPluginStorage(pluginId),
-      events: this.createPluginEvents(pluginId),
-      logger: this.createPluginLogger(pluginId),
-    };
-  }
-
-  /**
-   * Create plugin API
-   */
-  private createPluginAPI(pluginId: string): PluginAPI {
-    return {
-      ui: {
-        registerSidebarItem: (config) => {
-          if (!this.hasPermission(pluginId, 'ui:sidebar')) {
-            throw new Error('Plugin does not have ui:sidebar permission');
-          }
-          // Implementation would register the sidebar item
-          logger.debug(`Registered sidebar item: ${config.id}`);
-        },
-        registerToolbarButton: (config) => {
-          if (!this.hasPermission(pluginId, 'ui:toolbar')) {
-            throw new Error('Plugin does not have ui:toolbar permission');
-          }
-          // Implementation would register the toolbar button
-          logger.debug(`Registered toolbar button: ${config.id}`);
-        },
-        registerModal: (config) => {
-          if (!this.hasPermission(pluginId, 'ui:modal')) {
-            throw new Error('Plugin does not have ui:modal permission');
-          }
-          // Implementation would register the modal
-          logger.debug(`Registered modal: ${config.id}`);
-        },
-
-        showNotification: (message, type = 'info') => {
-          // Implementation would show a notification
-          logger.info(`Plugin notification (${type}): ${message}`);
-        },
-        registerStudio: (config) => {
-          if (!this.hasPermission(pluginId, 'ui:studio')) {
-            throw new Error('Plugin does not have ui:studio permission');
-          }
-          this.studios.set(config.id, { pluginId, config });
-          logger.debug(`Registered studio: ${config.id}`);
-          this.notifyListeners();
-        },
+    return pluginContextFactory.createPluginContext(plugin, {
+      hasPermission: (pluginId, perm) => this.hasPermission(pluginId, perm),
+      getPlugin: (pluginId) => this.get(pluginId),
+      registerStudio: (pluginId, config) => {
+        this.studios.set(config.id, { pluginId, config });
+        this.notifyListeners();
       },
-      data: {
-        getProjects: async () => {
-          if (!this.hasPermission(pluginId, 'projects:read')) {
-            throw new Error('Plugin does not have projects:read permission');
-          }
-          return projectService.getAllProjects();
-        },
-        getProject: async (id) => {
-          if (!this.hasPermission(pluginId, 'projects:read')) {
-            throw new Error('Plugin does not have projects:read permission');
-          }
-          return projectService.getProject(id);
-        },
-        saveProject: async (project) => {
-          if (!this.hasPermission(pluginId, 'projects:write')) {
-            throw new Error('Plugin does not have projects:write permission');
-          }
-          const proj = project as { id: string; [key: string]: unknown };
-          await projectService.updateProject(proj.id, proj as Partial<Record<string, unknown>>);
-        },
-        getHistory: async () => {
-          if (!this.hasPermission(pluginId, 'history:read')) {
-            throw new Error('Plugin does not have history:read permission');
-          }
-          return historyService.getEntries();
-        },
-        getTemplates: async () => {
-          if (!this.hasPermission(pluginId, 'templates:read')) {
-            throw new Error('Plugin does not have templates:read permission');
-          }
-          return getUserTemplates();
-        },
-      },
-      export: {
-        registerFormat: (format) => {
-          if (!this.hasPermission(pluginId, 'export')) {
-            throw new Error('Plugin does not have export permission');
-          }
-          // Implementation would register the export format
-          logger.debug(`Registered export format: ${format.id}`);
-        },
-        exportPrompt: async (_prompt, _format) => {
-          if (!this.hasPermission(pluginId, 'export')) {
-            throw new Error('Plugin does not have export permission');
-          }
-          // Implementation would export the prompt
-        },
-      },
-      settings: {
-        get: <T = unknown>(key: string): T | undefined => {
-          const plugin = this.plugins.get(pluginId);
-          if (!plugin?.context) return undefined;
-
-          // Get from plugin settings
-          const settingDef = plugin.manifest.settings?.[key];
-          if (!settingDef) return undefined;
-
-          // Return stored value or default
-          return settingDef.default as T;
-        },
-        set: async (key: string, value: unknown) => {
-          // Implementation would save the setting
-          await set(`plugin:${pluginId}:settings:${key}`, value);
-        },
-        getAll: () => {
-          const plugin = this.plugins.get(pluginId);
-          if (!plugin?.manifest.settings) return {};
-
-          // Return all settings with defaults
-          const settings: Record<string, unknown> = {};
-          for (const [key, def] of Object.entries(plugin.manifest.settings)) {
-            settings[key] = def.default;
-          }
-          return settings;
-        },
-      },
-      optimization: {
-        onPromptAnalysis: (handler) => {
-          const hooks = this.optimizationHooks.get('promptAnalysis') ?? [];
-          hooks.push({ pluginId, handler });
-          this.optimizationHooks.set('promptAnalysis', hooks);
-          logger.debug(`Plugin ${pluginId} registered onPromptAnalysis hook`);
-        },
-        onScoreCalculation: (handler) => {
-          const hooks = this.optimizationHooks.get('scoreCalculation') ?? [];
-          hooks.push({ pluginId, handler });
-          this.optimizationHooks.set('scoreCalculation', hooks);
-          logger.debug(`Plugin ${pluginId} registered onScoreCalculation hook`);
-        },
-        onNarrativeCheck: (handler) => {
-          const hooks = this.optimizationHooks.get('narrativeCheck') ?? [];
-          hooks.push({ pluginId, handler });
-          this.optimizationHooks.set('narrativeCheck', hooks);
-          logger.debug(`Plugin ${pluginId} registered onNarrativeCheck hook`);
-        },
-      },
-    };
-  }
-
-  /**
-   * Create plugin storage
-   */
-  private createPluginStorage(pluginId: string): PluginStorage {
-    const prefix = `plugin:${pluginId}:data:`;
-
-    return {
-      get: async <T = unknown>(key: string): Promise<T | undefined> => {
-        if (
-          !this.hasPermission(pluginId, 'storage:read') &&
-          !this.hasPermission(pluginId, 'storage')
-        ) {
-          throw new Error('Plugin does not have storage:read permission');
-        }
-        return await get<T>(prefix + key);
-      },
-      set: async (key: string, value: unknown) => {
-        if (
-          !this.hasPermission(pluginId, 'storage:write') &&
-          !this.hasPermission(pluginId, 'storage')
-        ) {
-          throw new Error('Plugin does not have storage:write permission');
-        }
-        await set(prefix + key, value);
-      },
-      delete: async (key: string) => {
-        if (
-          !this.hasPermission(pluginId, 'storage:write') &&
-          !this.hasPermission(pluginId, 'storage')
-        ) {
-          throw new Error('Plugin does not have storage:write permission');
-        }
-        await del(prefix + key);
-      },
-      clear: async () => {
-        if (
-          !this.hasPermission(pluginId, 'storage:write') &&
-          !this.hasPermission(pluginId, 'storage')
-        ) {
-          throw new Error('Plugin does not have storage:write permission');
-        }
-        const allKeys = await keys();
-        const pluginKeys = allKeys.filter((k) => String(k).startsWith(prefix));
-        await Promise.all(pluginKeys.map((k) => del(k)));
-      },
-      keys: async () => {
-        if (
-          !this.hasPermission(pluginId, 'storage:read') &&
-          !this.hasPermission(pluginId, 'storage')
-        ) {
-          throw new Error('Plugin does not have storage:read permission');
-        }
-        const allKeys = await keys();
-        return allKeys
-          .filter((k) => String(k).startsWith(prefix))
-          .map((k) => String(k).substring(prefix.length));
-      },
-    };
-  }
-
-  /**
-   * Create plugin events
-   */
-  private createPluginEvents(pluginId: string): PluginEvents {
-    return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event emitter uses heterogeneous payloads; per-event generics would require a full typed event map, which is out of scope for the plugin sandbox API
-      on: (event: string, handler: (...args: any[]) => void) => {
-        if (!this.hasPermission(pluginId, 'events:subscribe')) {
-          throw new Error('Plugin does not have events:subscribe permission');
-        }
-
-        if (!this.eventHandlers.has(event)) {
-          this.eventHandlers.set(event, new Set());
-        }
-        this.eventHandlers.get(event)!.add(handler);
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same rationale as `on`: handler must accept the same variadic payload shape
-      off: (event: string, handler: (...args: any[]) => void) => {
-        const handlers = this.eventHandlers.get(event);
-        if (handlers) {
-          handlers.delete(handler);
-        }
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- variadic args forwarded verbatim to registered handlers; no static payload type available
-      emit: (event: string, ...args: any[]) => {
-        if (!this.hasPermission(pluginId, 'events:publish')) {
-          throw new Error('Plugin does not have events:publish permission');
-        }
-
-        const handlers = this.eventHandlers.get(event);
-        if (handlers) {
-          handlers.forEach((handler) => {
-            try {
-              handler(...args);
-            } catch (error) {
-              logger.error('[PluginService] Error in event handler:', error);
-            }
-          });
-        }
-      },
-    };
-  }
-
-  /**
-   * Create plugin logger
-   */
-  private createPluginLogger(pluginId: string): PluginLogger {
-    const prefix = `[Plugin:${pluginId}]`;
-
-    return {
-      debug: (...args: unknown[]) => logger.debug(`${prefix} ${args.join(' ')}`, 'pluginService'),
-      info: (...args: unknown[]) => logger.info(`${prefix} ${args.join(' ')}`, 'pluginService'),
-      warn: (...args: unknown[]) => logger.warn(prefix, ...args),
-      error: (...args: unknown[]) => logger.error(prefix, ...args),
-    };
+      eventHandlers: this.eventHandlers,
+      optimizationHooks: this.optimizationHooks,
+    });
   }
 
   /**
@@ -632,129 +368,55 @@ class PluginService implements PluginRegistry {
   // ─── Trust & Signing ──────────────────────────────────────────────
 
   /**
-   * Evaluate the trust level of a plugin manifest.
-   * Wraps the crypto utility with fallback for environments without Ed25519.
-   */
-  private async evaluateTrustLevel(manifest: PluginManifest): Promise<PluginTrustLevel> {
-    try {
-      return await determinePluginTrustLevel(manifest);
-    } catch (error) {
-      logger.warn('[PluginService] Trust evaluation failed, marking as unsigned:', error);
-      return manifest.signature ? 'invalid' : 'unsigned';
-    }
-  }
-
-  /**
    * Get the trust level of a loaded plugin.
    */
   getTrustLevel(pluginId: string): PluginTrustLevel | undefined {
-    return this.plugins.get(pluginId)?.trustLevel;
+    return pluginTrustManager.getTrustLevel(this.plugins.get(pluginId));
   }
 
   /**
    * Re-evaluate the trust level of a loaded plugin (e.g. after key rotation).
    */
   async refreshTrustLevel(pluginId: string): Promise<PluginTrustLevel | undefined> {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) return undefined;
-
-    const trustLevel = await this.evaluateTrustLevel(plugin.manifest);
-    plugin.trustLevel = trustLevel;
-    this.notifyListeners();
-    return trustLevel;
+    return pluginTrustManager.refreshTrustLevel(this.plugins.get(pluginId), () =>
+      this.notifyListeners(),
+    );
   }
 
   /**
    * Get all plugins filtered by trust level.
    */
   getPluginsByTrust(trustLevel: PluginTrustLevel): Plugin[] {
-    return this.getAll().filter((p) => p.trustLevel === trustLevel);
-  }
-
-  /**
-   * Storage helpers
-   */
-  private async loadManifest(pluginId: string): Promise<PluginManifest | null> {
-    return (await get<PluginManifest>(`plugin:manifest:${pluginId}`)) ?? null;
-  }
-
-  private async saveManifest(manifest: PluginManifest): Promise<void> {
-    await set(`plugin:manifest:${manifest.id}`, manifest);
-  }
-
-  private async deleteManifest(pluginId: string): Promise<void> {
-    await del(`plugin:manifest:${pluginId}`);
-  }
-
-  private async getEnabledPlugins(): Promise<string[]> {
-    return (await get<string[]>('plugin:enabled')) || [];
-  }
-
-  private async addEnabledPlugin(pluginId: string): Promise<void> {
-    const enabled = await this.getEnabledPlugins();
-    if (!enabled.includes(pluginId)) {
-      enabled.push(pluginId);
-      await set('plugin:enabled', enabled);
-    }
-  }
-
-  private async removeEnabledPlugin(pluginId: string): Promise<void> {
-    const enabled = await this.getEnabledPlugins();
-    const filtered = enabled.filter((id) => id !== pluginId);
-    await set('plugin:enabled', filtered);
+    return pluginTrustManager.getPluginsByTrust(this.getAll(), trustLevel);
   }
 
   // ─── Health Tracking ────────────────────────────────────────────────
-
-  /** Maximum crash count before auto-disabling a plugin */
-  private static readonly MAX_CRASH_COUNT = 3;
 
   /**
    * Report a crash for a plugin. Increments crash counter and
    * auto-deactivates after MAX_CRASH_COUNT consecutive crashes.
    */
   async reportCrash(pluginId: string, error: Error): Promise<void> {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) return;
-
-    plugin.health.crashCount += 1;
-    plugin.health.lastError = error;
-    plugin.health.lastCrashAt = Date.now();
-
-    if (plugin.health.crashCount >= PluginService.MAX_CRASH_COUNT) {
-      plugin.health.status = 'crashed';
-      logger.error(
-        `[PluginService] Plugin ${pluginId} crashed ${plugin.health.crashCount} times — auto-disabling`,
-      );
-      try {
-        await this.deactivate(pluginId);
-      } catch {
-        // Already logging above; swallow deactivation errors
-      }
-    } else {
-      plugin.health.status = 'degraded';
-      logger.warn(`[PluginService] Plugin ${pluginId} crash #${plugin.health.crashCount}`);
-    }
-
-    this.notifyListeners();
+    return pluginHealthManager.reportCrash(
+      this.plugins.get(pluginId),
+      error,
+      (id) => this.deactivate(id),
+      () => this.notifyListeners(),
+    );
   }
 
   /**
    * Reset health state for a plugin (e.g. after user manually re-enables).
    */
   resetHealth(pluginId: string): void {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) return;
-
-    plugin.health = { status: 'healthy', crashCount: 0 };
-    this.notifyListeners();
+    pluginHealthManager.resetHealth(this.plugins.get(pluginId), () => this.notifyListeners());
   }
 
   /**
    * Get health status for a plugin.
    */
   getHealth(pluginId: string): PluginHealth | undefined {
-    return this.plugins.get(pluginId)?.health;
+    return pluginHealthManager.getHealth(this.plugins.get(pluginId));
   }
 
   /**
