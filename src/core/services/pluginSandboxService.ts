@@ -130,21 +130,40 @@ self.onmessage = async function(e) {
       case 'init': {
         _pluginId = msg.pluginId;
         _permissions = msg.permissions || [];
-        // Evaluate plugin code in a restricted scope
-        const createPlugin = new Function(
-          'exports', 'context',
-          // Shadow dangerous globals
-          'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval',
-          msg.sourceCode + '; return typeof exports.activate === "function" ? exports : null;'
-        );
+
         const exports = {};
-        _pluginInstance = createPlugin(
-          exports, _context,
-          undefined, undefined, undefined, undefined, undefined
-        );
-        if (!_pluginInstance && exports.activate) {
-          _pluginInstance = exports;
+        const module = { exports };
+
+        self.__currentPluginExports = exports;
+        self.__currentPluginModule = module;
+        self.__currentPluginContext = _context;
+
+        const codeBlob = new Blob([
+          '(function(exports, module, context, fetch, XMLHttpRequest, WebSocket, importScripts, eval, Function, SharedArrayBuffer, Atomics) {\n' +
+          '"use strict";\n' +
+          msg.sourceCode + '\n' +
+          '})(self.__currentPluginExports, self.__currentPluginModule, self.__currentPluginContext, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);'
+        ], { type: 'application/javascript' });
+
+        const blobUrl = URL.createObjectURL(codeBlob);
+        try {
+          importScripts(blobUrl);
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+          delete self.__currentPluginExports;
+          delete self.__currentPluginModule;
+          delete self.__currentPluginContext;
         }
+
+        const finalExports = module.exports && Object.keys(module.exports).length > 0 ? module.exports : exports;
+        if (typeof finalExports.activate === 'function') {
+          _pluginInstance = finalExports;
+        } else if (typeof exports.activate === 'function') {
+          _pluginInstance = exports;
+        } else {
+          _pluginInstance = null;
+        }
+
         self.postMessage({ type: 'ready' });
         break;
       }

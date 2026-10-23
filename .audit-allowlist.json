@@ -81,6 +81,84 @@
       "expires": "2027-05-19"
     },
     {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify SAFE_FOR_TEMPLATES bypass advisory accepted short-term for local PDF export flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify IN_PLACE advisory accepted short-term for local PDF export flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify SMIL attributeName advisory accepted short-term for local PDF export flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "jspdf",
+      "justification": "Transitive dompurify vulnerability via jspdf accepted short-term for local PDF export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "jspdf",
+      "justification": "Transitive dompurify vulnerability via jspdf accepted short-term for local PDF export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "jspdf",
+      "justification": "Transitive dompurify vulnerability via jspdf accepted short-term for local PDF export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "Dev/CLI dependency cross-origin header advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "Dev/CLI dependency sensitive headers advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Dev tool Vite launch-editor advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Dev tool Vite launch-editor advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Dev tool Vite launch-editor advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Dev tool Vite middleware advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Dev tool Vite server fs.allow advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
       "id": 1113371,
       "package": "minimatch",
       "justification": "ReDoS via repeated wildcards (GHSA-3ppc-4f35-3m26). Dev-only dependency — used by eslint, electron-builder, node-gyp at build time. Not in production bundle. Upstream fix requires minimatch >=10.2.1; blocked by eslint@9, electron-builder@26, and typescript-eslint@8 locking older versions.",
@@ -379,8 +457,68 @@
       "package": "tailwindcss",
       "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify SAFE_FOR_TEMPLATES advisory accepted; local desktop app, no untrusted HTML template parsing.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify IN_PLACE advisory accepted; local desktop app, no untrusted HTML event handler parsing.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify SMIL attributeName advisory accepted; local desktop app.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency via axios in dev/build tools. Local desktop app flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency via axios in dev/build tools. Local desktop app flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Vite dev server launch-editor advisory; dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
     }
   ],
-  "lastReviewed": "2026-10-07",
+  "lastReviewed": "2026-10-23",
   "reviewedBy": "loofi"
 }
