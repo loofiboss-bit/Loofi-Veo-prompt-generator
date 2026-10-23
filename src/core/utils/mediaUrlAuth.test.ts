@@ -49,8 +49,6 @@ describe('appendApiKeyToMediaUrl', () => {
     const url = 'https://example.com/media.mp4';
     const specialApiKey = 'key with spaces & special=chars#123?';
     const result = appendApiKeyToMediaUrl(url, specialApiKey);
-    expect(result).toBe(
-      `https://example.com/media.mp4?key=${encodeURIComponent(specialApiKey)}`,
-    );
+    expect(result).toBe(`https://example.com/media.mp4?key=${encodeURIComponent(specialApiKey)}`);
   });
 });
