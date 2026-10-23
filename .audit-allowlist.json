@@ -361,6 +361,24 @@
       "package": "tailwindcss",
       "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify SAFE_FOR_TEMPLATES advisory accepted; local desktop app, no untrusted HTML template parsing.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify IN_PLACE advisory accepted; local desktop app, no untrusted HTML event handler parsing.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify SMIL attributeName advisory accepted; local desktop app.",
+      "expires": "2027-05-19"
     }
   ],
   "lastReviewed": "2026-10-07",
