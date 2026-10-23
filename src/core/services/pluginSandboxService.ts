@@ -130,21 +130,25 @@ self.onmessage = async function(e) {
       case 'init': {
         _pluginId = msg.pluginId;
         _permissions = msg.permissions || [];
-        // Evaluate plugin code in a restricted scope
-        const createPlugin = new Function(
-          'exports', 'context',
-          // Shadow dangerous globals
-          'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval',
-          msg.sourceCode + '; return typeof exports.activate === "function" ? exports : null;'
-        );
-        const exports = {};
-        _pluginInstance = createPlugin(
-          exports, _context,
-          undefined, undefined, undefined, undefined, undefined
-        );
-        if (!_pluginInstance && exports.activate) {
-          _pluginInstance = exports;
+
+        // Save local reference to native importScripts before stripping from global scope
+        const _nativeImportScripts = self.importScripts;
+
+        // Shadow dangerous globals in local IIFE wrapper scope
+        self.exports = {};
+        const code = '"use strict";\n(function(exports, context, fetch, XMLHttpRequest, WebSocket, importScripts, eval) {\n' +
+          msg.sourceCode +
+          '\n})(self.exports, _context);';
+        const blob = new Blob([code], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        try {
+          _nativeImportScripts(blobUrl);
+          _pluginInstance = typeof self.exports.activate === 'function' ? self.exports : null;
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+          delete self.exports;
         }
+
         self.postMessage({ type: 'ready' });
         break;
       }
