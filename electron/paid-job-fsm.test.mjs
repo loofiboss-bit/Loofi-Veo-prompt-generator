@@ -6,11 +6,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const {
-  PaidJobFSM,
-  PaidJobJournal,
-  VALID_FSM_TRANSITIONS,
-} = require('./paid-job-fsm.cjs');
+const { PaidJobFSM, PaidJobJournal, VALID_FSM_TRANSITIONS } = require('./paid-job-fsm.cjs');
 
 test('PaidJobFSM transitions follow valid state paths', () => {
   let job = {
@@ -55,10 +51,7 @@ test('PaidJobFSM blocks illegal transitions and missing approval tokens', () => 
     state: 'DRAFT',
   };
 
-  assert.throws(
-    () => PaidJobFSM.transition(job, 'RUNNING'),
-    /Invalid FSM transition/,
-  );
+  assert.throws(() => PaidJobFSM.transition(job, 'RUNNING'), /Invalid FSM transition/);
 
   const quotedJob = {
     id: 'test-fsm-3',

@@ -83,7 +83,11 @@ test('dirty check and snapshot serialization overhead completes under 5ms on a 2
       { id: 'char-1', name: 'Alex', role: 'Protagonist', description: 'Detective in trench coat' },
     ],
     locationBank: [
-      { id: 'loc-1', name: 'Neon Alley', description: 'Rain-soaked street with holographic billboards' },
+      {
+        id: 'loc-1',
+        name: 'Neon Alley',
+        description: 'Rain-soaked street with holographic billboards',
+      },
     ],
   };
 

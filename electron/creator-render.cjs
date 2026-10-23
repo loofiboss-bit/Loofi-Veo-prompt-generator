@@ -71,10 +71,7 @@ function validatePlan(input) {
         !number(p.audioProcessing.duckingGainDb, -40, 0)))
   )
     throw new Error('Invalid audio processing settings.');
-  if (
-    p.coverTimestamp !== undefined &&
-    !number(p.coverTimestamp, 0, p.durationSeconds)
-  )
+  if (p.coverTimestamp !== undefined && !number(p.coverTimestamp, 0, p.durationSeconds))
     throw new Error('Invalid cover timestamp.');
   if (
     p.coverAssetId !== undefined &&

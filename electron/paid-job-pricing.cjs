@@ -239,7 +239,9 @@ function validateProviderCostApproval(input, options = {}) {
     count: calculation.imageCount || 1,
   });
   if (approval.payloadHash && approval.payloadHash !== providerExpectedHash) {
-    throw new Error('Payload hash mismatch: provider job parameters were modified after cost approval.');
+    throw new Error(
+      'Payload hash mismatch: provider job parameters were modified after cost approval.',
+    );
   }
   if (options.requirePayloadHash && !approval.payloadHash) {
     throw new Error('Provider cost approval must contain a cryptographic payloadHash.');
