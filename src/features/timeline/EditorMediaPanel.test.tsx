@@ -62,18 +62,16 @@ describe('EditorMediaPanel', () => {
       durationSeconds: 10,
     };
 
-    vi.spyOn(mediaAssetService, 'importLocalFile')
-      .mockImplementation(async (file) => {
-        if (file.name === 'test1.png') return asset1;
-        return asset2;
-      });
+    vi.spyOn(mediaAssetService, 'importLocalFile').mockImplementation(async (file) => {
+      if (file.name === 'test1.png') return asset1;
+      return asset2;
+    });
 
-    vi.spyOn(mediaAssetService, 'prepareDesktopProxy')
-      .mockImplementation(async (asset) => ({
-        ...asset,
-        proxyUrl: `proxy-${asset.id}`,
-        isProxyReady: true,
-      }));
+    vi.spyOn(mediaAssetService, 'prepareDesktopProxy').mockImplementation(async (asset) => ({
+      ...asset,
+      proxyUrl: `proxy-${asset.id}`,
+      isProxyReady: true,
+    }));
 
     const { container } = render(<EditorMediaPanel />);
     const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -119,9 +117,9 @@ describe('EditorMediaPanel', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('alert')
-      ).toHaveTextContent('The project changed. Import the media again in the intended project.');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'The project changed. Import the media again in the intended project.',
+      );
     });
   });
 
@@ -140,7 +138,7 @@ describe('EditorMediaPanel', () => {
     };
 
     expect(() => appendEditorMedia([invalidAsset])).toThrow(
-      'Read media duration before adding this file.'
+      'Read media duration before adding this file.',
     );
   });
 });

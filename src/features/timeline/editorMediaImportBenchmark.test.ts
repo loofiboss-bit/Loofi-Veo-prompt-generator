@@ -4,29 +4,36 @@ import { mediaAssetService } from '@core/services/mediaAssetService';
 describe('EditorMediaPanel Import Performance Benchmark', () => {
   it('measures performance difference between sequential and parallel imports', async () => {
     // Mock importLocalFile to simulate I/O or async work (e.g. 20ms delay per file)
-    const mockImportLocalFile = vi.spyOn(mediaAssetService, 'importLocalFile').mockImplementation(async (file: File) => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return {
-        id: `mock-id-${file.name}`,
-        storageKey: `key-${file.name}`,
-        name: file.name,
-        type: 'image',
-        mimeType: file.type,
-        data: '',
-        url: 'blob:mock-url',
-        groupId: 'group-1',
-        version: 1,
-        tags: [],
-      };
-    });
+    const mockImportLocalFile = vi
+      .spyOn(mediaAssetService, 'importLocalFile')
+      .mockImplementation(async (file: File) => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return {
+          id: `mock-id-${file.name}`,
+          storageKey: `key-${file.name}`,
+          name: file.name,
+          type: 'image',
+          mimeType: file.type,
+          data: '',
+          url: 'blob:mock-url',
+          groupId: 'group-1',
+          version: 1,
+          tags: [],
+        };
+      });
 
-    const mockPrepareProxy = vi.spyOn(mediaAssetService, 'prepareDesktopProxy').mockImplementation(async (asset) => {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return { ...asset, proxyUrl: 'proxy-url', isProxyReady: true };
-    });
+    const mockPrepareProxy = vi
+      .spyOn(mediaAssetService, 'prepareDesktopProxy')
+      .mockImplementation(async (asset) => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return { ...asset, proxyUrl: 'proxy-url', isProxyReady: true };
+      });
 
     const fileCount = 10;
-    const files = Array.from({ length: fileCount }, (_, i) => new File(['content'], `file-${i}.png`, { type: 'image/png' }));
+    const files = Array.from(
+      { length: fileCount },
+      (_, i) => new File(['content'], `file-${i}.png`, { type: 'image/png' }),
+    );
 
     // Sequential execution (baseline)
     const seqStart = performance.now();
@@ -41,7 +48,9 @@ describe('EditorMediaPanel Import Performance Benchmark', () => {
 
     // Parallel execution (optimized)
     const parStart = performance.now();
-    const importedPar = await Promise.all(files.map((file) => mediaAssetService.importLocalFile(file)));
+    const importedPar = await Promise.all(
+      files.map((file) => mediaAssetService.importLocalFile(file)),
+    );
     await Promise.all(
       importedPar.map(async (asset) => {
         try {
@@ -50,7 +59,7 @@ describe('EditorMediaPanel Import Performance Benchmark', () => {
         } catch {
           return asset;
         }
-      })
+      }),
     );
     const parDuration = performance.now() - parStart;
 
