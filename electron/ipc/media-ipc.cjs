@@ -49,7 +49,8 @@ function registerMediaIpc({ ipcMain, getMediaStore, getApiKey }) {
 
   ipcMain.handle('desktop-media-set-accepted', async (_, input) => {
     const store = requireStore();
-    if (!input || typeof input !== 'object') throw new Error('Invalid desktop media accepted payload.');
+    if (!input || typeof input !== 'object')
+      throw new Error('Invalid desktop media accepted payload.');
     validateMediaKey(input.key);
     return store.setAccepted(input.key, Boolean(input.accepted));
   });

@@ -18,6 +18,7 @@ const delivery = vi.hoisted(() => ({
   download: vi.fn(),
 }));
 vi.mock('@core/services/projectDocumentService', () => ({
+  setDocumentRegisterCallback: vi.fn(),
   projectDocumentService: { save: delivery.save, load: delivery.load },
 }));
 vi.mock('@core/services/projectTransferService', () => ({

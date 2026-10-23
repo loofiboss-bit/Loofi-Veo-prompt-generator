@@ -117,15 +117,26 @@ test('IPC contract parity: validates inputs and rejects malformed payloads befor
 
   // Project IPC contract validation
   await assert.rejects(handlers.get('project-backup-save')(null, null), /must be an object/);
-  await assert.rejects(handlers.get('project-backup-save')(null, { projectId: '' }), /alphanumeric/);
-  await assert.rejects(handlers.get('project-backup-save')(null, { projectId: 'p1', snapshot: null }), /snapshot must be an object/);
+  await assert.rejects(
+    handlers.get('project-backup-save')(null, { projectId: '' }),
+    /alphanumeric/,
+  );
+  await assert.rejects(
+    handlers.get('project-backup-save')(null, { projectId: 'p1', snapshot: null }),
+    /snapshot must be an object/,
+  );
   await assert.rejects(handlers.get('project-backup-list')(null, '../traversal'), /alphanumeric/);
-  await assert.rejects(handlers.get('project-backup-restore')(null, { projectId: 'p1', id: 'bad-id' }), /Invalid backup ID/);
+  await assert.rejects(
+    handlers.get('project-backup-restore')(null, { projectId: 'p1', id: 'bad-id' }),
+    /Invalid backup ID/,
+  );
 
   // Media IPC contract validation
   await assert.rejects(handlers.get('desktop-media-read')(null, ''), /Invalid media storage key/);
   await assert.rejects(handlers.get('desktop-media-cache')(null, { url: '' }), /missing URL/);
-  await assert.rejects(handlers.get('desktop-media-relink')(null, { key: 'valid-key', candidatePath: '' }), /candidatePath must be a string/);
+  await assert.rejects(
+    handlers.get('desktop-media-relink')(null, { key: 'valid-key', candidatePath: '' }),
+    /candidatePath must be a string/,
+  );
   await assert.rejects(handlers.get('desktop-media-set-accepted')(null, null), /accepted payload/);
 });
-

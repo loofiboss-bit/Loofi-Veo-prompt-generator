@@ -126,9 +126,5 @@ test('validates payload hash and rejects tampering after cost approval', () => {
       durationSeconds: 4,
     },
   };
-  assert.throws(
-    () => validateCostApproval(tamperedDurationTask),
-    /Payload hash mismatch/,
-  );
+  assert.throws(() => validateCostApproval(tamperedDurationTask), /Payload hash mismatch/);
 });
-

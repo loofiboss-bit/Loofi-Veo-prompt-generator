@@ -30,7 +30,8 @@ class PaidJobFSM {
     }
 
     if (targetState === 'DISPATCHING') {
-      const approvalToken = updates.approvalToken || job.approvalToken || job.costApproval?.approvalId;
+      const approvalToken =
+        updates.approvalToken || job.approvalToken || job.costApproval?.approvalId;
       const payloadHash = updates.payloadHash || job.payloadHash || job.costApproval?.payloadHash;
       if (!approvalToken) {
         throw new Error('Cannot transition to DISPATCHING without an approval token.');
@@ -65,18 +66,29 @@ class PaidJobFSM {
           updatedAt: now,
           history: [
             ...(Array.isArray(job.history) ? job.history : []),
-            { from: 'DISPATCHING', to: 'RUNNING', timestamp: now, reason: 'Recovered active operation after restart' },
+            {
+              from: 'DISPATCHING',
+              to: 'RUNNING',
+              timestamp: now,
+              reason: 'Recovered active operation after restart',
+            },
           ],
         };
       }
       return {
         ...job,
         state: 'FAILED',
-        error: 'AMBIGUOUS_CRASH_DURING_DISPATCH: In-flight dispatch was interrupted. Double-dispatch prevented.',
+        error:
+          'AMBIGUOUS_CRASH_DURING_DISPATCH: In-flight dispatch was interrupted. Double-dispatch prevented.',
         updatedAt: now,
         history: [
           ...(Array.isArray(job.history) ? job.history : []),
-          { from: 'DISPATCHING', to: 'FAILED', timestamp: now, reason: 'Prevented duplicate dispatch after unconfirmed restart' },
+          {
+            from: 'DISPATCHING',
+            to: 'FAILED',
+            timestamp: now,
+            reason: 'Prevented duplicate dispatch after unconfirmed restart',
+          },
         ],
       };
     }
