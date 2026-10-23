@@ -114,6 +114,8 @@ import {
   renderTitleCard,
   renderAudioVisualizer,
   transcodeVideo,
+  escapeDrawText,
+  sanitizeHexColor,
 } from './videoEditorService';
 
 describe('videoEditorService', () => {
@@ -305,12 +307,27 @@ describe('videoEditorService', () => {
     it('should escape special characters in title text', async () => {
       const styles = { background: '#000000', color: '#ffffff', fontSize: 48 };
 
-      await renderTitleCard("Test: Title's", 3, styles);
+      await renderTitleCard("Test: Title's %{eif:1:d}", 3, styles);
 
       const execCall = mockExec.mock.calls[0][0];
       const vfArg = execCall.find((arg: string) => arg.includes('drawtext'));
       expect(vfArg).toContain("\\'");
       expect(vfArg).toContain('\\:');
+      expect(vfArg).toContain('\\%');
+    });
+
+    it('should sanitize malicious hex color and style inputs', async () => {
+      const styles = { background: '#000000:eval=1', color: '#ffffff:drawtext=text=hacked', fontSize: NaN };
+
+      await renderTitleCard("Test Title", 3, styles);
+
+      const execCall = mockExec.mock.calls[0][0];
+      const colorArg = execCall.find((arg: string) => arg.includes('color=c='));
+      const vfArg = execCall.find((arg: string) => arg.includes('drawtext'));
+
+      expect(colorArg).toContain('color=c=0x000000');
+      expect(vfArg).toContain('fontcolor=0xFFFFFFFF');
+      expect(vfArg).toContain('fontsize=48');
     });
 
     it('should call progress callback', async () => {
@@ -370,6 +387,19 @@ describe('videoEditorService', () => {
       await renderAudioVisualizer(audioBlob, bgImage, 'line');
 
       expect(mockDeleteFile).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('security helpers', () => {
+    it('should properly escape drawtext control characters and expansion percentage signs', () => {
+      expect(escapeDrawText("Hello: World's \\ %{eif:1:d}")).toBe("Hello\\: World\\'s \\\\ \\%{eif\\:1\\:d}");
+    });
+
+    it('should sanitize hex colors and fallback to default on invalid input', () => {
+      expect(sanitizeHexColor('#ff0000')).toBe('ff0000');
+      expect(sanitizeHexColor('0x00ff00')).toBe('00ff00');
+      expect(sanitizeHexColor('invalid-color', '000000')).toBe('000000');
+      expect(sanitizeHexColor('#12345678')).toBe('12345678');
     });
   });
 
