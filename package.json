@@ -148,7 +148,7 @@
     "axios": "1.20.0",
     "baseline-browser-mapping": "2.11.0",
     "browserslist": "4.28.7",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "esbuild": "0.28.1",
     "fast-uri": "3.1.8",
     "fflate": "0.8.3",
