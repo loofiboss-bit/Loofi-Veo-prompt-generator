@@ -361,6 +361,42 @@
       "package": "tailwindcss",
       "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify used via jsPDF for local export-only flow; no untrusted HTML processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify used via jsPDF for local export-only flow; no untrusted HTML processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify used via jsPDF for local export-only flow; no untrusted HTML processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "jspdf",
+      "justification": "Transitive dep of DOMPurify via jsPDF.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "jspdf",
+      "justification": "Transitive dep of DOMPurify via jsPDF.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "jspdf",
+      "justification": "Transitive dep of DOMPurify via jsPDF.",
+      "expires": "2027-05-19"
     }
   ],
   "lastReviewed": "2026-10-07",
