@@ -601,4 +601,50 @@ describe('PluginSandboxService', () => {
       );
     });
   });
+
+  // ── Security & Sandbox isolation checks ────────────────────────
+
+  describe('security and isolation', () => {
+    it('does not contain new Function in worker bootstrap code', async () => {
+      const fs = await import('fs');
+      const serviceContent = fs.readFileSync('src/core/services/pluginSandboxService.ts', 'utf-8');
+
+      // Match WORKER_BOOTSTRAP constant content
+      const workerBootstrapMatch = serviceContent.match(/const WORKER_BOOTSTRAP = `([\s\S]*?)`;/);
+      expect(workerBootstrapMatch).toBeTruthy();
+
+      const workerBootstrapCode = workerBootstrapMatch![1];
+
+      // Ensure new Function is not used inside WORKER_BOOTSTRAP
+      expect(workerBootstrapCode).not.toContain('new Function');
+      expect(workerBootstrapCode).toContain('importScripts');
+      expect(workerBootstrapCode).toContain('Blob');
+    });
+
+    it('evaluates worker code blob with correct formatting and exports initialization', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
+        'eval-plugin',
+        'exports.activate = function(ctx) {}; exports.testValue = 42;',
+        ['ui:sidebar'],
+        'worker',
+      );
+
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+
+      const worker = createdWorkers[createdWorkers.length - 1];
+
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+
+      // Simulate worker ready
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+
+      const info = await createPromise;
+      expect(info.state).toBe('ready');
+      expect(info.config.pluginId).toBe('eval-plugin');
+    });
+  });
 });
