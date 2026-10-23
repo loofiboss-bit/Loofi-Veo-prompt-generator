@@ -43,7 +43,18 @@ const WORKER_BOOTSTRAP = `
 'use strict';
 
 // Restricted globals — disable dangerous APIs inside Web Worker environment
-['fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval'].forEach((api) => {
+const RESTRICTED_GLOBALS = [
+  'fetch',
+  'XMLHttpRequest',
+  'WebSocket',
+  'importScripts',
+  'eval',
+  'Function',
+  'SharedArrayBuffer',
+  'Atomics',
+];
+
+RESTRICTED_GLOBALS.forEach((api) => {
   try {
     Object.defineProperty(self, api, {
       get() {
@@ -136,34 +147,23 @@ self.onmessage = async function(e) {
       case 'init': {
         _pluginId = msg.pluginId;
         _permissions = msg.permissions || [];
-        // Evaluate plugin code safely via dynamic ES module import using Blob URL
-        const moduleSource = [
-          'const context = self._context;\n',
-          'let exports = {};\n',
-          msg.sourceCode,
-          '\nexport { exports };\n',
-          'export const activate = typeof exports.activate === "function" ? exports.activate.bind(exports) : (typeof activate === "function" ? activate : undefined);\n',
-          'export const deactivate = typeof exports.deactivate === "function" ? exports.deactivate.bind(exports) : (typeof deactivate === "function" ? deactivate : undefined);\n',
-          'export const dispose = typeof exports.dispose === "function" ? exports.dispose.bind(exports) : (typeof dispose === "function" ? dispose : undefined);\n'
-        ].join('');
+        // Evaluate plugin code safely via dynamic ES module import with shadowed globals
+        const shadowedParams = RESTRICTED_GLOBALS.join(', ');
+        const shadowedUndefineds = RESTRICTED_GLOBALS.map(() => 'undefined').join(', ');
 
-        self._context = _context;
-        const blob = new Blob([moduleSource], { type: 'application/javascript' });
-        const blobUrl = URL.createObjectURL(blob);
-        let pluginModule;
-        try {
-          pluginModule = await import(blobUrl);
-        } finally {
-          URL.revokeObjectURL(blobUrl);
-          delete self._context;
-        }
+        const moduleSource =
+          'export default function initPlugin(context) {\n' +
+          '  const exports = {};\n' +
+          '  (function(exports, context, ' + shadowedParams + ') {\n' +
+          msg.sourceCode + '\n' +
+          '  })(exports, context, ' + shadowedUndefineds + ');\n' +
+          '  return exports;\n' +
+          '}';
 
-        const exp = pluginModule.exports || {};
-        if (pluginModule.activate) exp.activate = pluginModule.activate;
-        if (pluginModule.deactivate) exp.deactivate = pluginModule.deactivate;
-        if (pluginModule.dispose) exp.dispose = pluginModule.dispose;
+        const dataUrl = 'data:text/javascript;charset=utf-8,' + encodeURIComponent(moduleSource);
+        const pluginModule = await import(dataUrl);
+        _pluginInstance = pluginModule.default(_context);
 
-        _pluginInstance = exp;
         self.postMessage({ type: 'ready' });
         break;
       }
@@ -283,7 +283,7 @@ class SandboxInstance {
       try {
         const blob = new Blob([WORKER_BOOTSTRAP], { type: 'application/javascript' });
         const url = URL.createObjectURL(blob);
-        this._worker = new Worker(url);
+        this._worker = new Worker(url, { type: 'module' });
         URL.revokeObjectURL(url);
 
         const timeoutId = setTimeout(() => {
