@@ -601,4 +601,21 @@ describe('PluginSandboxService', () => {
       );
     });
   });
+
+  // ── Security & Dynamic Code Execution ─────────────────────────
+
+  describe('security - dynamic execution without new Function', () => {
+    it('should not contain new Function in WORKER_BOOTSTRAP', async () => {
+      // Read module / service implementation to ensure new Function is eliminated from worker bootstrap
+      const fileContent = await import('fs').then((fs) =>
+        fs.readFileSync('src/core/services/pluginSandboxService.ts', 'utf8'),
+      );
+      // Ensure "new Function(" inside WORKER_BOOTSTRAP is absent
+      const workerBootstrapMatch = fileContent.match(/const WORKER_BOOTSTRAP = `([\s\S]*?)`;/);
+      expect(workerBootstrapMatch).toBeTruthy();
+      const workerBootstrapCode = workerBootstrapMatch![1];
+      expect(workerBootstrapCode).not.toContain('new Function');
+      expect(workerBootstrapCode).toContain('import(');
+    });
+  });
 });

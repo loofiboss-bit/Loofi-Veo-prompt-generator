@@ -42,13 +42,19 @@ import type { PluginPermission } from '@core/types/plugin';
 const WORKER_BOOTSTRAP = `
 'use strict';
 
-// Restricted globals — remove dangerous APIs
-const _restricted = [
-  'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts',
-  'eval', 'Function', 'SharedArrayBuffer', 'Atomics'
-];
-// Note: we don't actually delete them from globalThis to avoid errors;
-// instead we shadow them in the plugin scope.
+// Restricted globals — disable dangerous APIs inside Web Worker environment
+['fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval'].forEach((api) => {
+  try {
+    Object.defineProperty(self, api, {
+      get() {
+        throw new Error('Access to ' + api + ' is restricted in plugin sandbox.');
+      },
+      configurable: false,
+    });
+  } catch {
+    // Ignore if non-configurable
+  }
+});
 
 let _pluginInstance = null;
 let _pluginId = '';
@@ -130,21 +136,34 @@ self.onmessage = async function(e) {
       case 'init': {
         _pluginId = msg.pluginId;
         _permissions = msg.permissions || [];
-        // Evaluate plugin code in a restricted scope
-        const createPlugin = new Function(
-          'exports', 'context',
-          // Shadow dangerous globals
-          'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval',
-          msg.sourceCode + '; return typeof exports.activate === "function" ? exports : null;'
-        );
-        const exports = {};
-        _pluginInstance = createPlugin(
-          exports, _context,
-          undefined, undefined, undefined, undefined, undefined
-        );
-        if (!_pluginInstance && exports.activate) {
-          _pluginInstance = exports;
+        // Evaluate plugin code safely via dynamic ES module import using Blob URL
+        const moduleSource = [
+          'const context = self._context;\n',
+          'let exports = {};\n',
+          msg.sourceCode,
+          '\nexport { exports };\n',
+          'export const activate = typeof exports.activate === "function" ? exports.activate.bind(exports) : (typeof activate === "function" ? activate : undefined);\n',
+          'export const deactivate = typeof exports.deactivate === "function" ? exports.deactivate.bind(exports) : (typeof deactivate === "function" ? deactivate : undefined);\n',
+          'export const dispose = typeof exports.dispose === "function" ? exports.dispose.bind(exports) : (typeof dispose === "function" ? dispose : undefined);\n'
+        ].join('');
+
+        self._context = _context;
+        const blob = new Blob([moduleSource], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        let pluginModule;
+        try {
+          pluginModule = await import(blobUrl);
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+          delete self._context;
         }
+
+        const exp = pluginModule.exports || {};
+        if (pluginModule.activate) exp.activate = pluginModule.activate;
+        if (pluginModule.deactivate) exp.deactivate = pluginModule.deactivate;
+        if (pluginModule.dispose) exp.dispose = pluginModule.dispose;
+
+        _pluginInstance = exp;
         self.postMessage({ type: 'ready' });
         break;
       }
