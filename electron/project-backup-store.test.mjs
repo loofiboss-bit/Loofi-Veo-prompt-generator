@@ -99,4 +99,3 @@ test('rejects traversal in project and backup identifiers', async (t) => {
   );
   await assert.rejects(() => store.restore('project-1', '../escape'), /Invalid backup ID/);
 });
-

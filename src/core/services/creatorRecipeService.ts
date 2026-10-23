@@ -185,9 +185,10 @@ class CreatorRecipeService {
     title: string,
   ): Promise<{ project: Project; assets: Asset[] }> {
     if (!files.length || !title.trim()) throw new Error('Choose media and a project title.');
-    const assets: Asset[] = [];
-    for (const file of files) assets.push(await mediaAssetService.importLocalFile(file));
-    const inventory = await projectService.createProject({ name: title.trim() });
+    const [assets, inventory] = await Promise.all([
+      Promise.all(files.map((file) => mediaAssetService.importLocalFile(file))),
+      projectService.createProject({ name: title.trim() }),
+    ]);
     const project = createEmptyProjectDocument(inventory);
     let videoTime = 0;
     let audioTime = 0;

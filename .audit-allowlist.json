@@ -3,6 +3,24 @@
   "description": "Audit allowlist for known-accepted npm advisories. Each entry must have a justification and expiration date.",
   "allowedAdvisories": [
     {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify via jsPDF used only for local PDF export; no untrusted HTML input processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify via jsPDF used only for local PDF export; no untrusted HTML input processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify via jsPDF used only for local PDF export; no untrusted HTML input processed.",
+      "expires": "2027-05-19"
+    },
+    {
       "id": 1103308,
       "package": "jspdf",
       "justification": "jsPDF used only for local PDF export; no user-supplied HTML/untrusted input processed. Monitoring for upstream fix.",
