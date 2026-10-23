@@ -3,6 +3,66 @@
   "description": "Audit allowlist for known-accepted npm advisories. Each entry must have a justification and expiration date.",
   "allowedAdvisories": [
     {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify template expression bypass - used only locally for PDF rendering/export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify IN_PLACE hook advisory - used only locally for PDF rendering/export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify SMIL attributeName guard - used only locally for PDF rendering/export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "follow-redirects array-form header bypass - local desktop application runtime.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "follow-redirects sensitiveHeaders regex escaping - local desktop application runtime.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Vite dev server escapeCmdArgs - dev dependency only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Vite dev server launch-editor CLI flag - dev dependency only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Vite dev server fs.existsSync check - dev dependency only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Vite dev server cross origin script execution - dev dependency only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Vite dev server server.fs.allow - dev dependency only.",
+      "expires": "2027-05-19"
+    },
+    {
       "id": 1103308,
       "package": "jspdf",
       "justification": "jsPDF used only for local PDF export; no user-supplied HTML/untrusted input processed. Monitoring for upstream fix.",
