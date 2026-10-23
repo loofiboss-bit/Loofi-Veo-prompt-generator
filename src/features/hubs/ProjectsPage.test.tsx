@@ -69,7 +69,6 @@ vi.mock('@core/services/projectTransferService', () => ({
 vi.mock('@core/services/projectDocumentService', () => ({
   setDocumentRegisterCallback: vi.fn(),
   projectDocumentService: { load: loadProject, save: saveProject },
-  setDocumentRegisterCallback: vi.fn(),
 }));
 
 vi.mock('@core/store/useEditorSessionStore', () => ({
