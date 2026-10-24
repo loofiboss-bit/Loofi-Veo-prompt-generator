@@ -4,9 +4,9 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v17.0.0 Stable Smart Local Editing & Streaming Desktop
+## v19.0.0 Reviewable Video Production & Deterministic Workbench
 
-v17 introduces smart local editing including microphone voiceover recording, reviewable silence-cut suggestions, local speech-to-text captions, broadcast-standard EBU R128 loudness normalization, speech-driven audio ducking, token streaming desktop proxy, and zero edit loss save-on-close flush resilience. Bundled source-built FFmpeg resources support Linux and Windows without external dependencies. Existing project and archive formats remain fully compatible.
+v19 introduces selected-variant AI and zero-token batch local refinement, expanded cinematic AST conflict detection (`OPT-001`, `MOT-001`, `LGT-002`, `DOF-001`, `TMP-001`), synchronized Pro A/B video comparison, multi-shot production batch tools with timeline sync, NLE frame-stepping (`J/K/L`), zero-token chapter timestamp generation, and cryptographically bound `hashVersion: 2` paid request approvals. Bundled source-built FFmpeg resources support Linux and Windows without external dependencies. Existing project and archive formats remain fully compatible.
 
 Published v17.0.0 evidence: [release verification](V17_0_0_RELEASE.md).
 
@@ -15,7 +15,7 @@ See [v16 workflow](CREATOR_V16.md), [timeline editing](V16_TIMELINE_EDITING.md),
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v17.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v17.0.0)
+[v19.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v19.0.0)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -23,10 +23,10 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-17.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-17.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-17.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-17.0.0-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-19.0.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-19.0.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.

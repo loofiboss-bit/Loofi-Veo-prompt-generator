@@ -14,7 +14,14 @@
 
 ---
 
-## Completed Foundation (v17–v18 Baseline)
+## Completed Foundation (v17–v19 Baseline)
+
+- **v19.0.0 Reviewable Video Production & Deterministic Workbench (Released 2026-10-24):**
+  - Selected-variant AI editing with field-level review, guarded persistence, and zero-token batch local transforms across all 3 variants.
+  - Shared local cinematic AST guidance (`OPT-001`, `MOT-001`, `LGT-002`, `DOF-001`, `TMP-001`) in Studio/Arena, separate from documented provider restrictions.
+  - Shared Pro A/B video comparison with Swap A/B, loop, frame-stepping, frozen-source differences, and independent result notes.
+  - Multi-shot production batch controls, run cost breakdown, one-click timeline sync for accepted takes, NLE `J/K/L` frame-stepping, and zero-token YouTube chapter timestamp generation.
+  - Complete frozen Veo/Lyria request approval binding (`hashVersion: 2`), preserving recovery of known operations and resolving attention job deadlocks.
 
 - **v17.0.0 Smart Local Editing (Released 2026-10-16):**
   - **Microphone Voiceover Recording:** Direct timeline dialogue recording via Web Audio API with real-time waveform visualization, device selection, take management, and dedicated track placement.
@@ -82,7 +89,7 @@ _Goal: Crash-recoverable paid job execution, cryptographic quote locking, and au
 - [x] **4.1 Persistent Paid-Job State Machine (FSM):**
   - Persist job lifecycle states (`DRAFT -> QUOTED -> APPROVED -> DISPATCHING -> RUNNING -> COMPLETED | FAILED | CANCELLED`) in a local disk journal so in-flight jobs recover cleanly after an Electron restart without double-dispatching.
 - [x] **4.2 Payload-Hashed Approval Gate (`paid-job-pricing.cjs`):**
-  - Bind every cost approval token to a deterministic SHA-256 hash of the exact job payload (`prompt + model + duration + resolution + count`). Any parameter change immediately invalidates the approval state.
+  - Bind new Veo/Lyria approvals to the complete frozen submission (operation, model, endpoint and serialized body, including inline media), using `hashVersion: 2`. Known provider operations recover without resubmission; unsent legacy approvals require renewal.
 - [x] **4.3 Automated Architecture & Performance CI Gates:**
   - Add CI checks for zero circular dependencies (`npx madge --circular --extensions ts,tsx src/`).
   - Add a benchmark assertion ensuring `captureProjectDocumentFromStores` dirty-check overhead stays under `< 5ms` on the main thread.

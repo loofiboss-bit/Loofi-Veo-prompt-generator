@@ -1,26 +1,46 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { diffService } from '@core/services/diffService';
+import { estimateTokenCount } from '@core/services/promptAstLinterService';
 import type { VideoPromptVariant } from '@core/types';
 
 export function VideoVariantCard({
   variant,
   primary,
+  compareBaseline,
   onCopy,
   onHandoff,
   onEdit,
 }: {
   variant: VideoPromptVariant;
   primary?: boolean;
+  compareBaseline?: VideoPromptVariant;
   onCopy: (text: string, label: string) => void;
   onHandoff?: () => void;
   onEdit?: (changes: Partial<VideoPromptVariant>) => void;
 }) {
   const { t } = useTranslation('studio');
   const [open, setOpen] = useState(Boolean(primary));
+  const tokenCount = useMemo(() => estimateTokenCount(variant.prompt), [variant.prompt]);
+  const baselineDiff = useMemo(
+    () =>
+      compareBaseline && compareBaseline.prompt !== variant.prompt
+        ? diffService.compareText(compareBaseline.prompt, variant.prompt)
+        : null,
+    [compareBaseline, variant.prompt],
+  );
   return (
     <article className="studio-variant">
       <header className="studio-result-heading">
-        <h3>{variant.title}</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3>{variant.title}</h3>
+          <span
+            className="studio-metric-badge"
+            data-status={tokenCount > 280 ? 'warning' : tokenCount > 220 ? 'caution' : 'ok'}
+          >
+            {t('metrics.tokens', { defaultValue: '~{{count}} / 280 tokens', count: tokenCount })}
+          </span>
+        </div>
         <button aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? t('collapse') : t('open')}
         </button>
@@ -34,6 +54,26 @@ export function VideoVariantCard({
             aria-label={variant.label + ' prompt'}
             rows={8}
           />
+          {baselineDiff ? (
+            <details className="studio-details">
+              <summary>
+                {t('variantEdit.compareWithPrimary', { defaultValue: 'Compare with Primary' })}
+              </summary>
+              <div className="studio-diff">
+                {baselineDiff.changes.map((change, index) => (
+                  <div key={index} className={`studio-diff-${change.type}`}>
+                    {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
+                    {change.type === 'add' || change.type === 'modify'
+                      ? '+ '
+                      : change.type === 'remove'
+                        ? '− '
+                        : '  '}
+                    {change.content}
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
           <details className="studio-details">
             <summary>{t('negativePrompt')}</summary>
             <textarea

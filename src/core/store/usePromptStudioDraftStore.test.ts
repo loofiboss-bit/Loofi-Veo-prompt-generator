@@ -28,6 +28,39 @@ const draft = (projectId: string): PromptStudioDraftV1 => ({
   revision: 0,
   updatedAt: '2026-10-07T00:00:00Z',
 });
+const artifact = (id: string): PromptArtifactV1 => {
+  const variant = {
+    label: 'Primary' as const,
+    title: id,
+    prompt: id,
+    negativePrompt: '',
+    settingsChecklist: [],
+    copyPrompt: id,
+    copyNegativePrompt: '',
+    copySettingsChecklist: '',
+    copyAll: id,
+  };
+  return {
+    schemaVersion: 1,
+    id,
+    kind: 'video',
+    target: 'flow-veo',
+    input: draft('a').video,
+    primary: variant,
+    alternatives: [
+      { ...variant, label: 'Cinematic' },
+      { ...variant, label: 'Control-focused' },
+    ],
+    validation: [],
+    provenance: {
+      provider: 'local',
+      source: 'compiler',
+      generatedAt: '2026-10-24T00:00:00Z',
+      inputHash: id,
+    },
+    createdAt: '2026-10-24T00:00:00Z',
+  };
+};
 
 describe('project-owned Studio drafts', () => {
   beforeEach(() => {
@@ -155,6 +188,90 @@ describe('project-owned Studio drafts', () => {
     finish();
     expect(await checkpoint).toBe(false);
   });
+  it('persists an accepted artifact before exposing the replacement draft', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    store.getState().setArtifact(artifact('manual'));
+    await store.getState().flush();
+    const baseline = store.getState().draft!;
+    let finish!: () => void;
+    mocks.save.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const accepting = store.getState().acceptArtifact(artifact('accepted'), baseline, () => true);
+    expect(store.getState().draft).toBe(baseline);
+    expect(store.getState().status).toBe('saving');
+    finish();
+    expect(await accepting).toBe(true);
+    expect(store.getState()).toMatchObject({
+      status: 'saved',
+      draft: { artifact: { id: 'accepted' }, revision: baseline.revision + 1 },
+    });
+    expect(mocks.save.mock.lastCall?.[0].artifact.id).toBe('accepted');
+  });
+
+  it('retains the original artifact and reports a failed acceptance save', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    const baseline = store.getState().draft!;
+    mocks.save.mockRejectedValueOnce(new Error('Disk full'));
+    expect(
+      await store.getState().acceptArtifact(artifact('rejected-write'), baseline, () => true),
+    ).toBe(false);
+    expect(store.getState().draft).toBe(baseline);
+    expect(store.getState()).toMatchObject({ status: 'error', error: 'Disk full' });
+  });
+
+  it('does not apply acceptance over edits made during its save', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    const baseline = store.getState().draft!;
+    let finish!: () => void;
+    mocks.save.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const accepting = store.getState().acceptArtifact(artifact('stale'), baseline, () => true);
+    store.getState().updateVideo({ idea: 'Newer manual edit' });
+    finish();
+    expect(await accepting).toBe(false);
+    expect(store.getState().draft?.artifact).toBeNull();
+    expect(store.getState().draft?.video.idea).toBe('Newer manual edit');
+    expect(mocks.save.mock.lastCall?.[0].video.idea).toBe('Newer manual edit');
+    expect(store.getState().status).toBe('saved');
+  });
+
+  it('rejects stale contexts before writing and before applying a saved replacement', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    const baseline = store.getState().draft!;
+    expect(await store.getState().acceptArtifact(artifact('stale'), baseline, () => false)).toBe(
+      false,
+    );
+    expect(mocks.save).not.toHaveBeenCalled();
+    let current = true;
+    let finish!: () => void;
+    mocks.save.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const accepting = store
+      .getState()
+      .acceptArtifact(artifact('other-project'), baseline, () => current);
+    current = false;
+    finish();
+    expect(await accepting).toBe(false);
+    expect(store.getState().draft).toBe(baseline);
+    expect(store.getState().status).toBe('saved');
+  });
+
   it('waits for edits made during a save before completing a flush', async () => {
     let finish!: () => void;
     mocks.save.mockImplementationOnce(

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import {
   isReviewEvidenceCurrent,
@@ -20,13 +21,158 @@ interface ShotsStepProps {
 
 export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
   const { t } = useTranslation('create');
+  const [shotFilter, setShotFilter] = useState<'all' | 'action-needed' | 'accepted'>('all');
   const { activeRun } = workflow;
 
   if (!activeRun || !['scenes', 'assets', 'generate', 'review'].includes(activeStep)) return null;
 
+  const awaitingShotIds = activeRun.shots
+    .filter((shot) => shot.status === 'awaiting-approval')
+    .map((shot) => shot.id);
+  const allAwaitingSelected =
+    awaitingShotIds.length > 0 &&
+    awaitingShotIds.every((id) => workflow.selectedShotIds.includes(id));
+  const actionNeededCount = activeRun.shots.filter((shot) => shot.status !== 'accepted').length;
+  const acceptedCount = activeRun.shots.filter((shot) => shot.status === 'accepted').length;
+  const totalEstimatedCost =
+    workflow.totalRunCost ??
+    activeRun.shots.reduce(
+      (sum, shot) => sum + veoGenerationService.estimateCost(shot.generationRequest),
+      0,
+    );
+  const visibleShots = activeRun.shots.filter((shot) => {
+    if (shotFilter === 'action-needed') return shot.status !== 'accepted';
+    if (shotFilter === 'accepted') return shot.status === 'accepted';
+    return true;
+  });
+
   return (
     <section className="space-y-4" aria-label={t('labels.productionShots')}>
-      {activeRun.shots.map((shot) => {
+      {(activeRun.shots.length > 1 || acceptedCount > 0) && (
+        <div className="creator-toolbar flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900 p-2.5 text-xs">
+          {activeRun.shots.length > 1 ? (
+            <div
+              className="flex flex-wrap items-center gap-1.5"
+              role="group"
+              aria-label="Filter shots"
+            >
+              {(
+                [
+                  ['all', `All (${activeRun.shots.length})`],
+                  ['action-needed', `Needs action (${actionNeededCount})`],
+                  ['accepted', `Accepted (${acceptedCount})`],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-current={shotFilter === id ? 'true' : undefined}
+                  onClick={() => setShotFilter(id)}
+                  className="rounded border border-slate-700 px-2.5 py-1 font-medium"
+                >
+                  {label}
+                </button>
+              ))}
+              <span className="rounded border border-slate-800 bg-slate-950 px-2 py-1 text-emerald-300">
+                {t('labels.runTotalCost', {
+                  defaultValue: 'Run est: ${{cost}}',
+                  cost: totalEstimatedCost.toFixed(2),
+                })}
+              </span>
+            </div>
+          ) : (
+            <span />
+          )}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {activeRun.shots.length > 1 &&
+              ['scenes', 'generate'].includes(activeStep) &&
+              workflow.handleBatchShotSettings && (
+                <div
+                  className="flex flex-wrap items-center gap-1"
+                  role="group"
+                  aria-label="Batch shot settings"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void workflow.handleBatchShotSettings({
+                        resolution: '720p',
+                      })
+                    }
+                    className="rounded border border-slate-700 px-2 py-1 text-slate-300"
+                  >
+                    Batch 720p
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void workflow.handleBatchShotSettings({
+                        resolution: '1080p',
+                        durationSeconds: 8,
+                      })
+                    }
+                    className="rounded border border-slate-700 px-2 py-1 text-slate-300"
+                  >
+                    Batch 1080p (8s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void workflow.handleBatchShotSettings({
+                        aspectRatio: '16:9',
+                      })
+                    }
+                    className="rounded border border-slate-700 px-2 py-1 text-slate-300"
+                  >
+                    Batch 16:9
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void workflow.handleBatchShotSettings({
+                        aspectRatio: '9:16',
+                      })
+                    }
+                    className="rounded border border-slate-700 px-2 py-1 text-slate-300"
+                  >
+                    Batch 9:16
+                  </button>
+                </div>
+              )}
+            {activeRun.shots.length > 1 &&
+              activeStep === 'generate' &&
+              awaitingShotIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    for (const id of awaitingShotIds) {
+                      const isSelected = workflow.selectedShotIds.includes(id);
+                      if (allAwaitingSelected && isSelected) workflow.toggleShotSelection(id);
+                      else if (!allAwaitingSelected && !isSelected)
+                        workflow.toggleShotSelection(id);
+                    }
+                  }}
+                  className="rounded border border-slate-700 px-2.5 py-1 font-semibold text-blue-300"
+                >
+                  {allAwaitingSelected ? 'Clear selection' : 'Select all ready'}
+                </button>
+              )}
+            {acceptedCount > 0 && workflow.handleSyncAcceptedTakesToTimeline && (
+              <button
+                type="button"
+                onClick={() => void workflow.handleSyncAcceptedTakesToTimeline()}
+                className="rounded border border-emerald-700 bg-emerald-950/50 px-2.5 py-1 font-semibold text-emerald-300"
+              >
+                {t('actions.syncAcceptedToTimeline', {
+                  defaultValue: 'Send accepted takes to Timeline ({{count}})',
+                  count: acceptedCount,
+                })}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {visibleShots.map((shot) => {
         const latestTake = shot.takes.at(-1);
         const reviewIsCurrent = Boolean(latestTake && isTakeReviewCurrent(shot, latestTake));
         const evidenceIsCurrent = Boolean(latestTake && isReviewEvidenceCurrent(shot, latestTake));
@@ -63,7 +209,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
             id={`production-shot-${shot.id}`}
             tabIndex={-1}
             key={shot.id}
-            className="rounded-xl border border-slate-800 bg-slate-900/70 p-4"
+            className="rounded-xl border border-slate-800 bg-slate-900 p-4"
           >
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex min-w-0 gap-3">
@@ -79,7 +225,7 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                 )}
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-white">{shot.title}</h3>
+                    <h3 className="font-semibold text-slate-100">{shot.title}</h3>
                     <span className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-300">
                       {shot.status}
                     </span>
@@ -221,7 +367,11 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
             {activeStep === 'review' && shot.takes.length > 0 && (
               <div className="mt-3">
                 <TakeCompare
+                  contextId={`${activeRun.projectId}:${activeRun.id}:${shot.id}`}
                   takes={displayTakes}
+                  onSaveComparisonNotes={(take, notes) =>
+                    workflow.handleSaveComparisonNotes(shot, take, notes)
+                  }
                   onManualReview={(take, notes) =>
                     void workflow.handleManualReview(shot, take, notes)
                   }

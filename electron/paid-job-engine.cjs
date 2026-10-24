@@ -4,12 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { validateCostApproval } = require('./paid-job-pricing.cjs');
 
-const API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const PROVIDER_MODELS = {
-  'veo-3.1-quality': 'veo-3.1-generate-preview',
-  'veo-3.1-fast': 'veo-3.1-fast-generate-preview',
-  'veo-3.1-lite': 'veo-3.1-lite-generate-preview',
-};
+const {
+  API_BASE,
+  PROVIDER_MODELS,
+  buildSubmission,
+  buildMusicSubmission,
+  requireApprovedSubmission,
+} = require('./paid-job-submission.cjs');
 const LYRIA_MODELS = new Set(['lyria-3-clip-preview', 'lyria-3-pro-preview']);
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const SAFE_JOB_ID = /^[a-zA-Z0-9._:-]{1,180}$/;
@@ -84,29 +85,6 @@ function validatePaidTask(task) {
   return task;
 }
 
-function buildMusicSubmission(task) {
-  const { request } = task;
-  const promptParts = [request.prompt];
-  if (request.lyrics?.trim()) promptParts.push(`Custom lyrics:\n${request.lyrics.trim()}`);
-  if (request.structure?.trim()) promptParts.push(`Song structure:\n${request.structure.trim()}`);
-  const prompt = promptParts.join('\n\n');
-  const input = request.images.length
-    ? [
-        { type: 'text', text: prompt },
-        ...request.images.map((image) => ({
-          type: 'image',
-          mime_type: image.mimeType,
-          data: image.data,
-        })),
-      ]
-    : prompt;
-  return {
-    model: request.modelId,
-    input,
-    ...(request.responseFormat === 'wav' ? { response_format: { type: 'audio' } } : {}),
-  };
-}
-
 function extractMusicOutput(payload) {
   const text = [];
   let audio = null;
@@ -175,47 +153,6 @@ class PaidJobStore {
   }
 }
 
-function buildSubmission(task) {
-  const request = task.request;
-  const inputs = task.executionInputs || {};
-  const instance = { prompt: request?.prompt || task.prompt };
-  const firstFrame = inputs.firstFrame || task.inputImage;
-  if (firstFrame) {
-    instance.image = { bytesBase64Encoded: firstFrame.data, mimeType: firstFrame.mimeType };
-  }
-  if (request?.mode === 'interpolation' && inputs.lastFrame) {
-    instance.lastFrame = {
-      bytesBase64Encoded: inputs.lastFrame.data,
-      mimeType: inputs.lastFrame.mimeType,
-    };
-  }
-  // Continuity compilation can attach identity references to an otherwise
-  // text-to-video shot. Never drop those selected files just because the UI
-  // mode label is not `reference-images`; capability validation already guards
-  // incompatible frame/extension combinations at the paid boundary.
-  if (inputs.referenceImages?.length) {
-    instance.referenceImages = inputs.referenceImages.map((image) => ({
-      image: { bytesBase64Encoded: image.data, mimeType: image.mimeType },
-      referenceType: 'asset',
-    }));
-  }
-  if (request?.mode === 'extension') {
-    const uri = inputs.extensionVideoUri || request.extensionArtifact?.mediaUri;
-    if (uri) instance.video = { uri };
-  }
-  return {
-    instances: [instance],
-    parameters: {
-      sampleCount: 1,
-      resolution: request?.resolution || task.settings.resolution,
-      aspectRatio: request?.aspectRatio || task.settings.aspectRatio,
-      durationSeconds: request?.durationSeconds || task.settings.durationSeconds || 8,
-      negativePrompt: request?.negativePrompt || undefined,
-      seed: request?.seed,
-    },
-  };
-}
-
 function extractVideoUri(payload) {
   return (
     payload?.response?.generatedVideos?.[0]?.video?.uri ||
@@ -252,7 +189,8 @@ class PaidJobEngine {
     return job;
   }
 
-  async submit(task) {
+  async submit(input) {
+    const task = structuredClone(input);
     validatePaidTask(task);
     if (this.submissions.has(task.id)) return this.submissions.get(task.id);
     const submission = this.submitOnce(task).finally(() => this.submissions.delete(task.id));
@@ -268,6 +206,7 @@ class PaidJobEngine {
       }
       return existing;
     }
+    requireApprovedSubmission(task);
     const job = { ...task, status: 'Queued', createdAt: task.createdAt || Date.now() };
     await this.persist(job);
     void this.run(job);
@@ -292,6 +231,14 @@ class PaidJobEngine {
       !job.providerOperationName
     )
       return job;
+    if (!job.providerOperationName) {
+      try {
+        validatePaidTask(job);
+        requireApprovedSubmission(job);
+      } catch (error) {
+        return this.persist({ ...job, status: 'Error', error: String(error?.message || error) });
+      }
+    }
     const apiKey = await this.getApiKey();
     if (!apiKey)
       return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
@@ -304,28 +251,20 @@ class PaidJobEngine {
         job.status = 'Submitting';
         job.error = undefined;
         await this.persist(job);
-        const canonicalModel =
-          job.request?.modelId ||
-          (job.settings.veoModel === 'quality'
-            ? 'veo-3.1-quality'
-            : job.settings.veoModel === 'lite'
-              ? 'veo-3.1-lite'
-              : 'veo-3.1-fast');
-        const providerModel = PROVIDER_MODELS[canonicalModel] || canonicalModel;
         let response;
         try {
           signal.throwIfAborted();
+          validatePaidTask(job);
+          const submission = requireApprovedSubmission(job);
           submissionStarted = true;
-          response = await this.fetchImpl(
-            `${API_BASE}/models/${encodeURIComponent(providerModel)}:predictLongRunning`,
-            {
-              method: 'POST',
-              headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-              body: JSON.stringify(buildSubmission(job)),
-              signal,
-            },
-          );
-        } catch {
+          response = await this.fetchImpl(submission.url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+            body: submission.body,
+            signal,
+          });
+        } catch (error) {
+          if (!submissionStarted) throw error;
           return this.recover(
             job,
             'Submission acknowledgement was lost. Verify provider activity before retrying.',
@@ -349,14 +288,32 @@ class PaidJobEngine {
 
       job.status = 'Polling';
       await this.persist(job);
+      let pollCount = 0;
+      const MAX_POLLS = 360;
+      let transientFailures = 0;
       while (!signal.aborted) {
+        if (++pollCount > MAX_POLLS) {
+          throw new Error('Veo generation timed out after 30 minutes.');
+        }
         await this.sleep(5000);
-        const response = await this.fetchImpl(`${API_BASE}/${operationName}`, {
-          headers: { 'x-goog-api-key': apiKey },
-          signal,
-        });
-        if (!response.ok)
+        let response;
+        try {
+          response = await this.fetchImpl(`${API_BASE}/${operationName}`, {
+            headers: { 'x-goog-api-key': apiKey },
+            signal,
+          });
+        } catch (fetchErr) {
+          if (signal.aborted) throw fetchErr;
+          if (++transientFailures <= 3) continue;
+          throw fetchErr;
+        }
+        if (!response.ok) {
+          if ([429, 500, 502, 503, 504].includes(response.status) && ++transientFailures <= 3) {
+            continue;
+          }
           throw new Error(`Veo polling failed (${response.status}): ${await response.text()}`);
+        }
+        transientFailures = 0;
         const payload = await response.json();
         if (payload.error) throw new Error(payload.error.message || 'Veo operation failed.');
         if (!payload.done) continue;
@@ -432,6 +389,12 @@ class PaidJobEngine {
       ['Complete', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)
     )
       return job;
+    try {
+      validatePaidTask(job);
+      requireApprovedSubmission(job);
+    } catch (error) {
+      return this.persist({ ...job, status: 'Error', error: String(error?.message || error) });
+    }
     const apiKey = await this.getApiKey();
     if (!apiKey)
       return this.persist({ ...job, status: 'Error', error: 'Gemini API key is not configured.' });
@@ -446,15 +409,21 @@ class PaidJobEngine {
     job.error = undefined;
     await this.persist(job);
     let response;
+    let submissionStarted = false;
     try {
       signal.throwIfAborted();
-      response = await this.fetchImpl(`${API_BASE}/interactions`, {
+      validatePaidTask(job);
+      const submission = requireApprovedSubmission(job);
+      submissionStarted = true;
+      response = await this.fetchImpl(submission.url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify(buildMusicSubmission(job)),
+        body: submission.body,
         signal,
       });
-    } catch {
+    } catch (error) {
+      if (!submissionStarted)
+        return this.persist({ ...job, status: 'Error', error: String(error?.message || error) });
       return this.recover(
         job,
         'Music submission acknowledgement was lost. Verify provider activity before retrying.',
@@ -523,7 +492,16 @@ class PaidJobEngine {
     if (active) await active;
     const job = await this.store.get(id);
     if (!job) return false;
-    if (['Complete', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return true;
+    if (['Complete'].includes(job.status)) return true;
+    if (['RecoveryRequired', 'MediaAtRisk'].includes(job.status) && !active) {
+      await this.persist({
+        ...job,
+        status: 'Error',
+        error: 'Cancelled by user',
+      });
+      return true;
+    }
+    if (['RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return true;
     await this.persist({
       ...job,
       status:
@@ -533,7 +511,7 @@ class PaidJobEngine {
     return true;
   }
 
-  async retry(id, renewedCostApproval) {
+  async retry(id, renewedCostApproval, renewedSubmission) {
     const job = await this.store.get(id);
     if (!job || !['Error', 'MediaAtRisk', 'RecoveryRequired'].includes(job.status)) return false;
     if (job.status !== 'Error' && !job.providerOperationName) return false;
@@ -541,10 +519,15 @@ class PaidJobEngine {
     const retryable = {
       ...job,
       ...(renewedCostApproval ? { costApproval: renewedCostApproval } : {}),
+      ...(renewedSubmission ? { approvedSubmission: renewedSubmission } : {}),
       status: job.providerOperationName ? 'Polling' : 'Queued',
       error: undefined,
       retryCount: Number(job.retryCount || 0) + 1,
     };
+    if (!retryable.providerOperationName) {
+      validatePaidTask(retryable);
+      requireApprovedSubmission(retryable);
+    }
     await this.persist(retryable);
     void this.run(retryable);
     return true;
@@ -573,6 +556,7 @@ class PaidJobEngine {
       ) {
         try {
           validatePaidTask(job);
+          requireApprovedSubmission(job);
           void this.run(job);
         } catch (error) {
           await this.persist({ ...job, status: 'Error', error: String(error?.message || error) });

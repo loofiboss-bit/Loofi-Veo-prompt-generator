@@ -6,6 +6,17 @@ import type {
   VideoPromptVariant,
 } from '@core/types/promptArtifact';
 import { studioVideoRequestIssues } from '@core/config/studioCapabilities';
+import { promptAstLinterService } from './promptAstLinterService';
+
+const CINEMATIC_LABELS: Record<string, string> = {
+  'camera-conflict': 'Camera direction',
+  'lighting-conflict': 'Lighting direction',
+  'composition-conflict': 'Framing direction',
+  'optical-conflict': 'Optics direction',
+  'shutter-conflict': 'Shutter direction',
+  'focus-conflict': 'Focus direction',
+  'temporal-conflict': 'Pacing direction',
+};
 
 /** Only the concrete internal API model is qualified; broad manual target labels are not versions. */
 export const STUDIO_MODEL_RULE_SOURCES = {
@@ -99,6 +110,31 @@ export function validateStudioVideo(
   }
   variants.forEach((variant, index) => {
     const action = { field: 'variant' as const, variantIndex: index as 0 | 1 | 2 };
+    // Cinematic contradictions are writing guidance, not documented API limits.
+    // Keep generic hardware/token estimates out of model compatibility checks.
+    const cinematic = promptAstLinterService.lintPromptText(variant.prompt);
+    const seenCategories = new Map<string, PromptValidationCheck>();
+    for (const issue of [...cinematic.errors, ...cinematic.warnings, ...cinematic.info]) {
+      const label = CINEMATIC_LABELS[issue.category];
+      if (!label) continue;
+      const checkId = `variant-${index}-cinematic-${issue.category}`;
+      const detail = [issue.message, ...(issue.suggestions ?? [])].join(' ');
+      const existing = seenCategories.get(checkId);
+      if (existing) {
+        existing.detail = `${existing.detail} ${detail}`;
+      } else {
+        const check: PromptValidationCheck = {
+          id: checkId,
+          label,
+          status: 'warning',
+          detail,
+          evidence: 'heuristic',
+          action,
+        };
+        seenCategories.set(checkId, check);
+        checks.push(check);
+      }
+    }
     checks.push({
       id: `variant-${index}-text`,
       label: 'Prompt text',

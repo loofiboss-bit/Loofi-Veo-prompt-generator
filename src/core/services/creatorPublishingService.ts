@@ -20,6 +20,57 @@ export function validateCreatorPublishingText(value: unknown): CreatorPublishing
     );
   return { title: item.title.trim(), description: item.description.trim() };
 }
+
+export function formatChapterTimestamp(seconds: number): string {
+  const safe = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(secs).padStart(2, '0');
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+export function buildTimelineChapterTimestamps(
+  clips: ReadonlyArray<{ type: string; startTime: number; duration: number; label?: string }>,
+): string {
+  const visual = clips
+    .filter((clip) => (clip.type === 'video' || clip.type === 'image') && clip.duration > 0)
+    .sort((a, b) => a.startTime - b.startTime);
+  if (visual.length === 0) return '';
+  return visual
+    .map((clip, index) => {
+      const startSeconds = index === 0 ? 0 : clip.startTime;
+      const cleanLabel =
+        (clip.label ?? '')
+          .replace(/[\r\n]+/g, ' ')
+          .replace(/\s{2,}/g, ' ')
+          .trim() || `Scene ${index + 1}`;
+      return `${formatChapterTimestamp(startSeconds)} ${cleanLabel}`;
+    })
+    .join('\n');
+}
+
+export function mergeChapterTimestampsIntoDescription(
+  description: string,
+  chaptersText: string,
+): string {
+  const trimmedChapters = chaptersText.trim();
+  if (!trimmedChapters) return description;
+  const chapterSection = `Chapters:\n${trimmedChapters}`;
+  const existingChapterBlockRx =
+    /(?:^|\n\n)Chapters:\n(?:\d{1,2}:\d{2}(?::\d{2})?\s+[^\n]*(?:\n|$))+/i;
+  let merged: string;
+  if (existingChapterBlockRx.test(description)) {
+    merged = description.replace(existingChapterBlockRx, (match) =>
+      match.startsWith('\n\n') ? `\n\n${chapterSection}\n` : `${chapterSection}\n`,
+    );
+  } else {
+    const base = description.trimEnd();
+    merged = base ? `${base}\n\n${chapterSection}` : chapterSection;
+  }
+  return merged.trim().slice(0, 4000);
+}
 class CreatorPublishingService {
   private static instance: CreatorPublishingService;
   static getInstance() {

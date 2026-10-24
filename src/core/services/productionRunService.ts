@@ -766,6 +766,36 @@ class ProductionRunService {
     return createdTake;
   }
 
+  /** Comparison notes are editorial metadata, never a take or review transition. */
+  async saveComparisonNotes(
+    runId: string,
+    shotId: number,
+    takeId: string,
+    notes: string,
+  ): Promise<ProductionRun> {
+    return this.mutateRun(runId, (run) => {
+      if (
+        !run.shots.some(
+          (shot) => shot.id === shotId && shot.takes.some((take) => take.id === takeId),
+        )
+      )
+        throw new Error('The comparison result is unavailable.');
+      return {
+        ...run,
+        shots: run.shots.map((shot) =>
+          shot.id === shotId
+            ? {
+                ...shot,
+                takes: shot.takes.map((take) =>
+                  take.id === takeId ? { ...take, comparisonNotes: notes } : take,
+                ),
+              }
+            : shot,
+        ),
+      };
+    });
+  }
+
   async updateTake(
     runId: string,
     shotId: number,

@@ -307,6 +307,24 @@
         "warning": "Gardez le style concis et distinct des paroles ; 200 caractères est un conseil.",
         "blocked": "Gardez le style concis et distinct des paroles ; 200 caractères est un conseil."
       }
+    },
+    "cinematic-camera-conflict": {
+      "label": "Direction de caméra",
+      "detail": {
+        "warning": "Ce plan combine une caméra fixe et un mouvement rapide. Choisissez une direction ou décrivez des plans distincts."
+      }
+    },
+    "cinematic-lighting-conflict": {
+      "label": "Éclairage",
+      "detail": {
+        "warning": "Ce plan combine une obscurité profonde et le soleil de midi. Précisez la lumière ou décrivez une transition intentionnelle."
+      }
+    },
+    "cinematic-composition-conflict": {
+      "label": "Cadrage",
+      "detail": {
+        "warning": "Ce plan combine un très gros plan et un paysage panoramique. Choisissez un cadrage ou décrivez un changement intentionnel."
+      }
     }
   },
   "arenaCopy": "Copier le pack",
@@ -376,5 +394,47 @@
     "relink": "Relier dans les médias",
     "refresh": "Actualiser les médias locaux",
     "replace": "Choisir une vidéo de remplacement"
+  },
+  "comparison": {
+    "title": "Comparaison vidéo",
+    "result": "Résultat {{side}}",
+    "play": "Lire",
+    "pause": "Mettre en pause",
+    "seek": "Position de comparaison",
+    "audio": "Écouter",
+    "metadataPending": "En attente des métadonnées vidéo pour synchroniser la lecture.",
+    "playbackFailed": "La lecture a échoué. Vérifiez que les deux vidéos locales sont disponibles.",
+    "buffering": "Lecture suspendue pendant le chargement du clip. Relancez la lecture lorsque le clip est prêt.",
+    "sourceDiff": "Comparer les prompts et réglages figés",
+    "prompt": "Texte du prompt",
+    "negativePrompt": "Prompt négatif",
+    "settings": "Réglages",
+    "changed": "Modifié",
+    "unchanged": "Inchangé",
+    "notes": "Notes de comparaison",
+    "saveNotes": "Enregistrer les notes",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré",
+    "unsaved": "Non enregistré",
+    "saveFailed": "Les notes n’ont pas été enregistrées."
+  },
+  "variantEdit": {
+    "title": "Améliorer la variante sélectionnée",
+    "goal": "Objectif de l’amélioration",
+    "shorten": "Texte plus court",
+    "camera": "Mouvement de caméra plus clair",
+    "custom": "Instruction personnalisée",
+    "direction": "Amélioration souhaitée",
+    "fields": "Champs à améliorer",
+    "prompt": "Texte du prompt",
+    "both": "Prompt et prompt négatif",
+    "propose": "Proposer des modifications pour cette variante",
+    "requesting": "Préparation d’une proposition…",
+    "review": "Examiner les modifications de la variante",
+    "reviewHint": "Choisissez les champs à accepter ensemble. Les autres champs et variantes sont conservés.",
+    "acceptField": "Accepter {{field}}",
+    "fieldDiff": "Modifications de {{field}}",
+    "accept": "Accepter les champs sélectionnés",
+    "aiEdited": "Modifié avec l’IA"
   }
 }

@@ -11,4 +11,5 @@ export interface PaidCostApproval {
   verifiedDate?: string;
   approvedAt: number;
   payloadHash?: string;
+  hashVersion?: 2;
 }

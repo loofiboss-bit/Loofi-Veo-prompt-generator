@@ -27,6 +27,7 @@ import { productionRunService } from '@core/services/productionRunService';
 import { continuityService } from '@core/services/continuityService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
+import { recordCompletedPaidJobCost } from '@core/services/paidJobService';
 import { storeMediator } from '@core/store/mediator';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
@@ -108,6 +109,7 @@ export function useCreateWorkflow() {
     let alive = true;
     const consume = async (job: PaidJobTask) => {
       if (!alive) return;
+      recordCompletedPaidJobCost(job);
       setDurableJobs((current) => [...current.filter((item) => item.id !== job.id), job]);
       if (
         !activeRun ||
@@ -198,6 +200,42 @@ export function useCreateWorkflow() {
     }
   };
 
+  const handleSaveComparisonNotes = async (
+    shot: ProductionShot,
+    take: ProductionTake,
+    notes: string,
+  ) => {
+    if (!activeRun) throw new Error('The production run is unavailable.');
+    const runId = activeRun.id;
+    await productionRunService.saveComparisonNotes(runId, shot.id, take.id, notes);
+    // Merge only this editorial field into live state; a late save must not
+    // restore an old run or overwrite a background generation update.
+    useProductionRunStore.setState((state) => {
+      if (
+        state.activeRun?.id !== runId ||
+        useProjectStore.getState().currentProjectId !== activeRun.projectId
+      )
+        return state;
+      const update = (run: typeof activeRun) => ({
+        ...run,
+        shots: run.shots.map((item) =>
+          item.id === shot.id
+            ? {
+                ...item,
+                takes: item.takes.map((candidate) =>
+                  candidate.id === take.id ? { ...candidate, comparisonNotes: notes } : candidate,
+                ),
+              }
+            : item,
+        ),
+      });
+      return {
+        activeRun: update(state.activeRun),
+        runs: state.runs.map((run) => (run.id === runId ? update(run) : run)),
+      };
+    });
+  };
+
   const handleManualReview = async (shot: ProductionShot, take: ProductionTake, notes: string) => {
     if (!activeRun) return;
     try {
@@ -228,6 +266,14 @@ export function useCreateWorkflow() {
           0,
         ) ?? 0,
     [activeRun, selectedShotIds],
+  );
+  const totalRunCost = useMemo(
+    () =>
+      activeRun?.shots.reduce(
+        (sum, shot) => sum + veoGenerationService.estimateCost(shot.generationRequest),
+        0,
+      ) ?? 0,
+    [activeRun],
   );
   const planEnhancementEstimate = useMemo(
     () => productionRunService.estimatePlanEnhancementCost(),
@@ -576,10 +622,17 @@ export function useCreateWorkflow() {
     useRevision: boolean,
     revisionNotes?: string,
   ) => {
-    const prompt =
-      useRevision && (revisionNotes?.trim() || take.review?.proposedRevisionPrompt)
-        ? (revisionNotes?.trim() ?? take.review?.proposedRevisionPrompt ?? shot.prompt)
-        : shot.prompt;
+    let prompt = shot.prompt;
+    if (useRevision) {
+      if (take.review?.proposedRevisionPrompt) {
+        prompt = take.review.proposedRevisionPrompt;
+      } else if (revisionNotes?.trim()) {
+        const notes = revisionNotes.trim();
+        prompt = shot.prompt.includes('[Revision note:')
+          ? shot.prompt.replace(/\[Revision note:[\s\S]*?\]/, `[Revision note: ${notes}]`)
+          : `${shot.prompt}\n\n[Revision note: ${notes}]`;
+      }
+    }
     await handleReject(shot, take);
     await updateShotRequest(shot.id, { prompt });
     setFeedback(
@@ -593,6 +646,96 @@ export function useCreateWorkflow() {
     if (!activeRun) return;
     await productionRunService.waiveMediaRisk(activeRun.id, shot.id, take.id);
     await refreshActiveRun();
+  };
+
+  const handleBatchShotSettings = async (
+    updates: Partial<Pick<VeoGenerationRequest, 'resolution' | 'aspectRatio' | 'durationSeconds'>>,
+  ) => {
+    if (!activeRun) return;
+    const targetShots = activeRun.shots.filter((shot) =>
+      selectedShotIds.length > 0 ? selectedShotIds.includes(shot.id) : shot.status !== 'accepted',
+    );
+    for (const shot of targetShots) {
+      const nextUpdates = { ...updates };
+      if (updates.durationSeconds !== undefined) {
+        await updateShotRequest(shot.id, nextUpdates);
+      } else {
+        await updateShotRequest(shot.id, nextUpdates);
+      }
+    }
+    setFeedback(
+      t('messages.batchSettingsApplied', {
+        defaultValue: 'Applied batch settings to {{count}} shots.',
+        count: targetShots.length,
+      }),
+    );
+  };
+
+  const handleSyncAcceptedTakesToTimeline = async (): Promise<number> => {
+    if (!activeRun) return 0;
+    let syncedCount = 0;
+    const appState = useAppStore.getState();
+    for (const shot of activeRun.shots) {
+      const acceptedTake =
+        shot.takes.find((item) => item.id === shot.selectedTakeId) ??
+        [...shot.takes].reverse().find((item) => item.status === 'accepted');
+      if (!acceptedTake) continue;
+      const localMediaUrl =
+        acceptedTake.localMediaUrl ||
+        (acceptedTake.localMediaKey
+          ? await mediaAssetService.getObjectUrl(acceptedTake.localMediaKey)
+          : null) ||
+        acceptedTake.providerMediaUri;
+      if (!localMediaUrl) continue;
+      syncedCount += 1;
+      appState.setSbShots((currentShots) => {
+        const existing = currentShots.find((item) => item.id === shot.id);
+        const nextTakeUrls = existing?.takes.includes(localMediaUrl)
+          ? existing.takes
+          : [...(existing?.takes ?? []), localMediaUrl];
+        if (existing) {
+          return currentShots.map((item) =>
+            item.id === shot.id
+              ? {
+                  ...item,
+                  action: shot.prompt,
+                  camera: shot.camera,
+                  duration: shot.durationSeconds,
+                  generatedVideoUrl: localMediaUrl,
+                  takes: nextTakeUrls,
+                  selectedTakeIndex: nextTakeUrls.indexOf(localMediaUrl),
+                }
+              : item,
+          );
+        }
+        return [
+          ...currentShots,
+          {
+            id: shot.id,
+            type: 'video',
+            action: shot.prompt,
+            camera: shot.camera,
+            characterId: '',
+            generatedVideoUrl: localMediaUrl,
+            takes: [localMediaUrl],
+            selectedTakeIndex: 0,
+            visualLink: false,
+            duration: shot.durationSeconds,
+            transition: { type: 'cut', duration: 0 },
+          },
+        ];
+      });
+    }
+    if (syncedCount > 0) {
+      appState.syncTimelineFromShots();
+      setFeedback(
+        t('messages.acceptedSyncedToTimeline', {
+          defaultValue: 'Synced {{count}} accepted takes to Timeline.',
+          count: syncedCount,
+        }),
+      );
+    }
+    return syncedCount;
   };
 
   const handleExport = async () => {
@@ -669,6 +812,7 @@ export function useCreateWorkflow() {
     recoveringJobId,
     handleRecoverJob,
     handleManualReview,
+    handleSaveComparisonNotes,
     handleExportOtio,
     promptState,
     productionBible,
@@ -682,6 +826,7 @@ export function useCreateWorkflow() {
     imageAssets,
     extensionTakes,
     selectedCost,
+    totalRunCost,
     planEnhancementEstimate,
     continuityReviewEstimate,
     preflight,
@@ -708,6 +853,8 @@ export function useCreateWorkflow() {
     handleReject,
     handlePrepareRetake,
     handleWaiveMediaRisk,
+    handleBatchShotSettings,
+    handleSyncAcceptedTakesToTimeline,
     handleExport,
   };
 }

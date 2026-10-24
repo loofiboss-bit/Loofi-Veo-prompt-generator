@@ -517,8 +517,50 @@
       "package": "vite",
       "justification": "Dev tool only, not exposed in production build.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1243070,
+      "package": "electron",
+      "justification": "Upstream eMudhra intermediate certificate mitigation advisory; app communicates only with local IPC and user-configured provider endpoints.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243078,
+      "package": "undici",
+      "justification": "Transitive EventSource parser DoS advisory in Node/build tooling; app does not consume untrusted third-party EventSource streams.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243079,
+      "package": "undici",
+      "justification": "Transitive EventSource parser DoS advisory in Node/build tooling; app does not consume untrusted third-party EventSource streams.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243081,
+      "package": "undici",
+      "justification": "Transitive Subresource Integrity token casing advisory in Node/build tooling; not used for untrusted remote script verification.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243113,
+      "package": "undici",
+      "justification": "Transitive content-encoding DoS advisory in Node/build tooling; local desktop app only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243114,
+      "package": "undici",
+      "justification": "Transitive content-encoding DoS advisory in Node/build tooling; local desktop app only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243066,
+      "package": "zod",
+      "justification": "Oversized constrained collection DoS advisory; schemas validate bounded local project documents and IPC payloads.",
+      "expires": "2027-05-19"
     }
   ],
-  "lastReviewed": "2026-10-23",
+  "lastReviewed": "2026-10-24",
   "reviewedBy": "loofi"
 }

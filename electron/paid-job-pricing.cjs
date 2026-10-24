@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { createPaidSubmission, computePaidSubmissionHash } = require('./paid-job-submission.cjs');
 const PRICING_SOURCE_URL = 'https://ai.google.dev/gemini-api/docs/pricing';
 const PRICING_VERIFIED_DATE = '2026-08-01';
 
@@ -125,7 +126,10 @@ function validateCostApproval(task, options = {}) {
   ) {
     throw new Error('The approved maximum charge is below the trusted conservative estimate.');
   }
-  const expectedPayloadHash = computeJobPayloadHash(extractJobPayloadFields(task));
+  const expectedPayloadHash =
+    approval.hashVersion === 2
+      ? computePaidSubmissionHash(createPaidSubmission(task))
+      : computeJobPayloadHash(extractJobPayloadFields(task));
   if (approval.payloadHash && approval.payloadHash !== expectedPayloadHash) {
     throw new Error('Payload hash mismatch: job parameters were modified after cost approval.');
   }

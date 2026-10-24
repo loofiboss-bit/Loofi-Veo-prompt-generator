@@ -1,22 +1,37 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { diffService } from '@core/services/diffService';
 import type { MusicPromptVariant } from '@core/types';
 
 export function MusicVariantCard({
   variant,
   primary,
+  compareBaseline,
   onCopy,
   onLyricsChange,
   onStyleChange,
 }: {
   variant: MusicPromptVariant;
   primary?: boolean;
+  compareBaseline?: MusicPromptVariant;
   onCopy: (text: string, label: string) => void;
   onLyricsChange?: (lyrics: string) => void;
   onStyleChange?: (style: string) => void;
 }) {
   const { t } = useTranslation('studio');
   const [open, setOpen] = useState(Boolean(primary));
+  const styleLength = variant.styleOfMusic.length;
+  const sectionCount = useMemo(
+    () => (variant.lyrics.match(/\[[^\]]+\]/g) ?? []).length,
+    [variant.lyrics],
+  );
+  const lyricsDiff = useMemo(
+    () =>
+      compareBaseline && compareBaseline.lyrics !== variant.lyrics
+        ? diffService.compareText(compareBaseline.lyrics, variant.lyrics)
+        : null,
+    [compareBaseline, variant.lyrics],
+  );
   return (
     <article className="studio-variant">
       <header className="studio-result-heading">
@@ -28,7 +43,18 @@ export function MusicVariantCard({
       {open ? (
         <div className="studio-variant-body">
           <label className="studio-field">
-            <span>{t('musicStyle')}</span>
+            <span className="flex flex-wrap items-center justify-between gap-2">
+              <span>{t('musicStyle')}</span>
+              <span
+                className="studio-metric-badge"
+                data-status={styleLength > 200 ? 'warning' : 'ok'}
+              >
+                {t('metrics.styleChars', {
+                  defaultValue: '{{count}} / 200 chars',
+                  count: styleLength,
+                })}
+              </span>
+            </span>
             <textarea
               readOnly={!onStyleChange}
               data-studio-field="styleOfMusic"
@@ -39,7 +65,18 @@ export function MusicVariantCard({
             />
           </label>
           <label className="studio-field">
-            <span>{t('lyrics')}</span>
+            <span className="flex flex-wrap items-center justify-between gap-2">
+              <span>{t('lyrics')}</span>
+              <span
+                className="studio-metric-badge"
+                data-status={sectionCount === 0 ? 'warning' : 'ok'}
+              >
+                {t('metrics.lyricSections', {
+                  defaultValue: '{{count}} sections',
+                  count: sectionCount,
+                })}
+              </span>
+            </span>
             <textarea
               readOnly={!onLyricsChange}
               data-studio-field="lyrics"
@@ -49,6 +86,26 @@ export function MusicVariantCard({
               rows={12}
             />
           </label>
+          {lyricsDiff ? (
+            <details className="studio-details">
+              <summary>
+                {t('variantEdit.compareWithPrimary', { defaultValue: 'Compare with Primary' })}
+              </summary>
+              <div className="studio-diff">
+                {lyricsDiff.changes.map((change, index) => (
+                  <div key={index} className={`studio-diff-${change.type}`}>
+                    {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
+                    {change.type === 'add' || change.type === 'modify'
+                      ? '+ '
+                      : change.type === 'remove'
+                        ? '− '
+                        : '  '}
+                    {change.content}
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
           <details className="studio-details">
             <summary>{t('advancedNotes')}</summary>
             <ul>

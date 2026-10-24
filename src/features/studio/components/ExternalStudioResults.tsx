@@ -1,24 +1,31 @@
 import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { PromptArtifactV1 } from '@core/types';
+import type { PromptArtifactV1, VideoPromptArtifactInput } from '@core/types';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
 import { useExternalStudioResultStore } from '@core/store/useExternalStudioResultStore';
 import { useAppStore } from '@core/store/useAppStore';
+import {
+  VideoResultCompare,
+  type VideoComparisonResult,
+} from '@shared/components/VideoResultCompare';
 
 interface ExternalStudioResultsProps {
   projectId: string;
   artifact: PromptArtifactV1 | null;
   variantIndex: 0 | 1 | 2;
   disabled?: boolean;
+  isStale?: boolean;
 }
 
 function ExternalResultCard({
   result,
   disabled,
+  showMedia = true,
 }: {
   result: ExternalStudioResultV1;
   disabled: boolean;
+  showMedia?: boolean;
 }) {
   const { t } = useTranslation('studio');
   const asset = useExternalStudioResultStore((s) => s.assets[result.id]);
@@ -39,14 +46,16 @@ function ExternalResultCard({
         {result.assetName} · {result.durationSeconds.toFixed(1)} s
       </p>
       {asset ? (
-        <video
-          controls
-          src={asset.url}
-          className="max-h-72 w-full rounded"
-          aria-label={result.assetName}
-        >
-          <track kind="captions" />
-        </video>
+        showMedia ? (
+          <video
+            controls
+            src={asset.url}
+            className="max-h-72 w-full rounded"
+            aria-label={result.assetName}
+          >
+            <track kind="captions" />
+          </video>
+        ) : null
       ) : (
         <div>
           <p role="status">{t('externalResults.unavailable')}</p>
@@ -146,6 +155,7 @@ export function ExternalStudioResults({
   artifact,
   variantIndex,
   disabled = false,
+  isStale = false,
 }: ExternalStudioResultsProps) {
   const { t } = useTranslation('studio');
   const state = useExternalStudioResultStore();
@@ -153,15 +163,52 @@ export function ExternalStudioResults({
     void useExternalStudioResultStore.getState().hydrate(projectId);
   }, [projectId]);
   const canImport = artifact?.kind === 'video' && artifact.target !== 'veo-api';
+  const currentResults = state.projectId === projectId ? state.results : [];
+  const playable: VideoComparisonResult[] = currentResults
+    .filter((result) => state.assets[result.id]?.url)
+    .map((result) => {
+      const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
+      return {
+        id: result.id,
+        label: result.assetName,
+        src: state.assets[result.id].url,
+        prompt: result.variantSnapshot.prompt,
+        negativePrompt: result.variantSnapshot.negativePrompt,
+        settings: JSON.stringify(
+          {
+            target: result.target,
+            mode: input.mode,
+            aspectRatio: input.aspectRatio,
+            durationSeconds: input.durationSeconds,
+            firstFrameAssetId: input.firstFrameAssetId,
+            lastFrameAssetId: input.lastFrameAssetId,
+            referenceAssetIds: input.referenceAssetIds,
+            extensionSourceTakeId: input.extensionSourceTakeId,
+          },
+          null,
+          2,
+        ),
+        comparisonNotes: result.comparisonNotes,
+      };
+    });
   if (!artifact && !state.pending && state.results.length === 0 && !state.error) return null;
   return (
     <section
       className="space-y-4 rounded-xl border border-[var(--color-border-primary)] p-4"
       aria-label={t('externalResults.title')}
     >
-      <h2 className="font-semibold text-[var(--color-text-primary)]">
-        {t('externalResults.title')}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-[var(--color-text-primary)]">
+          {t('externalResults.title')}
+        </h2>
+        {isStale && (
+          <span className="text-xs text-amber-400">
+            {t('externalResults.boundToLastCompiled', {
+              defaultValue: 'Bound to last compiled prompt',
+            })}
+          </span>
+        )}
+      </div>
       {canImport && (
         <label className="block text-sm text-[var(--color-text-primary)]">
           {t('externalResults.import')}
@@ -184,8 +231,26 @@ export function ExternalStudioResults({
           {state.error}
         </p>
       )}
-      {state.projectId === projectId &&
-        state.results.map((result) => (
+      <VideoResultCompare
+        contextId={projectId}
+        results={playable}
+        disabled={disabled || state.pending}
+        onSaveNotes={(id, notes) => state.saveComparisonNotes(id, notes)}
+        renderDetails={(item) => {
+          const result = currentResults.find((candidate) => candidate.id === item.id);
+          return result ? (
+            <ExternalResultCard
+              key={result.id}
+              result={result}
+              disabled={disabled}
+              showMedia={false}
+            />
+          ) : null;
+        }}
+      />
+      {currentResults
+        .filter((result) => !state.assets[result.id]?.url)
+        .map((result) => (
           <ExternalResultCard key={result.id} result={result} disabled={disabled} />
         ))}
       {!state.pending && state.results.length === 0 && (

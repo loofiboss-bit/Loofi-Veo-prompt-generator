@@ -18,6 +18,7 @@ interface ExternalStudioResultState {
     file: File,
   ) => Promise<void>;
   confirm: (resultId: string, notes: string) => Promise<void>;
+  saveComparisonNotes: (resultId: string, notes: string) => Promise<void>;
   replaceVideo: (resultId: string, file: File) => Promise<void>;
   accept: (
     resultId: string,
@@ -98,6 +99,19 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
       operate(projectId, () =>
         externalStudioResultService.importVideo(projectId, artifact, variant, file),
       ),
+    saveComparisonNotes: async (resultId, notes) => {
+      const projectId = get().projectId;
+      if (!projectId || get().pending)
+        throw new Error('Wait for the active project to finish loading.');
+      const version = hydration;
+      await externalStudioResultService.saveComparisonNotes(projectId, resultId, notes);
+      if (version === hydration && get().projectId === projectId)
+        set({
+          results: get().results.map((result) =>
+            result.id === resultId ? { ...result, comparisonNotes: notes } : result,
+          ),
+        });
+    },
     confirm: (resultId, notes) => {
       const projectId = get().projectId;
       return projectId

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@/test-utils';
+import { fireEvent, render, screen, waitFor } from '@/test-utils';
 import { compileVideoPromptArtifact } from '@core/services/promptStudioService';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
 import { useExternalStudioResultStore } from '@core/store/useExternalStudioResultStore';
@@ -28,7 +28,8 @@ const result: ExternalStudioResultV1 = {
   sourceSnapshot: artifact,
   variantSnapshot: artifact.primary as ExternalStudioResultV1['variantSnapshot'],
 };
-beforeEach(() =>
+beforeEach(() => {
+  vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
   useExternalStudioResultStore.setState({
     projectId: 'p',
     results: [result],
@@ -48,8 +49,9 @@ beforeEach(() =>
     confirm: vi.fn(),
     accept: vi.fn(),
     importVideo: vi.fn(),
-  }),
-);
+    saveComparisonNotes: vi.fn().mockResolvedValue(undefined),
+  });
+});
 describe('ExternalStudioResults', () => {
   it('shows exact source and requires review before timeline acceptance', () => {
     render(<ExternalStudioResults projectId="p" artifact={artifact} variantIndex={0} />);
@@ -79,5 +81,47 @@ describe('ExternalStudioResults', () => {
     render(<ExternalStudioResults projectId="p" artifact={null} variantIndex={0} />);
     expect(screen.getByRole('link')).toHaveAttribute('href', '/assets');
     expect(screen.getByRole('button', { name: 'Refresh local media' })).toBeEnabled();
+  });
+  it('saves notes per result without granting manual review and compares frozen sources', async () => {
+    const second = {
+      ...result,
+      id: 'second',
+      assetId: 'b',
+      assetName: 'second.mp4',
+      variantSnapshot: {
+        ...result.variantSnapshot,
+        prompt: 'Frozen second source',
+        copyAll: 'Frozen second source',
+      },
+    };
+    const state = useExternalStudioResultStore.getState();
+    useExternalStudioResultStore.setState({
+      results: [result, second],
+      assets: {
+        ...state.assets,
+        second: { ...state.assets.r, id: 'b', url: 'blob:second' },
+      },
+    });
+    const currentArtifact = {
+      ...artifact,
+      primary: { ...artifact.primary, prompt: 'New unsent prompt' },
+    };
+    render(<ExternalStudioResults projectId="p" artifact={currentArtifact} variantIndex={0} />);
+    expect(document.querySelectorAll('video')).toHaveLength(2);
+    const notes = screen.getByRole('textbox', { name: 'Comparison notes · B' });
+    fireEvent.change(notes, { target: { value: 'B has a clearer motion' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save notes' })[1]);
+    await waitFor(() =>
+      expect(state.saveComparisonNotes).toHaveBeenCalledWith('second', 'B has a clearer motion'),
+    );
+    expect(state.confirm).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('button', { name: 'Use on timeline' })).toHaveLength(2);
+    for (const button of screen.getAllByRole('button', { name: 'Use on timeline' }))
+      expect(button).toBeDisabled();
+    const details = screen.getByText('Compare frozen prompts and settings').closest('details')!;
+    details.open = true;
+    fireEvent(details, new Event('toggle'));
+    expect(screen.queryByText('New unsent prompt')).toBeNull();
+    expect(screen.getAllByText(/Frozen second source/).length).toBeGreaterThan(0);
   });
 });

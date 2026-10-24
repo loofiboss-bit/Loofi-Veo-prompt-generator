@@ -116,6 +116,80 @@ describe('canonical project autosave', () => {
     expect(mocks.save).toHaveBeenCalledOnce();
     expect(useEditorSessionStore.getState().projectSnapshot?.documentRevision).toBe(1);
     expect(useAppStore.getState().clips[0].id).toBe('clip');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(useProjectSaveStore.getState().projects.p.status).toBe('saved');
+    expect(mocks.save).toHaveBeenCalledOnce();
+    unmount();
+  });
+  it('saves changed delivery settings but not revision-only baseline updates', async () => {
+    const { unmount } = renderHook(() => useProjectAutosave());
+    act(() => {
+      const current = useEditorSessionStore.getState().projectSnapshot!;
+      useEditorSessionStore.setState({
+        projectSnapshot: {
+          ...current,
+          creatorDelivery: {
+            schemaVersion: 1,
+            revision: 1,
+            aspectRatio: '9:16',
+            captionsMode: 'sidecar',
+            captionStyle: 'classic',
+            safeMargin: 0.1,
+            crops: {},
+            title: 'Edited delivery',
+            description: '',
+            updatedAt: 1,
+          },
+        },
+      });
+    });
+    expect(useProjectSaveStore.getState().projects.p.status).toBe('unsaved');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(mocks.save).toHaveBeenCalledOnce();
+    expect(mocks.save.mock.calls[0][0].creatorDelivery.title).toBe('Edited delivery');
+    act(() => {
+      const current = useEditorSessionStore.getState().projectSnapshot!;
+      useEditorSessionStore.setState({ projectSnapshot: { ...current, documentRevision: 2 } });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(mocks.save).toHaveBeenCalledOnce();
+    expect(useProjectSaveStore.getState().projects.p.status).toBe('saved');
+    unmount();
+  });
+  it('persists a newer edit made while the previous save is still registering', async () => {
+    let finishRegistration!: () => void;
+    mocks.register.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishRegistration = resolve;
+        }),
+    );
+    const { unmount } = renderHook(() => useProjectAutosave());
+    act(() => useAppStore.setState({ tracks: [] }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(mocks.save).toHaveBeenCalledOnce();
+    act(() => {
+      useAppStore.setState({
+        promptState: { ...useAppStore.getState().promptState, idea: 'Newer edit' },
+      });
+    });
+    expect(useProjectSaveStore.getState().projects.p.status).toBe('unsaved');
+    await act(async () => {
+      finishRegistration();
+      await vi.advanceTimersByTimeAsync(700);
+    });
+    expect(mocks.save).toHaveBeenCalledTimes(2);
+    expect(mocks.save.mock.calls[1][0].promptState.idea).toBe('Newer edit');
+    expect(useAppStore.getState().promptState.idea).toBe('Newer edit');
+    expect(useProjectSaveStore.getState().projects.p.status).toBe('saved');
     unmount();
   });
   it('does not write after a project switch or while conflict recovery is pending', async () => {

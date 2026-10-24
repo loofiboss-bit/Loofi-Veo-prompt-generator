@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        17.0.0
+Version:        19.0.0
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT
@@ -79,6 +79,10 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Sat Oct 24 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 19.0.0-1
+- Release v19.0.0: Reviewable Video Production & Deterministic Workbench.
+- Add zero-token batch local transforms, expanded cinematic AST conflict detection, Pro A/B video comparison, multi-shot batch tools, NLE frame-stepping, zero-token chapter timestamps, and hashVersion 2 paid approvals.
+
 * Thu Oct 08 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 15.0.0-1
 - Package Creator Delivery with bundled offline rendering resources.
 

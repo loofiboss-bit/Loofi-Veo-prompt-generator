@@ -22,7 +22,7 @@ describe('paidJobService', () => {
   it('lists, observes, cancels, and retries durable jobs through the narrow bridge', async () => {
     const job = {
       id: 'job-1',
-      status: 'Queued',
+      status: 'Error',
       videoUrl: null,
       prompt: 'Durable video',
       settings: {},
@@ -59,5 +59,81 @@ describe('paidJobService', () => {
     expect(recoverPaidJob).toHaveBeenCalledWith(context);
     expect(retryPaidJob).not.toHaveBeenCalled();
     expect(submitPaidJob).not.toHaveBeenCalled();
+  });
+
+  it('does not seek another approval for ambiguous, already-interacted, active or missing jobs', async () => {
+    const retryPaidJob = vi.fn();
+    const job = { id: 'job', status: 'RecoveryRequired', timestamp: 1 };
+    const listPaidJobs = vi.fn().mockResolvedValue([job]);
+    window.electron = { listPaidJobs, retryPaidJob } as unknown as NonNullable<
+      typeof window.electron
+    >;
+    expect(await paidJobService.retry('job')).toBe(false);
+    listPaidJobs.mockResolvedValue([
+      { ...job, status: 'Error', providerInteractionId: 'already-sent' },
+    ]);
+    expect(await paidJobService.retry('job')).toBe(false);
+    listPaidJobs.mockResolvedValue([{ ...job, status: 'Submitting' }]);
+    expect(await paidJobService.retry('job')).toBe(false);
+    expect(await paidJobService.retry('missing')).toBe(false);
+    expect(retryPaidJob).not.toHaveBeenCalled();
+  });
+
+  it('recovers a known operation through retry without a new submission', async () => {
+    const retryPaidJob = vi.fn().mockResolvedValue(true);
+    const submitPaidJob = vi.fn();
+    const listPaidJobs = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'known', status: 'RecoveryRequired', providerOperationName: 'operations/known' },
+      ]);
+    window.electron = { listPaidJobs, retryPaidJob, submitPaidJob } as unknown as NonNullable<
+      typeof window.electron
+    >;
+    expect(await paidJobService.retry('known')).toBe(true);
+    expect(retryPaidJob).toHaveBeenCalledWith('known');
+    expect(submitPaidJob).not.toHaveBeenCalled();
+  });
+
+  it('records cost for completed paid jobs into costTrackingService idempotently', async () => {
+    const { costTrackingService } = await import('./costTrackingService');
+    const spy = vi.spyOn(costTrackingService, 'recordCost').mockReturnValue({
+      id: 'cost-1',
+      modelId: 'veo-3.1-fast',
+      endpointId: 'desktop-paid-job',
+      inputTokens: 0,
+      outputTokens: 0,
+      description: 'test',
+      costUsd: 0.6,
+      timestamp: 1,
+      isEstimated: false,
+    });
+    const completeJob = {
+      id: 'paid-job-complete-1',
+      status: 'Complete' as const,
+      prompt: 'A car driving down a mountain pass',
+      request: { modelId: 'veo-3.1-fast', durationSeconds: 6 },
+      costApproval: {
+        maximumChargeUsd: 0.6,
+        approvalId: 'app-1',
+        modelId: 'veo-3.1-fast',
+        currency: 'USD' as const,
+        approvedAt: 1,
+      },
+    };
+    const listPaidJobs = vi.fn().mockResolvedValue([completeJob]);
+    window.electron = { listPaidJobs } as unknown as NonNullable<typeof window.electron>;
+    await paidJobService.list();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: 'veo-3.1-fast',
+        costUsd: 0.6,
+        isEstimated: false,
+      }),
+    );
+    // Calling list again should not duplicate the cost
+    spy.mockClear();
+    await paidJobService.list();
+    expect(spy).not.toHaveBeenCalled();
   });
 });

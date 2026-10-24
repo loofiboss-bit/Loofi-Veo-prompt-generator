@@ -2,7 +2,11 @@ import { Link, useSearchParams } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { paidJobService } from '@core/services/paidJobService';
+import {
+  canReapprovePaidJob,
+  paidJobService,
+  recordCompletedPaidJobCost,
+} from '@core/services/paidJobService';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import type { PaidJobTask } from '@core/types';
 
@@ -43,9 +47,13 @@ export function ActivityPage() {
   const cancelQueueItem = useGenerationQueueStore((state) => state.cancel);
   const retryQueueItem = useGenerationQueueStore((state) => state.retry);
   const [durableJobs, setDurableJobs] = useState<PaidJobTask[]>([]);
+  const [durableJobsLoaded, setDurableJobsLoaded] = useState(false);
   const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [durableStatusFilter, setDurableStatusFilter] = useState<
+    'all' | 'active' | 'attention' | 'completed'
+  >('all');
   useEffect(() => {
     if (!requestedJob || focusedJob.current === requestedJob) return;
     const card = document.getElementById(`paid-job-${requestedJob}`);
@@ -59,8 +67,10 @@ export function ActivityPage() {
     try {
       const jobs = await paidJobService.list();
       setDurableJobs((current) => mergeDurableJobs(current, jobs));
+      setDurableJobsLoaded(true);
       setLoadError(false);
     } catch {
+      setDurableJobsLoaded(false);
       setLoadError(true);
     }
   }, []);
@@ -68,6 +78,7 @@ export function ActivityPage() {
   useEffect(() => {
     let active = true;
     const unsubscribe = paidJobService.subscribe((job) => {
+      recordCompletedPaidJobCost(job);
       if (active) setDurableJobs((current) => mergeDurableJobs(current, [job]));
     });
     void refreshDurableJobs();
@@ -85,12 +96,37 @@ export function ActivityPage() {
     () => durableJobs.filter((job) => ATTENTION_DURABLE_STATUSES.has(job.status)).length,
     [durableJobs],
   );
+  const durableCompletedCount = useMemo(
+    () =>
+      durableJobs.filter(
+        (job) =>
+          !ACTIVE_DURABLE_STATUSES.has(job.status) && !ATTENTION_DURABLE_STATUSES.has(job.status),
+      ).length,
+    [durableJobs],
+  );
+  const filteredDurableJobs = useMemo(
+    () =>
+      durableJobs.filter((job) => {
+        if (requestedJob && job.id === requestedJob) return true;
+        if (durableStatusFilter === 'active') return ACTIVE_DURABLE_STATUSES.has(job.status);
+        if (durableStatusFilter === 'attention') return ATTENTION_DURABLE_STATUSES.has(job.status);
+        if (durableStatusFilter === 'completed') {
+          return (
+            !ACTIVE_DURABLE_STATUSES.has(job.status) && !ATTENTION_DURABLE_STATUSES.has(job.status)
+          );
+        }
+        return true;
+      }),
+    [durableJobs, durableStatusFilter, requestedJob],
+  );
 
   const runDurableAction = async (action: 'cancel' | 'retry', id: string) => {
     setPendingActionId(id);
+    setActionError('');
     try {
       const changed = await paidJobService[action](id);
       if (changed) await refreshDurableJobs();
+      else setActionError(flow('flow.recoveryUnavailable'));
     } catch (failure) {
       setActionError(failure instanceof Error ? failure.message : flow('flow.recoveryUnavailable'));
     } finally {
@@ -136,51 +172,123 @@ export function ActivityPage() {
                 {t('activity.noLocalQueue')}
               </p>
             ) : (
-              queueItems.map((item) => (
-                <article
-                  key={item.id}
-                  className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-semibold">{item.label}</h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {t('activity.progress', { progress: item.progress })}
-                      </p>
+              queueItems.map((item) => {
+                const payload = item.payload;
+                const paidTaskId =
+                  item.type === 'video' &&
+                  payload &&
+                  typeof payload === 'object' &&
+                  'id' in payload &&
+                  typeof payload.id === 'string'
+                    ? payload.id
+                    : undefined;
+                const durableJob = durableJobs.find((job) => job.id === paidTaskId);
+                const canRetry = paidTaskId
+                  ? durableJobsLoaded && (!durableJob || canReapprovePaidJob(durableJob))
+                  : true;
+                return (
+                  <article
+                    key={item.id}
+                    className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-semibold">{item.label}</h3>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {t('activity.progress', { progress: item.progress })}
+                        </p>
+                      </div>
+                      <span className="rounded bg-slate-800 px-2 py-1 text-xs">{item.status}</span>
                     </div>
-                    <span className="rounded bg-slate-800 px-2 py-1 text-xs">{item.status}</span>
-                  </div>
-                  {item.error && <p className="mt-2 text-sm text-amber-300">{item.error}</p>}
-                  <div className="mt-3 flex gap-2">
-                    {['pending', 'waiting-online', 'active'].includes(item.status) && (
-                      <button
-                        type="button"
-                        className="rounded border border-slate-700 px-3 py-1.5 text-sm hover:border-blue-400"
-                        onClick={() => cancelQueueItem(item.id)}
-                      >
-                        {t('activity.cancel')}
-                      </button>
-                    )}
-                    {item.status === 'failed' && (
-                      <button
-                        type="button"
-                        className="rounded bg-blue-600 px-3 py-1.5 text-sm hover:bg-blue-500"
-                        onClick={() => retryQueueItem(item.id)}
-                      >
-                        {t('activity.retry')}
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))
+                    {item.error && <p className="mt-2 text-sm text-amber-300">{item.error}</p>}
+                    <div className="mt-3 flex gap-2">
+                      {['pending', 'waiting-online', 'active'].includes(item.status) && (
+                        <button
+                          type="button"
+                          className="rounded border border-slate-700 px-3 py-1.5 text-sm hover:border-blue-400"
+                          onClick={() => cancelQueueItem(item.id)}
+                        >
+                          {t('activity.cancel')}
+                        </button>
+                      )}
+                      {item.status === 'failed' && canRetry && (
+                        <button
+                          type="button"
+                          disabled={Boolean(durableJob && pendingActionId === durableJob.id)}
+                          className="rounded bg-blue-600 px-3 py-1.5 text-sm hover:bg-blue-500"
+                          onClick={() => {
+                            if (durableJob) void runDurableAction('retry', durableJob.id);
+                            else retryQueueItem(item.id);
+                          }}
+                        >
+                          {durableJob
+                            ? t('activity.reapprove', { defaultValue: 'Review and approve retry' })
+                            : t('activity.retry')}
+                        </button>
+                      )}
+                      {item.status === 'failed' && durableJob && (
+                        <a
+                          href={`#paid-job-${durableJob.id}`}
+                          className="text-sm text-blue-300 underline"
+                        >
+                          {t('activity.viewPaidJob', { defaultValue: 'View paid job' })}
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>
 
         <section aria-labelledby="durable-jobs-heading" className="mt-6">
-          <h2 id="durable-jobs-heading" className="text-lg font-semibold">
-            {t('activity.durableJobs')}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="durable-jobs-heading" className="text-lg font-semibold">
+              {t('activity.durableJobs')}
+            </h2>
+            {durableJobs.length > 0 && (
+              <div
+                className="flex flex-wrap gap-1.5"
+                role="group"
+                aria-label={t('activity.filterDurableJobs', {
+                  defaultValue: 'Filter durable jobs',
+                })}
+              >
+                {(
+                  [
+                    [
+                      'all',
+                      `${t('activity.filterAll', { defaultValue: 'All' })} (${durableJobs.length})`,
+                    ],
+                    [
+                      'active',
+                      `${t('activity.filterActive', { defaultValue: 'Active' })} (${durableActiveCount})`,
+                    ],
+                    ['attention', `${t('activity.needsAttention')} (${durableAttentionCount})`],
+                    [
+                      'completed',
+                      `${t('activity.filterCompleted', { defaultValue: 'Completed' })} (${durableCompletedCount})`,
+                    ],
+                  ] as const
+                ).map(([filterKey, label]) => (
+                  <button
+                    key={filterKey}
+                    type="button"
+                    aria-pressed={durableStatusFilter === filterKey}
+                    onClick={() => setDurableStatusFilter(filterKey)}
+                    className={`rounded-md border px-2.5 py-1 text-xs font-medium ${
+                      durableStatusFilter === filterKey
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-300'
+                        : 'border-slate-700 bg-slate-900 text-slate-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {actionError && (
             <p role="alert" className="mt-3 text-sm text-amber-300">
               {actionError}
@@ -192,15 +300,13 @@ export function ActivityPage() {
             </p>
           )}
           <div className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions text">
-            {durableJobs.length === 0 ? (
+            {filteredDurableJobs.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-700 p-6 text-slate-400">
                 {t('activity.noDurableJobs')}
               </p>
             ) : (
-              durableJobs.map((job) => {
+              filteredDurableJobs.map((job) => {
                 const isMusic = 'jobKind' in job && job.jobKind === 'music';
-                const canCancel =
-                  ACTIVE_DURABLE_STATUSES.has(job.status) || job.status === 'Queued';
                 const videoJob =
                   'productionRunId' in job &&
                   job.productionRunId &&
@@ -208,11 +314,26 @@ export function ActivityPage() {
                   job.productionTakeId
                     ? job
                     : null;
+                const modelId =
+                  job.costApproval?.modelId ??
+                  ('request' in job && job.request?.modelId ? job.request.modelId : undefined);
+                const approvedCostUsd = job.costApproval?.maximumChargeUsd;
+                const canCancel =
+                  ACTIVE_DURABLE_STATUSES.has(job.status) ||
+                  job.status === 'Queued' ||
+                  (isMusic && ATTENTION_DURABLE_STATUSES.has(job.status)) ||
+                  (!videoJob && ATTENTION_DURABLE_STATUSES.has(job.status));
                 const canRecover =
                   videoJob &&
                   videoJob.providerOperationName &&
                   ATTENTION_DURABLE_STATUSES.has(job.status);
-                const canRetry = !videoJob && job.status === 'Error';
+                const canReapprove = canReapprovePaidJob(job);
+                const canRetry =
+                  canReapprove ||
+                  (!videoJob &&
+                    'providerOperationName' in job &&
+                    job.providerOperationName &&
+                    job.status === 'Error');
                 return (
                   <article
                     id={`paid-job-${job.id}`}
@@ -227,7 +348,19 @@ export function ActivityPage() {
                         </p>
                         <h3 className="mt-1 truncate font-semibold">{job.prompt}</h3>
                       </div>
-                      <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {modelId && (
+                          <span className="rounded bg-slate-800 px-2 py-1 font-mono text-xs text-slate-300">
+                            {modelId}
+                          </span>
+                        )}
+                        {typeof approvedCostUsd === 'number' && (
+                          <span className="rounded bg-slate-800 px-2 py-1 font-mono text-xs tabular-nums text-slate-300">
+                            ${approvedCostUsd.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
+                      </div>
                     </div>
                     {job.error && <p className="mt-2 text-sm text-amber-300">{job.error}</p>}
                     {videoJob && (
@@ -272,6 +405,11 @@ export function ActivityPage() {
                                   takeId: videoJob!.productionTakeId!,
                                 })
                                 .then(() => refreshDurableJobs())
+                                .catch((cause: unknown) => {
+                                  setActionError(
+                                    cause instanceof Error ? cause.message : String(cause),
+                                  );
+                                })
                                 .finally(() => setPendingActionId(null));
                             }}
                           >
@@ -285,7 +423,11 @@ export function ActivityPage() {
                             className="rounded bg-blue-600 px-3 py-1.5 text-sm hover:bg-blue-500 disabled:opacity-50"
                             onClick={() => void runDurableAction('retry', job.id)}
                           >
-                            {t('activity.retry')}
+                            {canReapprove
+                              ? t('activity.reapprove', {
+                                  defaultValue: 'Review and approve retry',
+                                })
+                              : t('activity.retry')}
                           </button>
                         )}
                       </div>

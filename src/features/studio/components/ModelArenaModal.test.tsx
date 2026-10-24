@@ -53,6 +53,37 @@ describe('ModelArenaModal', () => {
       expect(writeText).toHaveBeenCalledWith((artifact.primary as VideoPromptVariant).copyAll),
     );
   });
+  it('shows the same local cinematic guidance as Studio for every target and keeps copy available', () => {
+    const contradictory = { ...input, camera: 'Static tripod with a whip pan' };
+    renderArena({ input: contradictory });
+    for (const target of ARENA_TARGETS) {
+      const artifact = compileVideoPromptArtifact({ ...contradictory, target });
+      const check = artifact.validation.find(
+        (entry) => entry.id === 'variant-0-cinematic-camera-conflict',
+      );
+      expect(check).toBeDefined();
+      const region = within(
+        screen.getByRole('region', { name: STUDIO_CAPABILITIES[target].label }),
+      );
+      expect(region.getByText(check!.detail)).toBeInTheDocument();
+      expect(region.getByRole('button', { name: 'Copy prompt package' })).toBeEnabled();
+    }
+  });
+  it('opens the affected current variant only after closing the comparison', () => {
+    const onClose = vi.fn();
+    const onValidationAction = vi.fn();
+    renderArena({
+      input: { ...input, camera: 'Static tripod with a whip pan' },
+      onClose,
+      onValidationAction,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Open control: Camera direction' }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onValidationAction).toHaveBeenCalledWith({ field: 'variant', variantIndex: 0 });
+    expect(onClose.mock.invocationCallOrder[0]).toBeLessThan(
+      onValidationAction.mock.invocationCallOrder[0],
+    );
+  });
   it('awaits target persistence before closing and retains the modal when selection fails', async () => {
     const onClose = vi.fn();
     const onSelectTarget = vi.fn().mockRejectedValue(new Error('Disk full'));
@@ -73,7 +104,10 @@ describe('ModelArenaModal', () => {
       }),
     );
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
-    expect(onSelectTarget).toHaveBeenCalledWith('wan-video');
+    expect(onSelectTarget).toHaveBeenCalledWith(
+      'wan-video',
+      expect.objectContaining({ target: 'wan-video' }),
+    );
   });
   it('reports clipboard errors without closing', async () => {
     writeText.mockRejectedValue(new Error('Permission denied'));

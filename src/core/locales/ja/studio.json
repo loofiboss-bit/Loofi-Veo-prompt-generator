@@ -307,6 +307,24 @@
         "warning": "スタイルは歌詞と分けて簡潔に記述してください。200文字は文章作成の目安です。",
         "blocked": "スタイルは歌詞と分けて簡潔に記述してください。200文字は文章作成の目安です。"
       }
+    },
+    "cinematic-camera-conflict": {
+      "label": "カメラの動き",
+      "detail": {
+        "warning": "固定カメラと急速なカメラ移動が同じショットに含まれています。どちらかを選ぶか、別々のショットとして記述してください。"
+      }
+    },
+    "cinematic-lighting-conflict": {
+      "label": "照明",
+      "detail": {
+        "warning": "深い暗闇と真昼の直射日光が同じショットに含まれています。照明を明確にするか、意図的な変化を記述してください。"
+      }
+    },
+    "cinematic-composition-conflict": {
+      "label": "構図",
+      "detail": {
+        "warning": "極端なクローズアップとパノラマ風景が同じショットに含まれています。構図を選ぶか、意図的な変化を記述してください。"
+      }
     }
   },
   "arenaCopy": "プロンプトパックをコピー",
@@ -376,5 +394,47 @@
     "relink": "アセットで再リンク",
     "refresh": "ローカルメディアを再読み込み",
     "replace": "置き換える動画を選択"
+  },
+  "comparison": {
+    "title": "動画の比較",
+    "result": "結果 {{side}}",
+    "play": "再生",
+    "pause": "一時停止",
+    "seek": "比較の再生位置",
+    "audio": "音声を聴く側",
+    "metadataPending": "同期再生のため動画のメタデータを待っています。",
+    "playbackFailed": "再生できませんでした。両方のローカル動画が利用可能か確認してください。",
+    "buffering": "動画の読み込み中に再生を一時停止しました。準備ができたら再生を選んでください。",
+    "sourceDiff": "保存されたプロンプトと設定を比較",
+    "prompt": "プロンプト",
+    "negativePrompt": "ネガティブプロンプト",
+    "settings": "設定",
+    "changed": "変更あり",
+    "unchanged": "変更なし",
+    "notes": "比較メモ",
+    "saveNotes": "メモを保存",
+    "saving": "保存中…",
+    "saved": "保存済み",
+    "unsaved": "未保存",
+    "saveFailed": "メモを保存できませんでした。"
+  },
+  "variantEdit": {
+    "title": "選択したバリエーションを改善",
+    "goal": "改善の目的",
+    "shorten": "テキストを短くする",
+    "camera": "カメラの動きを明確にする",
+    "custom": "独自の指示",
+    "direction": "改善の指示",
+    "fields": "改善する項目",
+    "prompt": "プロンプト",
+    "both": "プロンプトとネガティブプロンプト",
+    "propose": "選択したバリエーションの変更を提案",
+    "requesting": "提案を準備中…",
+    "review": "選択したバリエーションの変更を確認",
+    "reviewHint": "まとめて適用する項目を選んでください。その他の項目とバリエーションは保持されます。",
+    "acceptField": "{{field}}を適用",
+    "fieldDiff": "{{field}}の変更",
+    "accept": "選択した項目を適用",
+    "aiEdited": "AIで編集済み"
   }
 }
