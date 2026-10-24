@@ -145,4 +145,64 @@ describe('creatorSilenceService', () => {
     const updatedText = updated.find((c) => c.id === 'caption_subsequent');
     expect(updatedText?.startTime).toBe(18); // 19 - 1 = 18
   });
+
+  it('rebinds surviving linked captions to split segments and updates timing accurately (F2)', () => {
+    // 10s clip from timeline 0 to 10, offset 0
+    const targetClip = makeClip({
+      id: 'v_interview',
+      startTime: 0,
+      duration: 10,
+      offset: 0,
+    });
+    // Linked caption at 7-9 seconds (inside second segment after cutting 2-4s)
+    const linkedCaption: TimelineClip = {
+      id: 'caption_7_9',
+      resourceId: 'caption_7_9',
+      label: 'Linked phrase',
+      trackId: 'track_captions',
+      type: 'text',
+      sourceClipId: 'v_interview',
+      startTime: 7,
+      duration: 2,
+      offset: 0,
+      caption: {
+        id: 'cap_1',
+        text: 'Linked phrase',
+        startTime: 7,
+        endTime: 9,
+        style: 'classic',
+      },
+    };
+
+    const clips = [targetClip, linkedCaption];
+
+    // Silence from timeline 2 to 4 (remove 2 seconds)
+    const proposals = [
+      {
+        silence: { start: 2, end: 4, duration: 2 },
+        clipTimelineStart: 2,
+        clipTimelineEnd: 4,
+        selected: true,
+      },
+    ];
+
+    const updated = creatorSilenceService.applyCuts(clips, 'v_interview', proposals);
+
+    // Target split into 2 segments: [0, 2] and [2, 8]
+    const secondSegment = updated.find((c) => c.id.startsWith('v_interview_cut_1'));
+    expect(secondSegment).toBeDefined();
+    expect(secondSegment?.startTime).toBe(2);
+    expect(secondSegment?.duration).toBe(6);
+    expect(secondSegment?.offset).toBe(4);
+
+    // Linked caption at 7-9s originally was 3-5s into the second segment (4s offset)
+    // In new timeline, second segment starts at 2s, so caption should be at 2 + (7 - 4) = 5s to 7s!
+    const updatedCaption = updated.find((c) => c.id === 'caption_7_9');
+    expect(updatedCaption).toBeDefined();
+    expect(updatedCaption?.sourceClipId).toBe(secondSegment?.id);
+    expect(updatedCaption?.startTime).toBe(5);
+    expect(updatedCaption?.duration).toBe(2);
+    expect(updatedCaption?.caption?.startTime).toBe(5);
+    expect(updatedCaption?.caption?.endTime).toBe(7);
+  });
 });

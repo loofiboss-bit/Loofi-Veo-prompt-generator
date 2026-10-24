@@ -227,6 +227,19 @@ describe('selected video variant proposals', () => {
       expect(hasVariantEditChanges(res)).toBe(true);
     });
 
+    it('preserves dialogue tokens even if they match buzzword patterns in clean-compact', async () => {
+      const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      (artifact.primary as { prompt: string }).prompt =
+        'Futuristic developer in a lab, 4k resolution, photorealistic. Dialogue: the speaker says: "We built this in Unreal Engine 5, trending on ArtStation!" Ambient hum.';
+      const res = applyLocalPromptTransform(artifact, 0, 'clean-compact');
+      expect(res.patch.prompt).toContain(
+        'Dialogue: the speaker says: "We built this in Unreal Engine 5, trending on ArtStation!"',
+      );
+      expect(res.patch.prompt).not.toContain('4k resolution');
+      expect(res.patch.prompt).not.toContain('photorealistic');
+    });
+
     it('detects when a local transform produces no changes', async () => {
       const { applyLocalPromptTransform, hasVariantEditChanges } =
         await import('./videoVariantEditService');

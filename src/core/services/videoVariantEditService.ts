@@ -196,7 +196,20 @@ export function applyLocalPromptTransform(
   const patch: VideoVariantEditPatch = {};
 
   if (transformId === 'clean-compact') {
-    const cleaned = before.prompt
+    const protectedSpans: string[] = [];
+    const placeholderPrefix = '__DIALOGUE_SPAN_';
+
+    // Protect Dialogue: the speaker says: ... and quoted dialogue from buzzword strip
+    const withPlaceholders = before.prompt.replace(
+      /(?:Dialogue:\s*the speaker says:[^.]*\.?|["“][^"”]*["”])/gi,
+      (match) => {
+        const key = `${placeholderPrefix}${protectedSpans.length}__`;
+        protectedSpans.push(match);
+        return key;
+      },
+    );
+
+    let cleaned = withPlaceholders
       .replace(
         /\b(?:highly detailed|hyperrealistic|photorealistic|trending on artstation|octane render|unreal engine 5|4k resolution|8k resolution)\b[,.]?/gi,
         '',
@@ -206,6 +219,12 @@ export function applyLocalPromptTransform(
       .replace(/,\s*$/g, '.')
       .replace(/\s{2,}/g, ' ')
       .trim();
+
+    // Restore protected dialogue and quote spans
+    protectedSpans.forEach((span, idx) => {
+      cleaned = cleaned.replace(`${placeholderPrefix}${idx}__`, span);
+    });
+
     patch.prompt = cleaned || before.prompt;
   } else if (transformId === 'sync-target-grammar') {
     let formatted = before.prompt;

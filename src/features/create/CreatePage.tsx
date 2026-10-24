@@ -124,7 +124,9 @@ export function CreatePage() {
   useEffect(() => {
     if (actionFocus) document.getElementById(`production-shot-${actionFocus.shotId}`)?.focus();
   }, [actionFocus, workflow.currentStep]);
-  const content = <CreateWorkflow activeStep={workflow.currentStep} />;
+  const content = (
+    <CreateWorkflow activeStep={workflow.currentStep} onNavigateStep={workflow.setCurrentStep} />
+  );
   const activeContent = {
     brief: <BriefStep>{content}</BriefStep>,
     scenes: <ScenesStep>{content}</ScenesStep>,

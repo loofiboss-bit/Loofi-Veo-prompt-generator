@@ -126,11 +126,62 @@ export class CreatorSilenceService {
       duration: seg.duration,
     }));
 
+    // Find all clips rippled on the target clip's track
+    const rippledClipIds = new Set(
+      clips
+        .filter(
+          (c) =>
+            c.trackId === targetClip.trackId &&
+            c.startTime >= targetClip.startTime + targetClip.duration - 0.001,
+        )
+        .map((c) => c.id),
+    );
+
     const result: TimelineClip[] = [];
 
     for (const c of clips) {
       if (c.id === targetClipId) {
         result.push(...newTargetClips);
+      } else if (c.sourceClipId === targetClipId && c.type === 'text') {
+        // Map linked captions to surviving target segments
+        const survivingCaptions: TimelineClip[] = [];
+        for (let i = 0; i < newTargetClips.length; i++) {
+          const seg = newTargetClips[i];
+          const segOrigStart = Number(
+            (targetClip.startTime + (seg.offset - targetClip.offset)).toFixed(3),
+          );
+          const segOrigEnd = Number((segOrigStart + seg.duration).toFixed(3));
+          const cEnd = Number((c.startTime + c.duration).toFixed(3));
+
+          const overlapStart = Math.max(c.startTime, segOrigStart);
+          const overlapEnd = Math.min(cEnd, segOrigEnd);
+          const overlapDuration = Number((overlapEnd - overlapStart).toFixed(3));
+
+          if (overlapDuration >= 0.05) {
+            const newStart = Number((seg.startTime + (overlapStart - segOrigStart)).toFixed(3));
+            const newEnd = Number((newStart + overlapDuration).toFixed(3));
+            survivingCaptions.push({
+              ...c,
+              id:
+                survivingCaptions.length === 0
+                  ? c.id
+                  : `${c.id}_split_${i}_${crypto.randomUUID().slice(0, 8)}`,
+              sourceClipId: seg.id,
+              startTime: newStart,
+              duration: overlapDuration,
+              offset: 0,
+              caption: c.caption
+                ? {
+                    ...c.caption,
+                    id: survivingCaptions.length === 0 ? c.caption.id : crypto.randomUUID(),
+                    startTime: newStart,
+                    endTime: newEnd,
+                  }
+                : undefined,
+            });
+          }
+        }
+        result.push(...survivingCaptions);
       } else if (
         c.trackId === targetClip.trackId &&
         c.startTime >= targetClip.startTime + targetClip.duration - 0.001
@@ -141,11 +192,22 @@ export class CreatorSilenceService {
         });
       } else if (
         c.type === 'text' &&
-        c.startTime >= targetClip.startTime + targetClip.duration - 0.001
+        c.startTime >= targetClip.startTime + targetClip.duration - 0.001 &&
+        (!c.sourceClipId || rippledClipIds.has(c.sourceClipId))
       ) {
+        // Shift later text clips (or captions linked to rippled clips)
+        const newStart = Math.max(0, Number((c.startTime - totalDurationRemoved).toFixed(3)));
+        const newEnd = Number((newStart + c.duration).toFixed(3));
         result.push({
           ...c,
-          startTime: Math.max(0, Number((c.startTime - totalDurationRemoved).toFixed(3))),
+          startTime: newStart,
+          caption: c.caption
+            ? {
+                ...c.caption,
+                startTime: newStart,
+                endTime: newEnd,
+              }
+            : undefined,
         });
       } else {
         result.push(c);

@@ -45,26 +45,56 @@ export function editStudioVariant(
   });
 }
 
-/** Reapply locked source blocks after a whole-pack optimization. */
+/** Reapply locked source blocks after a whole-pack optimization, preserving repeated section identities. */
 export function preserveLockedLyricSections(
   original: string,
   proposed: string,
   locks: string[],
 ): string {
   const blocks = (value: string) => value.split(/(?=^\[[^\]]+\])/m);
-  const locked = blocks(original).filter((block) => locks.some((tag) => block.startsWith(tag)));
-  const seen = new Set<string>();
-  const result = blocks(proposed)
-    .map((block) => {
-      const source = locked.find(
+  const origBlocks = blocks(original);
+
+  const tagCounts = new Map<string, number>();
+  const originalTagged = origBlocks.map((block) => {
+    const tagMatch = block.match(/^\[[^\]]+\]/);
+    const tag = tagMatch ? tagMatch[0] : '';
+    const occurrence = (tagCounts.get(tag) ?? 0) + 1;
+    tagCounts.set(tag, occurrence);
+    const indexedTag = `${tag} #${occurrence}`;
+    const isLocked = locks.some((l) => l === tag || l === indexedTag);
+    return { block, tag, occurrence, indexedTag, isLocked };
+  });
+
+  const lockedEntries = originalTagged.filter((item) => item.isLocked);
+  if (lockedEntries.length === 0) return proposed;
+
+  const usedOriginalBlocks = new Set<string>();
+  const propCounts = new Map<string, number>();
+
+  const proposedMapped = blocks(proposed).map((block) => {
+    const tagMatch = block.match(/^\[[^\]]+\]/);
+    const tag = tagMatch ? tagMatch[0] : '';
+    const occurrence = (propCounts.get(tag) ?? 0) + 1;
+    propCounts.set(tag, occurrence);
+    const indexedTag = `${tag} #${occurrence}`;
+
+    const match =
+      lockedEntries.find(
         (entry) =>
-          entry.slice(0, entry.indexOf(']') + 1) === block.slice(0, block.indexOf(']') + 1),
-      );
-      if (source) seen.add(source);
-      return source ?? block;
-    })
-    .join('');
-  return result + locked.filter((block) => !seen.has(block)).join('');
+          !usedOriginalBlocks.has(entry.block) &&
+          (entry.indexedTag === indexedTag ||
+            (entry.tag === tag && entry.occurrence === occurrence)),
+      ) ?? lockedEntries.find((entry) => !usedOriginalBlocks.has(entry.block) && entry.tag === tag);
+
+    if (match) {
+      usedOriginalBlocks.add(match.block);
+      return match.block;
+    }
+    return block;
+  });
+
+  const unplaced = lockedEntries.filter((entry) => !usedOriginalBlocks.has(entry.block));
+  return proposedMapped.join('') + unplaced.map((e) => e.block).join('');
 }
 
 /** Keep every non-selected section byte-identical, especially locked sections. */
@@ -75,11 +105,29 @@ export function replaceStudioLyricSection(
   locks: string[],
 ): string {
   if (locks.includes(section)) throw new Error('That section is locked.');
+  const indexMatch = section.match(/^(\[[^\]]+\])\s*#(\d+)$/);
+  const targetTag = indexMatch ? indexMatch[1] : section;
+  const targetOccurrence = indexMatch ? parseInt(indexMatch[2], 10) : 1;
+
+  if (locks.includes(targetTag) || locks.includes(`${targetTag} #${targetOccurrence}`)) {
+    throw new Error('That section is locked.');
+  }
+
   const blocks = (value: string) => value.split(/(?=^\[[^\]]+\])/m);
-  const replacement = blocks(proposed).find((block) => block.startsWith(section));
+  const replacement = blocks(proposed).find((block) => block.startsWith(targetTag));
   if (!replacement?.trim()) throw new Error('The AI response omitted the selected section.');
+
+  let currentOccur = 0;
   return blocks(original)
-    .map((block) => (block.startsWith(section) ? replacement : block))
+    .map((block) => {
+      if (block.startsWith(targetTag)) {
+        currentOccur += 1;
+        if (currentOccur === targetOccurrence || (!indexMatch && currentOccur === 1)) {
+          return replacement;
+        }
+      }
+      return block;
+    })
     .join('');
 }
 

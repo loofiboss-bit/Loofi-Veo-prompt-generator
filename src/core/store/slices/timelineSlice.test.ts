@@ -274,6 +274,68 @@ describe('timelineSlice — syncTimelineFromShots', () => {
     const titleClip = clips.find((c) => c.id === 'video_1');
     expect(titleClip?.label).toBe('Title');
   });
+
+  it('preserves existing user edits on shot clips and retains imported media on video_main', () => {
+    useAppStore.setState({
+      sbShots: [
+        {
+          id: 1,
+          type: 'video',
+          action: 'Shot 1 action',
+          camera: '',
+          characterId: '',
+          takes: ['https://cdn/v1.mp4'],
+          selectedTakeIndex: 0,
+          visualLink: false,
+          duration: 8,
+          generatedVideoUrl: 'https://cdn/v1.mp4',
+          transition: { type: 'cut', duration: 0 },
+        },
+      ],
+      clips: [
+        {
+          id: 'video_1',
+          resourceId: 1,
+          trackId: 'video_main',
+          startTime: 3,
+          duration: 2,
+          offset: 4,
+          type: 'video',
+          label: 'Custom Shot 1',
+          volume: 0.25,
+          opacity: 0.8,
+        },
+        {
+          id: 'imported_clip_1',
+          resourceId: 'asset_abc',
+          trackId: 'video_main',
+          startTime: 6,
+          duration: 5,
+          offset: 0,
+          type: 'video',
+          label: 'Imported Clip',
+          volume: 1.0,
+        },
+      ],
+    });
+
+    useAppStore.getState().syncTimelineFromShots();
+    const clips = useAppStore.getState().clips;
+
+    // video_1 edits must be preserved
+    const video1 = clips.find((c) => c.id === 'video_1');
+    expect(video1).toBeDefined();
+    expect(video1?.startTime).toBe(3);
+    expect(video1?.duration).toBe(2);
+    expect(video1?.offset).toBe(4);
+    expect(video1?.volume).toBe(0.25);
+    expect(video1?.opacity).toBe(0.8);
+
+    // imported clip on video_main must be preserved
+    const imported = clips.find((c) => c.id === 'imported_clip_1');
+    expect(imported).toBeDefined();
+    expect(imported?.startTime).toBe(6);
+  });
 });
 
 describe('timelineSlice — atomic caption editing', () => {

@@ -92,6 +92,7 @@ export function CreatorDeliveryPanel() {
   audioRef.current = audioId;
   const jobRef = useRef(job);
   jobRef.current = job;
+  const batchCancelRef = useRef(false);
   const duration = Math.max(
     0,
     ...clips.filter((clip) => clip.type !== 'text').map((clip) => clip.startTime + clip.duration),
@@ -340,30 +341,38 @@ export function CreatorDeliveryPanel() {
       );
       if (idRef.current !== id || timelineBinding() !== frozenBinding) return;
 
-      for (let i = 0; i < plans.length; i++) {
-        if (idRef.current !== id) break;
-        const plan = plans[i];
-        setBatchProgress({ current: i + 1, total: plans.length, format: plan.aspectRatio });
-        const started = await useRenderJobsStore.getState().start(plan);
-        if (idRef.current !== id) break;
-        setJob(started);
-        jobRef.current = started;
+      batchCancelRef.current = false;
+      try {
+        for (let i = 0; i < plans.length; i++) {
+          if (idRef.current !== id || batchCancelRef.current) break;
+          const plan = plans[i];
+          setBatchProgress({ current: i + 1, total: plans.length, format: plan.aspectRatio });
+          const started = await useRenderJobsStore.getState().start(plan);
+          if (idRef.current !== id || batchCancelRef.current) break;
+          setJob(started);
+          jobRef.current = started;
 
-        let currentJob = started;
-        while (['queued', 'rendering', 'verifying'].includes(currentJob.status)) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          if (idRef.current !== id) break;
-          const poll = await window.electron.getTimelineRenderJob?.(currentJob.id);
-          if (poll) {
-            currentJob = poll;
-            setJob(poll);
+          let currentJob = started;
+          while (['queued', 'rendering', 'verifying'].includes(currentJob.status)) {
+            if (batchCancelRef.current) {
+              await useRenderJobsStore.getState().cancel(currentJob.id);
+              break;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            if (idRef.current !== id || batchCancelRef.current) break;
+            const poll = await window.electron.getTimelineRenderJob?.(currentJob.id);
+            if (poll) {
+              currentJob = poll;
+              setJob(poll);
+            }
+          }
+          if (currentJob.status !== 'complete' || batchCancelRef.current) {
+            break;
           }
         }
-        if (currentJob.status !== 'complete') {
-          break;
-        }
+      } finally {
+        setBatchProgress(null);
       }
-      setBatchProgress(null);
     });
   const addCaptions = (
     values: Caption[],
@@ -581,7 +590,11 @@ export function CreatorDeliveryPanel() {
           {clips
             .filter((clip) => clip.type === 'video' || clip.type === 'image')
             .map((clip) => {
-              const crop = settings.crops[clip.id] ?? { mode: 'fit' as const, x: 0.5, y: 0.5 };
+              const crop = (settings.crops ?? {})[clip.id] ?? {
+                mode: 'fit' as const,
+                x: 0.5,
+                y: 0.5,
+              };
               const activeRun = useProductionRunStore.getState().activeRun;
               const selected = resolveOtioSelection(
                 clip.resourceId,
@@ -693,7 +706,7 @@ export function CreatorDeliveryPanel() {
                       onChange={(event) =>
                         change({
                           crops: {
-                            ...settings.crops,
+                            ...(settings.crops ?? {}),
                             [clip.id]: { ...crop, mode: event.target.value as 'fit' | 'fill' },
                           },
                         })
@@ -716,7 +729,7 @@ export function CreatorDeliveryPanel() {
                           onChange={(event) =>
                             change({
                               crops: {
-                                ...settings.crops,
+                                ...(settings.crops ?? {}),
                                 [clip.id]: { ...crop, [axis]: Number(event.target.value) },
                               },
                             })
@@ -1352,16 +1365,15 @@ export function CreatorDeliveryPanel() {
             {t('delivery.renderBatch', 'Batch export')} ({settings.batchFormats?.length} formats)
           </button>
         )}
-        {running && (
+        {(running || batchProgress !== null) && (
           <button
             className={buttonClass}
-            onClick={() =>
-              void act(async () => {
-                if (job) {
-                  await useRenderJobsStore.getState().cancel(job.id);
-                }
-              })
-            }
+            onClick={() => {
+              batchCancelRef.current = true;
+              if (job) {
+                void useRenderJobsStore.getState().cancel(job.id);
+              }
+            }}
           >
             {t('delivery.cancel', 'Cancel export')}
           </button>

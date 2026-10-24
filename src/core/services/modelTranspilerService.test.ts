@@ -159,6 +159,22 @@ describe('modelTranspilerService', () => {
       expect(primary.prompt).toContain('Subject motion: slowly trudges forward');
       expect(result.recommendations.some((r) => r.includes('motion directives'))).toBe(true);
     });
+
+    it('carries motion from the core idea field when specific action is absent (F4)', () => {
+      const ideaOnlyInput: UniversalPromptInput = {
+        ...BASE_INPUT,
+        mode: 'image-to-video',
+        action: '',
+        idea: 'The red bird flaps its wings and flies out through the window',
+      };
+
+      const result = transpilePrompt(ideaOnlyInput, 'flow-veo');
+      const primary = result.variants[0];
+
+      expect(primary.prompt).toContain(
+        'Subject motion: The red bird flaps its wings and flies out through the window',
+      );
+    });
   });
 
   describe('Custom Negative Prompts', () => {
