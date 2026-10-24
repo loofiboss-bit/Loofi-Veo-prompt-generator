@@ -32,6 +32,8 @@ import {
   type StudioVariantEdits,
 } from '@core/services/promptStudioEditingService';
 import {
+  applyBatchLocalMusicTransform,
+  applyBatchLocalPromptTransform,
   applyLocalMusicTransform,
   applyLocalPromptTransform,
   hasVariantEditChanges,
@@ -499,7 +501,7 @@ export function PromptStudioPage() {
         if (mounted.current && aiRequest.current === token) setBusy(false);
       }
     });
-  const handleLocalTransform = (transformId: LocalPromptTransformId) =>
+  const handleLocalTransform = (transformId: LocalPromptTransformId, applyToAll = false) =>
     void run(async () => {
       const token = ++operation.current;
       aiRequest.current = token;
@@ -513,6 +515,27 @@ export function PromptStudioPage() {
         baseline.projectId !== projectId
       )
         return;
+      if (applyToAll) {
+        const batchResult = applyBatchLocalPromptTransform(baseline.artifact, transformId);
+        if (!batchResult.changed) {
+          setMessage(
+            t('variantEdit.alreadyOptimized', {
+              defaultValue: 'Selected variant already matches this rule.',
+            }),
+          );
+          return;
+        }
+        setProposal({
+          before: structuredClone(baseline),
+          artifact: scopeArtifact(batchResult.artifact),
+          projectId,
+          revision: baseline.revision,
+          token,
+        });
+        revealResult();
+        setMessage(t('revision.proposalReady'));
+        return;
+      }
       const result = applyLocalPromptTransform(
         baseline.artifact,
         baseline.selectedVariant,
@@ -536,7 +559,7 @@ export function PromptStudioPage() {
       revealResult();
       setMessage(t('revision.proposalReady'));
     });
-  const handleLocalMusicTransform = (transformId: LocalMusicTransformId) =>
+  const handleLocalMusicTransform = (transformId: LocalMusicTransformId, applyToAll = false) =>
     void run(async () => {
       const token = ++operation.current;
       aiRequest.current = token;
@@ -550,12 +573,14 @@ export function PromptStudioPage() {
         baseline.projectId !== projectId
       )
         return;
-      const result = applyLocalMusicTransform(
-        baseline.artifact,
-        baseline.selectedVariant,
-        transformId,
-        baseline.lockedSections,
-      );
+      const result = applyToAll
+        ? applyBatchLocalMusicTransform(baseline.artifact, transformId, baseline.lockedSections)
+        : applyLocalMusicTransform(
+            baseline.artifact,
+            baseline.selectedVariant,
+            transformId,
+            baseline.lockedSections,
+          );
       if (!result.changed) {
         setMessage(
           t('variantEdit.alreadyOptimized', {

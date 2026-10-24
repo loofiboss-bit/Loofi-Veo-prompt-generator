@@ -14,17 +14,14 @@
 
 ---
 
-## Completed Foundation (v17–v18 Baseline)
+## Completed Foundation (v17–v19 Baseline)
 
-### Unreleased: Reviewable Video Production
-
-- Selected-variant AI editing with field-level review, guarded persistence and unchanged alternatives.
-- Shared local cinematic guidance in Studio/Arena, separate from documented provider restrictions.
-- Shared A/B video comparison with frozen-source differences and independent result notes.
-- Complete frozen Veo/Lyria request approval binding, preserving recovery of known operations.
-
-These source changes retain version 17.0.0 until a separate release is prepared. Validation and
-publication are separate steps; no new release, package or physical-platform qualification is implied.
+- **v19.0.0 Reviewable Video Production & Deterministic Workbench (Released 2026-10-24):**
+  - Selected-variant AI editing with field-level review, guarded persistence, and zero-token batch local transforms across all 3 variants.
+  - Shared local cinematic AST guidance (`OPT-001`, `MOT-001`, `LGT-002`, `DOF-001`, `TMP-001`) in Studio/Arena, separate from documented provider restrictions.
+  - Shared Pro A/B video comparison with Swap A/B, loop, frame-stepping, frozen-source differences, and independent result notes.
+  - Multi-shot production batch controls, run cost breakdown, one-click timeline sync for accepted takes, NLE `J/K/L` frame-stepping, and zero-token YouTube chapter timestamp generation.
+  - Complete frozen Veo/Lyria request approval binding (`hashVersion: 2`), preserving recovery of known operations and resolving attention job deadlocks.
 
 - **v17.0.0 Smart Local Editing (Released 2026-10-16):**
   - **Microphone Voiceover Recording:** Direct timeline dialogue recording via Web Audio API with real-time waveform visualization, device selection, take management, and dedicated track placement.

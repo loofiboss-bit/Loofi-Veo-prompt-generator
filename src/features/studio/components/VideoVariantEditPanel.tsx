@@ -12,7 +12,7 @@ interface VideoVariantEditPanelProps {
   disabled: boolean;
   proposal: VideoVariantEditProposal | null;
   onPropose: (direction: string, fields: VideoVariantEditField[]) => void;
-  onLocalTransform?: (transformId: LocalPromptTransformId) => void;
+  onLocalTransform?: (transformId: LocalPromptTransformId, applyToAll?: boolean) => void;
   onAccept: (fields: VideoVariantEditField[]) => void;
   onReject: () => void;
 }
@@ -108,6 +108,7 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
   const [goal, setGoal] = useState('shorten');
   const [direction, setDirection] = useState('');
   const [fields, setFields] = useState('prompt');
+  const [applyToAllVariants, setApplyToAllVariants] = useState(false);
   const requestedDirection =
     goal === 'custom'
       ? direction.trim()
@@ -178,29 +179,41 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
           </button>
           {props.onLocalTransform && (
             <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
-              <span className="w-full text-xs font-semibold">
-                {t('variantEdit.localTools', {
-                  defaultValue: 'Instant local tools (0 tokens / offline)',
-                })}
-              </span>
+              <div className="flex w-full flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold">
+                  {t('variantEdit.localTools', {
+                    defaultValue: 'Instant local tools (0 tokens / offline)',
+                  })}
+                </span>
+                <label className="studio-check text-xs">
+                  <input
+                    type="checkbox"
+                    checked={applyToAllVariants}
+                    onChange={(event) => setApplyToAllVariants(event.target.checked)}
+                  />
+                  {t('variantEdit.applyToAllVariants', {
+                    defaultValue: 'Apply to all 3 variants',
+                  })}
+                </label>
+              </div>
               <button
                 type="button"
                 className="text-xs"
-                onClick={() => props.onLocalTransform?.('clean-compact')}
+                onClick={() => props.onLocalTransform?.('clean-compact', applyToAllVariants)}
               >
                 {t('variantEdit.cleanCompact', { defaultValue: 'Clean & Compact' })}
               </button>
               <button
                 type="button"
                 className="text-xs"
-                onClick={() => props.onLocalTransform?.('sync-target-grammar')}
+                onClick={() => props.onLocalTransform?.('sync-target-grammar', applyToAllVariants)}
               >
                 {t('variantEdit.syncGrammar', { defaultValue: 'Sync Target Grammar' })}
               </button>
               <button
                 type="button"
                 className="text-xs"
-                onClick={() => props.onLocalTransform?.('harden-negative')}
+                onClick={() => props.onLocalTransform?.('harden-negative', applyToAllVariants)}
               >
                 {t('variantEdit.hardenNegative', { defaultValue: 'Harden Negative' })}
               </button>

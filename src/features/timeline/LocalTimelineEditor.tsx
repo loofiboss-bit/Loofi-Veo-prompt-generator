@@ -72,6 +72,47 @@ export function LocalTimelineEditor() {
     element.addEventListener('loadedmetadata', synchronize);
     return () => element.removeEventListener('loadedmetadata', synchronize);
   }, [active, currentTime, playing, url]);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (!duration) return;
+      const key = event.key.toLowerCase();
+      if (event.key === ' ' || key === 'k') {
+        event.preventDefault();
+        const nowTime = useAppStore.getState().currentTime;
+        if (nowTime >= duration) setCurrentTime(0);
+        setPlaying((prev) => !prev);
+      } else if (event.key === 'ArrowLeft' || key === 'j') {
+        event.preventDefault();
+        setPlaying(false);
+        const step = event.shiftKey ? 1 : 1 / 30;
+        const nowTime = useAppStore.getState().currentTime;
+        setCurrentTime(Math.max(0, Number((nowTime - step).toFixed(4))));
+      } else if (event.key === 'ArrowRight' || key === 'l') {
+        event.preventDefault();
+        setPlaying(false);
+        const step = event.shiftKey ? 1 : 1 / 30;
+        const nowTime = useAppStore.getState().currentTime;
+        setCurrentTime(Math.min(duration, Number((nowTime + step).toFixed(4))));
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        setPlaying(false);
+        setCurrentTime(0);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [duration, setCurrentTime]);
   return (
     <div className="local-editor-workspace">
       <div className="local-editor-viewer">
@@ -99,6 +140,28 @@ export function LocalTimelineEditor() {
             }}
           >
             {playing ? t('v16.pause', 'Pause') : t('v16.play', 'Play')}
+          </button>
+          <button
+            type="button"
+            disabled={!duration || currentTime <= 0}
+            aria-label={t('v16.stepBackFrame', 'Step back 1 frame')}
+            onClick={() => {
+              setPlaying(false);
+              setCurrentTime(Math.max(0, Number((currentTime - 1 / 30).toFixed(4))));
+            }}
+          >
+            -1f
+          </button>
+          <button
+            type="button"
+            disabled={!duration || currentTime >= duration}
+            aria-label={t('v16.stepForwardFrame', 'Step forward 1 frame')}
+            onClick={() => {
+              setPlaying(false);
+              setCurrentTime(Math.min(duration, Number((currentTime + 1 / 30).toFixed(4))));
+            }}
+          >
+            +1f
           </button>
           <input
             type="range"

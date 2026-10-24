@@ -383,6 +383,28 @@ export function AppRuntime() {
           destination.id === 'settings' ? openSettingsPage() : navigate(destination.path),
       })),
       {
+        id: 'open-diagnostics',
+        label: t('commandPalette.commands.diagnostics', 'Open Diagnostics Panel'),
+        description: t(
+          'commandPalette.commands.diagnosticsDescription',
+          'Inspect runtime health, storage, and performance logs',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['health', 'logs', 'debug', 'system'],
+        action: () => openDiagnostics(),
+      },
+      {
+        id: 'toggle-theme',
+        label: t('commandPalette.commands.toggleTheme', 'Toggle Theme (Light / Dark)'),
+        description: t(
+          'commandPalette.commands.toggleThemeDescription',
+          'Switch between light and dark workbench appearance',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['dark', 'light', 'appearance', 'theme'],
+        action: () => handleThemeToggle(),
+      },
+      {
         id: 'open-search',
         label: t('commandPalette.commands.search', 'Open Search'),
         description: t(
@@ -472,7 +494,16 @@ export function AppRuntime() {
         action: () => setIsShareDialogOpen(true),
       },
     ],
-    [openModal, navigate, openSettingsPage, openHelpPanel, setIsShareDialogOpen, t],
+    [
+      openModal,
+      navigate,
+      openSettingsPage,
+      openHelpPanel,
+      openDiagnostics,
+      handleThemeToggle,
+      setIsShareDialogOpen,
+      t,
+    ],
   );
 
   const handleCloseWelcome = useCallback(() => {

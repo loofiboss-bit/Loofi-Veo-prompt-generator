@@ -267,6 +267,14 @@ export function useCreateWorkflow() {
         ) ?? 0,
     [activeRun, selectedShotIds],
   );
+  const totalRunCost = useMemo(
+    () =>
+      activeRun?.shots.reduce(
+        (sum, shot) => sum + veoGenerationService.estimateCost(shot.generationRequest),
+        0,
+      ) ?? 0,
+    [activeRun],
+  );
   const planEnhancementEstimate = useMemo(
     () => productionRunService.estimatePlanEnhancementCost(),
     [],
@@ -640,6 +648,96 @@ export function useCreateWorkflow() {
     await refreshActiveRun();
   };
 
+  const handleBatchShotSettings = async (
+    updates: Partial<Pick<VeoGenerationRequest, 'resolution' | 'aspectRatio' | 'durationSeconds'>>,
+  ) => {
+    if (!activeRun) return;
+    const targetShots = activeRun.shots.filter((shot) =>
+      selectedShotIds.length > 0 ? selectedShotIds.includes(shot.id) : shot.status !== 'accepted',
+    );
+    for (const shot of targetShots) {
+      const nextUpdates = { ...updates };
+      if (updates.durationSeconds !== undefined) {
+        await updateShotRequest(shot.id, nextUpdates);
+      } else {
+        await updateShotRequest(shot.id, nextUpdates);
+      }
+    }
+    setFeedback(
+      t('messages.batchSettingsApplied', {
+        defaultValue: 'Applied batch settings to {{count}} shots.',
+        count: targetShots.length,
+      }),
+    );
+  };
+
+  const handleSyncAcceptedTakesToTimeline = async (): Promise<number> => {
+    if (!activeRun) return 0;
+    let syncedCount = 0;
+    const appState = useAppStore.getState();
+    for (const shot of activeRun.shots) {
+      const acceptedTake =
+        shot.takes.find((item) => item.id === shot.selectedTakeId) ??
+        [...shot.takes].reverse().find((item) => item.status === 'accepted');
+      if (!acceptedTake) continue;
+      const localMediaUrl =
+        acceptedTake.localMediaUrl ||
+        (acceptedTake.localMediaKey
+          ? await mediaAssetService.getObjectUrl(acceptedTake.localMediaKey)
+          : null) ||
+        acceptedTake.providerMediaUri;
+      if (!localMediaUrl) continue;
+      syncedCount += 1;
+      appState.setSbShots((currentShots) => {
+        const existing = currentShots.find((item) => item.id === shot.id);
+        const nextTakeUrls = existing?.takes.includes(localMediaUrl)
+          ? existing.takes
+          : [...(existing?.takes ?? []), localMediaUrl];
+        if (existing) {
+          return currentShots.map((item) =>
+            item.id === shot.id
+              ? {
+                  ...item,
+                  action: shot.prompt,
+                  camera: shot.camera,
+                  duration: shot.durationSeconds,
+                  generatedVideoUrl: localMediaUrl,
+                  takes: nextTakeUrls,
+                  selectedTakeIndex: nextTakeUrls.indexOf(localMediaUrl),
+                }
+              : item,
+          );
+        }
+        return [
+          ...currentShots,
+          {
+            id: shot.id,
+            type: 'video',
+            action: shot.prompt,
+            camera: shot.camera,
+            characterId: '',
+            generatedVideoUrl: localMediaUrl,
+            takes: [localMediaUrl],
+            selectedTakeIndex: 0,
+            visualLink: false,
+            duration: shot.durationSeconds,
+            transition: { type: 'cut', duration: 0 },
+          },
+        ];
+      });
+    }
+    if (syncedCount > 0) {
+      appState.syncTimelineFromShots();
+      setFeedback(
+        t('messages.acceptedSyncedToTimeline', {
+          defaultValue: 'Synced {{count}} accepted takes to Timeline.',
+          count: syncedCount,
+        }),
+      );
+    }
+    return syncedCount;
+  };
+
   const handleExport = async () => {
     if (!activeRun) return;
     const pack = creativePackExportService.buildCreativePack({
@@ -728,6 +826,7 @@ export function useCreateWorkflow() {
     imageAssets,
     extensionTakes,
     selectedCost,
+    totalRunCost,
     planEnhancementEstimate,
     continuityReviewEstimate,
     preflight,
@@ -754,6 +853,8 @@ export function useCreateWorkflow() {
     handleReject,
     handlePrepareRetake,
     handleWaiveMediaRisk,
+    handleBatchShotSettings,
+    handleSyncAcceptedTakesToTimeline,
     handleExport,
   };
 }

@@ -24,7 +24,9 @@ import {
   validateCreatorCaptions,
 } from '@core/services/creatorCaptionService';
 import {
+  buildTimelineChapterTimestamps,
   creatorPublishingService,
+  mergeChapterTimestampsIntoDescription,
   type CreatorPublishingText,
 } from '@core/services/creatorPublishingService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
@@ -1218,6 +1220,30 @@ export function CreatorDeliveryPanel() {
           onChange={(event) => change({ description: event.target.value })}
         />
       </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={
+            busy ||
+            !clips.some(
+              (clip) => (clip.type === 'video' || clip.type === 'image') && clip.duration > 0,
+            )
+          }
+          onClick={() => {
+            const chaptersText = buildTimelineChapterTimestamps(clips);
+            if (!chaptersText) return;
+            change({
+              description: mergeChapterTimestampsIntoDescription(
+                settings.description,
+                chaptersText,
+              ),
+            });
+          }}
+        >
+          {t('delivery.insertClipChapters', 'Insert clip chapters (0 tokens)')}
+        </button>
+      </div>
       <p>
         {t(
           'delivery.publishAiConsent',

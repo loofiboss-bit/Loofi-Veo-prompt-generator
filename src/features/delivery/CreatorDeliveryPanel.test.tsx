@@ -35,9 +35,13 @@ vi.mock('@core/services/creatorDeliveryService', async (original) => {
     },
   };
 });
-vi.mock('@core/services/creatorPublishingService', () => ({
-  creatorPublishingService: { propose: mock.publish },
-}));
+vi.mock('@core/services/creatorPublishingService', async (original) => {
+  const actual = await original<typeof import('@core/services/creatorPublishingService')>();
+  return {
+    ...actual,
+    creatorPublishingService: { propose: mock.publish },
+  };
+});
 vi.mock('idb-keyval', () => ({
   get: vi.fn(),
   set: vi.fn(),
@@ -236,5 +240,15 @@ describe('CreatorDeliveryPanel', () => {
 
     await waitFor(() => expect(mock.batchPlans).toHaveBeenCalled());
     expect(start).toHaveBeenCalledTimes(2);
+  });
+
+  it('inserts zero-token chapter timestamps from timeline visual clips into description', async () => {
+    render(<CreatorDeliveryPanel />);
+    const description = await screen.findByLabelText('Description');
+    await userEvent.type(description, 'A short coastal travel film.');
+    const chaptersBtn = screen.getByRole('button', { name: 'Insert clip chapters (0 tokens)' });
+    await userEvent.click(chaptersBtn);
+    expect((description as HTMLTextAreaElement).value).toContain('A short coastal travel film.');
+    expect((description as HTMLTextAreaElement).value).toContain('Chapters:\n00:00 Example');
   });
 });

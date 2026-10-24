@@ -21,6 +21,8 @@ describe('Studio validation', () => {
     ['camera-conflict', 'Static tripod with a whip pan'],
     ['lighting-conflict', 'Midnight darkness under direct midday sun'],
     ['composition-conflict', 'Macro lens showing a vast sweeping vista'],
+    ['focus-conflict', 'f/1.4 shallow depth of field with f/16 deep focus'],
+    ['temporal-conflict', '240fps extreme slow motion in a fast-forward hyperlapse'],
   ])('reports %s as local guidance for the edited variant', (category, prompt) => {
     const original = compileVideoPromptArtifact(input);
     const edited = editStudioVariant(original, 1, { prompt });

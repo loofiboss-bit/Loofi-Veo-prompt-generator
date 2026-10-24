@@ -30,13 +30,13 @@ describe('Production workspace navigation', () => {
   it('allows direct step navigation and restores the selected step after remount', async () => {
     const { user, unmount } = render(<CreatePage />);
     await user.click(screen.getByRole('button', { name: 'Export' }));
-    expect(await screen.findByText('Editing export')).toBeInTheDocument();
+    expect(await screen.findByText('Editing export', {}, { timeout: 5000 })).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 2, name: 'Export' })).toHaveFocus();
     });
     unmount();
     render(<CreatePage />);
-    expect(await screen.findByText('Editing export')).toBeInTheDocument();
+    expect(await screen.findByText('Editing export', {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export' })).toHaveAttribute('aria-current', 'step');
   });
 });

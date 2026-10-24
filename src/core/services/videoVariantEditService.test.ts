@@ -248,6 +248,20 @@ describe('selected video variant proposals', () => {
       const count = (res.patch.negativePrompt?.match(/watermark/g) || []).length;
       expect(count).toBe(1);
     });
+
+    it('applies batch local transform across all three video variants simultaneously', async () => {
+      const { applyBatchLocalPromptTransform } = await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      (artifact.primary as { prompt: string }).prompt = 'Shot A, 4k resolution, photorealistic.';
+      (artifact.alternatives[0] as { prompt: string }).prompt =
+        'Shot B, octane render, unreal engine 5.';
+      (artifact.alternatives[1] as { prompt: string }).prompt = 'Shot C, trending on artstation.';
+      const res = applyBatchLocalPromptTransform(artifact, 'clean-compact');
+      expect(res.changed).toBe(true);
+      expect((res.artifact.primary as { prompt: string }).prompt).toBe('Shot A.');
+      expect((res.artifact.alternatives[0] as { prompt: string }).prompt).toBe('Shot B.');
+      expect((res.artifact.alternatives[1] as { prompt: string }).prompt).toBe('Shot C.');
+    });
   });
 
   describe('applyLocalMusicTransform', () => {
@@ -288,6 +302,28 @@ describe('selected video variant proposals', () => {
       expect(primary.styleOfMusic.length).toBeLessThanOrEqual(200);
       expect(primary.styleOfMusic.toLowerCase()).not.toContain('4k resolution');
       expect(primary.styleOfMusic.toLowerCase()).not.toContain('photorealistic');
+    });
+
+    it('applies batch local music transform across all three music variants', async () => {
+      const { compileMusicPromptArtifact } = await import('./promptStudioService');
+      const { editStudioVariant } = await import('./promptStudioEditingService');
+      const { applyBatchLocalMusicTransform } = await import('./videoVariantEditService');
+      let base = compileMusicPromptArtifact({
+        topic: 'Midnight train',
+        language: 'English',
+      });
+      base = editStudioVariant(base, 0, { styleOfMusic: 'synthwave, 4k resolution' });
+      base = editStudioVariant(base, 1, { styleOfMusic: 'ambient, photorealistic' });
+      base = editStudioVariant(base, 2, { styleOfMusic: 'indie pop, octane render' });
+      const res = applyBatchLocalMusicTransform(base, 'strip-visual-terms');
+      expect(res.changed).toBe(true);
+      expect((res.artifact.primary as { styleOfMusic: string }).styleOfMusic).toBe('synthwave');
+      expect((res.artifact.alternatives[0] as { styleOfMusic: string }).styleOfMusic).toBe(
+        'ambient',
+      );
+      expect((res.artifact.alternatives[1] as { styleOfMusic: string }).styleOfMusic).toBe(
+        'indie pop',
+      );
     });
   });
 });

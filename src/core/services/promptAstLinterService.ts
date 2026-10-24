@@ -16,7 +16,9 @@ export type LintCategory =
   | 'hardware-limit'
   | 'audio-conflict'
   | 'optical-conflict'
-  | 'shutter-conflict';
+  | 'shutter-conflict'
+  | 'focus-conflict'
+  | 'temporal-conflict';
 
 export interface LintIssue {
   code: string;
@@ -155,6 +157,40 @@ const CONTRADICTION_RULES: ContradictionRule[] = [
     setA: [/\b(golden hour sunset|low setting sun|dawn twilight horizon|long raking shadows)\b/i],
     setB: [
       /\b((?:direct\s+)?high noon(?:\s+direct)?\s+sun|overhead 12:00 sun|shadowless midday|vertical midday shadows)\b/i,
+    ],
+  },
+  {
+    code: 'DOF-001',
+    category: 'focus-conflict',
+    severity: 'warning',
+    message:
+      'Contradictory depth of field: Shallow aperture bokeh cannot coexist with deep infinite focus in the same focal plane.',
+    suggestions: [
+      'Choose either shallow depth of field (e.g. f/1.4 creamy bokeh) or deep focus (e.g. f/16 everything sharp).',
+      'If a focus shift is intended, specify a rack focus transition.',
+    ],
+    setA: [
+      /\b(f\/1\.2|f\/1\.4|f\/1\.8|shallow depth of field|creamy bokeh|razor[- ]thin focus|blurred background bokeh)\b/i,
+    ],
+    setB: [
+      /\b(f\/16|f\/22|deep focus|infinite depth of field|everything in sharp focus|pan[- ]focus)\b/i,
+    ],
+  },
+  {
+    code: 'TMP-001',
+    category: 'temporal-conflict',
+    severity: 'warning',
+    message:
+      'Contradictory temporal pacing: Extreme slow-motion capture cannot simultaneously run as a fast-forward hyperlapse.',
+    suggestions: [
+      'Choose either high-frame-rate slow motion (e.g. 120fps/240fps) or time-compressed hyperlapse/timelapse.',
+      'Use a speed-ramp description if transitioning between speeds.',
+    ],
+    setA: [
+      /\b(120\s*fps|240\s*fps|1000\s*fps|extreme slow[- ]motion|super slow[- ]mo|ultra slow[- ]motion|frozen time phantom)\b/i,
+    ],
+    setB: [
+      /\b(hyperlapse|time[- ]lapse|fast[- ]forward timelapse|accelerated time[- ]lapse|rapid time compression)\b/i,
     ],
   },
 ];

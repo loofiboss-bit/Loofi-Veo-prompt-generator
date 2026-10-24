@@ -9,15 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [19.0.0] - 2026-10-24
+
 ### Added
 
 - Improve the actual selected video variant with Gemini or Ollama, review prompt and negative-prompt
   changes separately, and accept selected fields together without rebuilding other variants.
 - Zero-token deterministic local prompt transforms in VideoVariantEditPanel (`clean-compact`,
-  `sync-target-grammar`, `harden-negative`) for instant offline prompt refinement without AI slop.
+  `sync-target-grammar`, `harden-negative`) and Music Studio (`normalize-sections`, `clean-style`,
+  `strip-visual-terms`) with an "Apply to all 3 variants" batch mode for instant offline refinement.
 - Expanded Prompt AST conflict lint rules (`OPT-001` telephoto vs ultra-wide conflict, `MOT-001`
-  high-speed shutter vs motion blur conflict, `LGT-002` low-angle sun vs high-noon shadow conflict)
+  high-speed shutter vs motion blur conflict, `LGT-002` low-angle sun vs high-noon shadow conflict,
+  `DOF-001` shallow bokeh vs deep focus conflict, and `TMP-001` slow-motion vs hyperlapse conflict)
   to detect contradictory cinematic instructions before generation.
+- Multi-shot production batch toolbar in `ShotsStep` with total run cost summary, batch parameter
+  alignment (`720p`, `1080p (8s)`, `16:9`, `9:16`), and one-click "Send accepted takes to Timeline".
+- Zero-token timeline chapter timestamp generator (`Insert clip chapters (0 tokens)`) in
+  `CreatorDeliveryPanel` and `J/K/L` + frame-stepping (`-1f` / `+1f`) transport controls in
+  `LocalTimelineEditor`.
+- Enriched `Ctrl+K` Command Palette with direct Diagnostics and Theme toggle commands.
 - Show shared local camera, lighting and framing guidance in Studio and Arena, including after
   manual edits. Cinematic advice remains distinct from documented provider requirements.
 - Direct compiled artifact handoff when selecting a target from Model Arena into Prompt Studio.

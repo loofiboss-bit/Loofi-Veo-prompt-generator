@@ -203,6 +203,7 @@ export function applyLocalPromptTransform(
       )
       .replace(/\s*,\s*,+/g, ',')
       .replace(/,\s*\./g, '.')
+      .replace(/,\s*$/g, '.')
       .replace(/\s{2,}/g, ' ')
       .trim();
     patch.prompt = cleaned || before.prompt;
@@ -319,6 +320,24 @@ export function applyLocalPromptTransform(
   };
 }
 
+export function applyBatchLocalPromptTransform(
+  artifact: PromptArtifactV1,
+  transformId: LocalPromptTransformId,
+): { artifact: PromptArtifactV1; changed: boolean } {
+  if (artifact.kind !== 'video') throw new Error('A video prompt artifact is required.');
+  let current = structuredClone(artifact);
+  let changed = false;
+  for (const idx of [0, 1, 2] as const) {
+    const step = applyLocalPromptTransform(current, idx, transformId);
+    if (hasVariantEditChanges(step)) {
+      changed = true;
+      current = editStudioVariant(current, idx, step.patch);
+      current.provenance = step.provenance;
+    }
+  }
+  return { artifact: current, changed };
+}
+
 const VISUAL_DIFFUSION_TERMS_RX =
   /\b(?:4k resolution|8k resolution|4k|8k|photorealistic|hyperrealistic|octane render|unreal engine 5|cinematic lighting|ray tracing|trending on artstation)\b[,.]?/gi;
 
@@ -419,4 +438,22 @@ export function applyLocalMusicTransform(
     generatedAt: new Date().toISOString(),
   };
   return { artifact: updated, changed };
+}
+
+export function applyBatchLocalMusicTransform(
+  artifact: PromptArtifactV1,
+  transformId: LocalMusicTransformId,
+  lockedSections: string[] = [],
+): { artifact: PromptArtifactV1; changed: boolean } {
+  if (artifact.kind !== 'music') throw new Error('A music prompt artifact is required.');
+  let current = structuredClone(artifact);
+  let changed = false;
+  for (const idx of [0, 1, 2] as const) {
+    const step = applyLocalMusicTransform(current, idx, transformId, lockedSections);
+    if (step.changed) {
+      changed = true;
+      current = step.artifact;
+    }
+  }
+  return { artifact: current, changed };
 }
