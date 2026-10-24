@@ -1,0 +1,14 @@
+qt6-qtbase-devel-6.11.2-3.fc44.x86_64
+qt6-qtdeclarative-devel-6.11.2-2.fc44.x86_64
+qt6-qtmultimedia-devel-6.11.2-1.fc44.x86_64
+qt6-qtquick3d-devel-6.11.2-1.fc44.x86_64
+qt6-qtshadertools-devel-6.11.2-1.fc44.x86_64
+qt6-qtwayland-6.11.2-1.fc44.x86_64
+plasma-integration-6.7.5-1.fc44.x86_64
+gcc-c++-16.2.1-2.fc44.x86_64
+cmake-4.3.0-1.fc44.x86_64
+ninja-build-1.13.2-2.fc44.x86_64
+lld-22.1.8-4.fc44.x86_64
+xorg-x11-server-Xvfb-21.1.24-1.fc44.x86_64
+python3-pyatspi-2.58.2-1.fc44.noarch
+python3-psutil-7.2.2-1.fc44.x86_64
