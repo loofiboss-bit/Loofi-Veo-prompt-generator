@@ -195,4 +195,39 @@ describe('VideoResultCompare', () => {
     const seekSlider = screen.getByRole('slider', { name: 'Comparison position' });
     expect(Number(seekSlider.getAttribute('value'))).toBeGreaterThan(0);
   });
+
+  it('preserves playback position across Swap A/B and supports frame-step buttons, loop, and timestamp chips', async () => {
+    render(<VideoResultCompare contextId="pro" results={results} />);
+    metadata([6, 6]);
+    const seekSlider = screen.getByRole('slider', { name: 'Comparison position' });
+    fireEvent.change(seekSlider, { target: { value: '2.5' } });
+    expect(screen.getByTestId('comparison-timecode')).toHaveTextContent('00:02.50 / 00:06.00');
+
+    // Swap A/B preserves position on remounted video elements
+    fireEvent.click(screen.getByRole('button', { name: 'Swap A/B' }));
+    const [swappedA, swappedB] = metadata([6, 6]);
+    expect(swappedA.currentTime).toBe(2.5);
+    expect(swappedB.currentTime).toBe(2.5);
+
+    // Frame step buttons (-1f / +1f)
+    fireEvent.click(screen.getByRole('button', { name: 'Next frame' }));
+    expect(swappedA.currentTime).toBeCloseTo(2.5 + 1 / 30, 3);
+    fireEvent.click(screen.getByRole('button', { name: 'Previous frame' }));
+    expect(swappedA.currentTime).toBeCloseTo(2.5, 3);
+
+    // Insert timestamp into notes and click chip to seek
+    fireEvent.click(screen.getAllByRole('button', { name: '+ @2.5s' })[0]);
+    const notesA = screen.getByRole('textbox', { name: 'Comparison notes · A' });
+    expect(notesA).toHaveValue('@2.5s ');
+    fireEvent.change(seekSlider, { target: { value: '1' } });
+    expect(swappedA.currentTime).toBe(1);
+    fireEvent.click(screen.getByRole('button', { name: '@2.5s' }));
+    expect(swappedA.currentTime).toBe(2.5);
+
+    // Loop mode restarts at 0 when reaching limit
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Loop' }));
+    swappedA.currentTime = 6;
+    fireEvent.timeUpdate(swappedA);
+    expect(swappedA.currentTime).toBe(0);
+  });
 });

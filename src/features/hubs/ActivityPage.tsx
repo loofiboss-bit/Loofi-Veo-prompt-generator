@@ -51,6 +51,9 @@ export function ActivityPage() {
   const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [durableStatusFilter, setDurableStatusFilter] = useState<
+    'all' | 'active' | 'attention' | 'completed'
+  >('all');
   useEffect(() => {
     if (!requestedJob || focusedJob.current === requestedJob) return;
     const card = document.getElementById(`paid-job-${requestedJob}`);
@@ -92,6 +95,29 @@ export function ActivityPage() {
   const durableAttentionCount = useMemo(
     () => durableJobs.filter((job) => ATTENTION_DURABLE_STATUSES.has(job.status)).length,
     [durableJobs],
+  );
+  const durableCompletedCount = useMemo(
+    () =>
+      durableJobs.filter(
+        (job) =>
+          !ACTIVE_DURABLE_STATUSES.has(job.status) && !ATTENTION_DURABLE_STATUSES.has(job.status),
+      ).length,
+    [durableJobs],
+  );
+  const filteredDurableJobs = useMemo(
+    () =>
+      durableJobs.filter((job) => {
+        if (requestedJob && job.id === requestedJob) return true;
+        if (durableStatusFilter === 'active') return ACTIVE_DURABLE_STATUSES.has(job.status);
+        if (durableStatusFilter === 'attention') return ATTENTION_DURABLE_STATUSES.has(job.status);
+        if (durableStatusFilter === 'completed') {
+          return (
+            !ACTIVE_DURABLE_STATUSES.has(job.status) && !ATTENTION_DURABLE_STATUSES.has(job.status)
+          );
+        }
+        return true;
+      }),
+    [durableJobs, durableStatusFilter, requestedJob],
   );
 
   const runDurableAction = async (action: 'cancel' | 'retry', id: string) => {
@@ -217,9 +243,52 @@ export function ActivityPage() {
         </section>
 
         <section aria-labelledby="durable-jobs-heading" className="mt-6">
-          <h2 id="durable-jobs-heading" className="text-lg font-semibold">
-            {t('activity.durableJobs')}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="durable-jobs-heading" className="text-lg font-semibold">
+              {t('activity.durableJobs')}
+            </h2>
+            {durableJobs.length > 0 && (
+              <div
+                className="flex flex-wrap gap-1.5"
+                role="group"
+                aria-label={t('activity.filterDurableJobs', {
+                  defaultValue: 'Filter durable jobs',
+                })}
+              >
+                {(
+                  [
+                    [
+                      'all',
+                      `${t('activity.filterAll', { defaultValue: 'All' })} (${durableJobs.length})`,
+                    ],
+                    [
+                      'active',
+                      `${t('activity.filterActive', { defaultValue: 'Active' })} (${durableActiveCount})`,
+                    ],
+                    ['attention', `${t('activity.needsAttention')} (${durableAttentionCount})`],
+                    [
+                      'completed',
+                      `${t('activity.filterCompleted', { defaultValue: 'Completed' })} (${durableCompletedCount})`,
+                    ],
+                  ] as const
+                ).map(([filterKey, label]) => (
+                  <button
+                    key={filterKey}
+                    type="button"
+                    aria-pressed={durableStatusFilter === filterKey}
+                    onClick={() => setDurableStatusFilter(filterKey)}
+                    className={`rounded-md border px-2.5 py-1 text-xs font-medium ${
+                      durableStatusFilter === filterKey
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-300'
+                        : 'border-slate-700 bg-slate-900 text-slate-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {actionError && (
             <p role="alert" className="mt-3 text-sm text-amber-300">
               {actionError}
@@ -231,12 +300,12 @@ export function ActivityPage() {
             </p>
           )}
           <div className="mt-3 space-y-2" aria-live="polite" aria-relevant="additions text">
-            {durableJobs.length === 0 ? (
+            {filteredDurableJobs.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-700 p-6 text-slate-400">
                 {t('activity.noDurableJobs')}
               </p>
             ) : (
-              durableJobs.map((job) => {
+              filteredDurableJobs.map((job) => {
                 const isMusic = 'jobKind' in job && job.jobKind === 'music';
                 const videoJob =
                   'productionRunId' in job &&
@@ -245,6 +314,10 @@ export function ActivityPage() {
                   job.productionTakeId
                     ? job
                     : null;
+                const modelId =
+                  job.costApproval?.modelId ??
+                  ('request' in job && job.request?.modelId ? job.request.modelId : undefined);
+                const approvedCostUsd = job.costApproval?.maximumChargeUsd;
                 const canCancel =
                   ACTIVE_DURABLE_STATUSES.has(job.status) ||
                   job.status === 'Queued' ||
@@ -275,7 +348,19 @@ export function ActivityPage() {
                         </p>
                         <h3 className="mt-1 truncate font-semibold">{job.prompt}</h3>
                       </div>
-                      <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {modelId && (
+                          <span className="rounded bg-slate-800 px-2 py-1 font-mono text-xs text-slate-300">
+                            {modelId}
+                          </span>
+                        )}
+                        {typeof approvedCostUsd === 'number' && (
+                          <span className="rounded bg-slate-800 px-2 py-1 font-mono text-xs tabular-nums text-slate-300">
+                            ${approvedCostUsd.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
+                      </div>
                     </div>
                     {job.error && <p className="mt-2 text-sm text-amber-300">{job.error}</p>}
                     {videoJob && (

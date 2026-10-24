@@ -188,4 +188,19 @@ describe('Studio validation', () => {
       useSettingsStore.setState({ promptGenerationProvider: original });
     }
   });
+
+  it('merges multiple cinematic rules of the same category without duplicate check IDs', () => {
+    const artifact = editStudioVariant(compileVideoPromptArtifact(input), 0, {
+      prompt:
+        'Pitch black midnight darkness with golden hour sunset, direct midday sun, and high noon sun',
+    });
+    const lightingChecks = artifact.validation.filter(
+      (entry) => entry.id === 'variant-0-cinematic-lighting-conflict',
+    );
+    expect(lightingChecks).toHaveLength(1);
+    expect(lightingChecks[0].detail).toContain('Pitch black');
+    expect(lightingChecks[0].detail).toContain('Low-angle sunset');
+    const allIds = artifact.validation.map((entry) => entry.id);
+    expect(new Set(allIds).size).toBe(allIds.length);
+  });
 });

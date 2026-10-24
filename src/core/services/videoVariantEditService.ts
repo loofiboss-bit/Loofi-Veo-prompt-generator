@@ -1,4 +1,6 @@
 import type {
+  MusicPromptArtifactInput,
+  MusicPromptVariant,
   PromptArtifactProvenance,
   PromptArtifactV1,
   VideoPromptVariant,
@@ -7,6 +9,7 @@ import { useSettingsStore } from '@core/store/useSettingsStore';
 import { cleanJson, getAiClientAsync, getPromptModel, resilientCall } from './gemini/aiClient';
 import { generatePromptWithOllama } from './ollamaProvider';
 import { resolvePromptGenerationProvider } from './promptGenerationService';
+import { editStudioVariant, preserveLockedLyricSections } from './promptStudioEditingService';
 
 export type VideoVariantEditField = 'prompt' | 'negativePrompt';
 export type VideoVariantEditPatch = Partial<Pick<VideoPromptVariant, VideoVariantEditField>>;
@@ -135,6 +138,7 @@ export async function proposeVideoVariantEdit({
 }
 
 export type LocalPromptTransformId = 'clean-compact' | 'sync-target-grammar' | 'harden-negative';
+export type LocalMusicTransformId = 'normalize-sections' | 'clean-style' | 'strip-visual-terms';
 
 export interface LocalTransformDefinition {
   id: LocalPromptTransformId;
@@ -161,6 +165,24 @@ export const LOCAL_TRANSFORMS: LocalTransformDefinition[] = [
   },
 ];
 
+export function hasVariantEditChanges(result: VideoVariantEditResult): boolean {
+  return (Object.keys(result.patch) as VideoVariantEditField[]).some((field) => {
+    const next = result.patch[field];
+    return next !== undefined && next !== result.before[field];
+  });
+}
+
+const TARGET_NEGATIVE_SUPPLEMENTS: Partial<Record<PromptArtifactV1['target'], string[]>> = {
+  'flow-veo': ['unintended text', 'subtitles', 'logos', 'visual glitches'],
+  'veo-api': ['unintended text', 'subtitles', 'logos', 'visual glitches'],
+  kling: ['morphing', 'motion jitter', 'low quality'],
+  'runway-gen3': ['motion smearing', 'stutter', 'oversaturated'],
+  sora: ['unnatural physics', 'temporal discontinuity', 'clipping artifacts'],
+  'luma-ray': ['frame warping', 'sudden camera jumps', 'geometry distortion'],
+  'wan-video': ['deformed face', 'noisy', 'oversaturated'],
+  'minimax-hailuo': ['jerky motion', 'morphing artifacts', 'distorted background'],
+};
+
 export function applyLocalPromptTransform(
   artifact: PromptArtifactV1,
   variantIndex: 0 | 1 | 2,
@@ -186,20 +208,79 @@ export function applyLocalPromptTransform(
     patch.prompt = cleaned || before.prompt;
   } else if (transformId === 'sync-target-grammar') {
     let formatted = before.prompt;
+    const cameraDirectiveRx = /\b(?:camera:?\s*|shot:?\s*)([a-zA-Z0-9\s-]+?)(?=[,.]|$)/i;
+    const bracketCameraRx = /\[camera:\s*([^\]]+)\]/i;
     if (snapshot.target === 'kling') {
+      if (cameraDirectiveRx.test(formatted) && !bracketCameraRx.test(formatted)) {
+        formatted = formatted.replace(
+          cameraDirectiveRx,
+          (_match, move: string) => `[camera: ${move.trim()}]`,
+        );
+      } else if (!bracketCameraRx.test(formatted)) {
+        formatted = `${formatted.replace(/\.*\s*$/, '.')} [camera: smooth dynamic tracking]`;
+      }
+    } else {
       formatted = formatted.replace(
-        /\b(?:camera:?\s*|shot:?\s*)([a-zA-Z0-9\s-]+?)(?=[,.]|$)/i,
-        (_match, move: string) => `[camera: ${move.trim()}]`,
+        bracketCameraRx,
+        (_match, move: string) => `Camera: ${move.trim()}`,
       );
-    } else if (snapshot.target === 'runway-gen3') {
-      formatted = formatted.replace(
-        /\b(?:the camera is moving|camera moves|slowly panning)\b/gi,
-        'Pan',
-      );
+      if (snapshot.target === 'runway-gen3') {
+        formatted = formatted.replace(
+          /\b(?:the camera is moving|camera moves|slowly panning)\b/gi,
+          'Pan',
+        );
+        if (cameraDirectiveRx.test(formatted)) {
+          formatted = formatted.replace(
+            cameraDirectiveRx,
+            (_match, move: string) => `Cinematic ${move.trim()}, fluid tracking`,
+          );
+        }
+      } else if (snapshot.target === 'sora') {
+        if (cameraDirectiveRx.test(formatted)) {
+          formatted = formatted.replace(
+            cameraDirectiveRx,
+            (_match, move: string) =>
+              `Captured on 35mm motion picture camera with ${move.trim()}, realistic physical camera weight`,
+          );
+        } else if (!/35mm motion picture camera|physical camera weight/i.test(formatted)) {
+          formatted = `${formatted.replace(/\.*\s*$/, '.')} Captured on 35mm motion picture camera with realistic physical camera weight.`;
+        }
+      } else if (snapshot.target === 'luma-ray') {
+        if (cameraDirectiveRx.test(formatted)) {
+          formatted = formatted.replace(
+            cameraDirectiveRx,
+            (_match, move: string) => `Smooth ${move.trim()} trajectory, consistent depth of field`,
+          );
+        } else if (!/trajectory|depth of field/i.test(formatted)) {
+          formatted = `${formatted.replace(/\.*\s*$/, '.')} Consistent depth of field and fluid perspective shifts.`;
+        }
+      } else if (snapshot.target === 'wan-video') {
+        if (cameraDirectiveRx.test(formatted)) {
+          formatted = formatted.replace(
+            cameraDirectiveRx,
+            (_match, move: string) =>
+              `Deliberate ${move.trim()} cinematic move, rich optical volumetric depth, zero jitter`,
+          );
+        } else if (!/volumetric depth|zero jitter/i.test(formatted)) {
+          formatted = `${formatted.replace(/\.*\s*$/, '.')} Rich optical volumetric depth, zero jitter.`;
+        }
+      } else if (snapshot.target === 'minimax-hailuo') {
+        if (cameraDirectiveRx.test(formatted)) {
+          formatted = formatted.replace(
+            cameraDirectiveRx,
+            (_match, move: string) =>
+              `Dynamic ${move.trim()} framing, smooth cinematic action cadence`,
+          );
+        } else if (!/action cadence|spatial movement/i.test(formatted)) {
+          formatted = `${formatted.replace(/\.*\s*$/, '.')} Smooth cinematic action cadence and authentic spatial movement.`;
+        }
+      } else if (snapshot.target === 'flow-veo' || snapshot.target === 'veo-api') {
+        formatted = formatted.replace(/\s{2,}/g, ' ').trim();
+      }
     }
     patch.prompt = formatted;
   } else if (transformId === 'harden-negative') {
-    const recommendedNegatives = [
+    const baseNegatives = [
       'distorted anatomy',
       'deformed hands',
       'bad proportions',
@@ -210,6 +291,8 @@ export function applyLocalPromptTransform(
       'watermark',
       'text overlay',
     ];
+    const targetSupplement = TARGET_NEGATIVE_SUPPLEMENTS[snapshot.target] ?? [];
+    const recommendedNegatives = Array.from(new Set([...baseNegatives, ...targetSupplement]));
     const existing = new Set(
       before.negativePrompt
         .split(',')
@@ -218,7 +301,9 @@ export function applyLocalPromptTransform(
     );
     const added = recommendedNegatives.filter((neg) => !existing.has(neg));
     patch.negativePrompt = before.negativePrompt
-      ? `${before.negativePrompt}, ${added.join(', ')}`
+      ? added.length
+        ? `${before.negativePrompt}, ${added.join(', ')}`
+        : before.negativePrompt
       : added.join(', ');
   }
 
@@ -232,4 +317,106 @@ export function applyLocalPromptTransform(
       generatedAt: new Date().toISOString(),
     },
   };
+}
+
+const VISUAL_DIFFUSION_TERMS_RX =
+  /\b(?:4k resolution|8k resolution|4k|8k|photorealistic|hyperrealistic|octane render|unreal engine 5|cinematic lighting|ray tracing|trending on artstation)\b[,.]?/gi;
+
+export function applyLocalMusicTransform(
+  artifact: PromptArtifactV1,
+  variantIndex: 0 | 1 | 2,
+  transformId: LocalMusicTransformId,
+  lockedSections: string[] = [],
+): { artifact: PromptArtifactV1; changed: boolean } {
+  if (artifact.kind !== 'music') throw new Error('A music prompt artifact is required.');
+  if (![0, 1, 2].includes(variantIndex)) throw new Error('Choose a valid music variant.');
+  const snapshot = structuredClone(artifact);
+  const selected = [snapshot.primary, ...snapshot.alternatives][variantIndex] as MusicPromptVariant;
+  const input = snapshot.input as MusicPromptArtifactInput;
+  let nextLyrics = selected.lyrics;
+  let nextStyle = selected.styleOfMusic;
+
+  if (transformId === 'normalize-sections') {
+    const normalizedLines = selected.lyrics.split('\n').map((line) => {
+      const trimmed = line.trim();
+      const bracketMatch = /^\[([^\]]+)\]$/.exec(trimmed);
+      if (bracketMatch) {
+        const inner = bracketMatch[1]
+          .trim()
+          .replace(/\b([a-z])/gi, (m, c: string, offset: number) =>
+            offset === 0 ||
+            bracketMatch[1][offset - 1] === ' ' ||
+            bracketMatch[1][offset - 1] === '-'
+              ? c.toUpperCase()
+              : c.toLowerCase(),
+          );
+        return `[${inner}]`;
+      }
+      const headerMatch =
+        /^(verse|chorus|pre-chorus|bridge|intro|outro|hook|instrumental)(?:\s+(\d+))?\s*[:-]?$/i.exec(
+          trimmed,
+        );
+      if (headerMatch) {
+        const name = headerMatch[1]
+          .split('-')
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+          .join('-');
+        return `[${name}${headerMatch[2] ? ` ${headerMatch[2]}` : ''}]`;
+      }
+      return line;
+    });
+    let candidate = normalizedLines.join('\n').trim();
+    if (candidate && !/\[[^\]]+\]/.test(candidate)) {
+      candidate = `${input.instrumental ? '[Instrumental]' : '[Verse 1]'}\n${candidate}`;
+    }
+    nextLyrics = lockedSections.length
+      ? preserveLockedLyricSections(selected.lyrics, candidate, lockedSections)
+      : candidate;
+  } else if (transformId === 'clean-style') {
+    const stripped = selected.styleOfMusic.replace(VISUAL_DIFFUSION_TERMS_RX, '');
+    const seen = new Set<string>();
+    const tags = stripped
+      .split(',')
+      .map((tag) => tag.replace(/\s{2,}/g, ' ').trim())
+      .filter((tag) => {
+        if (!tag) return false;
+        const key = tag.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    let compact = tags.join(', ');
+    if (compact.length > 200) {
+      const slice = compact.slice(0, 200);
+      const lastComma = slice.lastIndexOf(',');
+      compact = (lastComma > 80 ? slice.slice(0, lastComma) : slice).trim();
+    }
+    nextStyle = compact || selected.styleOfMusic.slice(0, 200).trim();
+  } else if (transformId === 'strip-visual-terms') {
+    nextStyle = selected.styleOfMusic
+      .replace(VISUAL_DIFFUSION_TERMS_RX, '')
+      .replace(/\s*,\s*,+/g, ',')
+      .replace(/^[,\s]+|[,\s]+$/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    const cleanedLyrics = selected.lyrics
+      .replace(VISUAL_DIFFUSION_TERMS_RX, '')
+      .replace(/[ \t]{2,}/g, ' ');
+    nextLyrics = lockedSections.length
+      ? preserveLockedLyricSections(selected.lyrics, cleanedLyrics, lockedSections)
+      : cleanedLyrics;
+  }
+
+  const changed = nextLyrics !== selected.lyrics || nextStyle !== selected.styleOfMusic;
+  const updated = editStudioVariant(snapshot, variantIndex, {
+    lyrics: nextLyrics,
+    styleOfMusic: nextStyle,
+  });
+  updated.provenance = {
+    ...snapshot.provenance,
+    provider: 'local',
+    source: 'optimizer',
+    generatedAt: new Date().toISOString(),
+  };
+  return { artifact: updated, changed };
 }

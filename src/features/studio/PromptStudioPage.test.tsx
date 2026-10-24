@@ -49,7 +49,8 @@ vi.mock('@core/services/promptStudioService', async (importOriginal) => ({
   optimizeMusicPromptArtifact: mocks.optimizeMusic,
 }));
 vi.mock('@core/services/apiKeyService', () => ({ hasApiKeyAsync: mocks.key }));
-vi.mock('@core/services/videoVariantEditService', () => ({
+vi.mock('@core/services/videoVariantEditService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@core/services/videoVariantEditService')>()),
   proposeVideoVariantEdit: mocks.variantEdit,
 }));
 vi.mock('@core/services/templateManager', () => ({
@@ -870,5 +871,43 @@ describe('PromptStudioPage durable copy desk', () => {
     for (const variant of [accepted.artifact!.primary, ...accepted.artifact!.alternatives])
       expect((variant as { lyrics: string }).lyrics.split('[Chorus]')[1]).toBe(locked);
     expect(accepted.lockedSections).toContain('[Chorus]');
+  });
+
+  it('shows live token metrics, primary diff on alternatives, and guards no-op local transforms', async () => {
+    const { user } = await openStudio();
+    await buildPack(user, 'A cyclist rides across a misty bridge');
+    expect(screen.getByText(/\/ 280 tokens/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cinematic' }));
+    expect(screen.getByText('Compare with Primary')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cinematic prompt' }), {
+      target: { value: 'Already compact prompt.' },
+    });
+    await user.click(screen.getByText('Improve selected variant', { exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Clean & Compact' }));
+    expect(screen.getByText('Selected variant already matches this rule.')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Review selected variant changes' })).toBeNull();
+  });
+
+  it('previews and accepts local zero-token music transforms while preserving locked sections', async () => {
+    const { user } = await openStudio();
+    await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.type(
+      await screen.findByRole('textbox', { name: 'Song idea / story' }),
+      'Night drive',
+    );
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    const lyricsBox = await screen.findByRole('textbox', { name: 'Primary lyrics' });
+    expect(screen.getByText(/\/ 200 chars/)).toBeInTheDocument();
+    fireEvent.change(lyricsBox, {
+      target: { value: 'verse 1:\nRaw line\n[Chorus]\nKeep chorus intact' },
+    });
+    await user.click(screen.getByText('Revise lyrics with AI', { exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Normalize Section Tags' }));
+    await screen.findByRole('button', { name: 'Accept changes' });
+    await user.click(screen.getByRole('button', { name: 'Accept changes' }));
+    await waitFor(() => expect(usePromptStudioDraftStore.getState().status).toBe('saved'));
+    expect(screen.getByRole('textbox', { name: 'Primary lyrics' })).toHaveValue(
+      '[Verse 1]\nRaw line\n[Chorus]\nKeep chorus intact',
+    );
   });
 });

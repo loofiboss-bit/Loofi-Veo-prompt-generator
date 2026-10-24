@@ -32,8 +32,11 @@ import {
   type StudioVariantEdits,
 } from '@core/services/promptStudioEditingService';
 import {
+  applyLocalMusicTransform,
   applyLocalPromptTransform,
+  hasVariantEditChanges,
   proposeVideoVariantEdit,
+  type LocalMusicTransformId,
   type LocalPromptTransformId,
   type VideoVariantEditField,
   type VideoVariantEditPatch,
@@ -515,11 +518,57 @@ export function PromptStudioPage() {
         baseline.selectedVariant,
         transformId,
       );
+      if (!hasVariantEditChanges(result)) {
+        setMessage(
+          t('variantEdit.alreadyOptimized', {
+            defaultValue: 'Selected variant already matches this rule.',
+          }),
+        );
+        return;
+      }
       setVariantProposal({
         ...result,
         projectId,
         revision: baseline.revision,
         variantIndex: baseline.selectedVariant,
+        token,
+      });
+      revealResult();
+      setMessage(t('revision.proposalReady'));
+    });
+  const handleLocalMusicTransform = (transformId: LocalMusicTransformId) =>
+    void run(async () => {
+      const token = ++operation.current;
+      aiRequest.current = token;
+      setProposal(null);
+      setVariantProposal(null);
+      const baseline = usePromptStudioDraftStore.getState().draft;
+      if (
+        !baseline ||
+        baseline.artifact?.kind !== 'music' ||
+        baseline.mode !== 'music' ||
+        baseline.projectId !== projectId
+      )
+        return;
+      const result = applyLocalMusicTransform(
+        baseline.artifact,
+        baseline.selectedVariant,
+        transformId,
+        baseline.lockedSections,
+      );
+      if (!result.changed) {
+        setMessage(
+          t('variantEdit.alreadyOptimized', {
+            defaultValue: 'Selected variant already matches this rule.',
+          }),
+        );
+        return;
+      }
+      setProposal({
+        before: structuredClone(baseline),
+        artifact: scopeArtifact(result.artifact),
+        projectId,
+        revision: baseline.revision,
         token,
       });
       revealResult();
@@ -1424,6 +1473,11 @@ export function PromptStudioPage() {
                         selectedVariant
                       ] as VideoPromptVariant
                     }
+                    compareBaseline={
+                      selectedVariant > 0
+                        ? (currentArtifact.primary as VideoPromptVariant)
+                        : undefined
+                    }
                     primary
                     onCopy={copy}
                     onEdit={(changes) => edit(selectedVariant, changes)}
@@ -1463,6 +1517,11 @@ export function PromptStudioPage() {
                       [currentArtifact.primary, ...currentArtifact.alternatives][
                         selectedVariant
                       ] as MusicPromptVariant
+                    }
+                    compareBaseline={
+                      selectedVariant > 0
+                        ? (currentArtifact.primary as MusicPromptVariant)
+                        : undefined
                     }
                     primary
                     onCopy={copy}
@@ -1551,6 +1610,43 @@ export function PromptStudioPage() {
                     >
                       {t('rewriteSection')}
                     </button>
+                    <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+                      <span className="w-full text-xs font-semibold">
+                        {t('variantEdit.localTools', {
+                          defaultValue: 'Instant local tools (0 tokens / offline)',
+                        })}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busy || changing}
+                        className="text-xs"
+                        onClick={() => handleLocalMusicTransform('normalize-sections')}
+                      >
+                        {t('variantEdit.normalizeSections', {
+                          defaultValue: 'Normalize Section Tags',
+                        })}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy || changing}
+                        className="text-xs"
+                        onClick={() => handleLocalMusicTransform('clean-style')}
+                      >
+                        {t('variantEdit.cleanStyle', {
+                          defaultValue: 'Clean & Cap Style (≤200)',
+                        })}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy || changing}
+                        className="text-xs"
+                        onClick={() => handleLocalMusicTransform('strip-visual-terms')}
+                      >
+                        {t('variantEdit.stripVisualTerms', {
+                          defaultValue: 'Strip Visual Terms',
+                        })}
+                      </button>
+                    </div>
                   </details>
                 </>
               ) : null}

@@ -82,6 +82,13 @@ export function VideoResultCompare(props: VideoResultCompareProps) {
   );
 }
 
+function formatTimecode(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '00:00.00';
+  const mins = Math.floor(seconds / 60);
+  const secs = (seconds % 60).toFixed(2).padStart(5, '0');
+  return `${String(mins).padStart(2, '0')}:${secs}`;
+}
+
 function VideoComparisonSession({
   results,
   disabled = false,
@@ -95,6 +102,7 @@ function VideoComparisonSession({
   const [durations, setDurations] = useState<Record<string, number>>({});
   const [position, setPosition] = useState(0);
   const [isScrubbing, setIsScrubbing] = useState(false);
+  const [loop, setLoop] = useState(false);
   const [playingSource, setPlayingSource] = useState<string | null>(null);
   const [playbackError, setPlaybackError] = useState('');
   const [showDiff, setShowDiff] = useState(false);
@@ -211,6 +219,9 @@ function VideoComparisonSession({
 
   const pane = (side: 'A' | 'B', result: VideoComparisonResult) => {
     const notes = drafts[result.id] ?? result.comparisonNotes ?? '';
+    const timestamps = Array.from(
+      new Set([...notes.matchAll(/@(\d+(?:\.\d+)?)s\b/gi)].map((match) => Number(match[1]))),
+    ).filter((sec) => Number.isFinite(sec) && sec >= 0);
     const save = saves[result.id];
     const noteStatus =
       save?.status === 'saving'
@@ -246,8 +257,21 @@ function VideoComparisonSession({
         <video
           key={result.src}
           ref={(element) => {
-            if (element) videos.current[side] = element;
-            else delete videos.current[side];
+            if (element) {
+              videos.current[side] = element;
+              if (
+                position > 0 &&
+                element.currentTime === 0 &&
+                Number.isFinite(element.duration) &&
+                element.duration > 0
+              ) {
+                try {
+                  element.currentTime = Math.min(position, element.duration);
+                } catch {
+                  // Ignore if media element cannot seek before metadata is complete
+                }
+              }
+            } else delete videos.current[side];
           }}
           src={result.src}
           aria-label={result.label}
@@ -258,6 +282,13 @@ function VideoComparisonSession({
           onLoadedMetadata={(event) => {
             const duration = event.currentTarget.duration;
             if (Number.isFinite(duration) && duration > 0) {
+              if (position > 0 && event.currentTarget.currentTime === 0) {
+                try {
+                  event.currentTarget.currentTime = Math.min(position, duration);
+                } catch {
+                  // Ignore if unseekable
+                }
+              }
               setDurations((current) => ({ ...current, [mediaKey(result)]: duration }));
             } else {
               pause();
@@ -273,8 +304,13 @@ function VideoComparisonSession({
             const time = event.currentTarget.currentTime;
             setPosition(Math.min(time, limit));
             if (time >= limit) {
-              pause();
-              seek(limit);
+              if (loop) {
+                seek(0);
+                void Promise.all(Object.values(videos.current).map((video) => video?.play()));
+              } else {
+                pause();
+                seek(limit);
+              }
             } else if (
               right &&
               videos.current.B &&
@@ -284,8 +320,13 @@ function VideoComparisonSession({
             }
           }}
           onEnded={() => {
-            pause();
-            seek(limit);
+            if (loop) {
+              seek(0);
+              void Promise.all(Object.values(videos.current).map((video) => video?.play()));
+            } else {
+              pause();
+              seek(limit);
+            }
           }}
           onPlay={() => {
             if (!right) setPlayingSource(identity);
@@ -315,9 +356,32 @@ function VideoComparisonSession({
         >
           <track kind="captions" />
         </video>
-        <label className="block text-sm">
-          {t('comparison.notes', { defaultValue: 'Comparison notes' })} · {side}
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <label htmlFor={`comparison-notes-${side}`}>
+              {t('comparison.notes', { defaultValue: 'Comparison notes' })} · {side}
+            </label>
+            <button
+              type="button"
+              disabled={disabled || !ready}
+              onClick={() => {
+                const stamp = `@${position.toFixed(1)}s`;
+                setDrafts((current) => {
+                  const existing = current[result.id] ?? result.comparisonNotes ?? '';
+                  const separator = existing && !/\s$/.test(existing) ? ' ' : '';
+                  return { ...current, [result.id]: `${existing}${separator}${stamp} ` };
+                });
+              }}
+              className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-0.5 font-mono text-xs disabled:opacity-50"
+            >
+              {t('comparison.insertTimestamp', {
+                defaultValue: '+ @{{time}}s',
+                time: position.toFixed(1),
+              })}
+            </button>
+          </div>
           <textarea
+            id={`comparison-notes-${side}`}
             aria-label={`${t('comparison.notes', { defaultValue: 'Comparison notes' })} · ${side}`}
             value={notes}
             disabled={disabled}
@@ -325,9 +389,24 @@ function VideoComparisonSession({
               const value = event.target.value;
               setDrafts((current) => ({ ...current, [result.id]: value }));
             }}
-            className="mt-1 block min-h-20 w-full rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-2"
+            className="block min-h-20 w-full rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-2 text-sm"
           />
-        </label>
+          {timestamps.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+              {timestamps.map((sec) => (
+                <button
+                  key={sec}
+                  type="button"
+                  disabled={!ready}
+                  onClick={() => seek(sec)}
+                  className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-0.5 font-mono text-xs underline disabled:opacity-50"
+                >
+                  @{sec.toFixed(1)}s
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {onSaveNotes && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <button
@@ -371,17 +450,37 @@ function VideoComparisonSession({
       aria-label={t('comparison.title', { defaultValue: 'Video comparison' })}
       className="space-y-3 text-[var(--color-text-primary)] focus:outline-none"
     >
-      <div className="flex flex-wrap items-center gap-3 text-sm">
+      <div className="creator-compare-toolbar flex flex-wrap items-center gap-2.5 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm">
         <button
           type="button"
           disabled={!ready}
           onClick={() => (playing ? pause() : void play())}
-          className="rounded border border-[var(--color-border-primary)] px-3 py-1 disabled:opacity-50"
+          className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-3 py-1 font-medium disabled:opacity-50"
         >
           {t(playing ? 'comparison.pause' : 'comparison.play', {
             defaultValue: playing ? 'Pause' : 'Play',
           })}
         </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={!ready}
+            aria-label={t('comparison.stepBack', { defaultValue: 'Previous frame' })}
+            onClick={() => seek(position - 1 / 30)}
+            className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-1 font-mono text-xs disabled:opacity-50"
+          >
+            -1f
+          </button>
+          <button
+            type="button"
+            disabled={!ready}
+            aria-label={t('comparison.stepForward', { defaultValue: 'Next frame' })}
+            onClick={() => seek(position + 1 / 30)}
+            className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-1 font-mono text-xs disabled:opacity-50"
+          >
+            +1f
+          </button>
+        </div>
         {right && (
           <button
             type="button"
@@ -394,7 +493,7 @@ function VideoComparisonSession({
               setRightId(currentLeft);
               setAudio((cur) => (cur === 'A' ? 'B' : 'A'));
             }}
-            className="rounded border border-[var(--color-border-primary)] px-3 py-1 disabled:opacity-50"
+            className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-3 py-1 disabled:opacity-50"
           >
             {t('comparison.swap', { defaultValue: 'Swap A/B' })}
           </button>
@@ -412,6 +511,21 @@ function VideoComparisonSession({
             onPointerUp={() => setIsScrubbing(false)}
             onChange={(event) => seek(Number(event.target.value))}
           />
+        </label>
+        <span
+          data-testid="comparison-timecode"
+          className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-1 font-mono text-xs tabular-nums"
+        >
+          {formatTimecode(Math.min(position, limit))} / {formatTimecode(limit)}
+        </span>
+        <label className="flex items-center gap-1.5 text-xs">
+          <input
+            type="checkbox"
+            checked={loop}
+            disabled={!ready}
+            onChange={(event) => setLoop(event.target.checked)}
+          />
+          {t('comparison.loop', { defaultValue: 'Loop' })}
         </label>
         {right && (
           <label className="flex items-center gap-2">

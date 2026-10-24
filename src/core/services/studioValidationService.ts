@@ -111,17 +111,27 @@ export function validateStudioVideo(
     // Cinematic contradictions are writing guidance, not documented API limits.
     // Keep generic hardware/token estimates out of model compatibility checks.
     const cinematic = promptAstLinterService.lintPromptText(variant.prompt);
+    const seenCategories = new Map<string, PromptValidationCheck>();
     for (const issue of [...cinematic.errors, ...cinematic.warnings, ...cinematic.info]) {
       const label = CINEMATIC_LABELS[issue.category];
       if (!label) continue;
-      checks.push({
-        id: `variant-${index}-cinematic-${issue.category}`,
-        label,
-        status: 'warning',
-        detail: [issue.message, ...(issue.suggestions ?? [])].join(' '),
-        evidence: 'heuristic',
-        action,
-      });
+      const checkId = `variant-${index}-cinematic-${issue.category}`;
+      const detail = [issue.message, ...(issue.suggestions ?? [])].join(' ');
+      const existing = seenCategories.get(checkId);
+      if (existing) {
+        existing.detail = `${existing.detail} ${detail}`;
+      } else {
+        const check: PromptValidationCheck = {
+          id: checkId,
+          label,
+          status: 'warning',
+          detail,
+          evidence: 'heuristic',
+          action,
+        };
+        seenCategories.set(checkId, check);
+        checks.push(check);
+      }
     }
     checks.push({
       id: `variant-${index}-text`,

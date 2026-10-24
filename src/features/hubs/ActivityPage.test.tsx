@@ -155,4 +155,66 @@ describe('ActivityPage', () => {
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Check job / fetch result again' })).toBeNull();
   });
+
+  it('displays model and approved cost badges and filters durable jobs by status', async () => {
+    list.mockResolvedValue([
+      {
+        id: 'music-1',
+        jobKind: 'music',
+        status: 'Error',
+        prompt: 'Durable soundtrack',
+        request: {
+          modelId: 'lyria-3-clip-preview',
+          prompt: 'Durable soundtrack',
+          responseFormat: 'mp3',
+          images: [],
+        },
+        costApproval: {
+          approvalId: 'approval-1',
+          modelId: 'lyria-3-clip-preview',
+          maximumChargeUsd: 0.04,
+          currency: 'USD',
+          confidence: 'exact',
+          sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+          verifiedDate: '2026-08-01',
+          approvedAt: 1,
+        },
+        error: 'Offline',
+        timestamp: 2,
+      },
+      {
+        id: 'video-complete',
+        status: 'Completed',
+        videoUrl: 'file:///tmp/result.mp4',
+        prompt: 'Finished hero take',
+        costApproval: {
+          approvalId: 'approval-2',
+          modelId: 'veo-3.1-fast-generate-001',
+          maximumChargeUsd: 1.2,
+          currency: 'USD',
+          confidence: 'exact',
+          sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+          verifiedDate: '2026-08-01',
+          approvedAt: 2,
+        },
+        settings: {},
+        timestamp: 3,
+      },
+    ]);
+
+    const { user } = render(<ActivityPage />);
+
+    expect(await screen.findByText('lyria-3-clip-preview')).toBeVisible();
+    expect(screen.getByText('$0.04')).toBeVisible();
+    expect(screen.getByText('veo-3.1-fast-generate-001')).toBeVisible();
+    expect(screen.getByText('$1.20')).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Completed (1)' }));
+    expect(screen.getByText('Finished hero take')).toBeVisible();
+    expect(screen.queryByText('Durable soundtrack')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /Needs attention/i }));
+    expect(screen.getByText('Durable soundtrack')).toBeVisible();
+    expect(screen.queryByText('Finished hero take')).toBeNull();
+  });
 });

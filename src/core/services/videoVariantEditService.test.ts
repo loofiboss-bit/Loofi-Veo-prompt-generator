@@ -208,6 +208,34 @@ describe('selected video variant proposals', () => {
       expect(res.patch.prompt).toContain('[camera: Slow Pan Left]');
     });
 
+    it.each([
+      ['sora', 'Captured on 35mm motion picture camera'],
+      ['luma-ray', 'Smooth Orbit Right trajectory'],
+      ['wan-video', 'Deliberate Orbit Right cinematic move'],
+      ['minimax-hailuo', 'Dynamic Orbit Right framing'],
+      ['runway-gen3', 'Cinematic Orbit Right, fluid tracking'],
+      ['flow-veo', 'Camera: Orbit Right'],
+    ] as const)('adapts camera syntax for %s in sync-target-grammar', async (target, expected) => {
+      const { applyLocalPromptTransform, hasVariantEditChanges } =
+        await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      artifact.target = target;
+      (artifact.primary as { prompt: string }).prompt =
+        'A runner on a wet bridge, [camera: Orbit Right].';
+      const res = applyLocalPromptTransform(artifact, 0, 'sync-target-grammar');
+      expect(res.patch.prompt).toContain(expected);
+      expect(hasVariantEditChanges(res)).toBe(true);
+    });
+
+    it('detects when a local transform produces no changes', async () => {
+      const { applyLocalPromptTransform, hasVariantEditChanges } =
+        await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      (artifact.primary as { prompt: string }).prompt = 'Clean concise studio shot.';
+      const res = applyLocalPromptTransform(artifact, 0, 'clean-compact');
+      expect(hasVariantEditChanges(res)).toBe(false);
+    });
+
     it('hardens negative prompt without duplicating existing tokens', async () => {
       const { applyLocalPromptTransform } = await import('./videoVariantEditService');
       const artifact = makeArtifact();
@@ -219,6 +247,47 @@ describe('selected video variant proposals', () => {
       // Should not repeat watermark twice
       const count = (res.patch.negativePrompt?.match(/watermark/g) || []).length;
       expect(count).toBe(1);
+    });
+  });
+
+  describe('applyLocalMusicTransform', () => {
+    it('normalizes section headers while preserving locked sections', async () => {
+      const { compileMusicPromptArtifact } = await import('./promptStudioService');
+      const { editStudioVariant } = await import('./promptStudioEditingService');
+      const { applyLocalMusicTransform } = await import('./videoVariantEditService');
+      const base = compileMusicPromptArtifact({
+        topic: 'Midnight train',
+        language: 'English',
+      });
+      const edited = editStudioVariant(base, 0, {
+        lyrics: 'verse 1:\nWalking alone\n[Chorus]\nLocked chorus line\nbridge -\nTurning back',
+      });
+      const res = applyLocalMusicTransform(edited, 0, 'normalize-sections', ['[Chorus]']);
+      expect(res.changed).toBe(true);
+      const primary = res.artifact.primary as { lyrics: string };
+      expect(primary.lyrics).toContain('[Verse 1]\nWalking alone');
+      expect(primary.lyrics).toContain('[Chorus]\nLocked chorus line');
+      expect(primary.lyrics).toContain('[Bridge]\nTurning back');
+    });
+
+    it('cleans style tags, removes visual diffusion terms, and caps style length at 200 chars', async () => {
+      const { compileMusicPromptArtifact } = await import('./promptStudioService');
+      const { editStudioVariant } = await import('./promptStudioEditingService');
+      const { applyLocalMusicTransform } = await import('./videoVariantEditService');
+      const base = compileMusicPromptArtifact({
+        topic: 'Midnight train',
+        language: 'English',
+      });
+      const edited = editStudioVariant(base, 0, {
+        styleOfMusic:
+          'synthwave, Synthwave, 4k resolution, photorealistic, warm analog pads, driving arpeggio bassline, crisp LinnDrum percussion, atmospheric reverb, vintage tape saturation, nostalgic 1980s soundtrack, wide stereo field, shimmering leads, deep sub bass',
+      });
+      const res = applyLocalMusicTransform(edited, 0, 'clean-style');
+      expect(res.changed).toBe(true);
+      const primary = res.artifact.primary as { styleOfMusic: string };
+      expect(primary.styleOfMusic.length).toBeLessThanOrEqual(200);
+      expect(primary.styleOfMusic.toLowerCase()).not.toContain('4k resolution');
+      expect(primary.styleOfMusic.toLowerCase()).not.toContain('photorealistic');
     });
   });
 });
