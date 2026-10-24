@@ -12,6 +12,8 @@ const CINEMATIC_LABELS: Record<string, string> = {
   'camera-conflict': 'Camera direction',
   'lighting-conflict': 'Lighting direction',
   'composition-conflict': 'Framing direction',
+  'optical-conflict': 'Optics direction',
+  'shutter-conflict': 'Shutter direction',
 };
 
 /** Only the concrete internal API model is qualified; broad manual target labels are not versions. */

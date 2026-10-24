@@ -279,6 +279,16 @@ test('cancels an active paid job and persists the user decision', async (t) => {
   assert.equal(await engine.retry('job-1'), false);
 });
 
+test('cancels and dismisses an idle job in RecoveryRequired or MediaAtRisk status', async (t) => {
+  const store = await fixture(t);
+  await store.put(task({ id: 'job-idle', status: 'RecoveryRequired', error: 'stuck' }));
+  const engine = new PaidJobEngine({ store });
+  assert.equal(await engine.cancel('job-idle'), true);
+  const updated = await store.get('job-idle');
+  assert.equal(updated.status, 'Error');
+  assert.equal(updated.error, 'Cancelled by user');
+});
+
 test('retries a known operation after an offline polling failure without resubmitting', async (t) => {
   const store = await fixture(t);
   await store.put(

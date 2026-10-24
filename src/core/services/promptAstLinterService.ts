@@ -14,7 +14,9 @@ export type LintCategory =
   | 'lighting-conflict'
   | 'composition-conflict'
   | 'hardware-limit'
-  | 'audio-conflict';
+  | 'audio-conflict'
+  | 'optical-conflict'
+  | 'shutter-conflict';
 
 export interface LintIssue {
   code: string;
@@ -111,6 +113,49 @@ const CONTRADICTION_RULES: ContradictionRule[] = [
       /\b(4k resolution|8k|photorealistic|hyperrealistic|octane render|unreal engine 5|cinematic lighting)\b/i,
     ],
     setB: [/\b(bpm|tempo|chords|melody|harmony|bassline|drums|synth|acoustic|orchestral)\b/i],
+  },
+  {
+    code: 'OPT-001',
+    category: 'optical-conflict',
+    severity: 'warning',
+    message:
+      'Contradictory optics: Telephoto compression cannot coexist with ultra-wide panoramic framing in a single shot.',
+    suggestions: [
+      'Choose either a telephoto focal length (e.g. 85mm-200mm) or an ultra-wide field of view (e.g. 14mm-24mm).',
+      'If depicting a focal length transition, specify a continuous zoom.',
+    ],
+    setA: [/\b(200mm|300mm|400mm|telephoto lens|super-telephoto|compressed background)\b/i],
+    setB: [
+      /\b(extreme wide angle|ultra-wide panoramic|fisheye lens|12mm lens|14mm lens|vast sweeping vista)\b/i,
+    ],
+  },
+  {
+    code: 'MOT-001',
+    category: 'shutter-conflict',
+    severity: 'warning',
+    message:
+      'Contradictory shutter speed: High-speed freeze-action shutter cannot produce long-exposure motion blur in the same capture.',
+    suggestions: [
+      'Choose high-speed shutter (e.g. 1/1000s) to freeze motion or slow shutter (e.g. 1/24s) to capture motion blur.',
+    ],
+    setA: [
+      /\b(1\/1000s|1\/2000s|1\/4000s|high[- ]speed shutter|crystal[- ]clear freeze frame|frozen water droplets)\b/i,
+    ],
+    setB: [
+      /\b(silky motion blur|long[- ]exposure light trails|dreamy motion blur|streaking headlights|motion smeared)\b/i,
+    ],
+  },
+  {
+    code: 'LGT-002',
+    category: 'lighting-conflict',
+    severity: 'warning',
+    message:
+      'Contradictory lighting angle: Low-angle sunset or sunrise lighting contradicts high-noon overhead sunlight.',
+    suggestions: ['Choose either low-horizon golden hour lighting or high-noon overhead lighting.'],
+    setA: [/\b(golden hour sunset|low setting sun|dawn twilight horizon|long raking shadows)\b/i],
+    setB: [
+      /\b((?:direct\s+)?high noon(?:\s+direct)?\s+sun|overhead 12:00 sun|shadowless midday|vertical midday shadows)\b/i,
+    ],
   },
 ];
 

@@ -28,30 +28,34 @@ export function TakeCompare({
 }: TakeCompareProps) {
   const { t } = useTranslation('create');
   const available = useMemo(() => takes.filter(isTakePlayable), [takes]);
-  const results: VideoComparisonResult[] = available.map((take, index) => ({
-    id: take.id,
-    label: `Take ${index + 1}`,
-    src: (take.localMediaUrl ?? take.providerMediaUri)!,
-    prompt: take.prompt,
-    negativePrompt: take.request.negativePrompt ?? '',
-    settings: JSON.stringify(
-      {
-        model: take.request.modelId,
-        mode: take.request.mode,
-        aspectRatio: take.request.aspectRatio,
-        resolution: take.request.resolution,
-        durationSeconds: take.request.durationSeconds,
-        seed: take.request.seed,
-        firstFrameAssetId: take.request.firstFrameAssetId,
-        lastFrameAssetId: take.request.lastFrameAssetId,
-        referenceAssetIds: take.request.referenceAssetIds,
-        extensionSourceTakeId: take.request.extensionSourceTakeId,
-      },
-      null,
-      2,
-    ),
-    comparisonNotes: take.comparisonNotes,
-  }));
+  const results: VideoComparisonResult[] = available.map((take) => {
+    const rawIndex = takes.findIndex((candidate) => candidate.id === take.id);
+    const takeNumber = rawIndex >= 0 ? rawIndex + 1 : 1;
+    return {
+      id: take.id,
+      label: `Take ${takeNumber}`,
+      src: (take.localMediaUrl ?? take.providerMediaUri)!,
+      prompt: take.prompt,
+      negativePrompt: take.request.negativePrompt ?? '',
+      settings: JSON.stringify(
+        {
+          model: take.request.modelId,
+          mode: take.request.mode,
+          aspectRatio: take.request.aspectRatio,
+          resolution: take.request.resolution,
+          durationSeconds: take.request.durationSeconds,
+          seed: take.request.seed,
+          firstFrameAssetId: take.request.firstFrameAssetId,
+          lastFrameAssetId: take.request.lastFrameAssetId,
+          referenceAssetIds: take.request.referenceAssetIds,
+          extensionSourceTakeId: take.request.extensionSourceTakeId,
+        },
+        null,
+        2,
+      ),
+      comparisonNotes: take.comparisonNotes,
+    };
+  });
   if (!available.length) return <p className="text-sm text-slate-500">{t('flow.noPlayable')}</p>;
   const details = (
     item: VideoComparisonResult,

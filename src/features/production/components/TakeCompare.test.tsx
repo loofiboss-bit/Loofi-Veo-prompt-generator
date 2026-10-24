@@ -108,4 +108,19 @@ describe('TakeCompare', () => {
     fireEvent.click(screen.getAllByRole('button', { name: '2s' })[0]);
     expect(video.currentTime).toBe(2);
   });
+  it('numbers playable takes using their original shot list index when earlier takes are unplayable', () => {
+    const failedTake = take('take-1-failed', 0);
+    failedTake.status = 'failed';
+    failedTake.localMediaUrl = undefined;
+    const secondTake = take('take-2-ok', 85);
+    render(
+      <TakeCompare
+        takes={[failedTake, secondTake]}
+        onKeep={vi.fn()}
+        onReject={vi.fn()}
+        onRevise={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Take 2')).toBeInTheDocument();
+  });
 });

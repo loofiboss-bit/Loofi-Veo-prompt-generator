@@ -41,6 +41,33 @@ describe('promptAstLinterService', () => {
     expect(compWarning?.category).toBe('composition-conflict');
   });
 
+  it('detects optical contradiction (telephoto vs ultra-wide panoramic) as a warning', () => {
+    const contradictoryPrompt =
+      'Shot on 200mm telephoto lens with compressed background showing an extreme wide angle vast sweeping vista.';
+    const result = promptAstLinterService.lintPromptText(contradictoryPrompt);
+    const optWarning = result.warnings.find((w) => w.code === 'OPT-001');
+    expect(optWarning).toBeDefined();
+    expect(optWarning?.category).toBe('optical-conflict');
+  });
+
+  it('detects shutter speed contradiction (high-speed freeze vs long exposure blur) as a warning', () => {
+    const contradictoryPrompt =
+      'High-speed shutter 1/2000s freeze frame with silky motion blur streaking headlights.';
+    const result = promptAstLinterService.lintPromptText(contradictoryPrompt);
+    const motWarning = result.warnings.find((w) => w.code === 'MOT-001');
+    expect(motWarning).toBeDefined();
+    expect(motWarning?.category).toBe('shutter-conflict');
+  });
+
+  it('detects sun angle contradiction (golden hour sunset vs high noon sun) as a warning', () => {
+    const contradictoryPrompt =
+      'Golden hour sunset with long raking shadows under direct high noon sun.';
+    const result = promptAstLinterService.lintPromptText(contradictoryPrompt);
+    const lgtWarning = result.warnings.find((w) => w.code === 'LGT-002');
+    expect(lgtWarning).toBeDefined();
+    expect(lgtWarning?.category).toBe('lighting-conflict');
+  });
+
   it('flags unsupported aspect ratios as an error', () => {
     const result = promptAstLinterService.lintPromptText('A serene lake at dawn.', {
       aspectRatio: '32:9',

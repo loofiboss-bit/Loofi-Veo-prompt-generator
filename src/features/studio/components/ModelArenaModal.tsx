@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type {
+  PromptArtifactV1,
   PromptValidationAction,
   VideoPromptArtifactInput,
   VideoPromptVariant,
@@ -14,7 +15,10 @@ interface ModelArenaModalProps {
   isOpen: boolean;
   onClose: () => void;
   input: VideoPromptArtifactInput;
-  onSelectTarget: (target: VideoPromptArtifactInput['target']) => void | Promise<void>;
+  onSelectTarget: (
+    target: VideoPromptArtifactInput['target'],
+    compiledArtifact?: PromptArtifactV1,
+  ) => void | Promise<void>;
   onValidationAction?: (action: PromptValidationAction) => void;
 }
 
@@ -120,11 +124,14 @@ export function ModelArenaModal({
       setError('copyError');
     }
   };
-  const select = async (target: VideoPromptArtifactInput['target']) => {
+  const select = async (
+    target: VideoPromptArtifactInput['target'],
+    compiledArtifact?: PromptArtifactV1,
+  ) => {
     setSelecting(true);
     setError(null);
     try {
-      await onSelectTarget(target);
+      await onSelectTarget(target, compiledArtifact);
       onClose();
     } catch {
       setError('selectError');
@@ -289,7 +296,7 @@ export function ModelArenaModal({
                   <button
                     type="button"
                     disabled={active || selecting}
-                    onClick={() => void select(target)}
+                    onClick={() => void select(target, artifact)}
                     className="rounded-lg border px-2 py-2 text-xs"
                   >
                     {active

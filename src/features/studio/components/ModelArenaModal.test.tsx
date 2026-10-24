@@ -104,7 +104,10 @@ describe('ModelArenaModal', () => {
       }),
     );
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
-    expect(onSelectTarget).toHaveBeenCalledWith('wan-video');
+    expect(onSelectTarget).toHaveBeenCalledWith(
+      'wan-video',
+      expect.objectContaining({ target: 'wan-video' }),
+    );
   });
   it('reports clipboard errors without closing', async () => {
     writeText.mockRejectedValue(new Error('Permission denied'));

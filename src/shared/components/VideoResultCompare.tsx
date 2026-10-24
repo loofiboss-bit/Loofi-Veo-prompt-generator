@@ -94,6 +94,7 @@ function VideoComparisonSession({
   const [audio, setAudio] = useState<'A' | 'B'>('A');
   const [durations, setDurations] = useState<Record<string, number>>({});
   const [position, setPosition] = useState(0);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   const [playingSource, setPlayingSource] = useState<string | null>(null);
   const [playbackError, setPlaybackError] = useState('');
   const [showDiff, setShowDiff] = useState(false);
@@ -102,6 +103,7 @@ function VideoComparisonSession({
     Record<string, { status: 'saving' | 'saved' | 'error'; value: string; error?: string }>
   >({});
   const videos = useRef<Partial<Record<'A' | 'B', HTMLVideoElement>>>({});
+  const containerRef = useRef<HTMLElement>(null);
   const generation = useRef(0);
   const savingIds = useRef(new Set<string>());
   const left = results.find((result) => result.id === leftId) ?? results[0];
@@ -127,8 +129,6 @@ function VideoComparisonSession({
       for (const video of currentVideos) video?.pause();
     };
   }, [identity]);
-
-  if (!left) return null;
 
   const seek = (seconds: number) => {
     if (!ready || !Number.isFinite(seconds)) return;
@@ -165,6 +165,27 @@ function VideoComparisonSession({
       );
     }
   };
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (!containerRef.current?.contains(document.activeElement)) return;
+      const targetTag = (event.target as HTMLElement).tagName?.toLowerCase();
+      if (['input', 'textarea', 'select'].includes(targetTag)) return;
+      if (event.key === ' ' || event.code === 'Space') {
+        event.preventDefault();
+        if (playing) pause();
+        else void play();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        seek(position - 1 / 30);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        seek(position + 1 / 30);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  });
 
   const saveNotes = async (result: VideoComparisonResult) => {
     if (!onSaveNotes || disabled || savingIds.current.has(result.id)) return;
@@ -248,7 +269,7 @@ function VideoComparisonSession({
             }
           }}
           onTimeUpdate={(event) => {
-            if (side !== 'A' || !ready) return;
+            if (side !== 'A' || !ready || isScrubbing) return;
             const time = event.currentTarget.currentTime;
             setPosition(Math.min(time, limit));
             if (time >= limit) {
@@ -341,10 +362,14 @@ function VideoComparisonSession({
     );
   };
 
+  if (!left) return null;
+
   return (
     <section
+      ref={containerRef}
+      tabIndex={0}
       aria-label={t('comparison.title', { defaultValue: 'Video comparison' })}
-      className="space-y-3 text-[var(--color-text-primary)]"
+      className="space-y-3 text-[var(--color-text-primary)] focus:outline-none"
     >
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <button
@@ -357,6 +382,23 @@ function VideoComparisonSession({
             defaultValue: playing ? 'Pause' : 'Play',
           })}
         </button>
+        {right && (
+          <button
+            type="button"
+            disabled={!ready || disabled}
+            onClick={() => {
+              pause();
+              const currentLeft = left.id;
+              const currentRight = right.id;
+              setLeftId(currentRight);
+              setRightId(currentLeft);
+              setAudio((cur) => (cur === 'A' ? 'B' : 'A'));
+            }}
+            className="rounded border border-[var(--color-border-primary)] px-3 py-1 disabled:opacity-50"
+          >
+            {t('comparison.swap', { defaultValue: 'Swap A/B' })}
+          </button>
+        )}
         <label className="flex items-center gap-2">
           {t('comparison.seek', { defaultValue: 'Comparison position' })}
           <input
@@ -366,6 +408,8 @@ function VideoComparisonSession({
             step={0.01}
             value={Math.min(position, limit)}
             disabled={!ready}
+            onPointerDown={() => setIsScrubbing(true)}
+            onPointerUp={() => setIsScrubbing(false)}
             onChange={(event) => seek(Number(event.target.value))}
           />
         </label>

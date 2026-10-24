@@ -15,6 +15,7 @@ interface ExternalStudioResultsProps {
   artifact: PromptArtifactV1 | null;
   variantIndex: 0 | 1 | 2;
   disabled?: boolean;
+  isStale?: boolean;
 }
 
 function ExternalResultCard({
@@ -154,6 +155,7 @@ export function ExternalStudioResults({
   artifact,
   variantIndex,
   disabled = false,
+  isStale = false,
 }: ExternalStudioResultsProps) {
   const { t } = useTranslation('studio');
   const state = useExternalStudioResultStore();
@@ -195,9 +197,18 @@ export function ExternalStudioResults({
       className="space-y-4 rounded-xl border border-[var(--color-border-primary)] p-4"
       aria-label={t('externalResults.title')}
     >
-      <h2 className="font-semibold text-[var(--color-text-primary)]">
-        {t('externalResults.title')}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-[var(--color-text-primary)]">
+          {t('externalResults.title')}
+        </h2>
+        {isStale && (
+          <span className="text-xs text-amber-400">
+            {t('externalResults.boundToLastCompiled', {
+              defaultValue: 'Bound to last compiled prompt',
+            })}
+          </span>
+        )}
+      </div>
       {canImport && (
         <label className="block text-sm text-[var(--color-text-primary)]">
           {t('externalResults.import')}

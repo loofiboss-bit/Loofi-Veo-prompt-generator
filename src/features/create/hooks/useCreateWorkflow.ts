@@ -27,6 +27,7 @@ import { productionRunService } from '@core/services/productionRunService';
 import { continuityService } from '@core/services/continuityService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
+import { recordCompletedPaidJobCost } from '@core/services/paidJobService';
 import { storeMediator } from '@core/store/mediator';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
@@ -108,6 +109,7 @@ export function useCreateWorkflow() {
     let alive = true;
     const consume = async (job: PaidJobTask) => {
       if (!alive) return;
+      recordCompletedPaidJobCost(job);
       setDurableJobs((current) => [...current.filter((item) => item.id !== job.id), job]);
       if (
         !activeRun ||
@@ -612,10 +614,17 @@ export function useCreateWorkflow() {
     useRevision: boolean,
     revisionNotes?: string,
   ) => {
-    const prompt =
-      useRevision && (revisionNotes?.trim() || take.review?.proposedRevisionPrompt)
-        ? (revisionNotes?.trim() ?? take.review?.proposedRevisionPrompt ?? shot.prompt)
-        : shot.prompt;
+    let prompt = shot.prompt;
+    if (useRevision) {
+      if (take.review?.proposedRevisionPrompt) {
+        prompt = take.review.proposedRevisionPrompt;
+      } else if (revisionNotes?.trim()) {
+        const notes = revisionNotes.trim();
+        prompt = shot.prompt.includes('[Revision note:')
+          ? shot.prompt.replace(/\[Revision note:[\s\S]*?\]/, `[Revision note: ${notes}]`)
+          : `${shot.prompt}\n\n[Revision note: ${notes}]`;
+      }
+    }
     await handleReject(shot, take);
     await updateShotRequest(shot.id, { prompt });
     setFeedback(

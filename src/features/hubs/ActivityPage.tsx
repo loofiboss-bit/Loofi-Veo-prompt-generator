@@ -2,7 +2,11 @@ import { Link, useSearchParams } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { canReapprovePaidJob, paidJobService } from '@core/services/paidJobService';
+import {
+  canReapprovePaidJob,
+  paidJobService,
+  recordCompletedPaidJobCost,
+} from '@core/services/paidJobService';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import type { PaidJobTask } from '@core/types';
 
@@ -71,6 +75,7 @@ export function ActivityPage() {
   useEffect(() => {
     let active = true;
     const unsubscribe = paidJobService.subscribe((job) => {
+      recordCompletedPaidJobCost(job);
       if (active) setDurableJobs((current) => mergeDurableJobs(current, [job]));
     });
     void refreshDurableJobs();
@@ -233,8 +238,6 @@ export function ActivityPage() {
             ) : (
               durableJobs.map((job) => {
                 const isMusic = 'jobKind' in job && job.jobKind === 'music';
-                const canCancel =
-                  ACTIVE_DURABLE_STATUSES.has(job.status) || job.status === 'Queued';
                 const videoJob =
                   'productionRunId' in job &&
                   job.productionRunId &&
@@ -242,6 +245,11 @@ export function ActivityPage() {
                   job.productionTakeId
                     ? job
                     : null;
+                const canCancel =
+                  ACTIVE_DURABLE_STATUSES.has(job.status) ||
+                  job.status === 'Queued' ||
+                  (isMusic && ATTENTION_DURABLE_STATUSES.has(job.status)) ||
+                  (!videoJob && ATTENTION_DURABLE_STATUSES.has(job.status));
                 const canRecover =
                   videoJob &&
                   videoJob.providerOperationName &&
@@ -312,6 +320,11 @@ export function ActivityPage() {
                                   takeId: videoJob!.productionTakeId!,
                                 })
                                 .then(() => refreshDurableJobs())
+                                .catch((cause: unknown) => {
+                                  setActionError(
+                                    cause instanceof Error ? cause.message : String(cause),
+                                  );
+                                })
                                 .finally(() => setPendingActionId(null));
                             }}
                           >

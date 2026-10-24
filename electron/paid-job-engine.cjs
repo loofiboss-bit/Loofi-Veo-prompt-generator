@@ -288,14 +288,32 @@ class PaidJobEngine {
 
       job.status = 'Polling';
       await this.persist(job);
+      let pollCount = 0;
+      const MAX_POLLS = 360;
+      let transientFailures = 0;
       while (!signal.aborted) {
+        if (++pollCount > MAX_POLLS) {
+          throw new Error('Veo generation timed out after 30 minutes.');
+        }
         await this.sleep(5000);
-        const response = await this.fetchImpl(`${API_BASE}/${operationName}`, {
-          headers: { 'x-goog-api-key': apiKey },
-          signal,
-        });
-        if (!response.ok)
+        let response;
+        try {
+          response = await this.fetchImpl(`${API_BASE}/${operationName}`, {
+            headers: { 'x-goog-api-key': apiKey },
+            signal,
+          });
+        } catch (fetchErr) {
+          if (signal.aborted) throw fetchErr;
+          if (++transientFailures <= 3) continue;
+          throw fetchErr;
+        }
+        if (!response.ok) {
+          if ([429, 500, 502, 503, 504].includes(response.status) && ++transientFailures <= 3) {
+            continue;
+          }
           throw new Error(`Veo polling failed (${response.status}): ${await response.text()}`);
+        }
+        transientFailures = 0;
         const payload = await response.json();
         if (payload.error) throw new Error(payload.error.message || 'Veo operation failed.');
         if (!payload.done) continue;
@@ -474,7 +492,16 @@ class PaidJobEngine {
     if (active) await active;
     const job = await this.store.get(id);
     if (!job) return false;
-    if (['Complete', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return true;
+    if (['Complete'].includes(job.status)) return true;
+    if (['RecoveryRequired', 'MediaAtRisk'].includes(job.status) && !active) {
+      await this.persist({
+        ...job,
+        status: 'Error',
+        error: 'Cancelled by user',
+      });
+      return true;
+    }
+    if (['RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return true;
     await this.persist({
       ...job,
       status:

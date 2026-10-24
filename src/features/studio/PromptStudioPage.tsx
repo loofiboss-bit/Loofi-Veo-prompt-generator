@@ -32,7 +32,9 @@ import {
   type StudioVariantEdits,
 } from '@core/services/promptStudioEditingService';
 import {
+  applyLocalPromptTransform,
   proposeVideoVariantEdit,
+  type LocalPromptTransformId,
   type VideoVariantEditField,
   type VideoVariantEditPatch,
   type VideoVariantEditProposal,
@@ -308,6 +310,7 @@ export function PromptStudioPage() {
     setError('');
     operation.current += 1;
     setProposal(null);
+    setVariantProposal(null);
   };
   const scopeArtifact = (value: PromptArtifactV1): PromptArtifactV1 => ({
     ...value,
@@ -376,16 +379,24 @@ export function PromptStudioPage() {
       throw new Error(t('revision.stale'));
     setRevisionRefresh((n) => n + 1);
   };
-  const selectTarget = (target: VideoPromptArtifactInput['target']) =>
+  const selectTarget = (
+    target: VideoPromptArtifactInput['target'],
+    compiledArtifact?: PromptArtifactV1,
+  ) =>
     change(async () => {
-      if (target === video.target) return;
+      if (target === video.target && (currentArtifact || !compiledArtifact)) return;
       await checkpoint('target');
       const active = usePromptStudioDraftStore.getState().draft!;
       store.applyDraft({
         video: { ...active.video, target },
-        artifact: null,
-        artifacts: { ...active.artifacts, video: null },
+        artifact: compiledArtifact ?? null,
+        artifacts: { ...active.artifacts, video: compiledArtifact ?? null },
       });
+      if (compiledArtifact) {
+        await saveArtifact(compiledArtifact);
+        revealResult();
+        setMessage(t('enhanced'));
+      }
       if (!(await usePromptStudioDraftStore.getState().flush(projectId)))
         throw new Error(usePromptStudioDraftStore.getState().error ?? t('saveError'));
     });
@@ -484,6 +495,35 @@ export function PromptStudioPage() {
       } finally {
         if (mounted.current && aiRequest.current === token) setBusy(false);
       }
+    });
+  const handleLocalTransform = (transformId: LocalPromptTransformId) =>
+    void run(async () => {
+      const token = ++operation.current;
+      aiRequest.current = token;
+      setProposal(null);
+      setVariantProposal(null);
+      const baseline = usePromptStudioDraftStore.getState().draft;
+      if (
+        !baseline ||
+        baseline.artifact?.kind !== 'video' ||
+        baseline.mode !== 'video' ||
+        baseline.projectId !== projectId
+      )
+        return;
+      const result = applyLocalPromptTransform(
+        baseline.artifact,
+        baseline.selectedVariant,
+        transformId,
+      );
+      setVariantProposal({
+        ...result,
+        projectId,
+        revision: baseline.revision,
+        variantIndex: baseline.selectedVariant,
+        token,
+      });
+      revealResult();
+      setMessage(t('revision.proposalReady'));
     });
   const acceptVariantEdit = (fields: VideoVariantEditField[]) =>
     void run(async () => {
@@ -677,6 +717,7 @@ export function PromptStudioPage() {
     });
     operation.current += 1;
     setProposal(null);
+    setVariantProposal(null);
   };
   const handoff = () =>
     void run(async () => {
@@ -1402,8 +1443,11 @@ export function PromptStudioPage() {
                   <VideoVariantEditPanel
                     busy={busy}
                     disabled={changing}
-                    proposal={variantProposal}
+                    proposal={
+                      variantProposal?.variantIndex === selectedVariant ? variantProposal : null
+                    }
                     onPropose={proposeVariantEdit}
+                    onLocalTransform={handleLocalTransform}
                     onAccept={acceptVariantEdit}
                     onReject={() => {
                       setVariantProposal(null);
@@ -1515,9 +1559,10 @@ export function PromptStudioPage() {
           {mode === 'video' && (
             <ExternalStudioResults
               projectId={projectId}
-              artifact={staleArtifact ? null : currentArtifact}
+              artifact={currentArtifact}
               variantIndex={selectedVariant}
               disabled={changing}
+              isStale={staleArtifact}
             />
           )}
         </section>

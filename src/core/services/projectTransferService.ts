@@ -105,6 +105,22 @@ export async function buildPortableProjectBundle(
             data: '',
           });
       }
+  for (const studioResult of project.studioResults ?? []) {
+    if (!assets.some((asset) => asset.id === studioResult.assetId)) {
+      const record = await mediaAssetService.getRecord(studioResult.assetId);
+      if (record?.blob) {
+        assets.push({
+          id: studioResult.assetId,
+          type: 'video',
+          name: studioResult.assetName,
+          mimeType: studioResult.mimeType,
+          storageKey: studioResult.assetId,
+          url: URL.createObjectURL(record.blob),
+          data: '',
+        });
+      }
+    }
+  }
   const available = new Set(assets.map((asset) => asset.id));
   const missing = [...references].filter((id) => !available.has(id));
   if (missing.length) throw new Error(`Referenced local media missing: ${missing.join(', ')}`);
@@ -274,7 +290,13 @@ export async function importPortableProject(file: File): Promise<Project> {
       );
     }),
   );
-  for (const asset of restoredAssets) useAppStore.getState().addAsset(asset);
+  for (const asset of restoredAssets) {
+    useAppStore.getState().addAsset(asset);
+    if (asset.id.startsWith('external:')) {
+      const blob = await resolveProjectAssetBlob(asset);
+      if (blob) await mediaAssetService.storeBlob(asset.id, blob);
+    }
+  }
   return document;
 }
 

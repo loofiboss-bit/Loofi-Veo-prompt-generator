@@ -186,4 +186,39 @@ describe('selected video variant proposals', () => {
     ).rejects.toThrow('Provider unavailable');
     expect(artifact).toEqual(original);
   });
+
+  describe('applyLocalPromptTransform', () => {
+    it('applies clean-compact by removing filler words and cleaning commas', async () => {
+      const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      (artifact.primary as { prompt: string }).prompt =
+        'A sleek sports car, highly detailed, photorealistic, 4k resolution, driving through neon city.';
+      const res = applyLocalPromptTransform(artifact, 0, 'clean-compact');
+      expect(res.patch.prompt).toBe('A sleek sports car, driving through neon city.');
+      expect(res.provenance.provider).toBe('local');
+    });
+
+    it('formats Kling camera bracket syntax in sync-target-grammar', async () => {
+      const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      artifact.target = 'kling';
+      (artifact.primary as { prompt: string }).prompt =
+        'A dancer on stage, camera: Slow Pan Left, golden light';
+      const res = applyLocalPromptTransform(artifact, 0, 'sync-target-grammar');
+      expect(res.patch.prompt).toContain('[camera: Slow Pan Left]');
+    });
+
+    it('hardens negative prompt without duplicating existing tokens', async () => {
+      const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      (artifact.primary as { negativePrompt: string }).negativePrompt = 'blurry, watermark';
+      const res = applyLocalPromptTransform(artifact, 0, 'harden-negative');
+      expect(res.patch.negativePrompt).toContain('blurry');
+      expect(res.patch.negativePrompt).toContain('distorted anatomy');
+      expect(res.patch.negativePrompt).toContain('deformed hands');
+      // Should not repeat watermark twice
+      const count = (res.patch.negativePrompt?.match(/watermark/g) || []).length;
+      expect(count).toBe(1);
+    });
+  });
 });

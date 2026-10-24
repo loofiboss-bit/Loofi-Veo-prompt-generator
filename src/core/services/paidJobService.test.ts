@@ -94,4 +94,46 @@ describe('paidJobService', () => {
     expect(retryPaidJob).toHaveBeenCalledWith('known');
     expect(submitPaidJob).not.toHaveBeenCalled();
   });
+
+  it('records cost for completed paid jobs into costTrackingService idempotently', async () => {
+    const { costTrackingService } = await import('./costTrackingService');
+    const spy = vi.spyOn(costTrackingService, 'recordCost').mockReturnValue({
+      id: 'cost-1',
+      modelId: 'veo-3.1-fast',
+      endpointId: 'desktop-paid-job',
+      inputTokens: 0,
+      outputTokens: 0,
+      description: 'test',
+      costUsd: 0.6,
+      timestamp: 1,
+      isEstimated: false,
+    });
+    const completeJob = {
+      id: 'paid-job-complete-1',
+      status: 'Complete' as const,
+      prompt: 'A car driving down a mountain pass',
+      request: { modelId: 'veo-3.1-fast', durationSeconds: 6 },
+      costApproval: {
+        maximumChargeUsd: 0.6,
+        approvalId: 'app-1',
+        modelId: 'veo-3.1-fast',
+        currency: 'USD' as const,
+        approvedAt: 1,
+      },
+    };
+    const listPaidJobs = vi.fn().mockResolvedValue([completeJob]);
+    window.electron = { listPaidJobs } as unknown as NonNullable<typeof window.electron>;
+    await paidJobService.list();
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelId: 'veo-3.1-fast',
+        costUsd: 0.6,
+        isEstimated: false,
+      }),
+    );
+    // Calling list again should not duplicate the cost
+    spy.mockClear();
+    await paidJobService.list();
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

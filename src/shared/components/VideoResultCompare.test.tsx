@@ -171,4 +171,28 @@ describe('VideoResultCompare', () => {
     view.rerender(<VideoResultCompare contextId="two" results={results} />);
     expect(notes()).toHaveValue('');
   });
+
+  it('swaps A and B clips and supports Spacebar and Arrow key navigation', async () => {
+    render(<VideoResultCompare contextId="one" results={results} />);
+    const [videoA, videoB] = document.querySelectorAll('video');
+    Object.defineProperty(videoA, 'duration', { value: 6 });
+    Object.defineProperty(videoB, 'duration', { value: 6 });
+    fireEvent.loadedMetadata(videoA);
+    fireEvent.loadedMetadata(videoB);
+
+    expect(screen.getByRole('combobox', { name: 'Result A' })).toHaveValue('a');
+    expect(screen.getByRole('combobox', { name: 'Result B' })).toHaveValue('b');
+
+    const swapButton = screen.getByRole('button', { name: 'Swap A/B' });
+    fireEvent.click(swapButton);
+
+    expect(screen.getByRole('combobox', { name: 'Result A' })).toHaveValue('b');
+    expect(screen.getByRole('combobox', { name: 'Result B' })).toHaveValue('a');
+
+    const region = screen.getByRole('region', { name: 'Video comparison' });
+    region.focus();
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    const seekSlider = screen.getByRole('slider', { name: 'Comparison position' });
+    expect(Number(seekSlider.getAttribute('value'))).toBeGreaterThan(0);
+  });
 });

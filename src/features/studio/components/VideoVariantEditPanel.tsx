@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { diffService } from '@core/services/diffService';
 import type {
+  LocalPromptTransformId,
   VideoVariantEditField,
   VideoVariantEditProposal,
 } from '@core/services/videoVariantEditService';
@@ -11,6 +12,7 @@ interface VideoVariantEditPanelProps {
   disabled: boolean;
   proposal: VideoVariantEditProposal | null;
   onPropose: (direction: string, fields: VideoVariantEditField[]) => void;
+  onLocalTransform?: (transformId: LocalPromptTransformId) => void;
   onAccept: (fields: VideoVariantEditField[]) => void;
   onReject: () => void;
 }
@@ -174,6 +176,36 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
           >
             {t('variantEdit.propose', { defaultValue: 'Propose selected variant changes' })}
           </button>
+          {props.onLocalTransform && (
+            <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+              <span className="w-full text-xs font-semibold">
+                {t('variantEdit.localTools', {
+                  defaultValue: 'Instant local tools (0 tokens / offline)',
+                })}
+              </span>
+              <button
+                type="button"
+                className="text-xs"
+                onClick={() => props.onLocalTransform?.('clean-compact')}
+              >
+                {t('variantEdit.cleanCompact', { defaultValue: 'Clean & Compact' })}
+              </button>
+              <button
+                type="button"
+                className="text-xs"
+                onClick={() => props.onLocalTransform?.('sync-target-grammar')}
+              >
+                {t('variantEdit.syncGrammar', { defaultValue: 'Sync Target Grammar' })}
+              </button>
+              <button
+                type="button"
+                className="text-xs"
+                onClick={() => props.onLocalTransform?.('harden-negative')}
+              >
+                {t('variantEdit.hardenNegative', { defaultValue: 'Harden Negative' })}
+              </button>
+            </div>
+          )}
         </fieldset>
       </details>
       {props.busy ? (

@@ -13,13 +13,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve the actual selected video variant with Gemini or Ollama, review prompt and negative-prompt
   changes separately, and accept selected fields together without rebuilding other variants.
+- Zero-token deterministic local prompt transforms in VideoVariantEditPanel (`clean-compact`,
+  `sync-target-grammar`, `harden-negative`) for instant offline prompt refinement without AI slop.
+- Expanded Prompt AST conflict lint rules (`OPT-001` telephoto vs ultra-wide conflict, `MOT-001`
+  high-speed shutter vs motion blur conflict, `LGT-002` low-angle sun vs high-noon shadow conflict)
+  to detect contradictory cinematic instructions before generation.
 - Show shared local camera, lighting and framing guidance in Studio and Arena, including after
   manual edits. Cinematic advice remains distinct from documented provider requirements.
+- Direct compiled artifact handoff when selecting a target from Model Arena into Prompt Studio.
 - Compare production takes and imported Studio videos with synchronized playback and seeking,
-  one selected audio source, frozen prompt/settings differences, and separately saved result notes.
+  Swap A/B mode, frame-stepping keyboard shortcuts, one selected audio source, frozen prompt/settings differences,
+  and separately saved result notes.
+- Complete project export & import bundling for external studio video result blobs, and automatic
+  spend recording of completed paid jobs into `costTrackingService`.
 
 ### Fixed
 
+- Preserve original shot prompt when retaking a scene in the Create workflow, cleanly appending
+  revision notes rather than overwriting the entire prompt.
+- Fix take numbering in `TakeCompare` to accurately reflect 1-based sequential indices in the takes list.
+- Automatically discard stale variant AI proposals upon switching variants or making manual edits.
+- Unblock imported external studio results when draft parameters change, rendering a subtle stale
+  indicator rather than hiding or preventing video imports.
+- Resolve paid job recovery deadlocks by allowing cancellation of idle attention jobs in
+  `RecoveryRequired` or `MediaAtRisk` status, and enforce a 30-minute polling timeout ceiling with
+  exponential backoff on transient HTTP errors in the paid job engine.
 - Bind new Veo/Lyria approvals to a frozen versioned hash of the complete submitted request,
   including actual image bytes, MIME types and generation settings. Existing provider operations
   remain recoverable without another submission; unsent legacy approvals require renewal.
