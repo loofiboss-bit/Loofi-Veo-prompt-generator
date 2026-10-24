@@ -143,4 +143,22 @@ describe('Studio variant editing', () => {
     ).rejects.toThrow(/locked/);
     expect(mocks.optimizeMusic).not.toHaveBeenCalled();
   });
+
+  it('preserves distinct repeated lyric sections in order without duplication (F5)', () => {
+    const multiChorusLyrics =
+      '[Verse 1]\nIntro verse\n\n[Chorus]\nFirst unique chorus\n\n[Verse 2]\nSecond verse\n\n[Chorus]\nSecond unique chorus\n';
+    const proposed =
+      '[Verse 1]\nAI verse 1\n\n[Chorus]\nAI chorus 1\n\n[Verse 2]\nAI verse 2\n\n[Chorus]\nAI chorus 2\n';
+
+    // Lock both choruses
+    const result = preserveLockedLyricSections(multiChorusLyrics, proposed, ['[Chorus]']);
+
+    // Should preserve first unique chorus in first slot, second in second slot, without extra chorus appended
+    expect(result).toContain('[Chorus]\nFirst unique chorus\n\n');
+    expect(result).toContain('[Chorus]\nSecond unique chorus\n');
+    expect(result.match(/\[Chorus\]/g)?.length).toBe(2);
+    expect(result.indexOf('First unique chorus')).toBeLessThan(
+      result.indexOf('Second unique chorus'),
+    );
+  });
 });

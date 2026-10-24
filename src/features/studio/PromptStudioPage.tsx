@@ -1555,12 +1555,21 @@ export function PromptStudioPage() {
                   />
                 </div>
               )}
-              {mode === 'video' && video.target === 'veo-api' && generationBlocker ? (
+              {mode === 'video' && generationBlocker ? (
                 <p className="studio-notice">{generationBlocker}</p>
               ) : null}
               {currentArtifact.kind === 'music' ? (
                 <>
-                  <button onClick={openSuno}>{t('copyOpenSuno')}</button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button onClick={openSuno}>{t('copyOpenSuno')}</button>
+                    <button
+                      type="button"
+                      className="studio-secondary"
+                      onClick={() => navigate(ROUTES.CREATE, { state: { initialStep: 'assets' } })}
+                    >
+                      {t('generateLyria', 'Generate music in app (Lyria 3)')}
+                    </button>
+                  </div>
                   <details className="studio-details">
                     <summary>{t('lyricTools')}</summary>
                     <Field label={t('section')}>

@@ -8,6 +8,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import TimelinePage from './TimelinePage';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import type { Project } from '@core/types';
 
 const delivery = vi.hoisted(() => ({
@@ -67,6 +68,7 @@ vi.mock('./TimelinePlayer', () => ({
 describe('TimelinePage', () => {
   beforeEach(() => {
     useAppStore.getState().resetAll();
+    useEditorSessionStore.setState({ projectSnapshot: null });
     mockNavigate.mockReset();
     mockLocationState = null;
     useProjectStore.setState({ currentProjectId: 'external-project', projects: [] });
@@ -102,6 +104,21 @@ describe('TimelinePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES.HOME, {
       state: { reopenStudio: 'story' },
     });
+  });
+
+  it('navigates to production workflow from timeline empty state', async () => {
+    const { user } = render(<TimelinePage />);
+    await user.click(screen.getByRole('button', { name: /^production$/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.CREATE);
+  });
+
+  it('switches to editor media mode when clicking open editor from empty state', async () => {
+    const { user } = render(<TimelinePage />);
+    await user.click(screen.getByRole('button', { name: /open editor & import media/i }));
+    const { useEditorSessionStore } = await import('@core/store/useEditorSessionStore');
+    expect(useEditorSessionStore.getState().projectSnapshot?.creatorDelivery?.editorMode).toBe(
+      'delivery',
+    );
   });
 
   it('renders the timeline player when a generated video clip exists', () => {

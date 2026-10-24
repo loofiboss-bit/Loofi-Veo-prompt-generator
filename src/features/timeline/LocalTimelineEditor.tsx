@@ -182,7 +182,10 @@ export function LocalTimelineEditor() {
             {t('v16.redo', 'Redo')}
           </button>
           <button
-            onClick={() => setShowVoiceoverModal(true)}
+            onClick={() => {
+              setPlaying(false);
+              setShowVoiceoverModal(true);
+            }}
             className="flex items-center gap-1.5 rounded border border-rose-600/50 bg-rose-950/40 px-2 py-1 text-xs font-medium text-rose-300 hover:bg-rose-900/60 transition-colors"
           >
             <span className="w-2 h-2 rounded-full bg-rose-500" />

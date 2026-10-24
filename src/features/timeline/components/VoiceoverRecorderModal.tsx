@@ -49,6 +49,8 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const durationRef = useRef<number>(0);
+  const [insertAtTime, setInsertAtTime] = useState(currentTime);
+  const wasOpenRef = useRef(false);
 
   // Load available input devices
   useEffect(() => {
@@ -67,9 +69,11 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
       });
   }, [isOpen, selectedDeviceId]);
 
-  // Setup initial default take name
+  // Setup initial default take name once per modal opening session
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      setInsertAtTime(currentTime);
       setTakeName(`Voiceover - ${currentTime.toFixed(1)}s`);
       setRecordState('idle');
       setError(null);
@@ -77,6 +81,8 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
       setAudioUrl(null);
       setRecordingSeconds(0);
       durationRef.current = 0;
+    } else if (!isOpen) {
+      wasOpenRef.current = false;
     }
   }, [isOpen, currentTime]);
 
@@ -288,7 +294,7 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
     setError(null);
 
     try {
-      const cleanName = takeName.trim() || `Voiceover - ${currentTime.toFixed(1)}s`;
+      const cleanName = takeName.trim() || `Voiceover - ${insertAtTime.toFixed(1)}s`;
       const extension = audioBlob.type.includes('webm') ? 'webm' : 'ogg';
       const file = new File(
         [audioBlob],
@@ -310,7 +316,7 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
         asset,
         tracks,
         clips,
-        insertAtTime: currentTime,
+        insertAtTime,
       });
 
       useAppStore.setState({

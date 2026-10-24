@@ -256,8 +256,9 @@ const buildVideoPrompt = (
   const instruction = formatModeInstruction(input);
 
   if (input.mode === 'image-to-video') {
+    const subjectMotion = action || sentence(input.idea);
     const motion = [
-      action ? `Subject motion: ${action}` : '',
+      subjectMotion ? `Subject motion: ${subjectMotion}` : '',
       camera ? `Camera motion: ${camera}` : '',
       environment ? `Environment motion: ${environment}` : '',
       audio ? `Audio: ${audio}` : '',
