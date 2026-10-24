@@ -17,6 +17,56 @@ const input: VideoPromptArtifactInput = {
   aspectRatio: '16:9',
 };
 describe('Studio validation', () => {
+  it.each([
+    ['camera-conflict', 'Static tripod with a whip pan'],
+    ['lighting-conflict', 'Midnight darkness under direct midday sun'],
+    ['composition-conflict', 'Macro lens showing a vast sweeping vista'],
+  ])('reports %s as local guidance for the edited variant', (category, prompt) => {
+    const original = compileVideoPromptArtifact(input);
+    const edited = editStudioVariant(original, 1, { prompt });
+    expect(
+      edited.validation.find((entry) => entry.id === `variant-1-cinematic-${category}`),
+    ).toMatchObject({
+      status: 'warning',
+      evidence: 'heuristic',
+      action: { field: 'variant', variantIndex: 1 },
+    });
+    expect(edited.primary).toEqual(original.primary);
+    expect(edited.alternatives[1]).toEqual(original.alternatives[1]);
+    expect(edited.validation.some((entry) => entry.status === 'blocked')).toBe(false);
+    const corrected = editStudioVariant(edited, 1, { prompt: 'A slow dolly follows a courier' });
+    expect(corrected.validation.some((entry) => entry.id.includes('cinematic-'))).toBe(false);
+  });
+
+  it('checks compiled camera direction without changing quoted dialogue or copy text', () => {
+    const artifact = compileVideoPromptArtifact({
+      ...input,
+      camera: 'Static tripod with a whip pan',
+      dialogue: '"Keep the camera still"',
+    });
+    expect(artifact.validation).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'variant-0-cinematic-camera-conflict', status: 'warning' }),
+      ]),
+    );
+    const primary = artifact.primary as VideoPromptVariant;
+    expect(primary.prompt).toContain('"Keep the camera still"');
+    expect(primary.copyPrompt).toBe(primary.prompt);
+  });
+
+  it('does not promote generic linter hardware estimates into model requirements', () => {
+    const artifact = editStudioVariant(
+      compileVideoPromptArtifact({ ...input, target: 'kling', durationSeconds: 10 }),
+      0,
+      { prompt: 'A clear scene. '.repeat(200) },
+    );
+    expect(artifact.validation.some((entry) => entry.id.includes('HW-'))).toBe(false);
+    expect(artifact.validation.some((entry) => /280|cross-attention/.test(entry.detail))).toBe(
+      false,
+    );
+    expect(artifact.validation.some((entry) => entry.status === 'blocked')).toBe(false);
+  });
+
   it('marks broad manual model labels unconfirmed instead of claiming compatibility', () => {
     const check = compileVideoPromptArtifact({ ...input, target: 'runway-gen3' }).validation.find(
       (entry) => entry.id === 'target-compatibility',

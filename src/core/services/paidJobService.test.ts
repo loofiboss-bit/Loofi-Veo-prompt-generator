@@ -22,7 +22,7 @@ describe('paidJobService', () => {
   it('lists, observes, cancels, and retries durable jobs through the narrow bridge', async () => {
     const job = {
       id: 'job-1',
-      status: 'Queued',
+      status: 'Error',
       videoUrl: null,
       prompt: 'Durable video',
       settings: {},
@@ -58,6 +58,40 @@ describe('paidJobService', () => {
     expect(await paidJobService.recover(context)).toBe(true);
     expect(recoverPaidJob).toHaveBeenCalledWith(context);
     expect(retryPaidJob).not.toHaveBeenCalled();
+    expect(submitPaidJob).not.toHaveBeenCalled();
+  });
+
+  it('does not seek another approval for ambiguous, already-interacted, active or missing jobs', async () => {
+    const retryPaidJob = vi.fn();
+    const job = { id: 'job', status: 'RecoveryRequired', timestamp: 1 };
+    const listPaidJobs = vi.fn().mockResolvedValue([job]);
+    window.electron = { listPaidJobs, retryPaidJob } as unknown as NonNullable<
+      typeof window.electron
+    >;
+    expect(await paidJobService.retry('job')).toBe(false);
+    listPaidJobs.mockResolvedValue([
+      { ...job, status: 'Error', providerInteractionId: 'already-sent' },
+    ]);
+    expect(await paidJobService.retry('job')).toBe(false);
+    listPaidJobs.mockResolvedValue([{ ...job, status: 'Submitting' }]);
+    expect(await paidJobService.retry('job')).toBe(false);
+    expect(await paidJobService.retry('missing')).toBe(false);
+    expect(retryPaidJob).not.toHaveBeenCalled();
+  });
+
+  it('recovers a known operation through retry without a new submission', async () => {
+    const retryPaidJob = vi.fn().mockResolvedValue(true);
+    const submitPaidJob = vi.fn();
+    const listPaidJobs = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'known', status: 'RecoveryRequired', providerOperationName: 'operations/known' },
+      ]);
+    window.electron = { listPaidJobs, retryPaidJob, submitPaidJob } as unknown as NonNullable<
+      typeof window.electron
+    >;
+    expect(await paidJobService.retry('known')).toBe(true);
+    expect(retryPaidJob).toHaveBeenCalledWith('known');
     expect(submitPaidJob).not.toHaveBeenCalled();
   });
 });

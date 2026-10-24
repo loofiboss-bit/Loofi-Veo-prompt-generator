@@ -31,6 +31,12 @@ import {
   rewriteStudioLyricSection,
   type StudioVariantEdits,
 } from '@core/services/promptStudioEditingService';
+import {
+  proposeVideoVariantEdit,
+  type VideoVariantEditField,
+  type VideoVariantEditPatch,
+  type VideoVariantEditProposal,
+} from '@core/services/videoVariantEditService';
 import { promptStudioHandoffService } from '@core/services/promptStudioHandoffService';
 import { sanitizeStudioTemplate } from '@core/services/studioTemplateService';
 import { studioReferenceService } from '@core/services/studioReferenceService';
@@ -53,6 +59,7 @@ import { VideoVariantCard } from './components/VideoVariantCard';
 import { MusicVariantCard } from './components/MusicVariantCard';
 import { ValidationRail } from './components/ValidationRail';
 import { ExternalStudioResults } from './components/ExternalStudioResults';
+import { VideoVariantEditPanel } from './components/VideoVariantEditPanel';
 
 const SpatialCameraDirector = lazy(() =>
   import('@features/create/components/SpatialCameraDirector').then((m) => ({
@@ -138,6 +145,7 @@ export function PromptStudioPage() {
     revision: number;
     token: number;
   } | null>(null);
+  const [variantProposal, setVariantProposal] = useState<VideoVariantEditProposal | null>(null);
   const [section, setSection] = useState('[Chorus]');
   const [direction, setDirection] = useState('');
   const [isArenaOpen, setIsArenaOpen] = useState(false);
@@ -172,6 +180,7 @@ export function PromptStudioPage() {
         if (active) setError(cause instanceof Error ? cause.message : t('actionError'));
       });
     setProposal(null);
+    setVariantProposal(null);
     setBusy(false);
     aiRequest.current = 0;
     setIsArenaOpen(false);
@@ -212,6 +221,21 @@ export function PromptStudioPage() {
     )
       setProposal(null);
   }, [proposal, store.draft?.projectId, store.draft?.revision]);
+
+  useEffect(() => {
+    if (
+      variantProposal &&
+      (variantProposal.projectId !== store.draft?.projectId ||
+        variantProposal.revision !== store.draft?.revision ||
+        variantProposal.variantIndex !== store.draft?.selectedVariant)
+    )
+      setVariantProposal(null);
+  }, [
+    variantProposal,
+    store.draft?.projectId,
+    store.draft?.revision,
+    store.draft?.selectedVariant,
+  ]);
 
   useEffect(() => {
     const workspace = workspaceRef.current;
@@ -275,6 +299,7 @@ export function PromptStudioPage() {
     setError('');
     operation.current += 1;
     setProposal(null);
+    setVariantProposal(null);
   };
   const updateMusic = (changes: Partial<MusicPromptArtifactInput>) => {
     store.applyDraft({
@@ -325,6 +350,7 @@ export function PromptStudioPage() {
     changeDraft.current = usePromptStudioDraftStore.getState().draft;
     operation.current += 1;
     setProposal(null);
+    setVariantProposal(null);
     try {
       await action();
     } finally {
@@ -421,10 +447,90 @@ export function PromptStudioPage() {
     }
     return true;
   };
+  const proposeVariantEdit = (direction: string, fields: VideoVariantEditField[]) =>
+    void run(async () => {
+      const baseline = usePromptStudioDraftStore.getState().draft;
+      if (!baseline || baseline.mode !== 'video' || baseline.artifact?.kind !== 'video') return;
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const isCurrent = () =>
+        mounted.current &&
+        operation.current === token &&
+        usePromptStudioDraftStore.getState().draft === baseline &&
+        (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+      setProposal(null);
+      setVariantProposal(null);
+      setBusy(true);
+      try {
+        if (!(await aiReady()) || !isCurrent()) return;
+        const result = await proposeVideoVariantEdit({
+          artifact: baseline.artifact,
+          variantIndex: baseline.selectedVariant,
+          direction,
+          fields,
+        });
+        if (!isCurrent()) return;
+        setVariantProposal({
+          ...result,
+          projectId,
+          revision: baseline.revision,
+          variantIndex: baseline.selectedVariant,
+          token,
+        });
+        revealResult();
+        setMessage(t('revision.proposalReady'));
+      } catch (cause) {
+        if (isCurrent()) throw cause;
+      } finally {
+        if (mounted.current && aiRequest.current === token) setBusy(false);
+      }
+    });
+  const acceptVariantEdit = (fields: VideoVariantEditField[]) =>
+    void run(async () => {
+      const selectedProposal = variantProposal;
+      const baseline = usePromptStudioDraftStore.getState().draft;
+      if (
+        !selectedProposal ||
+        !baseline ||
+        baseline.artifact?.kind !== 'video' ||
+        baseline.mode !== 'video' ||
+        baseline.projectId !== projectId ||
+        selectedProposal.projectId !== projectId ||
+        selectedProposal.revision !== baseline.revision ||
+        selectedProposal.variantIndex !== baseline.selectedVariant ||
+        selectedProposal.token !== operation.current ||
+        !fields.length ||
+        fields.some((field) => selectedProposal.patch[field] === undefined)
+      )
+        throw new Error(t('revision.stale'));
+      await change(async () => {
+        await checkpoint('ai-variant');
+        const patch: VideoVariantEditPatch = {};
+        for (const field of fields) patch[field] = selectedProposal.patch[field];
+        const accepted = editStudioVariant(
+          baseline.artifact!,
+          selectedProposal.variantIndex,
+          patch,
+        );
+        accepted.provenance = selectedProposal.provenance;
+        const isCurrent = () =>
+          mounted.current &&
+          usePromptStudioDraftStore.getState().draft === baseline &&
+          (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+        if (
+          !(await usePromptStudioDraftStore
+            .getState()
+            .acceptArtifact(accepted, baseline, isCurrent))
+        )
+          throw new Error(usePromptStudioDraftStore.getState().error ?? t('revision.stale'));
+        setMessage(t('enhanced'));
+      });
+    });
   const optimize = () =>
     void run(async () => {
       const token = ++operation.current;
       aiRequest.current = token;
+      setVariantProposal(null);
       const revision = usePromptStudioDraftStore.getState().draft?.revision;
       setBusy(true);
       try {
@@ -1226,9 +1332,11 @@ export function PromptStudioPage() {
               <div className="studio-result-heading">
                 <h2>{STUDIO_CAPABILITIES[currentArtifact.target].label + ' ' + t('handoff')}</h2>
                 <span>
-                  {currentArtifact.provenance.source === 'editor'
-                    ? t('editedLocally')
-                    : t('compiledLocally')}
+                  {currentArtifact.provenance.source === 'optimizer'
+                    ? t('variantEdit.aiEdited', { defaultValue: 'Edited with AI' })
+                    : currentArtifact.provenance.source === 'editor'
+                      ? t('editedLocally')
+                      : t('compiledLocally')}
                 </span>
               </div>
               {currentArtifact.validation.some((check) => check.status === 'blocked') ? (
@@ -1238,12 +1346,19 @@ export function PromptStudioPage() {
                   statuses={['blocked']}
                 />
               ) : null}
+              {currentArtifact.validation.some((check) => check.status === 'warning') ? (
+                <ValidationRail
+                  artifact={currentArtifact}
+                  onAction={focusValidation}
+                  statuses={['warning']}
+                />
+              ) : null}
               <details className="studio-details">
                 <summary>{t('checks')}</summary>
                 <ValidationRail
                   artifact={currentArtifact}
                   onAction={focusValidation}
-                  statuses={['pass', 'warning']}
+                  statuses={['pass']}
                 />
               </details>
               <div className="studio-toolbar" role="group" aria-label={t('chooseVariant')}>
@@ -1283,6 +1398,17 @@ export function PromptStudioPage() {
                         ? handoff
                         : undefined
                     }
+                  />
+                  <VideoVariantEditPanel
+                    busy={busy}
+                    disabled={changing}
+                    proposal={variantProposal}
+                    onPropose={proposeVariantEdit}
+                    onAccept={acceptVariantEdit}
+                    onReject={() => {
+                      setVariantProposal(null);
+                      setMessage(t('revision.rejected'));
+                    }}
                   />
                 </div>
               ) : (
@@ -1401,6 +1527,7 @@ export function PromptStudioPage() {
         onClose={() => setIsArenaOpen(false)}
         input={video}
         onSelectTarget={selectTarget}
+        onValidationAction={focusValidation}
       />
     </div>
   );

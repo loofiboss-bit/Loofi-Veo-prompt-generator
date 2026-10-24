@@ -8,6 +8,34 @@
 > thread isolation, non-blocking persistence, rule-based compilation, and zero AI slop.
 > See [ROADMAP.md](../ROADMAP.md) for active v18+ engineering targets and architectural guardrails.
 
+## Unreleased: Reviewable Video Production
+
+Selective video edits use a temporary, typed proposal against the actual selected variant, not a
+fresh compilation of the brief. The proposal captures project identity, draft revision, selected
+variant, operation token and original field text. Gemini/Ollama responses are validated locally;
+only explicitly requested prompt fields can be proposed. Acceptance checkpoints the original,
+persists the next draft, then applies all selected fields together after checking the context again.
+`editStudioVariant` rebuilds the copy fields and shared validation without changing other variants.
+
+`studioValidationService` adapts the existing cinematic linter into per-variant heuristic warnings.
+Studio and Arena consume the same compiler validation. Generic token and hardware estimates are
+excluded from these model-compatibility results; canonical provider checks retain their own rules.
+
+The shared video comparison is presentation-only. Production and external-result adapters supply
+playable media and immutable source snapshots, while retaining their existing review and placement
+actions. Playback uses a common time bounded by the shorter clip and one audible side. Optional
+`comparisonNotes` round-trips in existing records. Narrow service methods save notes without
+deriving scene/run status or changing media identity, approval or manual-review confirmation.
+
+Paid Veo/Lyria submission builders are shared by approval and execution. Electron main snapshots
+and serializes the outgoing body before its native approval dialog, and binds a version-2 SHA-256
+digest to the operation, model, endpoint and exact serialized body, including inline media bytes.
+Execution checks that binding before a new POST and sends the approved serialization. Existing
+provider operations may poll/download without reapproval. Unsent legacy approvals require an
+explicit new approval, and ambiguous submissions without an operation identity are never resent.
+Extension references bind the submitted provider URI, not mutable remote content behind that URI.
+The additive `hashVersion` does not change existing project or archive schema identities.
+
 ## 1. Runtime Shape
 
 ```text

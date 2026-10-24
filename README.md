@@ -29,7 +29,25 @@
 The download counter counts all release assets, including checksums and metadata; it is not a count
 of unique users or installations.
 
-## v16: your clips to a finished video
+## Unreleased: reviewable video prompts and production
+
+The current source adds **Improve selected variant** for Gemini and Ollama. Start from the exact
+variant you edited, choose prompt, negative prompt or both, and review the proposed changes before
+accepting selected fields together. Other variants and settings remain intact. Failed requests,
+stale proposals and checkpoint failures preserve the original text.
+
+Studio and Arena share local guidance about conflicting camera movements, lighting and framing.
+These are writing suggestions; documented provider requirements remain separate checks.
+
+Production takes and imported Studio results share an A/B comparison with synchronized play,
+pause and seeking, audio from one side, and differences between their frozen source prompts and
+settings. Save notes separately for each result; saving a note does not confirm review or accept it.
+
+New desktop Veo/Lyria approvals bind the complete frozen outgoing request. Changing generation
+settings or image content requires fresh approval. Existing operations can still resume retrieval
+without submitting again. These source changes do not establish a new public release.
+
+## Your clips to a finished video
 
 Loofi Creator Studio v16 adds reliable local editing, atomic project document persistence, linked captions, and verified offline MP4 delivery up to three minutes.
 

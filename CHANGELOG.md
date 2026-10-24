@@ -7,6 +7,24 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Improve the actual selected video variant with Gemini or Ollama, review prompt and negative-prompt
+  changes separately, and accept selected fields together without rebuilding other variants.
+- Show shared local camera, lighting and framing guidance in Studio and Arena, including after
+  manual edits. Cinematic advice remains distinct from documented provider requirements.
+- Compare production takes and imported Studio videos with synchronized playback and seeking,
+  one selected audio source, frozen prompt/settings differences, and separately saved result notes.
+
+### Fixed
+
+- Bind new Veo/Lyria approvals to a frozen versioned hash of the complete submitted request,
+  including actual image bytes, MIME types and generation settings. Existing provider operations
+  remain recoverable without another submission; unsent legacy approvals require renewal.
+- Keep comparison-note persistence separate from take acceptance, scene status and manual review.
+
 ## [17.0.0] - 2026-10-17
 
 ### Added — Smart Local Editing

@@ -307,6 +307,24 @@
         "warning": "Keep the style concise and separate from lyrics; 200 characters is writing guidance.",
         "blocked": "Keep the style concise and separate from lyrics; 200 characters is writing guidance."
       }
+    },
+    "cinematic-camera-conflict": {
+      "label": "Camera direction",
+      "detail": {
+        "warning": "This shot combines a locked camera with rapid camera movement. Choose one direction or describe separate shots."
+      }
+    },
+    "cinematic-lighting-conflict": {
+      "label": "Lighting direction",
+      "detail": {
+        "warning": "This shot combines deep darkness with direct midday sunlight. Clarify the lighting or describe an intentional transition."
+      }
+    },
+    "cinematic-composition-conflict": {
+      "label": "Framing direction",
+      "detail": {
+        "warning": "This shot combines an extreme close-up with a panoramic landscape. Choose a framing or describe a deliberate change."
+      }
     }
   },
   "arenaCopy": "Copy prompt package",
@@ -376,5 +394,47 @@
     "relink": "Relink in Assets",
     "refresh": "Refresh local media",
     "replace": "Choose replacement video"
+  },
+  "comparison": {
+    "title": "Video comparison",
+    "result": "Result {{side}}",
+    "play": "Play",
+    "pause": "Pause",
+    "seek": "Comparison position",
+    "audio": "Listen to",
+    "metadataPending": "Waiting for video metadata before synchronized playback.",
+    "playbackFailed": "Playback failed. Check that both local videos are available.",
+    "buffering": "Playback paused while a clip buffers. Try Play again when it is ready.",
+    "sourceDiff": "Compare frozen prompts and settings",
+    "prompt": "Prompt",
+    "negativePrompt": "Negative prompt",
+    "settings": "Settings",
+    "changed": "Changed",
+    "unchanged": "Unchanged",
+    "notes": "Comparison notes",
+    "saveNotes": "Save notes",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "unsaved": "Not saved",
+    "saveFailed": "Notes were not saved."
+  },
+  "variantEdit": {
+    "title": "Improve selected variant",
+    "goal": "Improvement goal",
+    "shorten": "Shorter text",
+    "camera": "Clearer camera movement",
+    "custom": "Custom instruction",
+    "direction": "Requested improvement",
+    "fields": "Fields to improve",
+    "prompt": "Prompt",
+    "both": "Prompt and negative prompt",
+    "propose": "Propose selected variant changes",
+    "requesting": "Preparing a proposal…",
+    "review": "Review selected variant changes",
+    "reviewHint": "Choose the fields to accept together. Other fields and variants stay as they are.",
+    "acceptField": "Accept {{field}}",
+    "fieldDiff": "{{field}} changes",
+    "accept": "Accept selected fields",
+    "aiEdited": "Edited with AI"
   }
 }

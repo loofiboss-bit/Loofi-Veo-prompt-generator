@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductionTake } from '@core/types';
 import { TakeCompare } from './TakeCompare';
 
@@ -37,6 +37,10 @@ const take = (id: string, score: number): ProductionTake => ({
   createdAt: 1,
 });
 
+beforeEach(() => {
+  vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+});
+
 describe('TakeCompare', () => {
   it('provides keyboard-accessible A/B playback, notes, and decisions', () => {
     const onKeep = vi.fn();
@@ -54,7 +58,7 @@ describe('TakeCompare', () => {
     expect(screen.getAllByText(/prompt adherence/)).toHaveLength(2);
     expect(screen.getAllByText(/^motion:/)).toHaveLength(2);
     expect(document.querySelectorAll('video')).toHaveLength(2);
-    fireEvent.change(screen.getByLabelText('Comparison notes'), {
+    fireEvent.change(screen.getByLabelText('Comparison notes · A'), {
       target: { value: 'Preserve subject identity.' },
     });
     fireEvent.click(screen.getAllByRole('button', { name: 'Keep' })[0]);
@@ -91,15 +95,16 @@ describe('TakeCompare', () => {
       />,
     );
     expect(screen.queryByText(/Score:/)).toBeNull();
-    expect(screen.getAllByText('Only metadata was checked.')).toHaveLength(2);
+    expect(screen.getAllByText('Only metadata was checked.')).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Keep' })[0]).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Comparison notes'), {
+    fireEvent.change(screen.getByLabelText('Comparison notes · A'), {
       target: { value: 'I watched the video.' },
     });
     fireEvent.click(screen.getAllByRole('button', { name: 'Confirm manual review' })[0]);
     expect(onManualReview).toHaveBeenCalledWith(local, 'I watched the video.');
     const video = document.querySelector('video')!;
     Object.defineProperty(video, 'duration', { value: 8 });
+    fireEvent.loadedMetadata(video);
     fireEvent.click(screen.getAllByRole('button', { name: '2s' })[0]);
     expect(video.currentTime).toBe(2);
   });

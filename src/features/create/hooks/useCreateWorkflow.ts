@@ -198,6 +198,42 @@ export function useCreateWorkflow() {
     }
   };
 
+  const handleSaveComparisonNotes = async (
+    shot: ProductionShot,
+    take: ProductionTake,
+    notes: string,
+  ) => {
+    if (!activeRun) throw new Error('The production run is unavailable.');
+    const runId = activeRun.id;
+    await productionRunService.saveComparisonNotes(runId, shot.id, take.id, notes);
+    // Merge only this editorial field into live state; a late save must not
+    // restore an old run or overwrite a background generation update.
+    useProductionRunStore.setState((state) => {
+      if (
+        state.activeRun?.id !== runId ||
+        useProjectStore.getState().currentProjectId !== activeRun.projectId
+      )
+        return state;
+      const update = (run: typeof activeRun) => ({
+        ...run,
+        shots: run.shots.map((item) =>
+          item.id === shot.id
+            ? {
+                ...item,
+                takes: item.takes.map((candidate) =>
+                  candidate.id === take.id ? { ...candidate, comparisonNotes: notes } : candidate,
+                ),
+              }
+            : item,
+        ),
+      });
+      return {
+        activeRun: update(state.activeRun),
+        runs: state.runs.map((run) => (run.id === runId ? update(run) : run)),
+      };
+    });
+  };
+
   const handleManualReview = async (shot: ProductionShot, take: ProductionTake, notes: string) => {
     if (!activeRun) return;
     try {
@@ -669,6 +705,7 @@ export function useCreateWorkflow() {
     recoveringJobId,
     handleRecoverJob,
     handleManualReview,
+    handleSaveComparisonNotes,
     handleExportOtio,
     promptState,
     productionBible,

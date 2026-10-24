@@ -200,4 +200,53 @@ describe('externalStudioResultService', () => {
       externalStudioResultService.accept('p1', result.id, undefined, () => true),
     ).rejects.toThrow('manual review');
   });
+  it('saves comparison notes separately from frozen sources and manual review', async () => {
+    metadata(8);
+    const result = await externalStudioResultService.importVideo(
+      'p1',
+      artifact(),
+      0,
+      new File(['video'], 'clip.mp4', { type: 'video/mp4' }),
+    );
+    await externalStudioResultService.confirm('p1', result.id, 'Watched the full clip');
+    const before = structuredClone(project.studioResults![0]);
+    mocks.getRecord.mockClear();
+    await externalStudioResultService.saveComparisonNotes(
+      'p1',
+      result.id,
+      'Prefer this camera move',
+    );
+    const saved = project.studioResults![0];
+    expect(saved.comparisonNotes).toBe('Prefer this camera move');
+    expect(saved.manualReview).toEqual(before.manualReview);
+    expect(saved.variantSnapshot).toEqual(before.variantSnapshot);
+    expect(saved.sourceSnapshot).toEqual(before.sourceSnapshot);
+    expect(mocks.getRecord).not.toHaveBeenCalled();
+    expect((await externalStudioResultService.list('p1'))[0].comparisonNotes).toBe(
+      'Prefer this camera move',
+    );
+    await expect(
+      externalStudioResultService.saveComparisonNotes('p1', 'missing', 'notes'),
+    ).rejects.toThrow('unavailable');
+    mocks.update.mockRejectedValueOnce(new Error('Storage full'));
+    await expect(
+      externalStudioResultService.saveComparisonNotes('p1', result.id, 'unsaved'),
+    ).rejects.toThrow('Storage full');
+    expect(project.studioResults![0].comparisonNotes).toBe('Prefer this camera move');
+  });
+
+  it('does not manufacture a review when notes are saved for an unreviewed clip', async () => {
+    metadata(8);
+    const result = await externalStudioResultService.importVideo(
+      'p1',
+      artifact(),
+      0,
+      new File(['video'], 'clip.mp4', { type: 'video/mp4' }),
+    );
+    await externalStudioResultService.saveComparisonNotes('p1', result.id, 'Needs a closer look');
+    expect(project.studioResults![0].manualReview).toBeUndefined();
+    await expect(
+      externalStudioResultService.accept('p1', result.id, undefined, () => true),
+    ).rejects.toThrow('manual review');
+  });
 });

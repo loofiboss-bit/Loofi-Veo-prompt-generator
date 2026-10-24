@@ -6,6 +6,13 @@ import type {
   VideoPromptVariant,
 } from '@core/types/promptArtifact';
 import { studioVideoRequestIssues } from '@core/config/studioCapabilities';
+import { promptAstLinterService } from './promptAstLinterService';
+
+const CINEMATIC_LABELS: Record<string, string> = {
+  'camera-conflict': 'Camera direction',
+  'lighting-conflict': 'Lighting direction',
+  'composition-conflict': 'Framing direction',
+};
 
 /** Only the concrete internal API model is qualified; broad manual target labels are not versions. */
 export const STUDIO_MODEL_RULE_SOURCES = {
@@ -99,6 +106,21 @@ export function validateStudioVideo(
   }
   variants.forEach((variant, index) => {
     const action = { field: 'variant' as const, variantIndex: index as 0 | 1 | 2 };
+    // Cinematic contradictions are writing guidance, not documented API limits.
+    // Keep generic hardware/token estimates out of model compatibility checks.
+    const cinematic = promptAstLinterService.lintPromptText(variant.prompt);
+    for (const issue of [...cinematic.errors, ...cinematic.warnings, ...cinematic.info]) {
+      const label = CINEMATIC_LABELS[issue.category];
+      if (!label) continue;
+      checks.push({
+        id: `variant-${index}-cinematic-${issue.category}`,
+        label,
+        status: 'warning',
+        detail: [issue.message, ...(issue.suggestions ?? [])].join(' '),
+        evidence: 'heuristic',
+        action,
+      });
+    }
     checks.push({
       id: `variant-${index}-text`,
       label: 'Prompt text',

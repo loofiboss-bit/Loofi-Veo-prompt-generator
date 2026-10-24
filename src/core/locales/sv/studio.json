@@ -307,6 +307,24 @@
         "warning": "Håll stilen kort och separat från låttexten; 200 tecken är skrivvägledning.",
         "blocked": "Håll stilen kort och separat från låttexten; 200 tecken är skrivvägledning."
       }
+    },
+    "cinematic-camera-conflict": {
+      "label": "Kamerariktning",
+      "detail": {
+        "warning": "Scenen kombinerar en låst kamera med en snabb kamerarörelse. Välj en riktning eller beskriv separata bilder."
+      }
+    },
+    "cinematic-lighting-conflict": {
+      "label": "Ljussättning",
+      "detail": {
+        "warning": "Scenen kombinerar djupt mörker med direkt middagssol. Förtydliga ljuset eller beskriv en avsiktlig övergång."
+      }
+    },
+    "cinematic-composition-conflict": {
+      "label": "Bildutsnitt",
+      "detail": {
+        "warning": "Scenen kombinerar en extrem närbild med ett panoramalandskap. Välj ett utsnitt eller beskriv en avsiktlig förändring."
+      }
     }
   },
   "arenaCopy": "Kopiera promptpaket",
@@ -376,5 +394,47 @@
     "relink": "Länka om i Medier",
     "refresh": "Uppdatera lokala medier",
     "replace": "Välj ersättningsvideo"
+  },
+  "comparison": {
+    "title": "Videojämförelse",
+    "result": "Resultat {{side}}",
+    "play": "Spela",
+    "pause": "Pausa",
+    "seek": "Jämförelseposition",
+    "audio": "Lyssna på",
+    "metadataPending": "Väntar på videoinformation före synkroniserad uppspelning.",
+    "playbackFailed": "Uppspelningen misslyckades. Kontrollera att båda lokala videorna är tillgängliga.",
+    "buffering": "Uppspelningen pausades medan ett klipp buffrar. Välj Spela igen när klippet är redo.",
+    "sourceDiff": "Jämför frysta promptar och inställningar",
+    "prompt": "Prompt",
+    "negativePrompt": "Negativprompt",
+    "settings": "Inställningar",
+    "changed": "Ändrad",
+    "unchanged": "Oförändrad",
+    "notes": "Jämförelseanteckningar",
+    "saveNotes": "Spara anteckningar",
+    "saving": "Sparar…",
+    "saved": "Sparat",
+    "unsaved": "Inte sparat",
+    "saveFailed": "Anteckningarna sparades inte."
+  },
+  "variantEdit": {
+    "title": "Förbättra vald variant",
+    "goal": "Mål för förbättringen",
+    "shorten": "Kortare text",
+    "camera": "Tydligare kamerarörelse",
+    "custom": "Egen instruktion",
+    "direction": "Önskad förbättring",
+    "fields": "Fält att förbättra",
+    "prompt": "Prompt",
+    "both": "Prompt och negativprompt",
+    "propose": "Föreslå ändringar för vald variant",
+    "requesting": "Förbereder ett förslag…",
+    "review": "Granska ändringar för vald variant",
+    "reviewHint": "Välj vilka fält som ska accepteras tillsammans. Övriga fält och varianter behålls.",
+    "acceptField": "Acceptera {{field}}",
+    "fieldDiff": "Ändringar i {{field}}",
+    "accept": "Acceptera valda fält",
+    "aiEdited": "Redigerad med AI"
   }
 }

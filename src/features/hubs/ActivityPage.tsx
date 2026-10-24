@@ -2,7 +2,7 @@ import { Link, useSearchParams } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { paidJobService } from '@core/services/paidJobService';
+import { canReapprovePaidJob, paidJobService } from '@core/services/paidJobService';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
 import type { PaidJobTask } from '@core/types';
 
@@ -43,6 +43,7 @@ export function ActivityPage() {
   const cancelQueueItem = useGenerationQueueStore((state) => state.cancel);
   const retryQueueItem = useGenerationQueueStore((state) => state.retry);
   const [durableJobs, setDurableJobs] = useState<PaidJobTask[]>([]);
+  const [durableJobsLoaded, setDurableJobsLoaded] = useState(false);
   const [actionError, setActionError] = useState('');
   const [loadError, setLoadError] = useState(false);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
@@ -59,8 +60,10 @@ export function ActivityPage() {
     try {
       const jobs = await paidJobService.list();
       setDurableJobs((current) => mergeDurableJobs(current, jobs));
+      setDurableJobsLoaded(true);
       setLoadError(false);
     } catch {
+      setDurableJobsLoaded(false);
       setLoadError(true);
     }
   }, []);
@@ -88,9 +91,11 @@ export function ActivityPage() {
 
   const runDurableAction = async (action: 'cancel' | 'retry', id: string) => {
     setPendingActionId(id);
+    setActionError('');
     try {
       const changed = await paidJobService[action](id);
       if (changed) await refreshDurableJobs();
+      else setActionError(flow('flow.recoveryUnavailable'));
     } catch (failure) {
       setActionError(failure instanceof Error ? failure.message : flow('flow.recoveryUnavailable'));
     } finally {
@@ -136,43 +141,72 @@ export function ActivityPage() {
                 {t('activity.noLocalQueue')}
               </p>
             ) : (
-              queueItems.map((item) => (
-                <article
-                  key={item.id}
-                  className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-semibold">{item.label}</h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {t('activity.progress', { progress: item.progress })}
-                      </p>
+              queueItems.map((item) => {
+                const payload = item.payload;
+                const paidTaskId =
+                  item.type === 'video' &&
+                  payload &&
+                  typeof payload === 'object' &&
+                  'id' in payload &&
+                  typeof payload.id === 'string'
+                    ? payload.id
+                    : undefined;
+                const durableJob = durableJobs.find((job) => job.id === paidTaskId);
+                const canRetry = paidTaskId
+                  ? durableJobsLoaded && (!durableJob || canReapprovePaidJob(durableJob))
+                  : true;
+                return (
+                  <article
+                    key={item.id}
+                    className="creator-activity-row rounded-lg border border-slate-800 bg-slate-900 p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-semibold">{item.label}</h3>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {t('activity.progress', { progress: item.progress })}
+                        </p>
+                      </div>
+                      <span className="rounded bg-slate-800 px-2 py-1 text-xs">{item.status}</span>
                     </div>
-                    <span className="rounded bg-slate-800 px-2 py-1 text-xs">{item.status}</span>
-                  </div>
-                  {item.error && <p className="mt-2 text-sm text-amber-300">{item.error}</p>}
-                  <div className="mt-3 flex gap-2">
-                    {['pending', 'waiting-online', 'active'].includes(item.status) && (
-                      <button
-                        type="button"
-                        className="rounded border border-slate-700 px-3 py-1.5 text-sm hover:border-blue-400"
-                        onClick={() => cancelQueueItem(item.id)}
-                      >
-                        {t('activity.cancel')}
-                      </button>
-                    )}
-                    {item.status === 'failed' && (
-                      <button
-                        type="button"
-                        className="rounded bg-blue-600 px-3 py-1.5 text-sm hover:bg-blue-500"
-                        onClick={() => retryQueueItem(item.id)}
-                      >
-                        {t('activity.retry')}
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))
+                    {item.error && <p className="mt-2 text-sm text-amber-300">{item.error}</p>}
+                    <div className="mt-3 flex gap-2">
+                      {['pending', 'waiting-online', 'active'].includes(item.status) && (
+                        <button
+                          type="button"
+                          className="rounded border border-slate-700 px-3 py-1.5 text-sm hover:border-blue-400"
+                          onClick={() => cancelQueueItem(item.id)}
+                        >
+                          {t('activity.cancel')}
+                        </button>
+                      )}
+                      {item.status === 'failed' && canRetry && (
+                        <button
+                          type="button"
+                          disabled={Boolean(durableJob && pendingActionId === durableJob.id)}
+                          className="rounded bg-blue-600 px-3 py-1.5 text-sm hover:bg-blue-500"
+                          onClick={() => {
+                            if (durableJob) void runDurableAction('retry', durableJob.id);
+                            else retryQueueItem(item.id);
+                          }}
+                        >
+                          {durableJob
+                            ? t('activity.reapprove', { defaultValue: 'Review and approve retry' })
+                            : t('activity.retry')}
+                        </button>
+                      )}
+                      {item.status === 'failed' && durableJob && (
+                        <a
+                          href={`#paid-job-${durableJob.id}`}
+                          className="text-sm text-blue-300 underline"
+                        >
+                          {t('activity.viewPaidJob', { defaultValue: 'View paid job' })}
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>
@@ -212,7 +246,13 @@ export function ActivityPage() {
                   videoJob &&
                   videoJob.providerOperationName &&
                   ATTENTION_DURABLE_STATUSES.has(job.status);
-                const canRetry = !videoJob && job.status === 'Error';
+                const canReapprove = canReapprovePaidJob(job);
+                const canRetry =
+                  canReapprove ||
+                  (!videoJob &&
+                    'providerOperationName' in job &&
+                    job.providerOperationName &&
+                    job.status === 'Error');
                 return (
                   <article
                     id={`paid-job-${job.id}`}
@@ -285,7 +325,11 @@ export function ActivityPage() {
                             className="rounded bg-blue-600 px-3 py-1.5 text-sm hover:bg-blue-500 disabled:opacity-50"
                             onClick={() => void runDurableAction('retry', job.id)}
                           >
-                            {t('activity.retry')}
+                            {canReapprove
+                              ? t('activity.reapprove', {
+                                  defaultValue: 'Review and approve retry',
+                                })
+                              : t('activity.retry')}
                           </button>
                         )}
                       </div>

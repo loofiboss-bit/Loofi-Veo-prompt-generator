@@ -14,7 +14,8 @@ const { cancel, recover, list, onUpdate, retry, subscribe, unsubscribe } = vi.ho
   unsubscribe: vi.fn(),
 }));
 
-vi.mock('@core/services/paidJobService', () => ({
+vi.mock('@core/services/paidJobService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@core/services/paidJobService')>()),
   paidJobService: { cancel, recover, list, retry, subscribe },
 }));
 
@@ -85,7 +86,7 @@ describe('ActivityPage', () => {
     expect(await screen.findByText('Durable soundtrack')).toBeVisible();
     expect(screen.getByText('Offline')).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Review and approve retry' }));
     await waitFor(() => expect(retry).toHaveBeenCalledWith('music-1'));
     expect(list).toHaveBeenCalledTimes(2);
   });

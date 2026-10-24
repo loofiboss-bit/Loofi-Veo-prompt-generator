@@ -139,6 +139,7 @@ export interface ProductionContinuityReview {
 
 export interface ProductionTake {
   id: string;
+  comparisonNotes?: string;
   sourceArtifactId?: string;
   sourceVariantIndex?: 0 | 1 | 2;
   taskId?: string;

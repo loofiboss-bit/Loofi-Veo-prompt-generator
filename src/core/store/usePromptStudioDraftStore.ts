@@ -33,6 +33,11 @@ interface PromptStudioDraftStore {
   ) => void;
   hydrate: (projectId: string, force?: boolean) => Promise<boolean>;
   flush: (projectId?: string) => Promise<boolean>;
+  acceptArtifact: (
+    artifact: PromptArtifactV1,
+    expected: PromptStudioDraftV1,
+    isCurrent: () => boolean,
+  ) => Promise<boolean>;
   updateVideo: (updates: Partial<VideoPromptArtifactInput>) => void;
   updateMusic: (updates: Partial<MusicPromptArtifactInput>) => void;
   setMode: (mode: 'video' | 'music') => void;
@@ -155,6 +160,44 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
       const result = await saving;
       saving = null;
       if (result && dirty) return get().flush(projectId);
+      return result;
+    },
+    acceptArtifact: async (artifact, expected, isCurrent) => {
+      // A checkpoint must have durably saved the exact source first. Persist the
+      // replacement before exposing it so a failed write preserves manual edits.
+      if (get().draft !== expected || get().status !== 'saved' || dirty || saving || !isCurrent())
+        return false;
+      const next: PromptStudioDraftV1 = {
+        ...expected,
+        artifact,
+        artifacts: { ...expected.artifacts, [expected.mode]: artifact },
+        revision: expected.revision + 1,
+        updatedAt: new Date().toISOString(),
+      };
+      set({ status: 'saving', error: null });
+      saving = (async () => {
+        try {
+          const snapshot = useEditorSessionStore.getState().projectSnapshot;
+          await promptStudioDraftService.save(
+            next,
+            snapshot?.id === expected.projectId ? (snapshot.documentRevision ?? 0) : undefined,
+          );
+          if (get().draft !== expected || !isCurrent()) return false;
+          set({ draft: next, status: 'saved', error: null });
+          return true;
+        } catch (error) {
+          if (get().draft === expected)
+            set({ status: 'error', error: error instanceof Error ? error.message : String(error) });
+          return false;
+        }
+      })();
+      const result = await saving;
+      saving = null;
+      if (dirty) await get().flush();
+      // Project switching waits for the in-flight write before hydration; a
+      // discarded result must not leave that old draft reporting a pending save.
+      else if (!result && get().draft === expected && get().status === 'saving')
+        set({ status: 'saved' });
       return result;
     },
     updateVideo: (updates) => {

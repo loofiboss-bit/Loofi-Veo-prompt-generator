@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { set } from 'idb-keyval';
 
 import { INITIAL_STATE } from '@core/constants';
 import { isTakeReviewCurrent, productionReadiness } from './productionReadinessService';
 import { fingerprintAsset } from './continuityService';
-import type { Asset, ContinuityOverrideRecord, ProductionRun } from '@core/types';
+import type { Asset, ContinuityOverrideRecord, ProductionRun, ProductionTake } from '@core/types';
 
 const { records, mockAssets, mockEmit, mockState } = vi.hoisted(() => ({
   records: new Map<string, unknown>(),
@@ -18,6 +19,11 @@ vi.mock('idb-keyval', () => ({
   set: vi.fn(async (key: string, value: unknown) => records.set(key, value)),
   del: vi.fn(async (key: string) => records.delete(key)),
   keys: vi.fn(async () => [...records.keys()]),
+  update: vi.fn(async (key: string, updater: (val: unknown) => unknown) => {
+    const next = await updater(records.get(key));
+    records.set(key, next);
+    return next;
+  }),
 }));
 
 vi.mock('@core/services/loggerService', () => ({
@@ -739,5 +745,60 @@ describe('productionRunService', () => {
       'Watched again',
     );
     expect(isTakeReviewCurrent(confirmed.shots[0], confirmed.shots[0].takes[0])).toBe(true);
+  });
+  it('persists comparison notes without changing selected take, statuses, reviews or approvals', async () => {
+    const run = makeRun();
+    run.schemaVersion = 3;
+    run.status = 'complete';
+    run.shots[0].status = 'accepted';
+    run.shots[0].selectedTakeId = 'chosen';
+    const original: ProductionTake = {
+      id: 'older',
+      prompt: 'Original source',
+      request: structuredClone(run.shots[0].generationRequest),
+      status: 'complete',
+      provider: 'gemini-api',
+      apiSurface: 'google-ai-v1beta',
+      modelLifecycleSnapshot: 'stable',
+      priceDimension: { unit: 'video-second', resolution: '720p', usdPerUnit: 0.1 },
+      manualReview: {
+        contextIdentity: 'original-review',
+        confirmedAt: 1,
+        notes: 'Watched original',
+      },
+      reviewContextIdentity: 'original-context',
+      reviewInvalidated: false,
+      createdAt: 1,
+    };
+    run.shots[0].takes = [original, { ...original, id: 'chosen', status: 'accepted' }];
+    const saved = await productionRunService.createRun(run);
+    const edited = await productionRunService.saveComparisonNotes(
+      run.id,
+      1,
+      'older',
+      'Camera A is clearer',
+    );
+    expect(edited.status).toBe(saved.status);
+    expect(edited.shots[0]).toEqual({
+      ...saved.shots[0],
+      takes: [
+        { ...saved.shots[0].takes[0], comparisonNotes: 'Camera A is clearer' },
+        saved.shots[0].takes[1],
+      ],
+    });
+    expect(edited.approvals).toEqual(saved.approvals);
+    expect((await productionRunService.getRun(run.id))?.shots[0].takes[0].comparisonNotes).toBe(
+      'Camera A is clearer',
+    );
+    await expect(
+      productionRunService.saveComparisonNotes(run.id, 1, 'missing', 'notes'),
+    ).rejects.toThrow('unavailable');
+    vi.mocked(set).mockRejectedValueOnce(new Error('Storage full'));
+    await expect(
+      productionRunService.saveComparisonNotes(run.id, 1, 'older', 'unsaved'),
+    ).rejects.toThrow('Storage full');
+    expect((await productionRunService.getRun(run.id))?.shots[0].takes[0].comparisonNotes).toBe(
+      'Camera A is clearer',
+    );
   });
 });

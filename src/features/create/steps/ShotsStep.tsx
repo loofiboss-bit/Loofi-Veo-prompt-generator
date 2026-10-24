@@ -221,7 +221,11 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
             {activeStep === 'review' && shot.takes.length > 0 && (
               <div className="mt-3">
                 <TakeCompare
+                  contextId={`${activeRun.projectId}:${activeRun.id}:${shot.id}`}
                   takes={displayTakes}
+                  onSaveComparisonNotes={(take, notes) =>
+                    workflow.handleSaveComparisonNotes(shot, take, notes)
+                  }
                   onManualReview={(take, notes) =>
                     void workflow.handleManualReview(shot, take, notes)
                   }

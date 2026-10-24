@@ -14,60 +14,76 @@ const {
   extractMusicOutput,
   validatePaidTask,
 } = require('./paid-job-engine.cjs');
+const { createPaidSubmission, computePaidSubmissionHash } = require('./paid-job-submission.cjs');
 
-const task = (overrides = {}) => ({
-  id: 'job-1',
-  status: 'Queued',
-  videoUrl: null,
-  prompt: 'A cinematic sunrise.',
-  settings: { veoModel: 'fast', resolution: '720p', aspectRatio: '16:9' },
-  request: {
-    mode: 'text-to-video',
-    modelId: 'veo-3.1-fast',
+const approve = (task) => {
+  const approvedSubmission = createPaidSubmission(task);
+  return {
+    ...task,
+    approvedSubmission,
+    costApproval: {
+      ...task.costApproval,
+      hashVersion: 2,
+      payloadHash: computePaidSubmissionHash(approvedSubmission),
+    },
+  };
+};
+
+const task = (overrides = {}) =>
+  approve({
+    id: 'job-1',
+    status: 'Queued',
+    videoUrl: null,
     prompt: 'A cinematic sunrise.',
-    aspectRatio: '16:9',
-    resolution: '720p',
-    durationSeconds: 8,
-    referenceAssetIds: [],
-  },
-  costApproval: {
-    approvalId: 'approval-1',
-    modelId: 'veo-3.1-fast',
-    maximumChargeUsd: 0.8,
-    currency: 'USD',
-    confidence: 'exact',
-    sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
-    verifiedDate: '2026-08-01',
-    approvedAt: 1,
-  },
-  timestamp: 1,
-  ...overrides,
-});
+    settings: { veoModel: 'fast', resolution: '720p', aspectRatio: '16:9' },
+    request: {
+      mode: 'text-to-video',
+      modelId: 'veo-3.1-fast',
+      prompt: 'A cinematic sunrise.',
+      aspectRatio: '16:9',
+      resolution: '720p',
+      durationSeconds: 8,
+      referenceAssetIds: [],
+    },
+    costApproval: {
+      approvalId: 'approval-1',
+      modelId: 'veo-3.1-fast',
+      maximumChargeUsd: 0.8,
+      currency: 'USD',
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+    ...overrides,
+  });
 
-const musicTask = (overrides = {}) => ({
-  id: 'music-job-1',
-  jobKind: 'music',
-  status: 'Queued',
-  prompt: 'A warm instrumental theme.',
-  request: {
-    modelId: 'lyria-3-clip-preview',
+const musicTask = (overrides = {}) =>
+  approve({
+    id: 'music-job-1',
+    jobKind: 'music',
+    status: 'Queued',
     prompt: 'A warm instrumental theme.',
-    responseFormat: 'mp3',
-    images: [],
-  },
-  costApproval: {
-    approvalId: 'music-approval-1',
-    modelId: 'lyria-3-clip-preview',
-    maximumChargeUsd: 0.04,
-    currency: 'USD',
-    confidence: 'exact',
-    sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
-    verifiedDate: '2026-08-01',
-    approvedAt: 1,
-  },
-  timestamp: 1,
-  ...overrides,
-});
+    request: {
+      modelId: 'lyria-3-clip-preview',
+      prompt: 'A warm instrumental theme.',
+      responseFormat: 'mp3',
+      images: [],
+    },
+    costApproval: {
+      approvalId: 'music-approval-1',
+      modelId: 'lyria-3-clip-preview',
+      maximumChargeUsd: 0.04,
+      currency: 'USD',
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+    ...overrides,
+  });
 
 async function fixture(t) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'veo-paid-job-'));
@@ -236,11 +252,16 @@ test('resumes a known operation after restart without another paid submission', 
 
 test('cancels an active paid job and persists the user decision', async (t) => {
   const store = await fixture(t);
+  let dispatched;
+  const started = new Promise((resolve) => {
+    dispatched = resolve;
+  });
   const engine = new PaidJobEngine({
     store,
     getApiKey: async () => 'secret',
     fetchImpl: async (_url, init = {}) =>
       new Promise((_resolve, reject) => {
+        dispatched();
         if (init.signal.aborted) {
           reject(new DOMException('Aborted', 'AbortError'));
           return;
@@ -251,7 +272,7 @@ test('cancels an active paid job and persists the user decision', async (t) => {
       }),
   });
   await engine.submit(task());
-  while (!engine.active.has('job-1')) await new Promise((resolve) => setTimeout(resolve, 1));
+  await started;
   assert.equal(await engine.cancel('job-1'), true);
   await engine.active.get('job-1');
   assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
@@ -641,4 +662,115 @@ test('resumes a durable approved queue entry but never replays its uncertain sub
   assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
   await engine.resumeAll();
   assert.equal(posts, 1);
+});
+
+for (const kind of ['video', 'music']) {
+  for (const condition of ['legacy', 'missing hash', 'tampered payload', 'tampered snapshot']) {
+    test(`does not POST an unsent ${kind} job with ${condition}`, async (t) => {
+      const store = await fixture(t);
+      const input = kind === 'music' ? musicTask() : task();
+      if (condition === 'legacy') {
+        delete input.costApproval.hashVersion;
+        delete input.costApproval.payloadHash;
+        delete input.approvedSubmission;
+      } else if (condition === 'missing hash') {
+        delete input.costApproval.payloadHash;
+      } else if (condition === 'tampered payload') {
+        input.request.prompt += ' Unapproved change.';
+      } else {
+        input.approvedSubmission = { ...input.approvedSubmission, body: '{}' };
+      }
+      let posts = 0;
+      const engine = new PaidJobEngine({
+        store,
+        getApiKey: async () => 'secret',
+        fetchImpl: async () => {
+          posts += 1;
+          throw new Error('must not POST');
+        },
+        storeMedia: async () => {
+          throw new Error('must not store');
+        },
+      });
+      await store.put(input);
+      await engine.resumeAll();
+      assert.equal(posts, 0);
+      assert.equal((await store.get(input.id)).status, 'Error');
+      assert.equal((await engine.run(input)).status, 'Error');
+      assert.equal(posts, 0);
+    });
+  }
+}
+
+test('sends exactly the native-approved snapshot despite mutation of the caller task', async (t) => {
+  const store = await fixture(t);
+  const input = task();
+  const expected = input.approvedSubmission;
+  let dispatched;
+  const started = new Promise((resolve) => {
+    dispatched = resolve;
+  });
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => {
+      input.request.prompt = 'Late renderer edit.';
+      return 'secret';
+    },
+    fetchImpl: async (url, init) => {
+      assert.equal(url, expected.url);
+      assert.equal(init.body, expected.body);
+      dispatched();
+      throw new Error('lost acknowledgement');
+    },
+  });
+  await engine.submit(input);
+  await started;
+  await engine.active.get(input.id);
+  assert.equal((await store.get(input.id)).status, 'RecoveryRequired');
+});
+
+test('checks approval again after persisting the submission marker and before POST', async (t) => {
+  const store = await fixture(t);
+  let posts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    onUpdate: (job) => {
+      if (job.status === 'Submitting') job.request.aspectRatio = '9:16';
+    },
+    fetchImpl: async () => {
+      posts += 1;
+      throw new Error('must not POST');
+    },
+  });
+  assert.equal((await engine.run(task())).status, 'Error');
+  assert.equal(posts, 0);
+});
+
+test('legacy operations retain GET recovery without a v2 approval', async (t) => {
+  const store = await fixture(t);
+  const legacy = task({ status: 'Polling', providerOperationName: 'operations/legacy' });
+  delete legacy.costApproval;
+  delete legacy.approvedSubmission;
+  await store.put(legacy);
+  let posts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    sleep: async () => {},
+    fetchImpl: async (_url, init = {}) => {
+      if (init.method === 'POST') posts += 1;
+      return new Response(
+        JSON.stringify({
+          done: true,
+          response: { generatedVideos: [{ video: { uri: 'https://media/legacy.mp4' } }] },
+        }),
+      );
+    },
+    cacheVideo: async ({ key }) => ({ key, localUrl: 'file:///legacy.mp4', mimeType: 'video/mp4' }),
+  });
+  await engine.resumeAll();
+  await engine.active.get(legacy.id);
+  assert.equal(posts, 0);
+  assert.equal((await store.get(legacy.id)).status, 'Complete');
 });

@@ -13,13 +13,19 @@ import {
   compileMusicPromptArtifact,
   compileVideoPromptArtifact,
 } from '@core/services/promptStudioService';
-import type { PromptArtifactV1 } from '@core/types';
+import type { PromptArtifactV1, VideoPromptVariant } from '@core/types';
+import type { VideoVariantEditResult } from '@core/services/videoVariantEditService';
 import { PromptStudioPage } from './PromptStudioPage';
+
+// Zustand updates replace state objects; restoring a spy on an older object
+// does not restore the action copied into newer snapshots.
+const originalDraftActions = usePromptStudioDraftStore.getState();
 
 const mocks = vi.hoisted(() => ({
   db: new Map<string, unknown>(),
   optimize: vi.fn(),
   optimizeMusic: vi.fn(),
+  variantEdit: vi.fn(),
   key: vi.fn(),
 }));
 vi.mock('idb-keyval', () => ({
@@ -43,6 +49,9 @@ vi.mock('@core/services/promptStudioService', async (importOriginal) => ({
   optimizeMusicPromptArtifact: mocks.optimizeMusic,
 }));
 vi.mock('@core/services/apiKeyService', () => ({ hasApiKeyAsync: mocks.key }));
+vi.mock('@core/services/videoVariantEditService', () => ({
+  proposeVideoVariantEdit: mocks.variantEdit,
+}));
 vi.mock('@core/services/templateManager', () => ({
   getUserTemplates: async () => [],
   getUserTemplatesStrict: async () => [],
@@ -65,6 +74,24 @@ async function buildPack(
   await waitFor(() => expect(usePromptStudioDraftStore.getState().status).toBe('saved'));
 }
 
+function variantProposalFor(
+  source: PromptArtifactV1,
+  index: 0 | 1 | 2 = 0,
+): VideoVariantEditResult {
+  const variant = [source.primary, ...source.alternatives][index] as VideoPromptVariant;
+  return {
+    before: { prompt: variant.prompt, negativePrompt: variant.negativePrompt },
+    patch: { prompt: 'Targeted reviewed edit', negativePrompt: 'proposed exclusions' },
+    provenance: { ...source.provenance, provider: 'gemini', source: 'optimizer' },
+  };
+}
+
+async function requestVariantProposal(user: ReturnType<typeof render>['user']) {
+  await user.click(screen.getByText('Improve selected variant', { exact: true }));
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Fields to improve' }), 'both');
+  await user.click(screen.getByRole('button', { name: 'Propose selected variant changes' }));
+}
+
 describe('PromptStudioPage durable copy desk', () => {
   let clipboard: ReturnType<typeof vi.fn>;
   beforeEach(async () => {
@@ -72,10 +99,16 @@ describe('PromptStudioPage durable copy desk', () => {
     mocks.db.clear();
     mocks.optimize.mockReset();
     mocks.optimizeMusic.mockReset();
+    mocks.variantEdit.mockReset();
     mocks.key.mockReset().mockResolvedValue(true);
     localStorage.clear();
     await i18n.changeLanguage('en');
-    usePromptStudioDraftStore.setState({ draft: null, status: 'loading', error: null });
+    usePromptStudioDraftStore.setState({
+      ...originalDraftActions,
+      draft: null,
+      status: 'loading',
+      error: null,
+    });
     useProjectStore.setState({ currentProjectId: 'studio-test' });
     useAppStore.setState({ assets: [] });
     useSettingsStore.setState({
@@ -664,6 +697,136 @@ describe('PromptStudioPage durable copy desk', () => {
       prompt: 'Keep my cinematic edit',
     });
     expect(usePromptStudioDraftStore.getState().draft!.artifact).toBeNull();
+  });
+
+  it('reviews and accepts selected AI fields for the manually edited alternative only', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    await user.click(screen.getByRole('button', { name: 'Cinematic' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cinematic prompt' }), {
+      target: { value: 'My exact alternative edit' },
+    });
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.variantEdit.mockResolvedValue(variantProposalFor(source, 1));
+    await requestVariantProposal(user);
+    await screen.findByRole('region', { name: 'Review selected variant changes' });
+    expect(mocks.variantEdit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        artifact: source,
+        variantIndex: 1,
+        fields: ['prompt', 'negativePrompt'],
+      }),
+    );
+    expect(screen.getByRole('textbox', { name: 'Cinematic prompt' })).toHaveValue(
+      'My exact alternative edit',
+    );
+    await user.click(screen.getByRole('checkbox', { name: 'Accept Negative prompt' }));
+    await user.click(screen.getByRole('button', { name: 'Accept selected fields' }));
+    await waitFor(() => expect(usePromptStudioDraftStore.getState().status).toBe('saved'));
+    const accepted = usePromptStudioDraftStore.getState().draft!.artifact!;
+    expect(accepted.primary).toEqual(source.primary);
+    expect(accepted.alternatives[1]).toEqual(source.alternatives[1]);
+    expect(accepted.alternatives[0]).toMatchObject({
+      prompt: 'Targeted reviewed edit',
+      copyPrompt: 'Targeted reviewed edit',
+      negativePrompt: (source.alternatives[0] as VideoPromptVariant).negativePrompt,
+    });
+    expect(
+      (await studioRevisionService.list('studio-test')).some(
+        (item) => item.reason === 'ai-variant',
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects a selected-variant proposal without replacing manual edits', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.variantEdit.mockResolvedValue(variantProposalFor(source));
+    await requestVariantProposal(user);
+    await screen.findByRole('button', { name: 'Accept selected fields' });
+    await user.click(screen.getByRole('button', { name: 'Reject changes' }));
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(source);
+    expect(screen.queryByRole('button', { name: 'Accept selected fields' })).toBeNull();
+  });
+
+  it.each(['edit', 'variant', 'project'])(
+    'discards a late selected-variant proposal after a %s change',
+    async (change) => {
+      const { user } = await openStudio();
+      await buildPack(user);
+      const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+      let finish!: (result: VideoVariantEditResult) => void;
+      mocks.variantEdit.mockReturnValue(
+        new Promise<VideoVariantEditResult>((resolve) => {
+          finish = resolve;
+        }),
+      );
+      await requestVariantProposal(user);
+      await waitFor(() => expect(mocks.variantEdit).toHaveBeenCalled());
+      if (change === 'edit') {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Primary prompt' }), {
+          target: { value: 'A newer manual edit' },
+        });
+      } else if (change === 'variant') {
+        await user.click(screen.getByRole('button', { name: 'Cinematic' }));
+      } else {
+        await act(async () => {
+          useProjectStore.setState({ currentProjectId: 'new-video-project' });
+        });
+        await waitFor(() =>
+          expect(usePromptStudioDraftStore.getState().draft?.projectId).toBe('new-video-project'),
+        );
+      }
+      await act(async () => finish(variantProposalFor(source)));
+      expect(screen.queryByRole('button', { name: 'Accept selected fields' })).toBeNull();
+      if (change === 'edit')
+        expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+          'A newer manual edit',
+        );
+    },
+  );
+
+  it('preserves the selected variant if its acceptance checkpoint fails', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.variantEdit.mockResolvedValue(variantProposalFor(source));
+    await requestVariantProposal(user);
+    await screen.findByRole('button', { name: 'Accept selected fields' });
+    vi.spyOn(usePromptStudioDraftStore.getState(), 'checkpoint').mockResolvedValueOnce(false);
+    await user.click(screen.getByRole('button', { name: 'Accept selected fields' }));
+    await screen.findByRole('alert');
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(source);
+  });
+
+  it('preserves a newer edit made while a selected-variant checkpoint is pending', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    const source = usePromptStudioDraftStore.getState().draft!.artifact!;
+    mocks.variantEdit.mockResolvedValue(variantProposalFor(source));
+    await requestVariantProposal(user);
+    await screen.findByRole('button', { name: 'Accept selected fields' });
+    let finish!: (result: boolean) => void;
+    const checkpoint = vi
+      .spyOn(usePromptStudioDraftStore.getState(), 'checkpoint')
+      .mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        }),
+      );
+    await user.click(screen.getByRole('button', { name: 'Accept selected fields' }));
+    await waitFor(() => expect(checkpoint).toHaveBeenCalled());
+    act(() =>
+      usePromptStudioDraftStore
+        .getState()
+        .setArtifact(editStudioVariant(source, 0, { prompt: 'Edited during checkpoint' })),
+    );
+    await act(async () => finish(true));
+    await screen.findByRole('alert');
+    expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+      'Edited during checkpoint',
+    );
   });
 
   it('keeps the current pack when a required checkpoint fails', async () => {

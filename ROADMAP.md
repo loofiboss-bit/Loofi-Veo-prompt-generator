@@ -16,6 +16,16 @@
 
 ## Completed Foundation (v17–v18 Baseline)
 
+### Unreleased: Reviewable Video Production
+
+- Selected-variant AI editing with field-level review, guarded persistence and unchanged alternatives.
+- Shared local cinematic guidance in Studio/Arena, separate from documented provider restrictions.
+- Shared A/B video comparison with frozen-source differences and independent result notes.
+- Complete frozen Veo/Lyria request approval binding, preserving recovery of known operations.
+
+These source changes retain version 17.0.0 until a separate release is prepared. Validation and
+publication are separate steps; no new release, package or physical-platform qualification is implied.
+
 - **v17.0.0 Smart Local Editing (Released 2026-10-16):**
   - **Microphone Voiceover Recording:** Direct timeline dialogue recording via Web Audio API with real-time waveform visualization, device selection, take management, and dedicated track placement.
   - **Reviewable Silence-Cut Trimming:** Offline FFmpeg `silencedetect` with interactive pause review modal, customizable dB thresholds, and clean ripple-cut splitting.
@@ -82,7 +92,7 @@ _Goal: Crash-recoverable paid job execution, cryptographic quote locking, and au
 - [x] **4.1 Persistent Paid-Job State Machine (FSM):**
   - Persist job lifecycle states (`DRAFT -> QUOTED -> APPROVED -> DISPATCHING -> RUNNING -> COMPLETED | FAILED | CANCELLED`) in a local disk journal so in-flight jobs recover cleanly after an Electron restart without double-dispatching.
 - [x] **4.2 Payload-Hashed Approval Gate (`paid-job-pricing.cjs`):**
-  - Bind every cost approval token to a deterministic SHA-256 hash of the exact job payload (`prompt + model + duration + resolution + count`). Any parameter change immediately invalidates the approval state.
+  - Bind new Veo/Lyria approvals to the complete frozen submission (operation, model, endpoint and serialized body, including inline media), using `hashVersion: 2`. Known provider operations recover without resubmission; unsent legacy approvals require renewal.
 - [x] **4.3 Automated Architecture & Performance CI Gates:**
   - Add CI checks for zero circular dependencies (`npx madge --circular --extensions ts,tsx src/`).
   - Add a benchmark assertion ensuring `captureProjectDocumentFromStores` dirty-check overhead stays under `< 5ms` on the main thread.
