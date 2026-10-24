@@ -161,19 +161,21 @@ export function TakeCompare({
     );
   };
   return (
-    <VideoResultCompare
-      contextId={contextId}
-      results={results}
-      onSaveNotes={
-        onSaveComparisonNotes
-          ? async (id, notes) => {
-              const take = available.find((candidate) => candidate.id === id);
-              if (!take) throw new Error('The comparison result is unavailable.');
-              await onSaveComparisonNotes(take, notes);
-            }
-          : undefined
-      }
-      renderDetails={details}
-    />
+    <div aria-label={t('flow.comparison')}>
+      <VideoResultCompare
+        contextId={contextId}
+        results={results}
+        onSaveNotes={
+          onSaveComparisonNotes
+            ? async (id, notes) => {
+                const take = available.find((candidate) => candidate.id === id);
+                if (!take) throw new Error('The comparison result is unavailable.');
+                await onSaveComparisonNotes(take, notes);
+              }
+            : undefined
+        }
+        renderDetails={details}
+      />
+    </div>
   );
 }

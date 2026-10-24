@@ -178,12 +178,16 @@ const allShots = [
       await page.getByLabel('Production run').selectOption(runId);
       await page.getByText('reviewing', { exact: true }).first().waitFor({ state: 'visible' });
       await page.getByRole('button', { name: 'Review', exact: true }).click();
-      const comparison = page.getByLabel('A/B take comparison');
+      const comparison = page
+        .getByLabel(/a\/b take comparison|video comparison/i)
+        .or(page.getByRole('region', { name: /video comparison|a\/b take comparison/i }));
       try {
-        await comparison.waitFor({ state: 'visible', timeout: 10_000 });
+        await comparison.first().waitFor({ state: 'visible', timeout: 10_000 });
         await page.waitForFunction(
           () => {
-            const videos = document.querySelectorAll('[aria-label="A/B take comparison"] video');
+            const videos = document.querySelectorAll(
+              '[aria-label="A/B take comparison"] video, [aria-label="Video comparison"] video, [role="region"] video',
+            );
             return (
               videos.length === 2 &&
               [...videos].every(
@@ -381,7 +385,11 @@ const seedPrompt = async (page) => {
 };
 
 const navigate = async (page, route) => {
-  await page.goto(`${baseUrl}/#${route}`, { waitUntil: 'networkidle' });
+  if (page.url().includes(`#${route}`)) {
+    await page.reload({ waitUntil: 'networkidle' });
+  } else {
+    await page.goto(`${baseUrl}/#${route}`, { waitUntil: 'networkidle' });
+  }
   await dismissStartupUi(page);
   await seedPrompt(page);
   await page.waitForTimeout(700);
@@ -395,10 +403,13 @@ const page = await browser.newPage({
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1,
   colorScheme: 'dark',
+  locale: 'en-US',
 });
 
 try {
   await page.addInitScript(() => {
+    window.localStorage.setItem('veo-studio-language', 'en');
+    window.localStorage.setItem('i18nextLng', 'en');
     window.localStorage.setItem('hasSeenWelcome', 'true');
     window.localStorage.setItem('v8-onboarding-complete', 'true');
     window.localStorage.setItem('onboarding-completed', 'true');
