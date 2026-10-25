@@ -1,10 +1,10 @@
 # Loofi Creator Studio Architecture
 
-> **Current source:** package version 19.0.0. This checkout contains additional unreleased Creator
-> Studio work documented in the `Unreleased` changelog entry. It does not claim a new package,
-> publication, or platform qualification. Historical milestone records below remain dated snapshots.
+> **Current source:** package version 20.0.0. The v20 scope from PR #96 is documented in
+> `CHANGELOG.md`. Public publication and physical platform qualification require their own dated
+> evidence. Historical milestone records below remain dated snapshots.
 
-## Unreleased: Creator Studio reliability follow-up
+## v20: Creator Studio reliability
 
 - Project saves await durable media bytes and the merged media catalog before writing the project
   document and reporting a saved state. The Zustand storage adapter reads both legacy state objects
@@ -18,11 +18,14 @@
 - Timeline source playback shares a playhead and Web Audio output; project-scoped export batches and
   an idempotent cost ledger survive navigation. Native delivery review remains the check for the
   frozen output that will be saved.
+- The cost ledger uses the dedicated `veo-cost-tracking` IndexedDB database. A read-only probe
+  migrates legacy cost history and budgets without upgrading the shared database or overwriting
+  newer ledger data.
 - Production review resolves registered local video and reference bytes before calling Gemini and
   rejects review results after project or source inputs change. Estimates, approved ceilings and
   verified provider charges remain separate values.
 
-## Unreleased: Reviewable Video Production
+## v19–v20: Reviewable Video Production
 
 Selective video edits use a temporary, typed proposal against the actual selected variant, not a
 fresh compilation of the brief. The proposal captures project identity, draft revision, selected
@@ -50,7 +53,7 @@ explicit new approval, and ambiguous submissions without an operation identity a
 Extension references bind the submitted provider URI, not mutable remote content behind that URI.
 The additive `hashVersion` does not change existing project or archive schema identities.
 
-## Unreleased: Music Editing, Cancellation and Result Feedback
+## v20: Music Editing, Cancellation and Result Feedback
 
 `proposeMusicVariantEdit` receives the selected artifact variant as currently edited, the requested
 fields and the creative brief as context. It returns a temporary field patch with a typed proposal

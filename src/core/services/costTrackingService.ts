@@ -27,7 +27,9 @@ import {
 // Constants
 // ---------------------------------------------------------------------------
 
-const IDB_STORE = createStore('veo-db', 'cost-tracking');
+// idb-keyval creates only one object store when a database is first opened. A dedicated
+// database prevents another veo-db store from making cost persistence unavailable.
+const IDB_STORE = createStore('veo-cost-tracking', 'cost-tracking');
 const IDB_KEY_RECORDS = 'cost-records-v1';
 const IDB_KEY_LIFETIME = 'cost-lifetime-v1';
 const IDB_KEY_BUDGET = 'cost-budget-v1';
@@ -51,6 +53,67 @@ interface LifetimeData {
   totalUsd: number;
   monthlyUsd: number;
   monthKey: string; // e.g. "2026-02"
+}
+
+interface LegacyCostData {
+  ledger?: CostLedgerV2;
+  lifetime?: LifetimeData;
+  records?: CostRecord[];
+  budget?: number | null;
+}
+
+/** Read old costs without creating or upgrading the shared application database. */
+function readLegacyCostData(): Promise<LegacyCostData> {
+  if (typeof indexedDB === 'undefined') return Promise.resolve({});
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('veo-db');
+    let missingDatabase = false;
+    request.onupgradeneeded = () => {
+      missingDatabase = true;
+      request.transaction?.abort();
+      request.result.close();
+    };
+    request.onerror = () => {
+      if (missingDatabase) resolve({});
+      else reject(request.error ?? new Error('Legacy cost history could not be opened.'));
+    };
+    request.onsuccess = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains('cost-tracking')) {
+        database.close();
+        resolve({});
+        return;
+      }
+      try {
+        const transaction = database.transaction('cost-tracking', 'readonly');
+        const store = transaction.objectStore('cost-tracking');
+        const result: LegacyCostData = {};
+        const keys = {
+          ledger: IDB_KEY_LEDGER,
+          lifetime: IDB_KEY_LIFETIME,
+          records: IDB_KEY_RECORDS,
+          budget: IDB_KEY_BUDGET,
+        };
+        for (const [name, key] of Object.entries(keys)) {
+          const value = store.get(key);
+          value.onsuccess = () => {
+            Object.assign(result, { [name]: value.result });
+          };
+        }
+        transaction.oncomplete = () => {
+          database.close();
+          resolve(result);
+        };
+        transaction.onabort = transaction.onerror = () => {
+          database.close();
+          reject(transaction.error ?? new Error('Legacy cost history could not be read.'));
+        };
+      } catch (error) {
+        database.close();
+        reject(error);
+      }
+    };
+  });
 }
 
 type CostListener = (state: CostTrackingState) => void;
@@ -92,29 +155,46 @@ export class CostTrackingService {
     if (this.hydrated) return;
     if (this.hydration) return this.hydration;
     this.hydration = (async () => {
-      const [lifetime, budget, records] = await Promise.all([
+      const [existingLedger, lifetime, budget, records] = await Promise.all([
+        get<CostLedgerV2>(IDB_KEY_LEDGER, IDB_STORE),
         get<LifetimeData>(IDB_KEY_LIFETIME, IDB_STORE),
         get<number | null>(IDB_KEY_BUDGET, IDB_STORE),
         get<CostRecord[]>(IDB_KEY_RECORDS, IDB_STORE),
       ]);
+      const legacy = existingLedger ? {} : await readLegacyCostData();
+      const previousLifetime = lifetime ?? legacy.lifetime;
+      const previousRecords = records ?? legacy.records ?? [];
+      // Copy the budget before the ledger marks migration complete. Retrying a failed
+      // migration and concurrent renderers must preserve any newer dedicated value.
+      const legacyBudget = legacy.budget;
+      if (budget === undefined && legacyBudget !== undefined) {
+        await update<number | null>(
+          IDB_KEY_BUDGET,
+          (stored) => (stored === undefined ? legacyBudget : stored),
+          IDB_STORE,
+        );
+      }
       await update<CostLedgerV2>(
         IDB_KEY_LEDGER,
         (stored) =>
-          stored ?? {
+          stored ??
+          legacy.ledger ?? {
             schemaVersion: 2,
-            records: records ?? [],
-            seen: (records ?? []).map((record) => record.sourceJobId ?? record.id),
-            totalUsd: lifetime?.totalUsd ?? 0,
-            monthlyUsd: lifetime?.monthKey === this.getMonthKey() ? lifetime.monthlyUsd : 0,
+            records: previousRecords,
+            seen: previousRecords.map((record) => record.sourceJobId ?? record.id),
+            totalUsd: previousLifetime?.totalUsd ?? 0,
+            monthlyUsd:
+              previousLifetime?.monthKey === this.getMonthKey() ? previousLifetime.monthlyUsd : 0,
             monthKey: this.getMonthKey(),
             // Old totals contain no job identities. Preserve them without replaying old jobs.
-            legacyCutoff: lifetime?.totalUsd ? Date.now() : 0,
+            legacyCutoff: previousLifetime?.totalUsd ? Date.now() : 0,
           },
         IDB_STORE,
       );
       const ledger = await get<CostLedgerV2>(IDB_KEY_LEDGER, IDB_STORE);
       if (ledger) this.applyLedger(ledger);
-      if (budget !== undefined) this.monthlyBudgetUsd = budget;
+      const restoredBudget = await get<number | null>(IDB_KEY_BUDGET, IDB_STORE);
+      if (restoredBudget !== undefined) this.monthlyBudgetUsd = restoredBudget;
       this.hydrated = true;
       this.persistenceError = undefined;
       this.notifyListeners();
@@ -362,10 +442,13 @@ export class CostTrackingService {
 
   /** Set a monthly budget in USD (null to remove) */
   async setMonthlyBudget(budgetUsd: number | null): Promise<void> {
-    this.monthlyBudgetUsd = budgetUsd;
     try {
+      await this.hydrate();
       await set(IDB_KEY_BUDGET, budgetUsd, IDB_STORE);
+      this.monthlyBudgetUsd = budgetUsd;
+      this.persistenceError = undefined;
     } catch (err) {
+      this.persistenceError = 'Cost history could not be saved or restored.';
       logger.warn('[CostTracking] Failed to persist budget', err);
     }
     this.notifyListeners();

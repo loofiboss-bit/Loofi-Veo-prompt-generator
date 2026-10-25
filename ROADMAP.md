@@ -14,7 +14,13 @@
 
 ---
 
-## Completed Foundation (v17–v19 Baseline)
+## Completed Foundation (v17–v20 Baseline)
+
+- **v20.0.0 Project-Safe Editing & Reviewed Delivery (PR #96):**
+  - Durable media/catalog/project save ordering and frozen take references with explicit, edit-preserving timeline placement.
+  - Reviewed selected music/video edits, occurrence-aware lyric locks, protected dialogue and cancellable AI requests.
+  - Explicit desktop-local Whisper installation and transcription, shared timeline audio playback and project-scoped delivery recovery.
+  - Persistent cost accounting, current delivery review before save, three Start destinations and six updated locales.
 
 - **v19.0.0 Reviewable Video Production & Deterministic Workbench (Released 2026-10-24):**
   - Selected-variant AI editing with field-level review, guarded persistence, and zero-token batch local transforms across all 3 variants.

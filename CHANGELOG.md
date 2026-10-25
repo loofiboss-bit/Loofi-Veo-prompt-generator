@@ -7,7 +7,7 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [20.0.0] - 2026-10-25
 
 ### Added
 
@@ -22,11 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   negative-prompt edits are optional and never start generation.
 - Protect quoted dialogue and supplied dialogue spans during video prompt editing, with an explicit
   opt-in to rewrite dialogue. Add cancellation across Studio AI edits and provider network requests.
-- Capture audio duration before transferring its buffer to the transcription worker.
 - Desktop-only local speech transcription with a pinned multilingual Whisper Base q8 model,
   checksum-verified installation, explicit download confirmation, trim-aware clip-occurrence
   selection, editable proposals, and no cloud fallback. Manual captions and SRT remain available
-  in web mode; silence detection is labelled as timing-only.
+  in web mode; silence detection is labelled as timing-only. Capture audio duration before
+  transferring its buffer to the transcription worker.
 - An occurrence-aware lyric-section parser and lock model, segmented prompt/dialogue editing,
   and an explicit motion field for image-to-video prompts.
 - Project-scoped render-batch recovery, local media resolution for production review, and a
@@ -46,6 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provider charges, and require a current delivery review before saving.
 - Complete the six application locales for the changed Studio, Create, Creator, and cost workflows,
   including Swedish in the Studio translation gate.
+
+### Fixed
+
+- Isolate the cost ledger from shared IndexedDB object-store collisions and migrate existing
+  cost history and budgets without overwriting newer data.
+- Fetch the COPR packaging spec from the matching release tag.
+- Include the PostCSS configuration in Docker builds so Tailwind styles and control dimensions
+  remain correct in production staging.
+- Pin the direct ONNX runtime dependency to the override version so clean npm installs succeed.
 
 ## [19.0.0] - 2026-10-24
 

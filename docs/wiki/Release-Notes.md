@@ -1,5 +1,19 @@
 # Release Notes
 
+## v20.0.0 — Project-Safe Editing & Reviewed Delivery
+
+- Save media, catalog and project data in durable order, with edit-preserving timeline placement.
+- Review selected music/video fields, preserve occurrence-specific lyric locks and protect dialogue.
+- Cancel AI requests and use production or imported-result notes as context for prompt proposals.
+- Install a checksum-verified desktop-local Whisper model explicitly, with no cloud fallback.
+- Mix source audio during timeline playback, recover project render batches and review delivery before saving.
+- Keep persistent cost history and budgets, with estimates, approval ceilings and verified charges shown separately.
+- Choose three Start destinations, recent projects and a next action across six updated locales.
+
+[Download v20.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0).
+See [release notes and upgrade boundaries](../releases/RELEASE-NOTES-v20.0.0.md) and the
+[release process](../RELEASE.md) for automated and physical qualification boundaries.
+
 ## v16.0.1 — Verified Performance and Reliable Export
 
 - Reuse 3D resources through playback while preserving preview/export camera orientation.
