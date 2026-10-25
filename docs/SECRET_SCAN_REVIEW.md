@@ -14,7 +14,8 @@ HTTP 200 returned a parent project but no key resource name, which
 as a purged key. See [redacted evidence](evidence/historical-key-provider-status.json).
 No credential value is included in this review, the ignore file, or checked-in scan reports.
 
-The 16 individually reviewed false-positive fingerprints below are the complete `.gitleaksignore`.
+The 17 individually reviewed false-positive fingerprints below are the complete `.gitleaksignore`:
+16 historical baseline findings and one follow-up reviewed on 2026-10-25.
 No path, rule, whole commit, or generic test-file exclusion is configured. A newly introduced
 credential, including in a test file or an ignored finding's path, must still fail the check.
 
@@ -39,6 +40,7 @@ credential, including in a test file or an ignored finding's path, must still fa
 | `d0a134ad759b75d755ec0bda27a0c296fdfbbca0:services/promptBuilder.ts:generic-api-key:75`                                                | FALSE POSITIVE   | Prompt field mappings and boolean comparisons are application state/translation names, not credentials.                                |
 | `048462364a887e44772f64e0b04c1d5c6964257b:services/promptBuilder.ts:generic-api-key:129`                                               | FALSE POSITIVE   | Prompt field mappings and boolean comparisons are application state/translation names, not credentials.                                |
 | `d15dda917d7a3f73fff9ed23b0dbd7d012d0b115:services/promptBuilder.ts:generic-api-key:25`                                                | FALSE POSITIVE   | Prompt field mappings and boolean comparisons are application state/translation names, not credentials.                                |
+| `0629562618e99fd700837a1f91791130240a72b5:src/core/services/costTrackingService.ts:generic-api-key:35`                                 | FALSE POSITIVE   | Static IndexedDB key namespace for the persistent cost ledger; it is not authentication material.                                      |
 
 ## Remaining action
 

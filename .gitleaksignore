@@ -48,3 +48,6 @@ d0a134ad759b75d755ec0bda27a0c296fdfbbca0:services/promptBuilder.ts:generic-api-k
 
 # Prompt field mappings and boolean comparisons are application state/translation names, not credentials.
 d15dda917d7a3f73fff9ed23b0dbd7d012d0b115:services/promptBuilder.ts:generic-api-key:25
+
+# IndexedDB key namespace for the persistent cost ledger; not authentication material.
+0629562618e99fd700837a1f91791130240a72b5:src/core/services/costTrackingService.ts:generic-api-key:35
