@@ -7,6 +7,45 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [21.0.0] - 2026-10-25
+
+### Added
+
+- **Guided 4-Step Delivery Pipeline:**
+  - Introduced `DeliveryStepper` and `DeliveryOutputs` breaking down export into clear sequential steps: Check delivery, Review delivery, Export video, and Save files.
+  - Interactive status badges, live check preflights, clean in-flight job cancellation, and soft recommendations to review before exporting.
+  - Integrated `DisabledReason` component providing tooltips with explanatory text and direct remediation actions for disabled export buttons.
+- **Unified Media Library & Deletion Guards:**
+  - Added `MediaFilterTabs` with live count badges across All, Video, Audio, Images, References, and Generated assets.
+  - Enabled multi-format local file uploading (`video/*,image/*,audio/*`) in Assets Hub.
+  - Built active deletion guards in `AssetsPage` blocking removal of assets actively referenced in timeline clips or Production Bible profiles with granular usage reasons.
+  - Added placed-on-timeline indicator badges in `EditorMediaPanel`.
+- **Top-Bar Project Status Chip:**
+  - Added compact, persistent `ProjectStatusChip` in `AppScaffold` header indicating `saved`, `saving`, `conflict`, and `error` states with a 1-click Save action.
+  - Streamlined `ProjectSaveStatus` to only display intrusive banners during actual merge conflicts or local persistence errors.
+- **Navigation Enhancements:**
+  - Redesigned empty timeline state with a prominent primary "Open editor & import media" button and secondary Production workflow navigation.
+  - Added "Continue editing" shortcut for the active project in Projects Hub with automatic routing to Timeline (if media exists) or Prompt Studio.
+- **Comprehensive Capability Matrix:** Added full offline / desktop / key-required / experimental feature breakdown to `README.md`.
+- **Phase 5 in Roadmap:** Completed Usability, Design Harmony & Production Trust roadmap goals.
+
+### Changed
+
+- **Plugin Sandbox Isolation:**
+  - Removed all `new Function` and `_initRestricted` main-thread execution from `pluginSandboxService.ts`. All external plugins now run strictly inside isolated Web Workers.
+  - Hardened `index.html` Content Security Policy: replaced `'unsafe-eval'` with `'wasm-unsafe-eval'`.
+- **Design Tokens & Accessibility:**
+  - Standardized radio button layouts and borders in `WelcomeModal`.
+  - Removed yellow focus outlines on header titles (`h1[tabindex="-1"]:focus`) across creator views.
+  - Unified color tokens (`var(--color-bg-primary)`, `var(--color-border-primary)`).
+  - Aligned `UniversalTargetSelector` padding to standard `px-3 py-2 text-sm`.
+
+### Fixed
+
+- Fixed false "Unsaved" indicator appearing on freshly initialized or loaded projects.
+- Translated all remaining raw strings in UI (Focus Mode, Magnetic, Snap, Snap Cuts) across all supported locales (`en`, `sv`, `fr`, `es`, `ja`, `ar`).
+- Added scoped zero-warning ESLint guard (`react/jsx-no-literals`) for delivery and media components, maintaining 0 warnings under `.lint-threshold: 0`.
+
 ## [20.0.0] - 2026-10-25
 
 ### Added

@@ -218,6 +218,16 @@
     "duration": "Duration (seconds)",
     "sourceOffset": "Source offset (seconds)",
     "volume": "Volume",
-    "caption": "Caption"
+    "caption": "Caption",
+    "magneticTitle": "Magnetic Timeline (Ripple Edit)",
+    "magnetic": "Magnetic",
+    "snap": "Snap",
+    "snapToBeatTitle": "Snap shots to {{bpm}} BPM musical bars",
+    "snapCuts": "Snap Cuts ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "Focus Mode is on",
+    "activeDescription": "Advanced studios and collaboration surfaces are hidden so you can stay on the main prompt flow.",
+    "exit": "Exit Focus Mode"
   }
 }

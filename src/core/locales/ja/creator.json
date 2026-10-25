@@ -313,6 +313,7 @@
     "chooseMedia": "ローカルメディアを選択",
     "createFromFiles": "自分のクリップから作成",
     "openRecent": "プロジェクトを開いて編集を続けるか、書き出しを準備します。",
+    "openEditorMedia": "エディタを開いてメディアをインポート",
     "mediaLibrary": "メディアライブラリ",
     "importing": "メディアを読み込み中…",
     "importMedia": "メディアを読み込む",

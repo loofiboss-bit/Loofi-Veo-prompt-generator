@@ -13,6 +13,7 @@ import {
 } from '@core/services/spatialCameraService';
 import { SpatialCamera3dViewport } from '@features/create/components/SpatialCamera3dViewport';
 import Icon from '@shared/components/ui/Icon';
+import { useTranslation } from 'react-i18next';
 
 interface AnimaticPlayerProps {
   shots: Shot[];
@@ -27,6 +28,7 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
   onUpdateShots,
   className = '',
 }) => {
+  const { t } = useTranslation('common');
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
@@ -208,10 +210,12 @@ export const AnimaticPlayer: React.FC<AnimaticPlayerProps> = ({
               type="button"
               onClick={handleSnapToBeat}
               className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
-              title={`Snap shots to ${bpm} BPM musical bars`}
+              title={t('timeline.snapToBeatTitle', 'Snap shots to {{bpm}} BPM musical bars', {
+                bpm,
+              })}
             >
               <Icon name="music" className="text-xs" />
-              Snap Cuts ({bpm} BPM)
+              {t('timeline.snapCuts', 'Snap Cuts ({{bpm}} BPM)', { bpm })}
             </button>
           )}
           <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-foreground">

@@ -112,4 +112,15 @@ describe('ProjectsPage', () => {
     expect(loadProject).toHaveBeenCalledWith('project-b');
     expect(setCurrentProject).toHaveBeenCalledWith('project-b');
   });
+
+  it('displays continue editing for current project and navigates without reloading', async () => {
+    const { user } = render(<ProjectsPage />);
+    const projectAButton = screen.getByRole('button', { name: /Project A/ });
+    expect(projectAButton).toHaveTextContent(/Continue editing/i);
+
+    await user.click(projectAButton);
+    expect(flushBeforeProjectChange).not.toHaveBeenCalled();
+    expect(loadProject).not.toHaveBeenCalled();
+    expect(setCurrentProject).not.toHaveBeenCalled();
+  });
 });

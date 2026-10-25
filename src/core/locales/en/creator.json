@@ -310,6 +310,7 @@
     "resumeBatch": "Resume saved batch"
   },
   "v16": {
+    "openEditorMedia": "Open editor & import media",
     "mediaLibrary": "Media library",
     "importing": "Importing media…",
     "importMedia": "Import media",

@@ -1,5 +1,7 @@
 import { useRenderJobsStore } from '@core/store/useRenderJobsStore';
 import { useRenderBatchStore } from '@core/store/useRenderBatchStore';
+import { DeliveryStepper } from './components/DeliveryStepper';
+import { DeliveryOutputs } from './components/DeliveryOutputs';
 import { getCreatorCaptionOverlaps } from '@core/services/creatorCaptionService';
 import type { CreatorDeliveryDiagnostic } from '@core/services/creatorDeliveryService';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -1950,19 +1952,54 @@ export function CreatorDeliveryPanel() {
           </button>
         </div>
       )}
-      <div className="flex flex-wrap gap-3">
-        <button className={buttonClass} disabled={busy} onClick={() => void check()}>
-          {t('v16.checkDelivery', 'Check delivery')}
-        </button>
+      <DeliveryStepper
+        busy={busy}
+        running={!!running}
+        anyBatchRunning={anyBatchRunning}
+        capabilitiesAvailable={capabilities.available}
+        hasDiagnostics={!!diagnostics}
+        isDiagnosticCurrent={diagnosticBinding === timelineBinding()}
+        hasPreview={!!previewUrl && job?.purpose === 'preview'}
+        isPreviewCurrent={previewBinding === timelineBinding()}
+        hasExportedJob={job?.status === 'complete' && job.purpose !== 'preview'}
+        batchFormatsCount={settings.batchFormats?.length ?? 1}
+        buttonClass={buttonClass}
+        onCheck={() => void check()}
+        onReview={() => void render('preview')}
+        onExport={() => void render()}
+        onBatchExport={() => void renderBatch()}
+        onCancel={() => {
+          if (batch?.status === 'running') {
+            void useRenderBatchStore
+              .getState()
+              .cancel(batch.id)
+              .catch((reason: unknown) => setError(String(reason)));
+          } else if (job) {
+            void useRenderJobsStore.getState().cancel(job.id);
+          }
+        }}
+      />
+
+      <DeliveryOutputs
+        job={job}
+        busy={busy}
+        buttonClass={buttonClass}
+        onSaveFile={(pack: boolean) => {
+          if (!job) return;
+          void act(async () => {
+            const result = await window.electron?.saveTimelineRender?.({
+              id: job.id,
+              package: pack,
+            });
+            if (result?.saved) setJob({ ...job, savedName: result.name });
+          });
+        }}
+      />
+
+      <div className="flex items-center justify-end">
         <button
-          className={buttonClass}
-          disabled={busy || !!running || anyBatchRunning || !capabilities.available}
-          onClick={() => void render('preview')}
-        >
-          {t('v16.reviewDelivery', 'Review delivery')}
-        </button>
-        <button
-          className={buttonClass}
+          type="button"
+          className="text-xs text-slate-400 hover:text-slate-200 underline cursor-pointer"
           disabled={busy}
           onClick={() =>
             void act(async (id) => {
@@ -1973,64 +2010,8 @@ export function CreatorDeliveryPanel() {
             })
           }
         >
-          {t('delivery.saveSettings', 'Save delivery settings')}
+          {t('delivery.saveSettings', 'Spara leveransinställningar')}
         </button>
-        <button
-          className={buttonClass}
-          aria-label={t('delivery.render', 'Export video')}
-          disabled={busy || !!running || anyBatchRunning || !capabilities.available}
-          onClick={() => void render()}
-        >
-          {t('delivery.render', 'Export video')}
-        </button>
-        {(settings.batchFormats?.length ?? 1) > 1 && (
-          <button
-            className={buttonClass}
-            disabled={busy || !!running || anyBatchRunning || !capabilities.available}
-            onClick={() => void renderBatch()}
-          >
-            {t('delivery.renderBatch', 'Batch export')} ({settings.batchFormats?.length} formats)
-          </button>
-        )}
-        {(running || batchProgress !== null) && (
-          <button
-            className={buttonClass}
-            onClick={() => {
-              if (batch?.status === 'running') {
-                void useRenderBatchStore
-                  .getState()
-                  .cancel(batch.id)
-                  .catch((reason: unknown) => setError(String(reason)));
-              } else if (job) void useRenderJobsStore.getState().cancel(job.id);
-            }}
-          >
-            {t('delivery.cancel', 'Cancel export')}
-          </button>
-        )}
-        {job?.status === 'complete' && job.purpose !== 'preview' && (
-          <>
-            {[false, true].map((pack) => (
-              <button
-                key={String(pack)}
-                className={buttonClass}
-                disabled={busy}
-                onClick={() =>
-                  void act(async () => {
-                    const result = await window.electron?.saveTimelineRender?.({
-                      id: job.id,
-                      package: pack,
-                    });
-                    if (result?.saved) setJob({ ...job, savedName: result.name });
-                  })
-                }
-              >
-                {pack
-                  ? t('delivery.package', 'Save publication package')
-                  : t('delivery.saveMp4', 'Save MP4')}
-              </button>
-            ))}
-          </>
-        )}
       </div>
       {diagnostics && (
         <div role="status">

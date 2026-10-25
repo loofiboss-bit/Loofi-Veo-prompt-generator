@@ -172,6 +172,16 @@
     "emptyTitle": "タイムラインは空です",
     "emptyDescription": "制作画面でシーンを追加して、ストーリーボードの編集を始めましょう。",
     "backToStoryboard": "ストーリーボードに戻る",
-    "backToStudio": "Prompt Studioに戻る"
+    "backToStudio": "Prompt Studioに戻る",
+    "magneticTitle": "マグネティックタイムライン（リップル編集）",
+    "magnetic": "マグネット",
+    "snap": "スナップ",
+    "snapToBeatTitle": "ショットを{{bpm}} BPMの小節にスナップ",
+    "snapCuts": "ビートスナップ ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "集中モードが有効です",
+    "activeDescription": "高度なスタジオやコラボレーション画面は非表示になります。",
+    "exit": "集中モードを終了"
   }
 }

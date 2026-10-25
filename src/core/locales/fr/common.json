@@ -172,6 +172,16 @@
     "emptyTitle": "Votre chronologie est vide",
     "emptyDescription": "Ajoutez des scènes dans Production pour commencer à modifier votre storyboard.",
     "backToStoryboard": "Retour au storyboard",
-    "backToStudio": "Retour à Prompt Studio"
+    "backToStudio": "Retour à Prompt Studio",
+    "magneticTitle": "Chronologie magnétique (Ripple Edit)",
+    "magnetic": "Magnétique",
+    "snap": "Aligner",
+    "snapToBeatTitle": "Aligner les plans sur le tempo {{bpm}} BPM",
+    "snapCuts": "Coupes rythmées ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "Le mode concentration est activé",
+    "activeDescription": "Les studios avancés et espaces de collaboration sont masqués.",
+    "exit": "Quitter le mode concentration"
   }
 }

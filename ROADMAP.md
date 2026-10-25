@@ -100,3 +100,30 @@ _Goal: Crash-recoverable paid job execution, cryptographic quote locking, and au
   - Add CI checks for zero circular dependencies (`npx madge --circular --extensions ts,tsx src/`).
   - Add a benchmark assertion ensuring `captureProjectDocumentFromStores` dirty-check overhead stays under `< 5ms` on the main thread.
   - Keep `ARCHITECTURE.md` and `ROADMAP.md` strictly synchronized with v18+ module boundaries.
+
+---
+
+## Phase 5: Usability, Design Harmony & Production Trust (v21.0.0 — Completed)
+
+_Goal: Intuitive guided delivery, unified media library protection, complete plugin worker sandboxing, and design consistency._
+
+- [x] **5.1 Guided Delivery Stepper (`DeliveryStepper.tsx`, `DeliveryOutputs.tsx`):**
+  - Refactor delivery from scattered action buttons into a guided 4-step pipeline: Check delivery, Review delivery, Export video, Save files.
+  - Live progress preflight checks, cancel button with graceful cleanup, and soft preview review recommendations prior to final export.
+  - Reusable `DisabledReason` component explaining exactly why an action is blocked and offering direct navigation to fix it.
+- [x] **5.2 Unified Media Library & Deletion Guards (`AssetsPage.tsx`, `EditorMediaPanel.tsx`):**
+  - Consistent type filters: All, Video, Audio, Images, References, Generated with live count badges.
+  - Multi-format local file upload support (`image/*,video/*,audio/*`).
+  - Active timeline clip deletion guard blocking accidental removal of media actively referenced on timeline tracks with detailed usage breakdown.
+  - Placed-on-timeline badges in the timeline editor media drawer.
+- [x] **5.3 Plugin Sandbox Web Worker Isolation (`pluginSandboxService.ts`, CSP):**
+  - Eliminate dynamic evaluation (`new Function`, `_initRestricted`) from main thread plugin loader. All external plugins execute inside dedicated Web Workers.
+  - Update `index.html` CSP: replace `'unsafe-eval'` with `'wasm-unsafe-eval'`.
+- [x] **5.4 Save Status Consolidation & Navigation Streamlining:**
+  - Introduce `ProjectStatusChip` in the top app scaffold: compact indicators for saved, saving, conflict, error with immediate save actions.
+  - Remove redundant duplicate save status banners in Prompt Studio and only show intrusive banners during genuine conflicts or network errors.
+  - Fast "Continue editing" shortcut for the active project in Projects hub, routing to Timeline if clips exist or Studio otherwise.
+  - Primary "Open editor & import media" action in empty timeline state.
+- [x] **5.5 Full 6-Language i18n & Scoped Zero-Warning ESLint Guard:**
+  - Translate all lingering hardcoded UI strings (Focus Mode, Magnetic, Snap, Snap Cuts) across English, Swedish, German, French, Spanish, Japanese, and Arabic.
+  - Scoped ESLint rule (`react/jsx-no-literals`) enforcing zero raw strings in key delivery and media components while maintaining the strict 0-warning `.lint-threshold`.

@@ -161,14 +161,14 @@ export const TimelinePage: React.FC = () => {
             <button
               type="button"
               onClick={enableDeliveryMode}
-              className="rounded-md border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               {creatorT('v16.openEditorMedia', 'Open editor & import media')}
             </button>
             <button
               type="button"
               onClick={() => navigate(ROUTES.CREATE)}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              className="rounded-md border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
             >
               {createT('title', 'Production Workflow')}
             </button>

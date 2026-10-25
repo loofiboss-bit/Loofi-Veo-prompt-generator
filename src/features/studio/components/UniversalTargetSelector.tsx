@@ -29,7 +29,7 @@ export function UniversalTargetSelector({ value, onChange }: UniversalTargetSele
           )
         }
         data-studio-field="target"
-        className="w-full rounded-xl border px-3 py-3 text-sm outline-none transition focus:border-cyan-400"
+        className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition focus:border-cyan-400"
         style={{
           background: 'var(--color-bg-secondary)',
           color: 'var(--color-text-primary)',

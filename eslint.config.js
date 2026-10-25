@@ -136,4 +136,22 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // i18n Guard: Disallow raw string literals in JSX in fully localized critical feature views
+    files: [
+      'src/features/delivery/components/**/*.{ts,tsx}',
+      'src/features/media/components/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    rules: {
+      'react/jsx-no-literals': [
+        'error',
+        {
+          noStrings: true,
+          ignoreProps: true,
+          noAttributeStrings: false,
+        },
+      ],
+    },
+  },
 );

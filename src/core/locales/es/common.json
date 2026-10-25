@@ -172,6 +172,16 @@
     "emptyTitle": "Tu línea de tiempo está vacía",
     "emptyDescription": "Añade escenas en Producción para empezar a editar el guion gráfico.",
     "backToStoryboard": "Volver al guion gráfico",
-    "backToStudio": "Volver a Prompt Studio"
+    "backToStudio": "Volver a Prompt Studio",
+    "magneticTitle": "Línea de tiempo magnética (Ripple Edit)",
+    "magnetic": "Magnético",
+    "snap": "Ajustar",
+    "snapToBeatTitle": "Ajustar tomas al compás de {{bpm}} BPM",
+    "snapCuts": "Cortes al ritmo ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "El modo de enfoque está activado",
+    "activeDescription": "Los estudios avanzados y espacios de colaboración están ocultos.",
+    "exit": "Salir del modo de enfoque"
   }
 }

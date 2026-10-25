@@ -218,6 +218,16 @@
     "duration": "Längd (sekunder)",
     "sourceOffset": "Förskjutning i källfil (sekunder)",
     "volume": "Volym",
-    "caption": "Undertext"
+    "caption": "Undertext",
+    "magneticTitle": "Magnetisk tidslinje (Ripple Edit)",
+    "magnetic": "Magnetisk",
+    "snap": "Fäst",
+    "snapToBeatTitle": "Fäst tagningar mot {{bpm}} BPM-taktstreck",
+    "snapCuts": "Fäst klipp ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "Fokusläge är aktivt",
+    "activeDescription": "Avancerade studios och samarbetsytor döljs så att du kan hålla fokus på promptflödet.",
+    "exit": "Avsluta fokusläge"
   }
 }
