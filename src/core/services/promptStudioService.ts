@@ -21,6 +21,7 @@ import { transpilePrompt } from './modelTranspilerService';
 import { validateStudioVideo, validateStudioMusic } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { DEFAULT_PROMPT_MODEL } from './gemini/aiClient';
+import { assertProtectedPromptTextPreserved } from './promptTextSegments';
 
 import {
   isLyricSectionLocked,
@@ -182,8 +183,8 @@ const artifactId = (kind: 'video' | 'music', inputHash: string): string =>
   `prompt-${kind}-${inputHash}`;
 
 export interface PromptArtifactOptimizer {
-  optimizeVideo(input: VideoPromptArtifactInput): Promise<unknown>;
-  optimizeMusic(input: MusicPromptArtifactInput): Promise<unknown>;
+  optimizeVideo(input: VideoPromptArtifactInput, signal?: AbortSignal): Promise<unknown>;
+  optimizeMusic(input: MusicPromptArtifactInput, signal?: AbortSignal): Promise<unknown>;
 }
 
 const parseStructuredJson = <T>(value: unknown, label: string): T => {
@@ -204,10 +205,10 @@ const parseStructuredJson = <T>(value: unknown, label: string): T => {
 };
 
 const defaultOptimizer: PromptArtifactOptimizer = {
-  async optimizeVideo(input) {
-    return generatePromptWithCurrentProvider(toVideoPromptState(input));
+  async optimizeVideo(input, signal) {
+    return generatePromptWithCurrentProvider(toVideoPromptState(input), undefined, signal);
   },
-  async optimizeMusic(input) {
+  async optimizeMusic(input, signal) {
     if (resolvePromptGenerationProvider() === 'ollama') {
       const settings = useSettingsStore.getState();
       return generatePromptWithOllama(
@@ -224,10 +225,11 @@ const defaultOptimizer: PromptArtifactOptimizer = {
         {
           baseUrl: settings.localLlmEndpoint,
           model: settings.localLlmModel,
+          signal,
         },
       );
     }
-    return generateSunoPack(toSunoSettings(input));
+    return generateSunoPack(toSunoSettings(input), signal);
   },
 };
 
@@ -911,12 +913,13 @@ const applySunoPack = (
 export const optimizeVideoPromptArtifact = async (
   input: VideoPromptArtifactInput,
   optimizer: PromptArtifactOptimizer = defaultOptimizer,
+  signal?: AbortSignal,
 ): Promise<PromptArtifactV1> => {
   const provider = resolvePromptGenerationProvider();
   const local = compileVideoPromptArtifact(input);
   if (provider === 'gemini' || provider === 'ollama') {
     const result = parseStructuredJson<{ prompt?: unknown }>(
-      await optimizer.optimizeVideo(input),
+      await optimizer.optimizeVideo(input, signal),
       'video optimizer',
     );
     if (typeof result.prompt !== 'string') {
@@ -924,6 +927,11 @@ export const optimizeVideoPromptArtifact = async (
     }
     if (!trim(result.prompt)) throw new Error('The video optimizer returned an empty prompt.');
     const primary = local.primary as VideoPromptVariant;
+    assertProtectedPromptTextPreserved(
+      primary.prompt,
+      result.prompt,
+      (local.input as VideoPromptArtifactInput).dialogue ?? '',
+    );
     const optimized: PromptArtifactV1 = {
       ...local,
       primary: (() => {
@@ -962,6 +970,7 @@ export const optimizeVideoPromptArtifact = async (
 export const optimizeMusicPromptArtifact = async (
   input: MusicPromptArtifactInput,
   optimizer: PromptArtifactOptimizer = defaultOptimizer,
+  signal?: AbortSignal,
 ): Promise<PromptArtifactV1> => {
   const local = compileMusicPromptArtifact(input);
   const provider = resolvePromptGenerationProvider();
@@ -971,7 +980,7 @@ export const optimizeMusicPromptArtifact = async (
       style?: unknown;
       lyrics?: unknown;
       explanation?: unknown;
-    }>(await optimizer.optimizeMusic(input), 'music optimizer');
+    }>(await optimizer.optimizeMusic(input, signal), 'music optimizer');
     if (
       typeof pack.style !== 'string' ||
       typeof pack.lyrics !== 'string' ||

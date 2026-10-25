@@ -61,6 +61,36 @@ function registerProviderIpc({
   },
 }) {
   const approvals = new Map();
+  const activeRequests = new Map();
+  const REQUEST_TTL_MS = 5 * 60 * 1000;
+
+  function deleteRequest(requestId, state = activeRequests.get(requestId)) {
+    if (!state || activeRequests.get(requestId) !== state) return;
+    clearTimeout(state.expiryTimer);
+    activeRequests.delete(requestId);
+  }
+
+  function markRequestExecuting(state) {
+    if (!state) return;
+    clearTimeout(state.expiryTimer);
+    state.expiryTimer = null;
+    state.executing = true;
+  }
+
+  function registerRequest(event, requestId) {
+    if (typeof requestId !== 'string' || !/^[0-9a-f-]{36}$/i.test(requestId))
+      throw new Error('Invalid provider request ID.');
+    const senderId = event?.sender?.id;
+    const existing = activeRequests.get(requestId);
+    if (existing && existing.senderId !== senderId)
+      throw new Error('Provider request belongs to another renderer.');
+    if (existing) return existing;
+    const state = { senderId, controller: new AbortController() };
+    state.expiryTimer = setTimeout(() => deleteRequest(requestId, state), REQUEST_TTL_MS);
+    state.expiryTimer.unref?.();
+    activeRequests.set(requestId, state);
+    return state;
+  }
 
   function consumeApproval(input) {
     if (input?.provider === 'ollama') return null;
@@ -140,10 +170,14 @@ function registerProviderIpc({
     }
   });
 
-  ipcMain.handle('provider-cost-approve', async (_, input) => {
+  ipcMain.handle('provider-cost-approve', async (event, input) => {
     const request = validateProviderInput(input);
-    if (request.provider === 'ollama') return `local:${randomUUID()}`;
+    if (request.provider === 'ollama') {
+      if (input?.requestId) registerRequest(event, input.requestId);
+      return `local:${randomUUID()}`;
+    }
     const maximumChargeUsd = validateProviderCostApproval(input);
+    const state = input?.requestId ? registerRequest(event, input.requestId) : null;
     const result = await dialog.showMessageBox(getMainWindow(), {
       type: 'warning',
       buttons: ['Approve maximum', 'Cancel'],
@@ -154,7 +188,14 @@ function registerProviderIpc({
       message: `Approve a maximum charge of $${maximumChargeUsd.toFixed(6)} USD?`,
       detail: `${request.providerModelId} · ${request.operation}\nUpper bound from ${input.costApproval.sourceUrl}\nVerified ${input.costApproval.verifiedDate}. This approval is single-use.`,
     });
-    if (result.response !== 0) throw new Error('Provider execution was not approved.');
+    if (result.response !== 0) {
+      if (state?.senderId === event?.sender?.id) deleteRequest(input.requestId, state);
+      throw new Error('Provider execution was not approved.');
+    }
+    if (state?.controller.signal.aborted) {
+      deleteRequest(input.requestId, state);
+      throw new DOMException('Provider request cancelled.', 'AbortError');
+    }
     const token = randomUUID();
     approvals.set(token, {
       provider: request.provider,
@@ -167,9 +208,26 @@ function registerProviderIpc({
     return token;
   });
 
-  ipcMain.handle('provider-execute', async (_, input) => {
+  ipcMain.handle('provider-cancel-request', async (event, input) => {
+    const requestId = typeof input === 'string' ? input : input?.requestId;
+    const state = activeRequests.get(requestId);
+    if (!state || state.senderId !== event?.sender?.id) return false;
+    state.controller.abort();
+    return true;
+  });
+
+  ipcMain.handle('provider-execute', async (event, input) => {
+    const requestId = input?.requestId;
+    let state;
     try {
-      const request = validateProviderInput(input);
+      if (requestId) state = registerRequest(event, requestId);
+      markRequestExecuting(state);
+      if (state?.controller.signal.aborted)
+        throw new DOMException('Provider request cancelled.', 'AbortError');
+      const request = {
+        ...validateProviderInput(input),
+        ...(state ? { signal: state.controller.signal } : {}),
+      };
       const approval = consumeApproval(input);
       if (approval) {
         validateProviderCostApproval({ ...input, costApproval: approval.costApproval });
@@ -178,22 +236,38 @@ function registerProviderIpc({
           maxOutputTokens: approval.costApproval.calculationInputs.estimatedOutputTokens,
         };
       }
+      if (state?.controller.signal.aborted)
+        throw new DOMException('Provider request cancelled.', 'AbortError');
       if (request.provider === 'gemini-api') {
-        return executeGemini(request, await keytar.getPassword(keytarService, 'gemini-api-key'));
+        return await executeGemini(
+          request,
+          await keytar.getPassword(keytarService, 'gemini-api-key'),
+        );
       }
-      if (request.provider === 'ollama') return executeOllama(request, input.endpoint);
-      return executeVertex(request, input.profile, vertexAuth);
+      if (request.provider === 'ollama') return await executeOllama(request, input.endpoint);
+      return await executeVertex(request, input.profile, vertexAuth);
     } catch (error) {
+      if (state?.controller.signal.aborted || error?.name === 'AbortError') {
+        return { failure: 'cancelled', message: 'Provider request cancelled.', rawModelId: '' };
+      }
       return {
         failure: 'unknown',
         message: error instanceof Error ? error.message : 'Provider execution failed.',
         rawModelId: '',
       };
+    } finally {
+      if (requestId) deleteRequest(requestId, state);
     }
   });
 
-  ipcMain.handle('provider-interaction', async (_, input) => {
+  ipcMain.handle('provider-interaction', async (event, input) => {
+    const requestId = input?.requestId;
+    let state;
     try {
+      if (requestId) state = registerRequest(event, requestId);
+      markRequestExecuting(state);
+      if (state?.controller.signal.aborted)
+        throw new DOMException('Provider request cancelled.', 'AbortError');
       const request = validateProviderInput(input);
       if (
         request.provider !== 'gemini-api' ||
@@ -204,6 +278,8 @@ function registerProviderIpc({
       const approval = consumeApproval(input);
       validateProviderCostApproval({ ...input, costApproval: approval.costApproval });
       const apiKey = await keytar.getPassword(keytarService, 'gemini-api-key');
+      if (state?.controller.signal.aborted)
+        throw new DOMException('Provider request cancelled.', 'AbortError');
       if (!apiKey) {
         return {
           failure: 'authentication',
@@ -211,13 +287,21 @@ function registerProviderIpc({
           rawModelId: '',
         };
       }
-      return executeInteraction(request, await createGeminiClient(apiKey));
+      return await executeInteraction(
+        { ...request, ...(state ? { signal: state.controller.signal } : {}) },
+        await createGeminiClient(apiKey),
+      );
     } catch (error) {
+      if (state?.controller.signal.aborted || error?.name === 'AbortError') {
+        return { failure: 'cancelled', message: 'Provider request cancelled.', rawModelId: '' };
+      }
       return {
         failure: 'unknown',
         message: error instanceof Error ? error.message : 'Provider interaction failed.',
         rawModelId: '',
       };
+    } finally {
+      if (requestId) deleteRequest(requestId, state);
     }
   });
 }

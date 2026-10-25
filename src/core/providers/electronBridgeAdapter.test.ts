@@ -9,6 +9,33 @@ const model = (id: string) => {
 };
 
 describe('ElectronBridgeAdapter', () => {
+  it('does not request approval or dispatch when already cancelled', async () => {
+    const bridge: PrivilegedProviderBridge = {
+      approveProviderCost: vi.fn(),
+      testProviderConnection: vi.fn(),
+      executeProvider: vi.fn(),
+    };
+    const controller = new AbortController();
+    controller.abort();
+    const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
+
+    await expect(
+      adapter.execute({
+        operation: 'plan',
+        model: model('gemini-3.1-pro'),
+        prompt: 'Do not send this.',
+        signal: controller.signal,
+        costContext: {
+          approvedCeilingUsd: 0.02,
+          estimatedInputTokens: 100,
+          estimatedOutputTokens: 1_000,
+        },
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(bridge.approveProviderCost).not.toHaveBeenCalled();
+    expect(bridge.executeProvider).not.toHaveBeenCalled();
+  });
+
   it('passes provider IDs to the privileged bridge without credentials', async () => {
     const bridge: PrivilegedProviderBridge = {
       approveProviderCost: vi.fn().mockResolvedValue('approval-token'),
@@ -26,15 +53,21 @@ describe('ElectronBridgeAdapter', () => {
         estimatedOutputTokens: 1_000,
       },
     });
-    expect(bridge.executeProvider).toHaveBeenCalledWith({
-      provider: 'gemini-api',
-      providerModelId: 'gemini-3.1-pro-preview',
-      operation: 'plan',
-      prompt: 'Plan.',
-      inputs: undefined,
-      interactionId: undefined,
-      approvalToken: 'approval-token',
-    });
+    expect(bridge.executeProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: expect.any(String),
+        provider: 'gemini-api',
+        providerModelId: 'gemini-3.1-pro-preview',
+        operation: 'plan',
+        prompt: 'Plan.',
+        inputs: undefined,
+        interactionId: undefined,
+        approvalToken: 'approval-token',
+      }),
+    );
+    expect(bridge.approveProviderCost).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: expect.any(String) }),
+    );
   });
 
   it('does not claim desktop video support before the paid-job adapter is selected', () => {

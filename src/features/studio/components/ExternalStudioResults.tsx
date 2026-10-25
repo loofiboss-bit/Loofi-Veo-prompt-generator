@@ -1,8 +1,9 @@
 import { useEffect, useId, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { PromptArtifactV1, VideoPromptArtifactInput } from '@core/types';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
+import { ROUTES } from '@core/config/routes';
 import { useExternalStudioResultStore } from '@core/store/useExternalStudioResultStore';
 import { useAppStore } from '@core/store/useAppStore';
 import {
@@ -20,14 +21,17 @@ interface ExternalStudioResultsProps {
 
 function ExternalResultCard({
   result,
+  comparisonNotes,
   disabled,
   showMedia = true,
 }: {
   result: ExternalStudioResultV1;
+  comparisonNotes?: string;
   disabled: boolean;
   showMedia?: boolean;
 }) {
   const { t } = useTranslation('studio');
+  const navigate = useNavigate();
   const asset = useExternalStudioResultStore((s) => s.assets[result.id]);
   const pending = useExternalStudioResultStore((s) => s.pending);
   const confirm = useExternalStudioResultStore((s) => s.confirm);
@@ -100,6 +104,49 @@ function ExternalResultCard({
         onChange={(e) => setNotes(e.target.value)}
         className="mt-1 w-full rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-2 text-[var(--color-text-primary)]"
       />
+      {result.sourceSnapshot.kind === 'video' && result.sourceSnapshot.target !== 'suno' ? (
+        <button
+          type="button"
+          disabled={disabled || pending || !comparisonNotes?.trim()}
+          onClick={() => {
+            const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
+            navigate(`${ROUTES.STUDIO}?mode=video`, {
+              state: {
+                kind: 'studio-feedback',
+                source: {
+                  projectId: result.projectId,
+                  sourceKind: 'external-result',
+                  sourceId: result.id,
+                  artifactId: result.artifactId,
+                  variantIndex: result.variantIndex,
+                  target: result.sourceSnapshot.target,
+                  prompt: result.variantSnapshot.prompt,
+                  negativePrompt: result.variantSnapshot.negativePrompt,
+                  settings: JSON.stringify(
+                    {
+                      mode: input.mode,
+                      aspectRatio: input.aspectRatio,
+                      durationSeconds: input.durationSeconds,
+                      firstFrameAssetId: input.firstFrameAssetId,
+                      lastFrameAssetId: input.lastFrameAssetId,
+                      referenceAssetIds: input.referenceAssetIds,
+                      extensionSourceTakeId: input.extensionSourceTakeId,
+                    },
+                    null,
+                    2,
+                  ),
+                  notes: comparisonNotes,
+                },
+              },
+            });
+          }}
+          className="rounded border border-blue-600 px-3 py-2 disabled:opacity-50"
+        >
+          {t('externalResults.improvePromptFromNotes', {
+            defaultValue: 'Improve prompt from notes',
+          })}
+        </button>
+      ) : null}
       <button
         type="button"
         disabled={disabled || pending || !asset}
@@ -236,12 +283,13 @@ export function ExternalStudioResults({
         results={playable}
         disabled={disabled || state.pending}
         onSaveNotes={(id, notes) => state.saveComparisonNotes(id, notes)}
-        renderDetails={(item) => {
+        renderDetails={(item, { notes }) => {
           const result = currentResults.find((candidate) => candidate.id === item.id);
           return result ? (
             <ExternalResultCard
               key={result.id}
               result={result}
+              comparisonNotes={notes}
               disabled={disabled}
               showMedia={false}
             />

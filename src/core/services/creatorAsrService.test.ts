@@ -1,12 +1,70 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CreatorAsrLanguage } from './creatorAsrService';
+
+const mocks = vi.hoisted(() => ({
+  workers: [] as Array<{
+    onmessage: ((event: MessageEvent) => void) | null;
+    onerror: ((event: ErrorEvent) => void) | null;
+    posted: {
+      type: string;
+      requestId: string;
+      pcm: ArrayBuffer;
+      language: CreatorAsrLanguage;
+    } | null;
+    terminated: boolean;
+    postMessage: (
+      message: {
+        type: string;
+        requestId: string;
+        pcm: ArrayBuffer;
+        language: CreatorAsrLanguage;
+      },
+      transfer: Transferable[],
+    ) => void;
+    terminate: () => void;
+  }>,
+}));
+
+vi.mock('@infrastructure/workers/creatorAsr.worker?worker', () => ({
+  default: class MockCreatorAsrWorker {
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    onerror: ((event: ErrorEvent) => void) | null = null;
+    posted: (typeof mocks.workers)[number]['posted'] = null;
+    terminated = false;
+
+    constructor() {
+      mocks.workers.push(this);
+    }
+
+    postMessage(
+      message: {
+        type: string;
+        requestId: string;
+        pcm: ArrayBuffer;
+        language: CreatorAsrLanguage;
+      },
+      transfer: Transferable[],
+    ) {
+      this.posted = structuredClone(message, { transfer });
+    }
+
+    terminate() {
+      this.terminated = true;
+    }
+  },
+}));
+
 import {
   assertClipAudioRequestCurrent,
+  creatorAsrService,
   groupWhisperWordChunks,
   type ClipAudioRequest,
   type CurrentClipAudioSourceState,
 } from './creatorAsrService';
 
 describe('local Whisper caption proposal', () => {
+  beforeEach(() => mocks.workers.splice(0));
+
   it('groups real word timestamps into editable sentence-sized captions', () => {
     const captions = groupWhisperWordChunks(
       [
@@ -70,5 +128,32 @@ describe('local Whisper caption proposal', () => {
         /proposal is stale/,
       );
     }
+  });
+
+  it('keeps the PCM duration after transferring and detaching its ArrayBuffer', async () => {
+    const pcm = new ArrayBuffer(16_000 * Float32Array.BYTES_PER_ELEMENT);
+    const resultPromise = creatorAsrService.transcribe(pcm, 'en', () => undefined);
+    const worker = mocks.workers[0];
+    expect(worker.posted).not.toBeNull();
+    expect(pcm.byteLength).toBe(0);
+
+    worker.onmessage?.(
+      new MessageEvent('message', {
+        data: {
+          type: 'RESULT',
+          requestId: worker.posted!.requestId,
+          text: 'Hello there',
+          chunks: [{ text: ' Hello', timestamp: [0, 0.2] }],
+          modelId: 'onnx-community/whisper-base',
+          modelRevision: '1846881b6b3a3024392c1eea3ad983695bc23925',
+        },
+      }),
+    );
+
+    await expect(resultPromise).resolves.toMatchObject({
+      transcript: 'Hello there',
+      segments: [{ text: 'Hello', startTime: 0, endTime: 0.2 }],
+    });
+    expect(worker.terminated).toBe(true);
   });
 });

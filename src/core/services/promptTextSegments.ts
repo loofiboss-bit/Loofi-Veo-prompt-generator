@@ -71,3 +71,23 @@ export function segmentPromptText(prompt: string, sourceDialogue = ''): PromptTe
     segments.push({ text: prompt.slice(plainStart), protected: false });
   return segments;
 }
+
+/** Require every protected dialogue span to remain exact and in its original order. */
+export function assertProtectedPromptTextPreserved(
+  source: string,
+  proposed: string,
+  sourceDialogue = '',
+): void {
+  const protectedSegments = segmentPromptText(source, sourceDialogue)
+    .filter((segment) => segment.protected)
+    .map((segment) => segment.text);
+  let cursor = 0;
+  for (const segment of protectedSegments) {
+    const found = proposed.indexOf(segment, cursor);
+    if (found < 0)
+      throw new Error(
+        'The AI response changed or omitted protected dialogue. Allow dialogue rewriting to change it.',
+      );
+    cursor = found + segment.length;
+  }
+}

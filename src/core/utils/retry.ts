@@ -126,6 +126,8 @@ export async function retryOperation<T>(
     try {
       const result = await operation();
 
+      if (signal?.aborted) throw new DOMException('Retry aborted', 'AbortError');
+
       // Record success to circuit breaker
       if (cbEndpoint) {
         circuitBreakerService.recordSuccess(cbEndpoint);
@@ -134,6 +136,9 @@ export async function retryOperation<T>(
       return result;
     } catch (error) {
       lastError = error;
+
+      // Cancellation is a user action, not a provider failure or retry signal.
+      if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
 
       // Record failure to circuit breaker
       if (cbEndpoint) {

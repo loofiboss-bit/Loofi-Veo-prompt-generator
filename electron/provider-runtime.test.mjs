@@ -6,6 +6,7 @@ const require = createRequire(import.meta.url);
 const {
   classifyHttpFailure,
   executeGemini,
+  executeOllama,
   executeVertex,
   executeInteraction,
   resolveOllamaEndpoint,
@@ -52,6 +53,39 @@ test('Interactions API persists IDs and threads follow-up edits', async () => {
   assert.equal(request.input[1].type, 'video');
   assert.equal(result.interactionId, 'interaction-child');
   assert.equal(result.text, 'Revision complete.');
+});
+
+test('Interactions API receives cancellation as an SDK request option', async () => {
+  const controller = new AbortController();
+  let started;
+  const startedPromise = new Promise((resolve) => (started = resolve));
+  const operation = executeInteraction(
+    {
+      providerModelId: 'gemini-omni-flash-preview',
+      prompt: 'Revise the prompt.',
+      signal: controller.signal,
+    },
+    {
+      interactions: {
+        create: async (_input, options) => {
+          assert.equal(options.abortSignal, controller.signal);
+          started();
+          return await new Promise((_resolve, reject) => {
+            options.abortSignal.addEventListener(
+              'abort',
+              () => reject(options.abortSignal.reason),
+              {
+                once: true,
+              },
+            );
+          });
+        },
+      },
+    },
+  );
+  await startedPromise;
+  controller.abort(new DOMException('Cancelled', 'AbortError'));
+  await assert.rejects(operation, { name: 'AbortError' });
 });
 
 test('Vertex execution uses ADC OAuth and its distinct regional API surface', async () => {
@@ -123,6 +157,42 @@ test('Gemini execution keeps the API key in a header and normalizes output', asy
   assert.equal(result.text, 'OK');
   assert.equal(captured.init.headers['x-goog-api-key'], 'secret-key');
   assert.equal(captured.url.includes('secret-key'), false);
+});
+
+test('Gemini, Vertex, and Ollama pass cancellation to the actual fetch without serializing it', async () => {
+  for (const provider of ['gemini', 'vertex', 'ollama']) {
+    const controller = new AbortController();
+    let started;
+    const startedPromise = new Promise((resolve) => (started = resolve));
+    const fetchImpl = async (_url, init) => {
+      assert.equal(init.signal, controller.signal);
+      assert.equal(init.body.includes('AbortSignal'), false);
+      started();
+      return await new Promise((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(init.signal.reason), { once: true });
+      });
+    };
+    const request = {
+      providerModelId: 'gemini-3.5-flash',
+      operation: 'plan',
+      prompt: 'Build a concise plan.',
+      signal: controller.signal,
+    };
+    const operation =
+      provider === 'gemini'
+        ? executeGemini(request, 'test-key', fetchImpl)
+        : provider === 'vertex'
+          ? executeVertex(
+              request,
+              { projectId: 'studio-project-123', location: 'global' },
+              { getAccessToken: async () => 'token' },
+              fetchImpl,
+            )
+          : executeOllama(request, 'http://127.0.0.1:11434', fetchImpl);
+    await startedPromise;
+    controller.abort(new DOMException('Cancelled', 'AbortError'));
+    await assert.rejects(operation, { name: 'AbortError' });
+  }
 });
 
 test('HTTP errors receive stable provider classifications', () => {

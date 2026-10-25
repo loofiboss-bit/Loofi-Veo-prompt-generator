@@ -142,6 +142,19 @@ describe('Studio variant editing', () => {
     expect(mocks.optimizeMusic).not.toHaveBeenCalled();
   });
 
+  it('passes the active cancellation signal through targeted lyric rewriting', async () => {
+    const artifact = compileMusicPromptArtifact({ topic: 'Home', language: 'Swedish', lyrics });
+    const currentLyrics = (artifact.primary as MusicPromptVariant).lyrics;
+    mocks.optimizeMusic.mockResolvedValue(artifact);
+    const controller = new AbortController();
+    await rewriteStudioLyricSection(artifact, '[Chorus]', 'Warmer', [], 0, controller.signal);
+    expect(mocks.optimizeMusic).toHaveBeenCalledWith(
+      expect.objectContaining({ lyrics: currentLyrics }),
+      undefined,
+      controller.signal,
+    );
+  });
+
   it('preserves distinct repeated lyric sections in order without duplication (F5)', () => {
     const multiChorusLyrics =
       '[Verse 1]\nIntro verse\n\n[Chorus]\nFirst unique chorus\n\n[Verse 2]\nSecond verse\n\n[Chorus]\nSecond unique chorus\n';

@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSettingsStore } from '@core/store/useSettingsStore';
-import { compileVideoPromptArtifact } from './promptStudioService';
+import { compileMusicPromptArtifact, compileVideoPromptArtifact } from './promptStudioService';
 import { editStudioVariant } from './promptStudioEditingService';
-import { proposeVideoVariantEdit, type VideoVariantEditField } from './videoVariantEditService';
+import {
+  proposeMusicVariantEdit,
+  proposeVideoVariantEdit,
+  type MusicVariantEditField,
+  type VideoVariantEditField,
+} from './videoVariantEditService';
+import { segmentPromptText } from './promptTextSegments';
 
-const mocks = vi.hoisted(() => ({ generate: vi.fn(), ollama: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  generate: vi.fn(),
+  ollama: vi.fn(),
+  retryOptions: undefined as unknown,
+}));
 vi.mock('./gemini/aiClient', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./gemini/aiClient')>();
   return {
@@ -12,7 +22,10 @@ vi.mock('./gemini/aiClient', async (importOriginal) => {
     DEFAULT_PROMPT_MODEL: 'gemini-test',
     getAiClientAsync: async () => ({ models: { generateContent: mocks.generate } }),
     getPromptModel: () => 'gemini-test',
-    resilientCall: (callback: () => Promise<unknown>) => callback(),
+    resilientCall: (callback: () => Promise<unknown>, options: unknown) => {
+      mocks.retryOptions = options;
+      return callback();
+    },
   };
 });
 vi.mock('./ollamaProvider', () => ({ generatePromptWithOllama: mocks.ollama }));
@@ -30,10 +43,31 @@ const makeArtifact = () =>
     { prompt: 'My exact manually edited alternative. “Hej!”', negativePrompt: 'unwanted signs' },
   );
 
+const makeMusicArtifact = (
+  instrumental = false,
+  lyrics = '[Verse 1]\nOriginal verse\n\n[Chorus]\nOriginal chorus\n\n[Chorus]\nLocked chorus',
+) =>
+  editStudioVariant(
+    compileMusicPromptArtifact({
+      topic: 'Night train',
+      language: 'Swedish',
+      genre: 'folk',
+      instrumental,
+      lyrics: instrumental ? '[Instrumental]' : lyrics,
+    }),
+    1,
+    {
+      styleOfMusic: 'My manually edited Nordic folk style',
+      lyrics: instrumental ? '[Instrumental]' : lyrics,
+    },
+  );
+
 describe('selected video variant proposals', () => {
   beforeEach(() => {
-    mocks.generate.mockReset().mockResolvedValue({ text: '{"prompt":"A concise proposal"}' });
-    mocks.ollama.mockReset().mockResolvedValue('{"prompt":"Local proposal"}');
+    mocks.generate
+      .mockReset()
+      .mockResolvedValue({ text: '{"prompt":"A concise proposal. “Hej!”"}' });
+    mocks.ollama.mockReset().mockResolvedValue('{"prompt":"Local proposal. “Hej!”"}');
     useSettingsStore.setState({
       promptGenerationProvider: 'gemini',
       localLlmEndpoint: 'http://localhost:11434',
@@ -66,7 +100,7 @@ describe('selected video variant proposals', () => {
         prompt: 'My exact manually edited alternative. “Hej!”',
         negativePrompt: 'unwanted signs',
       },
-      patch: { prompt: 'A concise proposal' },
+      patch: { prompt: 'A concise proposal. “Hej!”' },
       provenance: { provider: 'gemini', source: 'optimizer' },
     });
     expect(artifact).toEqual(original);
@@ -85,17 +119,43 @@ describe('selected video variant proposals', () => {
     expect(mocks.ollama).toHaveBeenCalledWith(expect.stringContaining('unwanted signs'), {
       baseUrl: 'http://localhost:11434',
       model: 'local-editor',
+      signal: undefined,
+      jsonSchema: {
+        type: 'object',
+        properties: { negativePrompt: { type: 'string' } },
+        required: ['negativePrompt'],
+        additionalProperties: false,
+      },
     });
     expect(result.patch).toEqual({ negativePrompt: '' });
     expect(result.provenance.provider).toBe('ollama');
     expect(mocks.generate).not.toHaveBeenCalled();
   });
 
+  it('passes the cancellation signal through Gemini and discards a late response', async () => {
+    const controller = new AbortController();
+    let complete!: (value: { text: string }) => void;
+    mocks.generate.mockReturnValue(new Promise((resolve) => (complete = resolve)));
+    const pending = proposeVideoVariantEdit({
+      artifact: makeArtifact(),
+      variantIndex: 1,
+      fields: ['prompt'],
+      direction: 'Shorten',
+      signal: controller.signal,
+    });
+    await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalled());
+    expect(mocks.generate.mock.calls[0][0].config.abortSignal).toBe(controller.signal);
+    expect(mocks.retryOptions).toMatchObject({ signal: controller.signal });
+    controller.abort();
+    complete({ text: '{"prompt":"Late result. “Hej!”"}' });
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
   it.each(['gemini', 'ollama'] as const)(
     'accepts JSON wrapped in markdown code fences from %s',
     async (provider) => {
       useSettingsStore.setState({ promptGenerationProvider: provider });
-      const raw = '```json\n{"prompt":"A fenced proposal"}\n```';
+      const raw = '```json\n{"prompt":"A fenced proposal. “Hej!”"}\n```';
       mocks.generate.mockResolvedValue({ text: raw });
       mocks.ollama.mockResolvedValue(raw);
       const result = await proposeVideoVariantEdit({
@@ -104,7 +164,7 @@ describe('selected video variant proposals', () => {
         fields: ['prompt'],
         direction: 'Shorten',
       });
-      expect(result.patch).toEqual({ prompt: 'A fenced proposal' });
+      expect(result.patch).toEqual({ prompt: 'A fenced proposal. “Hej!”' });
     },
   );
 
@@ -156,7 +216,7 @@ describe('selected video variant proposals', () => {
     (artifact.alternatives[0] as { prompt: string }).prompt = 'New manual edit';
     fields.push('negativePrompt');
     await vi.waitFor(() => expect(mocks.generate).toHaveBeenCalled());
-    complete({ text: '{"prompt":"Proposed before newer edits"}' });
+    complete({ text: '{"prompt":"Proposed before newer edits. “Hej!”"}' });
     expect((await pending).before.prompt).toBe('My exact manually edited alternative. “Hej!”');
   });
 
@@ -187,7 +247,265 @@ describe('selected video variant proposals', () => {
     expect(artifact).toEqual(original);
   });
 
+  it.each([
+    { fields: ['styleOfMusic'] as MusicVariantEditField[], key: 'styleOfMusic' },
+    { fields: ['lyrics'] as MusicVariantEditField[], key: 'lyrics' },
+  ])('proposes only the requested edited music field: $key', async ({ fields, key }) => {
+    const artifact = makeMusicArtifact();
+    const original = structuredClone(artifact);
+    const value = key === 'styleOfMusic' ? 'Nordic guitar, brushed drums' : '[Verse 1]\nNew';
+    mocks.generate.mockResolvedValue({ text: JSON.stringify({ [key]: value }) });
+
+    const result = await proposeMusicVariantEdit({
+      artifact,
+      variantIndex: 1,
+      fields,
+      direction: 'Make this warmer',
+    });
+
+    expect(mocks.generate.mock.calls[0][0].contents).toContain(
+      'My manually edited Nordic folk style',
+    );
+    expect(mocks.generate.mock.calls[0][0].contents).toContain('Original chorus');
+    expect(mocks.generate.mock.calls[0][0].config.responseJsonSchema).toMatchObject({
+      required: fields,
+      additionalProperties: false,
+    });
+    expect(result.before.styleOfMusic).toBe('My manually edited Nordic folk style');
+    expect(result.patch).toEqual({ [key]: value });
+    expect(artifact).toEqual(original);
+    expect(mocks.ollama).not.toHaveBeenCalled();
+  });
+
+  it('proposes both music fields and leaves style limits to local validation', async () => {
+    const artifact = makeMusicArtifact();
+    mocks.generate.mockResolvedValue({
+      text: JSON.stringify({ styleOfMusic: 'Acoustic folk', lyrics: '[Chorus]\nA new hook' }),
+    });
+    const result = await proposeMusicVariantEdit({
+      artifact,
+      variantIndex: 1,
+      fields: ['styleOfMusic', 'lyrics'],
+      direction: 'Make this more intimate',
+      lockedSections: [],
+    });
+    expect(result.patch).toEqual({ styleOfMusic: 'Acoustic folk', lyrics: '[Chorus]\nA new hook' });
+    expect(mocks.generate.mock.calls[0][0].config.responseJsonSchema.required).toEqual([
+      'styleOfMusic',
+      'lyrics',
+    ]);
+  });
+
+  it('preserves only the locked repeated lyric occurrence exactly', async () => {
+    const artifact = makeMusicArtifact();
+    const proposed =
+      '[Verse 1]\nChanged verse\n\n[Chorus]\nChanged first\n\n[Chorus]\nWrong locked text';
+    mocks.generate.mockResolvedValue({ text: JSON.stringify({ lyrics: proposed }) });
+    const result = await proposeMusicVariantEdit({
+      artifact,
+      variantIndex: 1,
+      fields: ['lyrics'],
+      direction: 'Rewrite around the locked hook',
+      lockedSections: ['[Chorus] #2'],
+    });
+    expect(result.patch.lyrics).toBe(
+      '[Verse 1]\nChanged verse\n\n[Chorus]\nChanged first\n\n[Chorus]\nLocked chorus',
+    );
+  });
+
+  it('rejects a lyric response that changes the structure around a lock', async () => {
+    mocks.generate.mockResolvedValue({
+      text: JSON.stringify({ lyrics: '[Verse 1]\nChanged verse\n\n[Chorus]\nChanged hook' }),
+    });
+    await expect(
+      proposeMusicVariantEdit({
+        artifact: makeMusicArtifact(),
+        variantIndex: 1,
+        fields: ['lyrics'],
+        direction: 'Rewrite',
+        lockedSections: ['[Chorus] #2'],
+      }),
+    ).rejects.toThrow(/section order or count/);
+  });
+
+  it('blocks lyric edits in instrumental mode before invoking a provider', async () => {
+    await expect(
+      proposeMusicVariantEdit({
+        artifact: makeMusicArtifact(true),
+        variantIndex: 1,
+        fields: ['lyrics'],
+        direction: 'Add words',
+      }),
+    ).rejects.toThrow(/instrumental mode/);
+    expect(mocks.generate).not.toHaveBeenCalled();
+    expect(mocks.ollama).not.toHaveBeenCalled();
+  });
+
+  it('uses Ollama structured output for a music variant without provider fallback', async () => {
+    useSettingsStore.setState({ promptGenerationProvider: 'ollama' });
+    mocks.ollama.mockResolvedValue(JSON.stringify({ styleOfMusic: 'Acoustic' }));
+    const artifact = makeMusicArtifact();
+    const result = await proposeMusicVariantEdit({
+      artifact,
+      variantIndex: 1,
+      fields: ['styleOfMusic'],
+      direction: 'Simplify the arrangement',
+    });
+    expect(mocks.ollama).toHaveBeenCalledWith(
+      expect.stringContaining('current Suno music variant'),
+      {
+        baseUrl: 'http://localhost:11434',
+        model: 'local-editor',
+        signal: undefined,
+        jsonSchema: {
+          type: 'object',
+          properties: { styleOfMusic: { type: 'string' } },
+          required: ['styleOfMusic'],
+          additionalProperties: false,
+        },
+      },
+    );
+    expect(result.patch).toEqual({ styleOfMusic: 'Acoustic' });
+    expect(mocks.generate).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed, unrequested, or overlong music output', async () => {
+    const artifact = makeMusicArtifact();
+    for (const text of [
+      'not JSON',
+      JSON.stringify({ styleOfMusic: 'ok', lyrics: 'unexpected' }),
+      JSON.stringify({ styleOfMusic: 'x'.repeat(201) }),
+    ]) {
+      mocks.generate.mockResolvedValue({ text });
+      await expect(
+        proposeMusicVariantEdit({
+          artifact,
+          variantIndex: 1,
+          fields: ['styleOfMusic'],
+          direction: 'Simplify the arrangement',
+        }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it.each([
+    ['changed', 'A runner says “changed line one” and “line two”.'],
+    ['omitted', 'A runner says “line one”.'],
+    ['reordered', 'A runner says “line two” and “line one”.'],
+  ])('rejects %s protected dialogue changes in AI output', async (_case, proposed) => {
+    const artifact = editStudioVariant(
+      compileVideoPromptArtifact({
+        idea: 'A runner',
+        target: 'runway-gen3',
+        mode: 'text-to-video',
+        durationSeconds: 8,
+        aspectRatio: '16:9',
+      }),
+      1,
+      { prompt: 'A runner says “line one” and “line two”.' },
+    );
+    mocks.generate.mockResolvedValue({ text: JSON.stringify({ prompt: proposed }) });
+    await expect(
+      proposeVideoVariantEdit({
+        artifact,
+        variantIndex: 1,
+        fields: ['prompt'],
+        direction: 'Shorten',
+      }),
+    ).rejects.toThrow(/protected dialogue/);
+  });
+
+  it('allows a dialogue rewrite only after explicit opt-in', async () => {
+    const artifact = makeArtifact();
+    mocks.generate.mockResolvedValue({ text: '{"prompt":"Rewritten dialogue."}' });
+    const result = await proposeVideoVariantEdit({
+      artifact,
+      variantIndex: 1,
+      fields: ['prompt'],
+      direction: 'Rewrite the dialogue',
+      allowDialogueRewrite: true,
+    });
+    expect(result.patch.prompt).toBe('Rewritten dialogue.');
+  });
+
+  it.each([
+    'flow-veo',
+    'veo-api',
+    'kling',
+    'runway-gen3',
+    'sora',
+    'luma-ray',
+    'wan-video',
+    'minimax-hailuo',
+  ] as const)(
+    'keeps quoted and supplied dialogue byte-exact for local %s grammar',
+    async (target) => {
+      const dialogue = 'The camera is moving. It says "Camera moves" and "slowly panning".';
+      const artifact = editStudioVariant(
+        compileVideoPromptArtifact({
+          idea: 'A runner, the camera is moving outside, camera: Orbit Right.',
+          dialogue,
+          audio: 'The camera is moving after dialogue.',
+          target,
+          mode: 'text-to-video',
+          durationSeconds: 8,
+          aspectRatio: '16:9',
+        }),
+        0,
+        {
+          prompt: `A runner, the camera is moving outside, camera: Orbit Right. Dialogue: the speaker says: ${dialogue}. Audio: room tone.`,
+        },
+      );
+      const selected = artifact.primary as { prompt: string };
+      const withQuotedCameraWords = `${selected.prompt} "Camera: slowly panning".`;
+      const edited = editStudioVariant(artifact, 0, { prompt: withQuotedCameraWords });
+      const result = await import('./videoVariantEditService').then(
+        ({ applyLocalPromptTransform }) =>
+          applyLocalPromptTransform(edited, 0, 'sync-target-grammar'),
+      );
+      const protectedSegments = segmentPromptText(withQuotedCameraWords, dialogue)
+        .filter((segment) => segment.protected)
+        .map((segment) => segment.text);
+      let cursor = 0;
+      for (const protectedSegment of protectedSegments) {
+        const found = result.patch.prompt!.indexOf(protectedSegment, cursor);
+        expect(found).toBeGreaterThanOrEqual(0);
+        cursor = found + protectedSegment.length;
+      }
+      expect(result.patch.prompt).toContain(dialogue);
+      expect(result.patch.prompt).toContain('"Camera: slowly panning"');
+    },
+  );
+
   describe('applyLocalPromptTransform', () => {
+    it.each(['flow-veo', 'veo-api'] as const)(
+      'preserves quoted sentence spacing and adds no fallback for %s',
+      async (target) => {
+        const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+        const artifact = makeArtifact();
+        artifact.target = target;
+        (artifact.primary as { prompt: string }).prompt = 'A runner says "Hello" outside.';
+
+        const result = applyLocalPromptTransform(artifact, 0, 'sync-target-grammar');
+
+        expect(result.patch.prompt).toBe('A runner says "Hello" outside.');
+      },
+    );
+
+    it('adds one target fallback after the whole prompt without disturbing dialogue spaces', async () => {
+      const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+      const artifact = makeArtifact();
+      artifact.target = 'kling';
+      (artifact.primary as { prompt: string }).prompt = 'A runner says "Hello" outside.';
+
+      const result = applyLocalPromptTransform(artifact, 0, 'sync-target-grammar');
+
+      expect(result.patch.prompt).toBe(
+        'A runner says "Hello" outside. [camera: smooth dynamic tracking]',
+      );
+      expect(result.patch.prompt!.match(/\[camera:/g)).toHaveLength(1);
+    });
+
     it('applies clean-compact by removing filler words and cleaning commas', async () => {
       const { applyLocalPromptTransform } = await import('./videoVariantEditService');
       const artifact = makeArtifact();

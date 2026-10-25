@@ -250,6 +250,7 @@
     "findings": "Iakttagelser",
     "reviewWarnings": "Lokala kontroller bedömer inte videokvaliteten.",
     "reviewFailed": "AI-granskningen misslyckades; manuell granskning är tillgänglig.",
-    "openFailed": "Den länkade produktionsscenen kunde inte öppnas. Ditt aktuella arbete är bevarat."
+    "openFailed": "Den länkade produktionsscenen kunde inte öppnas. Ditt aktuella arbete är bevarat.",
+    "improvePromptFromNotes": "Förbättra prompt från anteckningar"
   }
 }

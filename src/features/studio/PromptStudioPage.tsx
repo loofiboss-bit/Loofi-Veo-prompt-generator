@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type {
   Asset,
@@ -13,6 +13,7 @@ import type {
   StudioRevisionV1,
   StudioTemplateV1,
   PromptValidationAction,
+  StudioFeedbackNavigationState,
 } from '@core/types';
 import {
   compileMusicPromptArtifact,
@@ -44,6 +45,10 @@ import {
   applyLocalPromptTransform,
   hasVariantEditChanges,
   proposeVideoVariantEdit,
+  proposeMusicVariantEdit,
+  type MusicVariantEditField,
+  type MusicVariantEditPatch,
+  type MusicVariantEditProposal,
   type LocalMusicTransformId,
   type LocalPromptTransformId,
   type VideoVariantEditField,
@@ -57,6 +62,7 @@ import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { STUDIO_CAPABILITIES, studioGenerationBlocker } from '@core/config/studioCapabilities';
 import { openAssetLibrary } from '@shared/utils/assetLibraryEvents';
 import { ROUTES } from '@core/config/routes';
+import { assertProtectedPromptTextPreserved } from '@core/services/promptTextSegments';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useAppStore } from '@core/store/useAppStore';
@@ -73,6 +79,7 @@ import { MusicVariantCard } from './components/MusicVariantCard';
 import { ValidationRail } from './components/ValidationRail';
 import { ExternalStudioResults } from './components/ExternalStudioResults';
 import { VideoVariantEditPanel } from './components/VideoVariantEditPanel';
+import { MusicVariantEditPanel } from './components/MusicVariantEditPanel';
 
 const SpatialCameraDirector = lazy(() =>
   import('@features/create/components/SpatialCameraDirector').then((m) => ({
@@ -126,9 +133,39 @@ function focusDraftIdea(element: HTMLTextAreaElement | null) {
     element?.focus();
 }
 
+function isStudioFeedbackNavigationState(value: unknown): value is StudioFeedbackNavigationState {
+  if (!value || typeof value !== 'object') return false;
+  const state = value as Partial<StudioFeedbackNavigationState>;
+  const source = state.source;
+  const targets = [
+    'flow-veo',
+    'veo-api',
+    'kling',
+    'runway-gen3',
+    'sora',
+    'luma-ray',
+    'wan-video',
+    'minimax-hailuo',
+  ];
+  return (
+    state.kind === 'studio-feedback' &&
+    !!source &&
+    typeof source.projectId === 'string' &&
+    (source.sourceKind === 'external-result' || source.sourceKind === 'production-take') &&
+    typeof source.sourceId === 'string' &&
+    (source.variantIndex === 0 || source.variantIndex === 1 || source.variantIndex === 2) &&
+    targets.includes(source.target) &&
+    typeof source.prompt === 'string' &&
+    typeof source.negativePrompt === 'string' &&
+    typeof source.settings === 'string' &&
+    typeof source.notes === 'string'
+  );
+}
+
 export function PromptStudioPage() {
   const { t } = useTranslation('studio');
   const navigate = useNavigate();
+  const location = useLocation();
   const [params] = useSearchParams();
   const projectId = useProjectStore((s) => s.currentProjectId) ?? 'default';
   const store = usePromptStudioDraftStore();
@@ -159,12 +196,22 @@ export function PromptStudioPage() {
     token: number;
   } | null>(null);
   const [variantProposal, setVariantProposal] = useState<VideoVariantEditProposal | null>(null);
+  const [musicVariantProposal, setMusicVariantProposal] = useState<MusicVariantEditProposal | null>(
+    null,
+  );
+  const [feedbackSource, setFeedbackSource] = useState<
+    StudioFeedbackNavigationState['source'] | null
+  >(null);
+  const [feedbackNotes, setFeedbackNotes] = useState('');
+  const [feedbackFields, setFeedbackFields] = useState<'prompt' | 'both'>('prompt');
+  const [feedbackAllowDialogueRewrite, setFeedbackAllowDialogueRewrite] = useState(false);
   const [section, setSection] = useState('[Chorus]');
   const [direction, setDirection] = useState('');
   const [isArenaOpen, setIsArenaOpen] = useState(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const mounted = useRef(true);
   const operation = useRef(0);
+  const activeAbort = useRef<AbortController | null>(null);
   const aiRequest = useRef(0);
   const historyRequest = useRef(0);
 
@@ -194,16 +241,38 @@ export function PromptStudioPage() {
       });
     setProposal(null);
     setVariantProposal(null);
+    setMusicVariantProposal(null);
     setBusy(false);
     aiRequest.current = 0;
     setIsArenaOpen(false);
     return () => {
       active = false;
       mounted.current = false;
+      activeAbort.current?.abort();
+      activeAbort.current = null;
       operation.current += 1;
       void usePromptStudioDraftStore.getState().flush(projectId);
     };
   }, [projectId, params, t]);
+
+  useEffect(() => {
+    if (!isStudioFeedbackNavigationState(location.state)) return;
+    const { source } = location.state;
+    activeAbort.current?.abort();
+    activeAbort.current = null;
+    operation.current += 1;
+    aiRequest.current = operation.current;
+    setBusy(false);
+    setProposal(null);
+    setVariantProposal(null);
+    setMusicVariantProposal(null);
+    setFeedbackSource(structuredClone(source));
+    setFeedbackNotes(source.notes);
+    setFeedbackFields('prompt');
+    setFeedbackAllowDialogueRewrite(false);
+    setActiveView('editor');
+    navigate(`${ROUTES.STUDIO}?mode=video`, { replace: true, state: null });
+  }, [location.key, location.state, navigate]);
 
   useEffect(() => {
     focusDraftIdea(ideaRef.current);
@@ -251,6 +320,21 @@ export function PromptStudioPage() {
   ]);
 
   useEffect(() => {
+    if (
+      musicVariantProposal &&
+      (musicVariantProposal.projectId !== store.draft?.projectId ||
+        musicVariantProposal.revision !== store.draft?.revision ||
+        musicVariantProposal.variantIndex !== store.draft?.selectedVariant)
+    )
+      setMusicVariantProposal(null);
+  }, [
+    musicVariantProposal,
+    store.draft?.projectId,
+    store.draft?.revision,
+    store.draft?.selectedVariant,
+  ]);
+
+  useEffect(() => {
     const workspace = workspaceRef.current;
     if (!workspace || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => {
@@ -289,6 +373,12 @@ export function PromptStudioPage() {
     );
   const { video, music, mode, artifact, selectedVariant, lockedSections } = draft;
   const currentArtifact = artifact?.kind === mode ? revalidatePromptArtifact(artifact) : null;
+  const feedbackCompatible =
+    Boolean(feedbackSource) &&
+    feedbackSource?.projectId === projectId &&
+    mode === 'video' &&
+    video.target === feedbackSource?.target &&
+    currentArtifact?.kind === 'video';
   const staleArtifact = currentArtifact
     ? mode === 'video'
       ? JSON.stringify(normalizeVideoPromptInput(video)) !==
@@ -311,8 +401,13 @@ export function PromptStudioPage() {
     });
     setError('');
     operation.current += 1;
+    aiRequest.current = operation.current;
+    activeAbort.current?.abort();
+    activeAbort.current = null;
+    setBusy(false);
     setProposal(null);
     setVariantProposal(null);
+    setMusicVariantProposal(null);
   };
   const updateMusic = (changes: Partial<MusicPromptArtifactInput>) => {
     store.applyDraft({
@@ -320,8 +415,13 @@ export function PromptStudioPage() {
     });
     setError('');
     operation.current += 1;
+    aiRequest.current = operation.current;
+    activeAbort.current?.abort();
+    activeAbort.current = null;
+    setBusy(false);
     setProposal(null);
     setVariantProposal(null);
+    setMusicVariantProposal(null);
   };
   const scopeArtifact = (value: PromptArtifactV1): PromptArtifactV1 => ({
     ...value,
@@ -354,6 +454,7 @@ export function PromptStudioPage() {
     try {
       await action();
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       setError(
         e instanceof LyricSectionError
           ? t(`lyricSectionErrors.${e.code}`, { defaultValue: e.message })
@@ -363,14 +464,45 @@ export function PromptStudioPage() {
       );
     }
   };
+  const cancelAIRequest = () => {
+    const controller = activeAbort.current;
+    if (!controller) return;
+    activeAbort.current = null;
+    controller.abort();
+    operation.current += 1;
+    aiRequest.current = operation.current;
+    setBusy(false);
+    setProposal(null);
+    setVariantProposal(null);
+    setMusicVariantProposal(null);
+    setMessage(t('variantEdit.cancelled', { defaultValue: 'AI request cancelled.' }));
+  };
+  const invalidateFeedbackProposal = () => {
+    const controller = activeAbort.current;
+    activeAbort.current = null;
+    controller?.abort();
+    operation.current += 1;
+    aiRequest.current = operation.current;
+    setBusy(false);
+    setProposal(null);
+    setVariantProposal(null);
+    setMusicVariantProposal(null);
+    if (controller)
+      setMessage(t('variantEdit.cancelled', { defaultValue: 'AI request cancelled.' }));
+  };
   const change = async (action: () => Promise<void>) => {
     if (changeInFlight.current) throw new Error(t('revision.wait'));
     changeInFlight.current = true;
     setChanging(true);
     changeDraft.current = usePromptStudioDraftStore.getState().draft;
     operation.current += 1;
+    aiRequest.current = operation.current;
+    activeAbort.current?.abort();
+    activeAbort.current = null;
+    setBusy(false);
     setProposal(null);
     setVariantProposal(null);
+    setMusicVariantProposal(null);
     try {
       await action();
     } finally {
@@ -475,12 +607,20 @@ export function PromptStudioPage() {
     }
     return true;
   };
-  const proposeVariantEdit = (direction: string, fields: VideoVariantEditField[]) =>
+  const proposeVariantEdit = (
+    direction: string,
+    fields: VideoVariantEditField[],
+    allowDialogueRewrite = false,
+    feedback?: StudioFeedbackNavigationState['source'],
+  ) =>
     void run(async () => {
       const baseline = usePromptStudioDraftStore.getState().draft;
       if (!baseline || baseline.mode !== 'video' || baseline.artifact?.kind !== 'video') return;
       const token = ++operation.current;
       aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
       const isCurrent = () =>
         mounted.current &&
         operation.current === token &&
@@ -488,14 +628,32 @@ export function PromptStudioPage() {
         (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
       setProposal(null);
       setVariantProposal(null);
+      setMusicVariantProposal(null);
       setBusy(true);
       try {
         if (!(await aiReady()) || !isCurrent()) return;
+        const requestDirection = feedback
+          ? [
+              'Use the frozen reviewed result as context and apply its reviewer notes to the current selected variant.',
+              `Reviewer notes: ${feedbackNotes.trim()}`,
+              `Frozen source prompt: ${feedback.prompt}`,
+              `Frozen source negative prompt: ${feedback.negativePrompt}`,
+              `Frozen source settings: ${feedback.settings}`,
+            ].join('\n')
+          : direction;
+        const editArtifact = feedback
+          ? {
+              ...baseline.artifact,
+              input: normalizeVideoPromptInput(baseline.video),
+            }
+          : baseline.artifact;
         const result = await proposeVideoVariantEdit({
-          artifact: baseline.artifact,
+          artifact: editArtifact,
           variantIndex: baseline.selectedVariant,
-          direction,
+          direction: requestDirection,
           fields,
+          allowDialogueRewrite,
+          signal: controller.signal,
         });
         if (!isCurrent()) return;
         setVariantProposal({
@@ -510,6 +668,56 @@ export function PromptStudioPage() {
       } catch (cause) {
         if (isCurrent()) throw cause;
       } finally {
+        if (activeAbort.current === controller) activeAbort.current = null;
+        if (mounted.current && aiRequest.current === token) setBusy(false);
+      }
+    });
+  const proposeMusicEdit = (direction: string, fields: MusicVariantEditField[]) =>
+    void run(async () => {
+      const baseline = usePromptStudioDraftStore.getState().draft;
+      if (!baseline || baseline.mode !== 'music' || baseline.artifact?.kind !== 'music') return;
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      const isCurrent = () =>
+        mounted.current &&
+        operation.current === token &&
+        usePromptStudioDraftStore.getState().draft === baseline &&
+        (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+      setProposal(null);
+      setVariantProposal(null);
+      setMusicVariantProposal(null);
+      setBusy(true);
+      try {
+        if (!(await aiReady()) || !isCurrent()) return;
+        const editArtifact = {
+          ...baseline.artifact,
+          input: normalizeMusicPromptInput(baseline.music),
+        };
+        const result = await proposeMusicVariantEdit({
+          artifact: editArtifact,
+          variantIndex: baseline.selectedVariant,
+          fields,
+          direction,
+          lockedSections: baseline.lockedSections,
+          signal: controller.signal,
+        });
+        if (!isCurrent()) return;
+        setMusicVariantProposal({
+          ...result,
+          projectId,
+          revision: baseline.revision,
+          variantIndex: baseline.selectedVariant,
+          token,
+        });
+        revealResult();
+        setMessage(t('revision.proposalReady'));
+      } catch (cause) {
+        if (isCurrent()) throw cause;
+      } finally {
+        if (activeAbort.current === controller) activeAbort.current = null;
         if (mounted.current && aiRequest.current === token) setBusy(false);
       }
     });
@@ -652,11 +860,64 @@ export function PromptStudioPage() {
         setMessage(t('enhanced'));
       });
     });
+  const acceptMusicVariantEdit = (fields: MusicVariantEditField[]) =>
+    void run(async () => {
+      const selectedProposal = musicVariantProposal;
+      const baseline = usePromptStudioDraftStore.getState().draft;
+      if (
+        !selectedProposal ||
+        !baseline ||
+        baseline.artifact?.kind !== 'music' ||
+        baseline.mode !== 'music' ||
+        baseline.projectId !== projectId ||
+        selectedProposal.projectId !== projectId ||
+        selectedProposal.revision !== baseline.revision ||
+        selectedProposal.variantIndex !== baseline.selectedVariant ||
+        selectedProposal.token !== operation.current ||
+        !fields.length ||
+        fields.some((field) => selectedProposal.patch[field] === undefined)
+      )
+        throw new Error(t('revision.stale'));
+      await change(async () => {
+        await checkpoint('ai-variant');
+        const patch: MusicVariantEditPatch = {};
+        for (const field of fields) patch[field] = selectedProposal.patch[field];
+        const accepted = editStudioVariant(
+          baseline.artifact!,
+          selectedProposal.variantIndex,
+          patch,
+        );
+        accepted.provenance = selectedProposal.provenance;
+        const nextMusic = patch.lyrics !== undefined ? { ...music, lyrics: patch.lyrics } : music;
+        const isCurrent = () =>
+          mounted.current &&
+          usePromptStudioDraftStore.getState().draft === baseline &&
+          (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+        if (
+          !(await usePromptStudioDraftStore
+            .getState()
+            .acceptArtifact(
+              accepted,
+              baseline,
+              isCurrent,
+              patch.lyrics !== undefined ? { music: nextMusic } : undefined,
+            ))
+        )
+          throw new Error(usePromptStudioDraftStore.getState().error ?? t('revision.stale'));
+        setMusicVariantProposal(null);
+        setMessage(t('enhanced'));
+      });
+    });
   const optimize = () =>
     void run(async () => {
       const token = ++operation.current;
       aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setProposal(null);
       setVariantProposal(null);
+      setMusicVariantProposal(null);
       const revision = usePromptStudioDraftStore.getState().draft?.revision;
       setBusy(true);
       try {
@@ -671,8 +932,8 @@ export function PromptStudioPage() {
           return;
         let next =
           mode === 'video'
-            ? await optimizeVideoPromptArtifact(video)
-            : await optimizeMusicPromptArtifact(music);
+            ? await optimizeVideoPromptArtifact(video, undefined, controller.signal)
+            : await optimizeMusicPromptArtifact(music, undefined, controller.signal);
         const latest = usePromptStudioDraftStore.getState().draft;
         if (
           !mounted.current ||
@@ -681,6 +942,20 @@ export function PromptStudioPage() {
           latest.revision !== revision
         )
           return;
+        if (next.kind === 'video' && currentArtifact?.kind === 'video') {
+          const beforeVariants = [
+            currentArtifact.primary,
+            ...currentArtifact.alternatives,
+          ] as VideoPromptVariant[];
+          const afterVariants = [next.primary, ...next.alternatives] as VideoPromptVariant[];
+          beforeVariants.forEach((variant, index) =>
+            assertProtectedPromptTextPreserved(
+              variant.prompt,
+              afterVariants[index].prompt,
+              video.dialogue ?? '',
+            ),
+          );
+        }
         if (next.kind === 'music' && lockedSections.length) {
           const source =
             currentArtifact?.kind === 'music'
@@ -716,6 +991,7 @@ export function PromptStudioPage() {
         revealResult();
         setMessage(t('revision.proposalReady'));
       } finally {
+        if (activeAbort.current === controller) activeAbort.current = null;
         if (mounted.current && aiRequest.current === token) setBusy(false);
       }
     });
@@ -793,6 +1069,8 @@ export function PromptStudioPage() {
     });
   const edit = (index: 0 | 1 | 2, changes: StudioVariantEdits) => {
     if (!currentArtifact || changeInFlight.current) return;
+    activeAbort.current?.abort();
+    activeAbort.current = null;
     const next = editStudioVariant(currentArtifact, index, changes);
     store.applyDraft({
       ...(currentArtifact.kind === 'music' && changes.lyrics !== undefined
@@ -802,8 +1080,11 @@ export function PromptStudioPage() {
       artifacts: { ...draft.artifacts, [mode]: next },
     });
     operation.current += 1;
+    aiRequest.current = operation.current;
+    setBusy(false);
     setProposal(null);
     setVariantProposal(null);
+    setMusicVariantProposal(null);
   };
   const handoff = () =>
     void run(async () => {
@@ -973,6 +1254,7 @@ export function PromptStudioPage() {
           disabled={changing}
           aria-pressed={mode === 'video'}
           onClick={() => {
+            cancelAIRequest();
             setActiveView('editor');
             store.setMode('video');
             navigate(ROUTES.STUDIO + '?mode=video', { replace: true });
@@ -985,6 +1267,7 @@ export function PromptStudioPage() {
           disabled={changing}
           aria-pressed={mode === 'music'}
           onClick={() => {
+            cancelAIRequest();
             setActiveView('editor');
             store.setMode('music');
             navigate(ROUTES.STUDIO + '?mode=music', { replace: true });
@@ -1004,6 +1287,104 @@ export function PromptStudioPage() {
             <button onClick={() => void store.flush()}>{t('retrySave')}</button>
           ) : null}
         </div>
+      ) : null}
+      {feedbackSource ? (
+        <section className="studio-proposal" aria-label={t('resultFeedback.title')}>
+          <h2>{t('resultFeedback.title')}</h2>
+          <p className="studio-hint">
+            {t('resultFeedback.description', {
+              source: t(
+                feedbackSource.sourceKind === 'production-take'
+                  ? 'resultFeedback.productionTake'
+                  : 'resultFeedback.importedResult',
+              ),
+              defaultValue:
+                'Use your review notes to improve the current selected variant. The frozen source is context only.',
+            })}
+          </p>
+          <label className="studio-field">
+            <span>{t('resultFeedback.notes')}</span>
+            <textarea
+              aria-label={t('resultFeedback.notes')}
+              rows={3}
+              value={feedbackNotes}
+              onChange={(event) => {
+                invalidateFeedbackProposal();
+                setFeedbackNotes(event.target.value);
+              }}
+            />
+          </label>
+          <label className="studio-field">
+            <span>{t('resultFeedback.fields')}</span>
+            <select
+              aria-label={t('resultFeedback.fields')}
+              value={feedbackFields}
+              onChange={(event) => {
+                invalidateFeedbackProposal();
+                setFeedbackFields(event.target.value as 'prompt' | 'both');
+              }}
+            >
+              <option value="prompt">{t('variantEdit.prompt')}</option>
+              <option value="both">{t('resultFeedback.promptAndNegative')}</option>
+            </select>
+          </label>
+          <label className="studio-check">
+            <input
+              type="checkbox"
+              checked={feedbackAllowDialogueRewrite}
+              onChange={(event) => {
+                invalidateFeedbackProposal();
+                setFeedbackAllowDialogueRewrite(event.target.checked);
+              }}
+            />
+            {t('variantEdit.allowDialogueRewrite')}
+          </label>
+          <details className="studio-details">
+            <summary>{t('resultFeedback.source')}</summary>
+            <p>{feedbackSource.prompt}</p>
+            {feedbackSource.negativePrompt ? <p>{feedbackSource.negativePrompt}</p> : null}
+            <pre className="whitespace-pre-wrap">{feedbackSource.settings}</pre>
+          </details>
+          {!feedbackCompatible ? (
+            <p className="studio-notice">{t('resultFeedback.compatibility')}</p>
+          ) : (
+            <p className="studio-hint">{t('resultFeedback.receiver')}</p>
+          )}
+          <div className="studio-actions">
+            <button
+              type="button"
+              className="studio-primary"
+              disabled={!feedbackCompatible || !feedbackNotes.trim() || busy || changing}
+              onClick={() =>
+                feedbackSource &&
+                proposeVariantEdit(
+                  'Improve the prompt using the result review notes.',
+                  feedbackFields === 'both' ? ['prompt', 'negativePrompt'] : ['prompt'],
+                  feedbackAllowDialogueRewrite,
+                  feedbackSource,
+                )
+              }
+            >
+              {t('resultFeedback.propose')}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                cancelAIRequest();
+                setFeedbackSource(null);
+                setFeedbackNotes('');
+              }}
+            >
+              {t('revision.reject')}
+            </button>
+            {busy ? (
+              <button type="button" onClick={cancelAIRequest}>
+                {t('variantEdit.cancel')}
+              </button>
+            ) : null}
+          </div>
+        </section>
       ) : null}
       {!splitLayout ? (
         <div className="studio-view-tabs" role="group" aria-label={t('workspaceView')}>
@@ -1207,8 +1588,13 @@ export function PromptStudioPage() {
                     {t('build')}
                   </button>
                   <button disabled={busy || changing} onClick={optimize}>
-                    {busy ? t('enhancing') : t('enhance')}
+                    {busy ? t('enhancing') : t('enhanceAll')}
                   </button>
+                  {busy ? (
+                    <button type="button" onClick={cancelAIRequest}>
+                      {t('variantEdit.cancel')}
+                    </button>
+                  ) : null}
                 </div>
                 <p className="studio-hint">{t('localFirst')}</p>
                 <details className="studio-details">
@@ -1280,8 +1666,13 @@ export function PromptStudioPage() {
                     {t('build')}
                   </button>
                   <button disabled={busy || changing} onClick={optimize}>
-                    {busy ? t('enhancing') : t('enhance')}
+                    {busy ? t('enhancing') : t('enhanceAll')}
                   </button>
+                  {busy ? (
+                    <button type="button" onClick={cancelAIRequest}>
+                      {t('variantEdit.cancel')}
+                    </button>
+                  ) : null}
                 </div>
                 <p className="studio-hint">{t('localFirst')}</p>
                 <details className="studio-details">
@@ -1576,6 +1967,7 @@ export function PromptStudioPage() {
                       setVariantProposal(null);
                       setMessage(t('revision.rejected'));
                     }}
+                    onCancel={cancelAIRequest}
                   />
                 </div>
               ) : (
@@ -1596,6 +1988,23 @@ export function PromptStudioPage() {
                     onCopy={copy}
                     onLyricsChange={(lyrics) => edit(selectedVariant, { lyrics })}
                     onStyleChange={(styleOfMusic) => edit(selectedVariant, { styleOfMusic })}
+                  />
+                  <MusicVariantEditPanel
+                    busy={busy}
+                    disabled={changing}
+                    instrumental={music.instrumental === true}
+                    proposal={
+                      musicVariantProposal?.variantIndex === selectedVariant
+                        ? musicVariantProposal
+                        : null
+                    }
+                    onPropose={proposeMusicEdit}
+                    onAccept={acceptMusicVariantEdit}
+                    onReject={() => {
+                      setMusicVariantProposal(null);
+                      setMessage(t('revision.rejected'));
+                    }}
+                    onCancel={cancelAIRequest}
                   />
                 </div>
               )}
@@ -1652,6 +2061,9 @@ export function PromptStudioPage() {
                           const revision = store.draft?.revision;
                           const token = ++operation.current;
                           aiRequest.current = token;
+                          const controller = new AbortController();
+                          activeAbort.current?.abort();
+                          activeAbort.current = controller;
                           setBusy(true);
                           try {
                             if (!(await aiReady())) return;
@@ -1669,6 +2081,7 @@ export function PromptStudioPage() {
                               direction,
                               lockedSections,
                               selectedVariant,
+                              controller.signal,
                             );
                             if (
                               mounted.current &&
@@ -1685,6 +2098,7 @@ export function PromptStudioPage() {
                               });
                             }
                           } finally {
+                            if (activeAbort.current === controller) activeAbort.current = null;
                             if (mounted.current && aiRequest.current === token) setBusy(false);
                           }
                         })

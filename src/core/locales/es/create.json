@@ -250,6 +250,7 @@
     "findings": "Hallazgos",
     "reviewWarnings": "Las comprobaciones locales no evalúan la calidad del vídeo.",
     "reviewFailed": "La revisión con IA falló; puedes revisar manualmente.",
-    "openFailed": "No se pudo abrir la escena de producción vinculada. Se conserva tu trabajo actual."
+    "openFailed": "No se pudo abrir la escena de producción vinculada. Se conserva tu trabajo actual.",
+    "improvePromptFromNotes": "Mejorar el prompt a partir de notas"
   }
 }

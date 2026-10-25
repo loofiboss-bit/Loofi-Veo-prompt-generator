@@ -250,6 +250,7 @@
     "findings": "Findings",
     "reviewWarnings": "Local checks do not assess video quality.",
     "reviewFailed": "AI review failed; manual review is available.",
-    "openFailed": "The linked production scene could not be opened. Your current work is preserved."
+    "openFailed": "The linked production scene could not be opened. Your current work is preserved.",
+    "improvePromptFromNotes": "Improve prompt from notes"
   }
 }

@@ -250,6 +250,7 @@
     "findings": "Observations",
     "reviewWarnings": "Les vérifications locales n’évaluent pas la qualité vidéo.",
     "reviewFailed": "L’analyse par IA a échoué ; une vérification manuelle est disponible.",
-    "openFailed": "La scène de production liée n’a pas pu être ouverte. Votre travail actuel est conservé."
+    "openFailed": "La scène de production liée n’a pas pu être ouverte. Votre travail actuel est conservé.",
+    "improvePromptFromNotes": "Améliorer le prompt à partir des notes"
   }
 }

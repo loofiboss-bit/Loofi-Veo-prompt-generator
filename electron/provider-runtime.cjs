@@ -120,6 +120,7 @@ async function executeGemini(input, apiKey, fetchImpl = fetch) {
       toolConfig,
       generationConfig,
     }),
+    ...(input.signal ? { signal: input.signal } : {}),
   });
   const body = await readResponse(response);
   return body.failure ? body : normalizeGenerateContent(body, input.providerModelId);
@@ -150,6 +151,7 @@ async function executeVertex(input, profile, auth, fetchImpl = fetch) {
     const access = await auth.getAccessToken();
     token = typeof access === 'string' ? access : access?.token;
   } catch (error) {
+    if (input.signal?.aborted || error?.name === 'AbortError') throw error;
     return {
       failure: 'authentication',
       message: error instanceof Error ? error.message : 'Vertex AI authentication failed.',
@@ -183,6 +185,7 @@ async function executeVertex(input, profile, auth, fetchImpl = fetch) {
       toolConfig,
       generationConfig,
     }),
+    ...(input.signal ? { signal: input.signal } : {}),
   });
   const body = await readResponse(response);
   return body.failure ? body : normalizeGenerateContent(body, input.providerModelId);
@@ -201,6 +204,7 @@ async function executeOllama(input, endpoint, fetchImpl = fetch) {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ model: input.providerModelId, prompt: input.prompt, stream: false }),
+    ...(input.signal ? { signal: input.signal } : {}),
   });
   const body = await readResponse(response);
   return body.failure
@@ -228,13 +232,16 @@ async function executeInteraction(input, client) {
         mime_type: item.mimeType,
       })),
     ];
-    const interaction = await client.interactions.create({
-      model: input.providerModelId,
-      input: parts,
-      store: true,
-      background: false,
-      previous_interaction_id: input.interactionId || undefined,
-    });
+    const interaction = await client.interactions.create(
+      {
+        model: input.providerModelId,
+        input: parts,
+        store: true,
+        background: false,
+        previous_interaction_id: input.interactionId || undefined,
+      },
+      input.signal ? { abortSignal: input.signal } : undefined,
+    );
     const media = [interaction.output_image, interaction.output_audio]
       .filter(Boolean)
       .map((item) => ({ mimeType: item.mime_type || item.mimeType, data: item.data }));
@@ -245,6 +252,7 @@ async function executeInteraction(input, client) {
       rawModelId: interaction.model || input.providerModelId,
     };
   } catch (error) {
+    if (input.signal?.aborted || error?.name === 'AbortError') throw error;
     return {
       failure: classifyHttpFailure(Number(error?.status || error?.statusCode || 0), error?.message),
       message: error instanceof Error ? error.message : 'Gemini interaction failed.',

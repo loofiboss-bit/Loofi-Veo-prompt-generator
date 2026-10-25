@@ -407,6 +407,13 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
               <div className="mt-3">
                 <TakeCompare
                   contextId={`${activeRun.projectId}:${activeRun.id}:${shot.id}`}
+                  projectId={activeRun.projectId}
+                  feedbackTarget={
+                    activeRun.promptSnapshot.targetModel === 'flow-veo' ||
+                    activeRun.promptSnapshot.targetModel === 'veo-api'
+                      ? activeRun.promptSnapshot.targetModel
+                      : undefined
+                  }
                   takes={displayTakes}
                   onSaveComparisonNotes={(take, notes) =>
                     workflow.handleSaveComparisonNotes(shot, take, notes)

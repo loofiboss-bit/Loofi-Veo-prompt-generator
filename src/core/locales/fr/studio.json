@@ -393,7 +393,8 @@
     "error": "Le résultat n’a pas pu être enregistré.",
     "relink": "Relier dans les médias",
     "refresh": "Actualiser les médias locaux",
-    "replace": "Choisir une vidéo de remplacement"
+    "replace": "Choisir une vidéo de remplacement",
+    "improvePromptFromNotes": "Améliorer le prompt à partir des notes"
   },
   "comparison": {
     "title": "Comparaison vidéo",
@@ -435,7 +436,19 @@
     "acceptField": "Accepter {{field}}",
     "fieldDiff": "Modifications de {{field}}",
     "accept": "Accepter les champs sélectionnés",
-    "aiEdited": "Modifié avec l’IA"
+    "aiEdited": "Modifié avec l’IA",
+    "musicTitle": "Améliorer la variante musicale sélectionnée",
+    "musicStyle": "Style musical",
+    "musicBoth": "Style musical et paroles",
+    "musicDirection": "Décrivez comment la musique doit changer",
+    "musicReview": "Vérifier les modifications musicales",
+    "musicReviewHint": "Acceptez chaque champ séparément. Les autres variantes, le titre et les notes de production restent inchangés.",
+    "styleOfMusic": "Style musical",
+    "lyrics": "Paroles",
+    "proposeMusic": "Proposer des modifications musicales",
+    "allowDialogueRewrite": "Autoriser la réécriture du dialogue",
+    "cancel": "Annuler",
+    "cancelled": "L’attente du client est arrêtée. Une requête Gemini déjà envoyée peut encore être facturée."
   },
   "metrics": {
     "tokens": "~{{count}} jetons estimés"
@@ -450,5 +463,19 @@
     "locked": "Cette section est verrouillée.",
     "structure": "La réponse a changé l’ordre ou le nombre de sections. Conservez le brouillon d’origine.",
     "response": "La réponse de l’IA a omis ou modifié de façon ambiguë la section sélectionnée."
+  },
+  "enhanceAll": "Améliorer le pack complet",
+  "resultFeedback": {
+    "title": "Améliorer le prompt à partir des notes",
+    "description": "Utilisez vos notes de vérification de {{source}} pour améliorer la variante actuellement sélectionnée. La source figée sert uniquement de contexte.",
+    "notes": "Notes de vérification",
+    "fields": "Champs à améliorer",
+    "promptAndNegative": "Prompt et prompt négatif",
+    "source": "Contexte figé de la source",
+    "compatibility": "Les commentaires exigent le même projet et la même cible de prompt que la variante vidéo actuelle.",
+    "receiver": "Les modifications concernent la variante actuellement sélectionnée. Le prompt et les paramètres figés ne servent que de contexte.",
+    "propose": "Proposer des modifications du prompt",
+    "productionTake": "prise de production",
+    "importedResult": "résultat importé"
   }
 }

@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld('electron', {
   testProviderConnection: (input) => ipcRenderer.invoke('provider-test-connection', input),
   approveProviderCost: (input) => ipcRenderer.invoke('provider-cost-approve', input),
   executeProvider: (input) => ipcRenderer.invoke('provider-execute', input),
+  cancelProviderRequest: (requestId) =>
+    ipcRenderer.invoke('provider-cancel-request', { requestId }),
   executeInteraction: (input) => ipcRenderer.invoke('provider-interaction', input),
   submitPaidJob: (task) => ipcRenderer.invoke('paid-job-submit', task),
   listPaidJobs: () => ipcRenderer.invoke('paid-job-list'),

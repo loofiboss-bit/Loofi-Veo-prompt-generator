@@ -78,7 +78,10 @@ export interface ActionFlowParams {
 // Core prompt generation
 // ---------------------------------------------------------------------------
 
-export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptResponse> => {
+export const generateVeoPrompt = async (
+  state: PromptState,
+  signal?: AbortSignal,
+): Promise<VeoPromptResponse> => {
   const ai = await getAiClientAsync();
   const constructedPrompt = buildGeminiPrompt(state);
 
@@ -101,6 +104,7 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
   let lastError: unknown;
 
   for (const modelName of candidateModels) {
+    if (signal?.aborted) throw new DOMException('The AI request was cancelled.', 'AbortError');
     try {
       const response = await resilientCall(
         () =>
@@ -121,9 +125,10 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
             config: {
               tools: tools.length > 0 ? tools : undefined,
               toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
+              abortSignal: signal,
             },
           }),
-        { endpoint: 'gemini-prompt', model: modelName },
+        { endpoint: 'gemini-prompt', model: modelName, signal },
       );
 
       return {
@@ -131,6 +136,7 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
         groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
       };
     } catch (error) {
+      if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
       lastError = error;
       logger.warn(`[geminiPromptService] Model ${modelName} failed prompt generation:`, error);
       if (!isRetryableError(error)) {

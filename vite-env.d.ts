@@ -140,6 +140,7 @@ interface ElectronAPI {
     providerModelId?: string;
   }) => Promise<import('./src/core/providers/types').ProviderConnectionResult>;
   approveProviderCost?: (input: {
+    requestId?: string;
     provider: import('./src/core/models/catalog').ModelProvider;
     providerModelId: string;
     operation: import('./src/core/models/catalog').ModelOperation;
@@ -159,6 +160,7 @@ interface ElectronAPI {
     };
   }) => Promise<string>;
   executeProvider?: (input: {
+    requestId?: string;
     provider: import('./src/core/models/catalog').ModelProvider;
     providerModelId: string;
     operation: import('./src/core/models/catalog').ModelOperation;
@@ -174,7 +176,9 @@ interface ElectronAPI {
       message?: string;
     }
   >;
+  cancelProviderRequest?: (requestId: string) => Promise<boolean>;
   executeInteraction?: (input: {
+    requestId?: string;
     provider: 'gemini-api';
     providerModelId: string;
     operation: 'video' | 'video-edit';

@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Improve only the selected music variant's style, lyrics, or both from its current manual text. Review
+  each proposed field separately; occurrence-specific section locks, instrumental mode, other variants,
+  titles and production notes remain protected. Full-package improvement remains a separate action.
+- Improve prompts from production-take or imported-result notes using the current Studio variant as the
+  editable source and the frozen result prompt/settings as text context. Prompt-only is the default;
+  negative-prompt edits are optional and never start generation.
+- Protect quoted dialogue and supplied dialogue spans during video prompt editing, with an explicit
+  opt-in to rewrite dialogue. Add cancellation across Studio AI edits and provider network requests.
+- Capture audio duration before transferring its buffer to the transcription worker.
 - Desktop-only local speech transcription with a pinned multilingual Whisper Base q8 model,
   checksum-verified installation, explicit download confirmation, trim-aware clip-occurrence
   selection, editable proposals, and no cloud fallback. Manual captions and SRT remain available

@@ -231,6 +231,8 @@ class CreatorAsrService {
   ): Promise<{ modelId: string; modelRevision: string; transcript: string; segments: Caption[] }> {
     if (pcm.byteLength < 4 || pcm.byteLength % 4 !== 0)
       throw new Error('The extracted local audio buffer is invalid.');
+    // Transfer detaches the renderer's buffer, so retain its duration beforehand.
+    const durationSeconds = pcm.byteLength / Float32Array.BYTES_PER_ELEMENT / 16000;
     const worker = new CreatorAsrWorker();
     const requestId = crypto.randomUUID();
     return new Promise((resolve, reject) => {
@@ -259,10 +261,7 @@ class CreatorAsrService {
           try {
             if (result.modelId !== MODEL_ID || result.modelRevision !== MODEL_REVISION)
               throw new Error('The speech model revision changed during transcription.');
-            const segments = groupWhisperWordChunks(
-              result.chunks ?? [],
-              pcm.byteLength / 4 / 16000,
-            );
+            const segments = groupWhisperWordChunks(result.chunks ?? [], durationSeconds);
             cleanup();
             resolve({
               modelId: result.modelId,

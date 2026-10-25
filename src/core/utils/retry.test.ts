@@ -135,6 +135,21 @@ describe('retryOperation', () => {
     expect(operation).not.toHaveBeenCalled();
   });
 
+  it('does not retry a cancelled active request', async () => {
+    const controller = new AbortController();
+    const operation = vi.fn(async () => {
+      controller.abort();
+      throw new DOMException('Cancelled', 'AbortError');
+    });
+    await expect(
+      retryOperation(operation, 3, 1, {
+        signal: controller.signal,
+        circuitBreakerEndpoint: 'cancelled-request',
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(operation).toHaveBeenCalledOnce();
+  });
+
   it('should retry standard Error with network-related message', async () => {
     const operation = vi
       .fn()

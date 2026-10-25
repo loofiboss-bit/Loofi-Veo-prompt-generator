@@ -43,6 +43,13 @@ Production takes and imported Studio results share an A/B comparison with synchr
 pause and seeking, audio from one side, and differences between their frozen source prompts and
 settings. Save notes separately for each result; saving a note does not confirm review or accept it.
 
+Improve a selected music variant's style, lyrics, or both from its latest edited text. Review and
+accept each field separately; section locks and other variants are preserved. Video edits protect
+dialogue unless you explicitly allow rewriting. Studio AI requests can be cancelled, with the note
+that work already sent to Gemini may still be billed. Use production or imported-result notes to
+propose prompt changes against today's selected variant; the source prompt is context only and no
+video images are analyzed.
+
 New desktop Veo/Lyria approvals bind the complete frozen outgoing request. Changing generation
 settings or image content requires fresh approval. Existing operations can still resume retrieval
 without submitting again. These source changes do not establish a new public release.

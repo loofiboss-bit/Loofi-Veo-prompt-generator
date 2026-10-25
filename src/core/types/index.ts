@@ -18,6 +18,7 @@ export * from './promptStudioDraft';
 export * from './studioRevision';
 export * from './studioTemplate';
 export * from './externalStudioResult';
+export * from './studioFeedback';
 export * from './creatorDelivery';
 export * from './costApproval';
 export * from './providerArtifact';

@@ -192,6 +192,25 @@ describe('promptStudioService', () => {
     expect(validatePromptArtifact(artifact)).toEqual([]);
   });
 
+  it('rejects full-package video optimization that changes supplied dialogue', async () => {
+    await expect(
+      optimizeVideoPromptArtifact(
+        {
+          idea: 'A runner crosses a quiet park',
+          mode: 'text-to-video',
+          target: 'flow-veo',
+          aspectRatio: '16:9',
+          durationSeconds: 8,
+          dialogue: 'Hello from the other side.',
+        },
+        {
+          optimizeVideo: async () => ({ prompt: 'A runner crosses a quiet park silently.' }),
+          optimizeMusic: async () => ({}),
+        },
+      ),
+    ).rejects.toThrow(/changed or omitted protected dialogue/);
+  });
+
   it('compiles universal targets (kling, runway, sora, luma) into valid artifacts with model-specific syntax', () => {
     const targets = [
       'kling',

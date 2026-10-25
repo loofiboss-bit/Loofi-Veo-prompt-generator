@@ -393,7 +393,8 @@
     "error": "結果を保存できませんでした。",
     "relink": "アセットで再リンク",
     "refresh": "ローカルメディアを再読み込み",
-    "replace": "置き換える動画を選択"
+    "replace": "置き換える動画を選択",
+    "improvePromptFromNotes": "メモからプロンプトを改善"
   },
   "comparison": {
     "title": "動画の比較",
@@ -435,7 +436,19 @@
     "acceptField": "{{field}}を適用",
     "fieldDiff": "{{field}}の変更",
     "accept": "選択した項目を適用",
-    "aiEdited": "AIで編集済み"
+    "aiEdited": "AIで編集済み",
+    "musicTitle": "選択中の音楽バリアントを改善",
+    "musicStyle": "音楽スタイル",
+    "musicBoth": "音楽スタイルと歌詞",
+    "musicDirection": "音楽をどのように変更するか説明してください",
+    "musicReview": "音楽の変更を確認",
+    "musicReviewHint": "各項目を個別に承認できます。他のバリアント、タイトル、制作メモはそのままです。",
+    "styleOfMusic": "音楽スタイル",
+    "lyrics": "歌詞",
+    "proposeMusic": "音楽の変更を提案",
+    "allowDialogueRewrite": "台詞の書き換えを許可",
+    "cancel": "キャンセル",
+    "cancelled": "クライアントの待機を停止しました。送信済みのGeminiリクエストには料金が発生する場合があります。"
   },
   "metrics": {
     "tokens": "推定{{count}}トークン"
@@ -450,5 +463,19 @@
     "locked": "このセクションはロックされています。",
     "structure": "応答によってセクションの順序または数が変わりました。元の下書きを維持してください。",
     "response": "AIの応答で選択したセクションが省略または曖昧に変更されました。"
+  },
+  "enhanceAll": "パッケージ全体を改善",
+  "resultFeedback": {
+    "title": "メモからプロンプトを改善",
+    "description": "{{source}}のレビュー メモを使って、現在選択中のバリアントを改善します。固定されたソースは参考情報としてのみ使います。",
+    "notes": "レビュー メモ",
+    "fields": "改善する項目",
+    "promptAndNegative": "プロンプトとネガティブプロンプト",
+    "source": "固定されたソース情報",
+    "compatibility": "フィードバックを適用するには、現在の動画バリアントと同じプロジェクトおよびプロンプト対象が必要です。",
+    "receiver": "変更先は現在選択中のバリアントです。固定されたソースのプロンプトと設定は参考情報としてのみ使います。",
+    "propose": "プロンプトの変更を提案",
+    "productionTake": "制作テイク",
+    "importedResult": "インポート済みの結果"
   }
 }

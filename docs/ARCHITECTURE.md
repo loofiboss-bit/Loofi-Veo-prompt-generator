@@ -50,6 +50,34 @@ explicit new approval, and ambiguous submissions without an operation identity a
 Extension references bind the submitted provider URI, not mutable remote content behind that URI.
 The additive `hashVersion` does not change existing project or archive schema identities.
 
+## Unreleased: Music Editing, Cancellation and Result Feedback
+
+`proposeMusicVariantEdit` receives the selected artifact variant as currently edited, the requested
+fields and the creative brief as context. It returns a temporary field patch with a typed proposal
+contract; the review accepts fields independently through `editStudioVariant`. Occurrence-specific
+lyric locks are preserved exactly and ambiguous section-structure changes are rejected. Instrumental
+mode cannot request lyric changes. Full-package optimization remains a separate operation.
+
+Video prompt edits preserve ordered quoted text and supplied dialogue by default. A validated proposal
+that changes or omits protected dialogue is rejected before review; rewriting requires an explicit
+user choice. Local target-grammar rules operate only on unprotected segments. Proposal acceptance
+checkpoints and flushes the current draft, then verifies project, revision, selected variant and
+operation identity. Persistence completes before the accepted artifact is exposed, so a failed save
+leaves the editable prompt unchanged.
+
+Studio editing requests accept an optional `AbortSignal`. Electron assigns request IDs bound to the
+originating IPC sender and forwards cancellation to the actual fetch or SDK request. Cancellation
+stops retries and late responses cannot replace a newer proposal. It stops the client's wait; a Gemini
+request already sent may still be billed. Ollama structured edit calls use the requested JSON schema
+and validate locally without a provider fallback on malformed output.
+
+Production and imported-result feedback is passed through ephemeral router state containing only
+prompt text, settings, notes and source identity. Studio uses the current selected variant as the edit
+source and the frozen source prompt/settings as context. Project and target must still match; the
+source video is not sent or analyzed. Prompt-only is the default, negative-prompt editing is optional,
+and generation remains a separate cost-approved action. Audio duration is captured before transferring
+the transcription buffer to its worker.
+
 ## 1. Runtime Shape
 
 ```text

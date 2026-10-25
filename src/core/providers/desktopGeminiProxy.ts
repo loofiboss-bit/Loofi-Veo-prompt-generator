@@ -4,7 +4,7 @@ import { ElectronBridgeAdapter, type PrivilegedProviderBridge } from './electron
 
 type GeminiBridge = Pick<
   PrivilegedProviderBridge,
-  'approveProviderCost' | 'executeProvider' | 'testProviderConnection'
+  'approveProviderCost' | 'executeProvider' | 'testProviderConnection' | 'cancelProviderRequest'
 >;
 
 const collectParts = (
@@ -45,6 +45,11 @@ export const createDesktopGeminiProxy = (bridge: GeminiBridge): GoogleGenAI => {
   const generateContent = async (parameters: unknown): Promise<GenerateContentResponse> => {
     const params = (parameters ?? {}) as Record<string, unknown>;
     const config = (params.config ?? {}) as Record<string, unknown>;
+    const signal =
+      config.abortSignal && typeof (config.abortSignal as AbortSignal).aborted === 'boolean'
+        ? (config.abortSignal as AbortSignal)
+        : undefined;
+    const { abortSignal: _abortSignal, ...serializableConfig } = config;
     const text: string[] = [];
     const inputs: { mimeType: string; data: string }[] = [];
     collectParts(params.contents, text, inputs);
@@ -101,7 +106,8 @@ export const createDesktopGeminiProxy = (bridge: GeminiBridge): GoogleGenAI => {
       prompt: text.join('\n'),
       inputs,
       systemInstruction: readSystemInstruction(config.systemInstruction),
-      config,
+      config: serializableConfig,
+      signal,
       costContext,
     });
     const parts = [
@@ -165,5 +171,6 @@ export const getDesktopGeminiProxy = (): GoogleGenAI | null => {
     approveProviderCost: electron.approveProviderCost,
     executeProvider: electron.executeProvider,
     testProviderConnection: electron.testProviderConnection,
+    cancelProviderRequest: electron.cancelProviderRequest,
   });
 };

@@ -393,7 +393,8 @@
     "error": "Resultatet kunde inte sparas.",
     "relink": "Länka om i Medier",
     "refresh": "Uppdatera lokala medier",
-    "replace": "Välj ersättningsvideo"
+    "replace": "Välj ersättningsvideo",
+    "improvePromptFromNotes": "Förbättra prompt från anteckningar"
   },
   "comparison": {
     "title": "Videojämförelse",
@@ -435,7 +436,19 @@
     "acceptField": "Acceptera {{field}}",
     "fieldDiff": "Ändringar i {{field}}",
     "accept": "Acceptera valda fält",
-    "aiEdited": "Redigerad med AI"
+    "aiEdited": "Redigerad med AI",
+    "musicTitle": "Förbättra vald musikvariant",
+    "musicStyle": "Musikstil",
+    "musicBoth": "Musikstil och låttext",
+    "musicDirection": "Beskriv hur musiken ska ändras",
+    "musicReview": "Granska musikändringar",
+    "musicReviewHint": "Acceptera fälten var för sig. Övriga varianter, titeln och produktionsanteckningarna bevaras.",
+    "styleOfMusic": "Musikstil",
+    "lyrics": "Låttext",
+    "proposeMusic": "Föreslå musikändringar",
+    "allowDialogueRewrite": "Tillåt omskrivning av dialog",
+    "cancel": "Avbryt",
+    "cancelled": "Väntan stoppades. En Gemini-begäran som redan skickats kan fortfarande debiteras."
   },
   "metrics": {
     "tokens": "Cirka {{count}} uppskattade token"
@@ -450,5 +463,19 @@
     "locked": "Sektionen är låst.",
     "structure": "Svaret ändrade låtsektionernas ordning eller antal. Behåll originalutkastet.",
     "response": "AI-svaret utelämnade eller ändrade den valda sektionen på ett tvetydigt sätt."
+  },
+  "enhanceAll": "Förbättra hela paketet",
+  "resultFeedback": {
+    "title": "Förbättra prompt från anteckningar",
+    "description": "Använd dina granskningsanteckningar från {{source}} för att förbättra vald variant. Den frysta källan är endast sammanhang.",
+    "notes": "Granskningsanteckningar",
+    "fields": "Fält att förbättra",
+    "promptAndNegative": "Prompt och negativ prompt",
+    "source": "Fryst källsammanhang",
+    "compatibility": "Återkopplingen kräver samma projekt och promptmål som den aktuella videovarianten.",
+    "receiver": "Den aktuella valda varianten tar emot ändringarna. Den frysta källprompten och inställningarna är bara sammanhang.",
+    "propose": "Föreslå promptändringar",
+    "productionTake": "produktionstagningen",
+    "importedResult": "det importerade resultatet"
   }
 }

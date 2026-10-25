@@ -107,14 +107,16 @@ export async function rewriteStudioLyricSection(
   direction: string,
   locks: string[],
   variantIndex: 0 | 1 | 2 = 0,
+  signal?: AbortSignal,
 ): Promise<PromptArtifactV1> {
+  if (signal?.aborted) throw new DOMException('AI request cancelled.', 'AbortError');
   if (artifact.kind !== 'music') throw new Error('A music artifact is required.');
   const primary = [artifact.primary, ...artifact.alternatives][variantIndex] as MusicPromptVariant;
   const selected = resolveLyricSection(primary.lyrics, section);
   if (!selected) throw new LyricSectionError('missing');
   if (isLyricSectionLocked(selected, locks)) throw new LyricSectionError('locked');
   const input = artifact.input as import('@core/types').MusicPromptArtifactInput;
-  const optimized = await optimizeMusicPromptArtifact({
+  const optimizeInput = {
     ...input,
     lyrics: primary.lyrics,
     mixNotes: [
@@ -127,7 +129,10 @@ export async function rewriteStudioLyricSection(
     ]
       .filter(Boolean)
       .join('\n'),
-  });
+  };
+  const optimized = signal
+    ? await optimizeMusicPromptArtifact(optimizeInput, undefined, signal)
+    : await optimizeMusicPromptArtifact(optimizeInput);
   const next = editStudioVariant(artifact, variantIndex, {
     lyrics: replaceStudioLyricSection(
       primary.lyrics,

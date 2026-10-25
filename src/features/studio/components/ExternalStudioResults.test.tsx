@@ -5,6 +5,11 @@ import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
 import { useExternalStudioResultStore } from '@core/store/useExternalStudioResultStore';
 import { ExternalStudioResults } from './ExternalStudioResults';
 vi.mock('@core/services/externalStudioResultService', () => ({ externalStudioResultService: {} }));
+const mocks = vi.hoisted(() => ({ navigate: vi.fn() }));
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useNavigate: () => mocks.navigate,
+}));
 const artifact = compileVideoPromptArtifact({
   idea: 'A river',
   target: 'kling',
@@ -29,6 +34,7 @@ const result: ExternalStudioResultV1 = {
   variantSnapshot: artifact.primary as ExternalStudioResultV1['variantSnapshot'],
 };
 beforeEach(() => {
+  mocks.navigate.mockReset();
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
   useExternalStudioResultStore.setState({
     projectId: 'p',
@@ -123,5 +129,32 @@ describe('ExternalStudioResults', () => {
     fireEvent(details, new Event('toggle'));
     expect(screen.queryByText('New unsent prompt')).toBeNull();
     expect(screen.getAllByText(/Frozen second source/).length).toBeGreaterThan(0);
+  });
+  it('opens Studio with the frozen external source and unsaved comparison notes', () => {
+    render(<ExternalStudioResults projectId="p" artifact={artifact} variantIndex={0} />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Comparison notes · A' }), {
+      target: { value: 'Keep the subject position and reduce the dolly speed.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Improve prompt from notes' }));
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/studio?mode=video',
+      expect.objectContaining({
+        state: {
+          kind: 'studio-feedback',
+          source: expect.objectContaining({
+            projectId: 'p',
+            sourceKind: 'external-result',
+            sourceId: 'r',
+            artifactId: artifact.id,
+            variantIndex: 0,
+            target: 'kling',
+            prompt: result.variantSnapshot.prompt,
+            negativePrompt: result.variantSnapshot.negativePrompt,
+            notes: 'Keep the subject position and reduce the dolly speed.',
+            settings: expect.stringContaining('"durationSeconds": 8'),
+          }),
+        },
+      }),
+    );
   });
 });

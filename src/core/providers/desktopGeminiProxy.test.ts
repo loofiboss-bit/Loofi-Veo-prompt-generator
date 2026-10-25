@@ -62,6 +62,40 @@ describe('desktop Gemini SDK proxy', () => {
     ).rejects.toMatchObject({ kind: 'authentication', message: 'Configure Google.' });
   });
 
+  it('keeps the AbortSignal out of provider config and sends a renderer-bound cancellation', async () => {
+    const controller = new AbortController();
+    const cancelProviderRequest = vi.fn().mockResolvedValue(true);
+    let finishExecution = (_response: { rawModelId: string; failure: 'cancelled' }) => {};
+    const approveProviderCost = vi.fn().mockResolvedValue('approval-1');
+    const executeProvider = vi.fn(
+      (_input: { requestId?: string }) =>
+        new Promise<{ rawModelId: string; failure: 'cancelled' }>((resolve) => {
+          finishExecution = resolve;
+        }),
+    );
+    const client = createDesktopGeminiProxy({
+      approveProviderCost,
+      executeProvider,
+      cancelProviderRequest,
+      testProviderConnection: vi.fn(),
+    });
+
+    const request = client.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: 'Improve this prompt.',
+      config: { abortSignal: controller.signal },
+    });
+    await vi.waitFor(() => expect(executeProvider).toHaveBeenCalledOnce());
+    const requestId = executeProvider.mock.calls[0][0].requestId;
+    expect(requestId).toEqual(expect.any(String));
+    expect(approveProviderCost.mock.calls[0][0].config).not.toHaveProperty('abortSignal');
+
+    controller.abort();
+    expect(cancelProviderRequest).toHaveBeenCalledWith(requestId);
+    finishExecution({ rawModelId: '', failure: 'cancelled' });
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
   it('provides a working chat facade over the same approved provider path', async () => {
     const executeProvider = vi.fn().mockResolvedValue({
       text: 'Hello from the director.',
