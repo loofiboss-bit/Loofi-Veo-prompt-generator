@@ -18,7 +18,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -31,10 +31,13 @@ jobs:
   validate:
     name: Validate Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -110,6 +113,7 @@ jobs:
   e2e:
     name: E2E Smoke (Dev Server)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     # Match the reviewed Ubuntu visual baselines, including system fonts and browser libraries.
     container: mcr.microsoft.com/playwright:v1.61.1-noble
     needs: validate
@@ -117,6 +121,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -143,11 +149,14 @@ jobs:
   e2e-staging:
     name: E2E Staging (Smoke + Stability)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: validate
 
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
