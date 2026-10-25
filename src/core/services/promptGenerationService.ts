@@ -38,13 +38,15 @@ export function resolvePromptGenerationProvider(
 export async function generatePromptWithCurrentProvider(
   state: PromptState,
   settings: PromptGenerationSettings = getPromptGenerationSettings(),
+  signal?: AbortSignal,
 ): Promise<VeoPromptResponse> {
   if (resolvePromptGenerationProvider(settings) === 'ollama') {
     return generateVeoPromptWithOllama(state, {
       baseUrl: settings.localLlmEndpoint,
       model: settings.localLlmModel,
+      signal,
     });
   }
 
-  return generateGeminiPrompt(state);
+  return generateGeminiPrompt(state, signal);
 }

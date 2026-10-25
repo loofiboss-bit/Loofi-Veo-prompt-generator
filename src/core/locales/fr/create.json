@@ -210,7 +210,8 @@
     "continuityReviewNoTakes": "Générez ou mettez en cache une prise avant d’approuver une révision de continuité.",
     "continuityReviewApproved": "Révision de continuité Gemini facultative approuvée pour cet instantané.",
     "longShot": "Cette prise de {{duration}} s dépasse un segment Veo. Divisez-la ou générez huit secondes puis utilisez l’extension depuis une prise Veo non expirée.",
-    "otioReady": "Archive OTIO prête."
+    "otioReady": "Archive OTIO prête.",
+    "aiReviewNotRun": "La vérification par IA n’a pas été effectuée. Vérifiez localement ou réessayez après avoir corrigé le problème de média ou de fournisseur."
   },
   "saveStatus": {
     "failed": "Impossible de charger ou sauvegarder le plan de production.",
@@ -249,6 +250,7 @@
     "findings": "Observations",
     "reviewWarnings": "Les vérifications locales n’évaluent pas la qualité vidéo.",
     "reviewFailed": "L’analyse par IA a échoué ; une vérification manuelle est disponible.",
-    "openFailed": "La scène de production liée n’a pas pu être ouverte. Votre travail actuel est conservé."
+    "openFailed": "La scène de production liée n’a pas pu être ouverte. Votre travail actuel est conservé.",
+    "improvePromptFromNotes": "Améliorer le prompt à partir des notes"
   }
 }

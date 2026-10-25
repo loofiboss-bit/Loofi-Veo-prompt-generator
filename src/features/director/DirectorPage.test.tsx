@@ -86,6 +86,7 @@ const mockAppState = {
   promptState: { ...INITIAL_STATE, idea: 'Neon market chase' },
   sbShots: [storyboardShot],
   assets: [],
+  clips: [],
   setSbShots: vi.fn(),
   syncTimelineFromShots: vi.fn(),
 };

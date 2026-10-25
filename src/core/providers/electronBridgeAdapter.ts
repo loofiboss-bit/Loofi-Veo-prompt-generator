@@ -14,6 +14,7 @@ import { ProviderExecutionError } from './types';
 import { estimateMaximumModelCost, requireUsableCostEstimate } from '@core/models/cost';
 
 interface ProviderCostApprovalRequest {
+  requestId?: string;
   provider: ModelProvider;
   providerModelId: string;
   operation: ProviderRequest['operation'];
@@ -49,11 +50,14 @@ export interface PrivilegedProviderBridge {
     systemInstruction?: string;
     config?: Record<string, unknown>;
     approvalToken: string;
+    requestId?: string;
     profile?: ProviderConnectionProfile;
   }): Promise<
     ProviderResponse & { failure?: ProviderConnectionResult['failure']; message?: string }
   >;
+  cancelProviderRequest?(requestId: string): Promise<boolean>;
   executeInteraction?(input: {
+    requestId: string;
     provider: 'gemini-api';
     providerModelId: string;
     operation: 'video' | 'video-edit';
@@ -105,6 +109,16 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
       this.provider === 'gemini-api' &&
       this.bridge.executeInteraction;
     if (!request.costContext) throw new Error('Provider execution requires cost inputs.');
+    const signal = request.signal;
+    const requestId = crypto.randomUUID();
+    const abortError = () => new DOMException('Provider request was cancelled.', 'AbortError');
+    const throwIfAborted = () => {
+      if (signal?.aborted) throw abortError();
+    };
+    throwIfAborted();
+    const onAbort = () => {
+      void this.bridge.cancelProviderRequest?.(requestId);
+    };
     const minimumInputTokens = Math.max(
       1,
       Math.ceil(
@@ -123,6 +137,7 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
     const estimate = estimateMaximumModelCost(request.model, calculationInputs);
     const maximumChargeUsd = requireUsableCostEstimate(estimate);
     const approvalRequest: ProviderCostApprovalRequest = {
+      requestId,
       provider: this.provider,
       providerModelId,
       operation: request.operation,
@@ -141,38 +156,49 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
         calculationInputs,
       },
     };
-    const approvalToken = await this.bridge.approveProviderCost(approvalRequest);
-    const response = isInteraction
-      ? await this.bridge.executeInteraction!({
-          provider: 'gemini-api',
-          providerModelId,
-          operation: request.operation as 'video' | 'video-edit',
-          prompt: request.prompt,
-          inputs: request.inputs,
-          interactionId: request.interactionId,
-          systemInstruction: request.systemInstruction,
-          config: request.config,
-          approvalToken,
-        })
-      : await this.bridge.executeProvider({
-          provider: this.provider,
-          providerModelId,
-          operation: request.operation,
-          prompt: request.prompt,
-          inputs: request.inputs,
-          interactionId: request.interactionId,
-          systemInstruction: request.systemInstruction,
-          config: request.config,
-          approvalToken,
-          ...(this.profile ? { profile: this.profile } : {}),
-        });
-    if (response.failure) {
-      throw new ProviderExecutionError(
-        response.message ?? `Provider execution failed: ${response.failure}`,
-        response.failure,
-      );
+    throwIfAborted();
+    signal?.addEventListener('abort', onAbort, { once: true });
+    try {
+      const approvalToken = await this.bridge.approveProviderCost(approvalRequest);
+      throwIfAborted();
+      const response = isInteraction
+        ? await this.bridge.executeInteraction!({
+            provider: 'gemini-api',
+            requestId,
+            providerModelId,
+            operation: request.operation as 'video' | 'video-edit',
+            prompt: request.prompt,
+            inputs: request.inputs,
+            interactionId: request.interactionId,
+            systemInstruction: request.systemInstruction,
+            config: request.config,
+            approvalToken,
+          })
+        : await this.bridge.executeProvider({
+            requestId,
+            provider: this.provider,
+            providerModelId,
+            operation: request.operation,
+            prompt: request.prompt,
+            inputs: request.inputs,
+            interactionId: request.interactionId,
+            systemInstruction: request.systemInstruction,
+            config: request.config,
+            approvalToken,
+            ...(this.profile ? { profile: this.profile } : {}),
+          });
+      if (response.failure === 'cancelled') throw abortError();
+      if (response.failure) {
+        throw new ProviderExecutionError(
+          response.message ?? `Provider execution failed: ${response.failure}`,
+          response.failure,
+        );
+      }
+      throwIfAborted();
+      return response;
+    } finally {
+      signal?.removeEventListener('abort', onAbort);
     }
-    return response;
   }
 }
 
@@ -184,6 +210,7 @@ export const getDesktopProviderBridge = (): PrivilegedProviderBridge | null => {
     approveProviderCost: electron.approveProviderCost,
     testProviderConnection: electron.testProviderConnection,
     executeProvider: electron.executeProvider,
+    cancelProviderRequest: electron.cancelProviderRequest,
     executeInteraction: electron.executeInteraction,
   };
 };

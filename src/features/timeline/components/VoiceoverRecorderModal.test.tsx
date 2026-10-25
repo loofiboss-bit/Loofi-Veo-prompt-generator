@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@/test-utils';
-import type { TimelineClip, TimelineTrack } from '@core/types';
 import { VoiceoverRecorderModal } from './VoiceoverRecorderModal';
 
 describe('VoiceoverRecorderModal', () => {
-  const tracks: TimelineTrack[] = [
-    { id: 'video-1', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 0 },
-  ];
-  const clips: TimelineClip[] = [];
-
   const mockTrack = {
     stop: vi.fn(),
   };
@@ -42,31 +36,21 @@ describe('VoiceoverRecorderModal', () => {
 
   it('renders modal when open with default playhead position', () => {
     const onClose = vi.fn();
-    render(
-      <VoiceoverRecorderModal
-        isOpen={true}
-        onClose={onClose}
-        currentTime={5.4}
-        tracks={tracks}
-        clips={clips}
-      />,
+    const { rerender } = render(
+      <VoiceoverRecorderModal isOpen={true} onClose={onClose} currentTime={5.4} />,
     );
 
     expect(screen.getByText('Record Voiceover')).toBeInTheDocument();
     expect(screen.getByText('5.4s')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start recording/i })).toBeInTheDocument();
+    rerender(<VoiceoverRecorderModal isOpen onClose={onClose} currentTime={9.2} />);
+    expect(screen.getByText('5.4s')).toBeInTheDocument();
   });
 
   it('calls onClose when clicking close or cancel button', async () => {
     const onClose = vi.fn();
     const { user } = render(
-      <VoiceoverRecorderModal
-        isOpen={true}
-        onClose={onClose}
-        currentTime={0}
-        tracks={tracks}
-        clips={clips}
-      />,
+      <VoiceoverRecorderModal isOpen={true} onClose={onClose} currentTime={0} />,
     );
 
     const cancelBtn = screen.getByRole('button', { name: /cancel/i });
@@ -86,13 +70,7 @@ describe('VoiceoverRecorderModal', () => {
 
     const onClose = vi.fn();
     const { user } = render(
-      <VoiceoverRecorderModal
-        isOpen={true}
-        onClose={onClose}
-        currentTime={0}
-        tracks={tracks}
-        clips={clips}
-      />,
+      <VoiceoverRecorderModal isOpen={true} onClose={onClose} currentTime={0} />,
     );
 
     const startBtn = screen.getByRole('button', { name: /start recording/i });

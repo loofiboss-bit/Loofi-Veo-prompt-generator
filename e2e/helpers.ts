@@ -45,7 +45,7 @@ async function dismissModals(page: Page, options: { waitForPrompt?: boolean } = 
     const start = page.getByRole('button', { name: 'Start creating', exact: true });
     await start.waitFor({ state: 'visible', timeout: 15_000 });
     if (waitForPrompt) {
-      await page.getByRole('radio', { name: 'Use my own idea or media' }).check();
+      await page.getByRole('radio', { name: 'Use my own clips' }).check();
     }
     await start.click();
     await start.waitFor({ state: 'hidden' });

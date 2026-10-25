@@ -144,7 +144,7 @@ class ProjectDocumentService {
     return pending;
   }
 
-  save(project: Project): Promise<PersistenceResult> {
+  save(project: Project, options: { manageSaveStatus?: boolean } = {}): Promise<PersistenceResult> {
     const queuedBehindLocalWrite = this.writes.has(project.id);
     const revisionAtEnqueue = this.committedRevisions.get(project.id) ?? 0;
     const expectedRevision = project.documentRevision ?? 0;
@@ -158,7 +158,7 @@ class ProjectDocumentService {
               documentRevision: this.committedRevisions.get(project.id) ?? expectedRevision,
             }
           : project;
-      const result = await this.saveNow(candidate);
+      const result = await this.saveNow(candidate, options.manageSaveStatus !== false);
       project.documentRevision = candidate.documentRevision;
       return result;
     });
@@ -195,9 +195,9 @@ class ProjectDocumentService {
     return this.copy(backup.snapshot, `${backup.snapshot.name} (Recovered)`);
   }
 
-  private async saveNow(project: Project): Promise<PersistenceResult> {
+  private async saveNow(project: Project, manageSaveStatus = true): Promise<PersistenceResult> {
     const status = useProjectSaveStore.getState();
-    status.setStatus(project.id, { status: 'saving' });
+    if (manageSaveStatus) status.setStatus(project.id, { status: 'saving' });
     const validated = projectMigrationService.validateProjectDocumentForSave(project);
     let snapshot!: Project;
     try {
@@ -251,12 +251,13 @@ class ProjectDocumentService {
         getProjectSnapshotStore(),
       );
     } catch (error) {
-      status.setStatus(project.id, {
-        status: error instanceof ProjectConflictError ? 'conflict' : 'error',
-        error: error instanceof Error ? error.message : String(error),
-        conflictDocument:
-          error instanceof ProjectConflictError ? structuredClone(project) : undefined,
-      });
+      if (manageSaveStatus)
+        status.setStatus(project.id, {
+          status: error instanceof ProjectConflictError ? 'conflict' : 'error',
+          error: error instanceof Error ? error.message : String(error),
+          conflictDocument:
+            error instanceof ProjectConflictError ? structuredClone(project) : undefined,
+        });
       if (error instanceof ProjectConflictError) throw error;
       throw new ProjectPersistenceError({
         durable: false,
@@ -278,11 +279,13 @@ class ProjectDocumentService {
       result.backupError = error instanceof Error ? error.message : String(error);
       logger.warn('Project saved, but desktop backup failed', result.backupError);
     }
-    const latestStatus = useProjectSaveStore.getState().projects[project.id];
-    status.setStatus(project.id, {
-      status: latestStatus?.status === 'unsaved' ? 'unsaved' : 'saved',
-      backupError: result.backupError,
-    });
+    if (manageSaveStatus) {
+      const latestStatus = useProjectSaveStore.getState().projects[project.id];
+      status.setStatus(project.id, {
+        status: latestStatus?.status === 'unsaved' ? 'unsaved' : 'saved',
+        backupError: result.backupError,
+      });
+    }
     return result;
   }
 }

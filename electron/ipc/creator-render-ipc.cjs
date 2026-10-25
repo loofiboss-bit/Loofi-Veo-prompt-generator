@@ -57,6 +57,10 @@ function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow })
     withReadyEngine((engine, input) => engine.detectSilence(input)),
   );
   ipcMain.handle(
+    'timeline-render-extract-audio',
+    withReadyEngine((engine, input) => engine.extractTimelineAudio(input)),
+  );
+  ipcMain.handle(
     'timeline-render-cancel',
     withReadyEngine(async (engine, id) => {
       await engine.cancel(id);

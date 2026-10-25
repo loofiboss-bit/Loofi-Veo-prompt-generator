@@ -1,106 +1,25 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { diffService } from '@core/services/diffService';
 import type {
   LocalPromptTransformId,
   VideoVariantEditField,
   VideoVariantEditProposal,
 } from '@core/services/videoVariantEditService';
+import { StudioVariantEditReview } from './StudioVariantEditReview';
 
 interface VideoVariantEditPanelProps {
   busy: boolean;
   disabled: boolean;
   proposal: VideoVariantEditProposal | null;
-  onPropose: (direction: string, fields: VideoVariantEditField[]) => void;
+  onPropose: (
+    direction: string,
+    fields: VideoVariantEditField[],
+    allowDialogueRewrite?: boolean,
+  ) => void;
   onLocalTransform?: (transformId: LocalPromptTransformId, applyToAll?: boolean) => void;
   onAccept: (fields: VideoVariantEditField[]) => void;
   onReject: () => void;
-}
-
-function VariantEditReview({
-  proposal,
-  disabled,
-  onAccept,
-  onReject,
-}: Pick<VideoVariantEditPanelProps, 'disabled' | 'onAccept' | 'onReject'> & {
-  proposal: VideoVariantEditProposal;
-}) {
-  const { t } = useTranslation('studio');
-  const fields = Object.keys(proposal.patch) as VideoVariantEditField[];
-  const [acceptedFields, setAcceptedFields] = useState(fields);
-  return (
-    <section
-      className="studio-proposal"
-      aria-label={t('variantEdit.review', { defaultValue: 'Review selected variant changes' })}
-    >
-      <h3>{t('variantEdit.review', { defaultValue: 'Review selected variant changes' })}</h3>
-      <p className="studio-hint">
-        {t('variantEdit.reviewHint', {
-          defaultValue:
-            'Choose the fields to accept together. Other fields and variants stay as they are.',
-        })}
-      </p>
-      {fields.map((field) => {
-        const label = t(field === 'prompt' ? 'variantEdit.prompt' : 'negativePrompt', {
-          defaultValue: field === 'prompt' ? 'Prompt' : 'Negative prompt',
-        });
-        const diff = diffService.compareText(proposal.before[field], proposal.patch[field]!);
-        return (
-          <div key={field} className="studio-details">
-            <label className="studio-field">
-              <span>
-                <input
-                  type="checkbox"
-                  checked={acceptedFields.includes(field)}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    setAcceptedFields((current) =>
-                      event.target.checked
-                        ? [...current, field]
-                        : current.filter((item) => item !== field),
-                    )
-                  }
-                />{' '}
-                {t('variantEdit.acceptField', { defaultValue: 'Accept {{field}}', field: label })}
-              </span>
-            </label>
-            <div
-              className="studio-diff"
-              aria-label={t('variantEdit.fieldDiff', {
-                defaultValue: '{{field}} changes',
-                field: label,
-              })}
-            >
-              {diff.changes.map((change, index) => (
-                <div key={index} className={`studio-diff-${change.type}`}>
-                  {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
-                  {change.type === 'add' || change.type === 'modify'
-                    ? '+ '
-                    : change.type === 'remove'
-                      ? '− '
-                      : '  '}
-                  {change.content}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-      <div className="studio-actions">
-        <button
-          type="button"
-          className="studio-primary"
-          disabled={disabled || !acceptedFields.length}
-          onClick={() => onAccept(acceptedFields)}
-        >
-          {t('variantEdit.accept', { defaultValue: 'Accept selected fields' })}
-        </button>
-        <button type="button" disabled={disabled} onClick={onReject}>
-          {t('revision.reject')}
-        </button>
-      </div>
-    </section>
-  );
+  onCancel?: () => void;
 }
 
 export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
@@ -108,6 +27,7 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
   const [goal, setGoal] = useState('shorten');
   const [direction, setDirection] = useState('');
   const [fields, setFields] = useState('prompt');
+  const [allowDialogueRewrite, setAllowDialogueRewrite] = useState(false);
   const [applyToAllVariants, setApplyToAllVariants] = useState(false);
   const requestedDirection =
     goal === 'custom'
@@ -163,6 +83,16 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
               </option>
             </select>
           </label>
+          <label className="studio-check">
+            <input
+              type="checkbox"
+              checked={allowDialogueRewrite}
+              onChange={(event) => setAllowDialogueRewrite(event.target.checked)}
+            />
+            {t('variantEdit.allowDialogueRewrite', {
+              defaultValue: 'Allow dialogue to be rewritten',
+            })}
+          </label>
           <button
             type="button"
             disabled={!requestedDirection}
@@ -172,6 +102,7 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
                 fields === 'both'
                   ? ['prompt', 'negativePrompt']
                   : [fields as VideoVariantEditField],
+                allowDialogueRewrite,
               )
             }
           >
@@ -222,16 +153,35 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
         </fieldset>
       </details>
       {props.busy ? (
-        <p role="status">
-          {t('variantEdit.requesting', { defaultValue: 'Preparing a proposal…' })}
-        </p>
+        <div className="studio-actions">
+          <p role="status">
+            {t('variantEdit.requesting', { defaultValue: 'Preparing a proposal…' })}
+          </p>
+          {props.onCancel ? (
+            <button type="button" onClick={props.onCancel}>
+              {t('variantEdit.cancel', { defaultValue: 'Cancel' })}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {props.proposal ? (
-        <VariantEditReview
-          key={`${props.proposal.projectId}:${props.proposal.token}`}
-          proposal={props.proposal}
+        <StudioVariantEditReview
+          key={`${props.proposal.projectId}:${props.proposal.revision}:${props.proposal.token}`}
+          title={t('variantEdit.review', { defaultValue: 'Review selected variant changes' })}
+          hint={t('variantEdit.reviewHint', {
+            defaultValue:
+              'Choose the fields to accept together. Other fields and variants stay as they are.',
+          })}
+          fields={(Object.keys(props.proposal.patch) as VideoVariantEditField[]).map((field) => ({
+            id: field,
+            label: t(field === 'prompt' ? 'variantEdit.prompt' : 'negativePrompt', {
+              defaultValue: field === 'prompt' ? 'Prompt' : 'Negative prompt',
+            }),
+            before: props.proposal!.before[field],
+            after: props.proposal!.patch[field]!,
+          }))}
           disabled={props.disabled || props.busy}
-          onAccept={props.onAccept}
+          onAccept={(selected) => props.onAccept(selected as VideoVariantEditField[])}
           onReject={props.onReject}
         />
       ) : null}

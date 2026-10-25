@@ -7,13 +7,54 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [20.0.0] - 2026-10-25
 
 ### Added
 
 - Archive the v19.0.0 end-user review with prioritized workflow findings, proposed acceptance
   criteria, verification boundaries and selected interface captures. The review records follow-up
   work; it does not implement the proposed behavior changes.
+- Improve only the selected music variant's style, lyrics, or both from its current manual text. Review
+  each proposed field separately; occurrence-specific section locks, instrumental mode, other variants,
+  titles and production notes remain protected. Full-package improvement remains a separate action.
+- Improve prompts from production-take or imported-result notes using the current Studio variant as the
+  editable source and the frozen result prompt/settings as text context. Prompt-only is the default;
+  negative-prompt edits are optional and never start generation.
+- Protect quoted dialogue and supplied dialogue spans during video prompt editing, with an explicit
+  opt-in to rewrite dialogue. Add cancellation across Studio AI edits and provider network requests.
+- Desktop-only local speech transcription with a pinned multilingual Whisper Base q8 model,
+  checksum-verified installation, explicit download confirmation, trim-aware clip-occurrence
+  selection, editable proposals, and no cloud fallback. Manual captions and SRT remain available
+  in web mode; silence detection is labelled as timing-only. Capture audio duration before
+  transferring its buffer to the transcription worker.
+- An occurrence-aware lyric-section parser and lock model, segmented prompt/dialogue editing,
+  and an explicit motion field for image-to-video prompts.
+- Project-scoped render-batch recovery, local media resolution for production review, and a
+  persistent cost ledger that distinguishes estimates from verified charges.
+- Three clear Start destinations, a project summary with a next action, recent projects, and style
+  management under Settings.
+
+### Changed
+
+- Coordinate project saves in media, media catalog, project document, then saved-state order, and
+  serialize catalog changes without dropping other windows' additions.
+- Keep production acceptance separate from timeline placement, freeze existing take references,
+  and preserve a placed clip's trim, audio, transition, and caption links when replacing its source.
+- Mix timeline source audio through a shared Web Audio output with track mute/enable, clip volume
+  keyframes and fades; use native delivery review as the authority for rendered output.
+- Show whether AI review ran, distinguish the approved cost ceiling from estimates and actual
+  provider charges, and require a current delivery review before saving.
+- Complete the six application locales for the changed Studio, Create, Creator, and cost workflows,
+  including Swedish in the Studio translation gate.
+
+### Fixed
+
+- Isolate the cost ledger from shared IndexedDB object-store collisions and migrate existing
+  cost history and budgets without overwriting newer data.
+- Fetch the COPR packaging spec from the matching release tag.
+- Include the PostCSS configuration in Docker builds so Tailwind styles and control dimensions
+  remain correct in production staging.
+- Pin the direct ONNX runtime dependency to the override version so clean npm installs succeed.
 
 ## [19.0.0] - 2026-10-24
 

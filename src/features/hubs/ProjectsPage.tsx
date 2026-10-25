@@ -10,15 +10,20 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import {
   createEmptyProjectDocument,
   type EditorProjectDocument,
 } from '@core/store/editorSessionAdapters';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { useAppStore } from '@core/store/useAppStore';
+import { ROUTES } from '@core/config/routes';
+import { useNavigate } from 'react-router';
 
 export function ProjectsPage() {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,6 +52,9 @@ export function ProjectsPage() {
     if (!name.trim()) return;
     if (!(await usePromptStudioDraftStore.getState().flush()))
       throw new Error('Save the current Studio draft before changing projects.');
+    await projectSaveCoordinator.flushBeforeProjectChange(
+      useProjectStore.getState().currentProjectId,
+    );
     const inventory = await projectService.createProject({ name: name.trim() });
     await projectDocumentService.save(createEmptyProjectDocument(inventory));
     await useProjectStore.getState().refreshProjects();
@@ -56,6 +64,9 @@ export function ProjectsPage() {
   const importProject = async (file: File) => {
     if (!(await usePromptStudioDraftStore.getState().flush()))
       throw new Error('Save the current Studio draft before changing projects.');
+    await projectSaveCoordinator.flushBeforeProjectChange(
+      useProjectStore.getState().currentProjectId,
+    );
     const project = await importPortableProject(file);
     await useProjectStore.getState().refreshProjects();
     await openProject(project.id);
@@ -82,9 +93,7 @@ export function ProjectsPage() {
 
     const currentProject = projects.find((project) => project.id === currentProjectId);
     if (currentProject) {
-      await projectDocumentService.save(
-        captureCurrentProjectDocument({ id: currentProject.id, name: currentProject.name }),
-      );
+      await projectSaveCoordinator.flushBeforeProjectChange(currentProject.id);
     }
 
     const project = useProjectStore
@@ -101,6 +110,13 @@ export function ProjectsPage() {
     await hydrateProjectMedia(document);
     if (await setCurrentProject(project.id)) {
       commitProjectDocument(document, 'load');
+      const current = useAppStore.getState();
+      navigate(
+        current.clips.length > 0 ||
+          current.assets.some((asset) => asset.type === 'video' || asset.type === 'audio')
+          ? ROUTES.TIMELINE
+          : ROUTES.STUDIO,
+      );
     }
   };
 

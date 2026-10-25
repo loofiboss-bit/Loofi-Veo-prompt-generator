@@ -42,6 +42,8 @@ function validatePlan(input) {
   if (!input || JSON.stringify(input).length > 2000000) throw new Error('Invalid render plan.');
   const p = JSON.parse(JSON.stringify(input));
   if (
+    (p.clientRequestId !== undefined &&
+      (typeof p.clientRequestId !== 'string' || !/^[\w:-]{1,180}$/.test(p.clientRequestId))) ||
     p.schemaVersion !== 1 ||
     !text(p.projectId, 180) ||
     !p.projectId ||
@@ -361,6 +363,20 @@ class CreatorRenderEngine {
   }
   async startReserved(input) {
     const plan = validatePlan(input);
+    if (plan.clientRequestId) {
+      if (!/^[\w:-]{1,180}$/.test(plan.clientRequestId))
+        throw new Error('Invalid render request identity.');
+      const existing = [...this.jobs.values()].find(
+        (state) =>
+          state.plan.clientRequestId === plan.clientRequestId &&
+          !['failed', 'cancelled'].includes(state.job.status),
+      );
+      if (existing) {
+        if (existing.plan.contentHash !== plan.contentHash)
+          throw new Error('Render request identity changed.');
+        return { ...existing.job };
+      }
+    }
     const caps = await this.capabilities();
     if (!caps.available) throw new Error(caps.reason);
     if (
@@ -512,6 +528,81 @@ class CreatorRenderEngine {
       }
     }
     return intervals;
+  }
+  async extractTimelineAudio(input) {
+    const mediaId = input?.mediaId;
+    const offsetSeconds = input?.offsetSeconds;
+    const durationSeconds = input?.durationSeconds;
+    if (
+      !text(mediaId, 180) ||
+      !/^[\w.:-]+$/.test(mediaId) ||
+      !number(offsetSeconds, 0, 86400) ||
+      !number(durationSeconds, 0.1, 180) ||
+      offsetSeconds + durationSeconds > 86400
+    )
+      throw new Error('Invalid local speech extraction request.');
+    const caps = await this.capabilities();
+    if (!caps.available) throw new Error(caps.reason);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
+    if (!record) throw new Error('Registered media is missing.');
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const metadata = await this.probe(filePath);
+    const sourceDuration = Number(metadata.format.duration);
+    if (!metadata.streams.some((stream) => stream.codec_type === 'audio'))
+      throw new Error('Selected clip occurrence has no audio stream.');
+    if (!Number.isFinite(sourceDuration) || offsetSeconds + durationSeconds > sourceDuration + 0.05)
+      throw new Error('Selected audio trim exceeds the verified source duration.');
+    const { stdout } = await exec(
+      this.binary('ffmpeg'),
+      [
+        '-hide_banner',
+        '-nostdin',
+        '-protocol_whitelist',
+        'file,pipe',
+        '-format_whitelist',
+        MEDIA_FORMATS,
+        '-ss',
+        String(offsetSeconds),
+        '-i',
+        filePath,
+        '-t',
+        String(durationSeconds),
+        '-map',
+        '0:a:0',
+        '-vn',
+        '-ac',
+        '1',
+        '-ar',
+        '16000',
+        '-c:a',
+        'pcm_f32le',
+        '-f',
+        'f32le',
+        'pipe:1',
+      ],
+      {
+        timeout: 180000,
+        maxBuffer: 14 * 1024 * 1024,
+        windowsHide: true,
+        encoding: 'buffer',
+      },
+    );
+    if (!Buffer.isBuffer(stdout) || stdout.length < 4 || stdout.length % 4 !== 0)
+      throw new Error('Audio extraction returned an invalid PCM buffer.');
+    const pcm = Uint8Array.from(stdout);
+    return {
+      mediaId,
+      mediaSha256:
+        record.sha256 ||
+        (record.bytes
+          ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+          : await sha256File(filePath)),
+      sampleRate: 16000,
+      channels: 1,
+      durationSeconds: pcm.length / 4 / 16000,
+      pcm: pcm.buffer,
+    };
   }
   async proxy(mediaId) {
     if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');

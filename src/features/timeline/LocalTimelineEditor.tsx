@@ -1,12 +1,18 @@
 import { useStore } from 'zustand';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TimelineClip } from '@core/types';
 import { useAppStore } from '@core/store/useAppStore';
 import InspectorPanel from '@shared/components/InspectorPanel';
 import { TimelineSurface } from './components/TimelineSurface';
+import { TimelineSourcePreview } from './components/TimelineSourcePreview';
+import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { useProjectStore } from '@core/store/useProjectStore';
 import { SilenceCutModal } from './components/SilenceCutModal';
 import { VoiceoverRecorderModal } from './components/VoiceoverRecorderModal';
+
+const EMPTY_AUDIO_FADES: Record<string, { inSeconds: number; outSeconds: number }> = {};
 
 /** Source playback aids editing; native delivery review is the composited output. */
 export function LocalTimelineEditor() {
@@ -25,20 +31,21 @@ export function LocalTimelineEditor() {
   const canRedo = useStore(useAppStore.temporal, (state) => state.futureStates.length > 0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
+  const stopPreview = useCallback(() => setPlaying(false), []);
   const [showSilenceModal, setShowSilenceModal] = useState(false);
   const [showVoiceoverModal, setShowVoiceoverModal] = useState(false);
-  const mediaRef = useRef<HTMLVideoElement>(null);
-  const duration = Math.max(0, ...clips.map((clip) => clip.startTime + clip.duration));
-  const active = clips.find(
-    (clip) =>
-      (clip.type === 'image' || clip.type === 'video') &&
-      clip.startTime <= currentTime &&
-      clip.startTime + clip.duration > currentTime,
+  const projectId = useProjectStore((state) => state.currentProjectId);
+  const activeRun = useProductionRunStore((state) => state.activeRun);
+  const storedAudioFades = useEditorSessionStore(
+    (state) => state.projectSnapshot?.creatorDelivery?.audioFades,
   );
+  const audioFades = storedAudioFades ?? EMPTY_AUDIO_FADES;
+  const run = activeRun?.projectId === projectId ? activeRun : null;
+  const duration = Math.max(0, ...clips.map((clip) => clip.startTime + clip.duration));
   const selected = clips.find((clip) => clip.id === selectedId) ?? null;
-  const asset = assets.find((item) => item.id === active?.resourceId);
-  const shot = sbShots.find((item) => item.id === active?.resourceId);
-  const url = asset?.proxyUrl ?? asset?.url ?? shot?.generatedVideoUrl;
+  useEffect(() => {
+    setPlaying(false);
+  }, [projectId]);
   useEffect(() => {
     if (!playing) return;
     let frame = 0;
@@ -58,20 +65,6 @@ export function LocalTimelineEditor() {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [playing, duration]);
-  useEffect(() => {
-    const element = mediaRef.current;
-    if (!element || !active) return;
-    const synchronize = () => {
-      const target = active.offset + currentTime - active.startTime;
-      if (Math.abs(element.currentTime - target) > 0.15) element.currentTime = target;
-      element.volume = Math.min(1, Math.max(0, active.volume ?? 1));
-      if (playing) void element.play().catch(() => setPlaying(false));
-      else element.pause();
-    };
-    if (element.readyState >= 1) synchronize();
-    element.addEventListener('loadedmetadata', synchronize);
-    return () => element.removeEventListener('loadedmetadata', synchronize);
-  }, [active, currentTime, playing, url]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
@@ -117,13 +110,17 @@ export function LocalTimelineEditor() {
     <div className="local-editor-workspace">
       <div className="local-editor-viewer">
         <div className="local-editor-source">
-          {active?.type === 'image' && url ? (
-            <img src={url} alt={active.label} />
-          ) : url ? (
-            <video ref={mediaRef} src={url} playsInline preload="metadata" />
-          ) : (
-            <p>{t('v16.sourceGap', 'No visual clip at the playhead')}</p>
-          )}
+          <TimelineSourcePreview
+            clips={clips}
+            tracks={tracks}
+            assets={assets}
+            shots={sbShots}
+            run={run}
+            time={currentTime}
+            playing={playing}
+            audioFades={audioFades}
+            onFailure={stopPreview}
+          />
         </div>
         <p>
           {t(
@@ -182,7 +179,10 @@ export function LocalTimelineEditor() {
             {t('v16.redo', 'Redo')}
           </button>
           <button
-            onClick={() => setShowVoiceoverModal(true)}
+            onClick={() => {
+              setPlaying(false);
+              setShowVoiceoverModal(true);
+            }}
             className="flex items-center gap-1.5 rounded border border-rose-600/50 bg-rose-950/40 px-2 py-1 text-xs font-medium text-rose-300 hover:bg-rose-900/60 transition-colors"
           >
             <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -223,8 +223,6 @@ export function LocalTimelineEditor() {
           isOpen={showVoiceoverModal}
           onClose={() => setShowVoiceoverModal(false)}
           currentTime={currentTime}
-          tracks={tracks}
-          clips={clips}
           onVoiceoverAdded={(newClip) => {
             setSelectedId(newClip.id);
           }}

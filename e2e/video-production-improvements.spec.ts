@@ -179,4 +179,18 @@ test('external videos compare frozen sources, save independent notes and play to
     'Keep A framing',
   );
   await expect(comparison.getByLabel('Comparison notes · B', { exact: true })).toHaveValue('');
+  await page
+    .getByRole('button', { name: 'Improve prompt from notes', exact: true })
+    .first()
+    .click();
+  const feedback = page.getByRole('region', { name: 'Improve prompt from notes', exact: true });
+  await expect(feedback).toBeVisible();
+  await expect(feedback.getByLabel('Reviewer notes', { exact: true })).toHaveValue(
+    'Keep A framing',
+  );
+  await expect(feedback.getByLabel('Fields to improve', { exact: true })).toHaveValue('prompt');
+  await feedback.getByText('Frozen source context', { exact: true }).click();
+  await expect(
+    feedback.getByText('First frozen source: a blue boat', { exact: false }),
+  ).toBeVisible();
 });

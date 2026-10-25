@@ -224,6 +224,7 @@ class CreatorRecipeService {
         };
       }),
     };
+    project.assets = assets;
     project.creatorDelivery = {
       schemaVersion: 1,
       revision: 0,

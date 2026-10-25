@@ -120,7 +120,12 @@
     "video": "Vídeo",
     "music": "Música",
     "cancel": "Cancelar",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "approvedMaximum": "Máximo aprobado {{cost}}",
+    "estimatedUsage": "Consumo estimado",
+    "estimateUnavailable": "No disponible",
+    "actualCost": "Coste real verificado",
+    "actualUnavailable": "El proveedor no lo facilita"
   },
   "commandPalette": {
     "title": "Paleta de Comandos",

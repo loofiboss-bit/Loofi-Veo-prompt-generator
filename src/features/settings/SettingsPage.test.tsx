@@ -84,10 +84,12 @@ vi.mock('@shared/components/ui/Icon', () => ({
 }));
 
 vi.mock('@core/store/useAppStore', () => ({
-  useAppStore: () => ({
-    theme: 'dark',
-    setTheme: vi.fn(),
-  }),
+  useAppStore: (
+    selector?: (state: { theme: 'dark'; setTheme: () => void; assets: never[] }) => unknown,
+  ) => {
+    const state = { theme: 'dark' as const, setTheme: vi.fn(), assets: [] as never[] };
+    return selector ? selector(state) : state;
+  },
 }));
 
 function renderSettingsPage(
@@ -112,6 +114,11 @@ describe('SettingsPage', () => {
 
     expect(screen.getByText('Plugin List Panel')).toBeInTheDocument();
     expect(screen.queryByText('Marketplace Panel')).not.toBeInTheDocument();
+  });
+
+  it('opens creator style management from Settings', () => {
+    renderSettingsPage('/settings?tab=creatorStyles');
+    expect(screen.getByRole('heading', { name: 'My style' })).toBeInTheDocument();
   });
 
   it('falls back to the general tab when an invalid tab is requested', () => {

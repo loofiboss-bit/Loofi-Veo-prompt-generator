@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Asset, TimelineClip, TimelineTrack } from '@core/types';
+import type { Asset, TimelineClip } from '@core/types';
 import { mediaAssetService } from '@core/services/mediaAssetService';
 import { creatorVoiceoverService } from '@core/services/creatorVoiceoverService';
 import { useAppStore } from '@core/store/useAppStore';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { AppDialog } from '@shared/components/ui/AppDialog';
 import Icon from '@shared/components/ui/Icon';
 
@@ -11,8 +13,6 @@ export interface VoiceoverRecorderModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTime: number;
-  tracks: TimelineTrack[];
-  clips: TimelineClip[];
   onVoiceoverAdded?: (clip: TimelineClip) => void;
 }
 
@@ -22,8 +22,6 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
   isOpen,
   onClose,
   currentTime,
-  tracks,
-  clips,
   onVoiceoverAdded,
 }) => {
   const { t } = useTranslation('creator');
@@ -38,7 +36,6 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
-
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -49,6 +46,12 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const durationRef = useRef<number>(0);
+  const [insertAtTime, setInsertAtTime] = useState(currentTime);
+  const wasOpenRef = useRef(false);
+  const recordingSessionRef = useRef<{
+    projectId: string | null;
+    mutationVersion: number;
+  } | null>(null);
 
   // Load available input devices
   useEffect(() => {
@@ -67,9 +70,16 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
       });
   }, [isOpen, selectedDeviceId]);
 
-  // Setup initial default take name
+  // Setup initial default take name once per modal opening session
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      const app = useAppStore.getState();
+      recordingSessionRef.current = {
+        projectId: useProjectStore.getState().currentProjectId,
+        mutationVersion: app.mutationVersion,
+      };
+      setInsertAtTime(currentTime);
       setTakeName(`Voiceover - ${currentTime.toFixed(1)}s`);
       setRecordState('idle');
       setError(null);
@@ -77,8 +87,11 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
       setAudioUrl(null);
       setRecordingSeconds(0);
       durationRef.current = 0;
+    } else if (!isOpen) {
+      wasOpenRef.current = false;
+      recordingSessionRef.current = null;
     }
-  }, [isOpen, currentTime]);
+  }, [currentTime, isOpen]);
 
   const stopVisualization = () => {
     if (animationFrameRef.current) {
@@ -288,7 +301,21 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
     setError(null);
 
     try {
-      const cleanName = takeName.trim() || `Voiceover - ${currentTime.toFixed(1)}s`;
+      const session = recordingSessionRef.current;
+      const beforeImport = useAppStore.getState();
+      if (
+        !session?.projectId ||
+        useProjectStore.getState().currentProjectId !== session.projectId ||
+        beforeImport.mutationVersion !== session.mutationVersion
+      )
+        throw new Error(
+          t(
+            'voiceover.sessionChanged',
+            'The project or timeline changed while recording. Reopen the recorder and try again.',
+          ),
+        );
+
+      const cleanName = takeName.trim() || `Voiceover - ${insertAtTime.toFixed(1)}s`;
       const extension = audioBlob.type.includes('webm') ? 'webm' : 'ogg';
       const file = new File(
         [audioBlob],
@@ -304,19 +331,32 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
         asset.durationSeconds = fallbackDur;
       }
 
-      useAppStore.getState().addAsset(asset);
+      const current = useAppStore.getState();
+      if (
+        useProjectStore.getState().currentProjectId !== session.projectId ||
+        current.mutationVersion !== session.mutationVersion
+      )
+        throw new Error(
+          t(
+            'voiceover.sessionChanged',
+            'The project or timeline changed while recording. Reopen the recorder and try again.',
+          ),
+        );
+
+      current.addAsset(asset);
 
       const insertion = creatorVoiceoverService.insertVoiceover({
         asset,
-        tracks,
-        clips,
-        insertAtTime: currentTime,
+        tracks: current.tracks,
+        clips: current.clips,
+        insertAtTime,
       });
 
       useAppStore.setState({
         tracks: insertion.tracks,
         clips: insertion.clips,
       });
+      await projectSaveCoordinator.saveProject(session.projectId);
 
       onVoiceoverAdded?.(insertion.newClip);
       handleClose();
@@ -478,7 +518,7 @@ export const VoiceoverRecorderModal: React.FC<VoiceoverRecorderModalProps> = ({
         <footer className="flex items-center justify-between pt-4 border-t border-slate-700">
           <div className="text-xs text-slate-400">
             {t('voiceover.insertAt', 'Insert at')}:{' '}
-            <span className="font-mono text-sky-300">{currentTime.toFixed(1)}s</span>
+            <span className="font-mono text-sky-300">{insertAtTime.toFixed(1)}s</span>
           </div>
 
           <div className="flex items-center gap-2">

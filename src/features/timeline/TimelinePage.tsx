@@ -1,3 +1,4 @@
+import { defaultCreatorDelivery } from '@core/services/creatorDeliveryService';
 import { EditorMediaPanel } from './EditorMediaPanel';
 import { LocalTimelineEditor } from './LocalTimelineEditor';
 import '@features/creator/creator.css';
@@ -119,13 +120,28 @@ export const TimelinePage: React.FC = () => {
     navigate(ROUTES.HOME);
   };
 
+  const enableDeliveryMode = () => {
+    const doc = useEditorSessionStore
+      .getState()
+      .captureCurrentProjectDocument({ id: projectId, name: projectName });
+    useEditorSessionStore.setState({
+      projectSnapshot: {
+        ...doc,
+        creatorDelivery: {
+          ...(doc.creatorDelivery ?? defaultCreatorDelivery(doc)),
+          editorMode: 'delivery',
+        },
+      },
+    });
+  };
+
   if (!deliveryMode && playableShots.length === 0 && !hasTimelineMedia) {
     return (
       <section className="creator-page min-h-full px-4 py-5 text-slate-100 sm:px-6">
         <header className="creator-page-header mx-auto mb-4 max-w-6xl border-b border-slate-800 pb-4">
           <h1 className="text-2xl font-semibold">{t('timeline.title', 'Timeline')}</h1>
         </header>
-        <div className="mx-auto flex max-w-3xl items-center justify-center rounded-lg border border-slate-800 bg-slate-900 p-5">
+        <div className="mx-auto flex max-w-3xl flex-col items-center justify-center rounded-lg border border-slate-800 bg-slate-900 p-5">
           <EmptyState
             icon="🎞️"
             title={t('timeline.emptyTitle', 'Timeline is ready when you have generated clips')}
@@ -141,6 +157,22 @@ export const TimelinePage: React.FC = () => {
             onAction={handleExitTimeline}
             className="w-full border-none bg-transparent shadow-none"
           />
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={enableDeliveryMode}
+              className="rounded-md border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
+            >
+              {creatorT('v16.openEditorMedia', 'Open editor & import media')}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.CREATE)}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            >
+              {createT('title', 'Production Workflow')}
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -194,12 +226,17 @@ export const TimelinePage: React.FC = () => {
         </>
       ) : (
         <>
-          <ErrorBoundary panelId="creator-delivery">
-            <Suspense fallback={<ModalSkeleton />}>
-              <CreatorDeliveryPanel />
-            </Suspense>
-          </ErrorBoundary>
           <TimelinePlayer embedded shots={shots} onClose={handleExitTimeline} />
+          <details className="local-editor-delivery border-t border-slate-800 mt-4 px-4" open>
+            <summary className="cursor-pointer py-2 text-sm font-medium text-slate-300 hover:text-white">
+              {creatorT('v16.captionDelivery', 'Captions and delivery')}
+            </summary>
+            <ErrorBoundary panelId="creator-delivery">
+              <Suspense fallback={<ModalSkeleton />}>
+                <CreatorDeliveryPanel />
+              </Suspense>
+            </ErrorBoundary>
+          </details>
         </>
       )}
     </section>

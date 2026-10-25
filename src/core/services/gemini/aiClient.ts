@@ -62,6 +62,7 @@ export interface ResilientCallOptions {
   endpoint: string;
   /** Model name being called (for fallback and cost tracking) */
   model?: string;
+  signal?: AbortSignal;
   /** Extra retry config overrides */
   retryConfig?: Partial<RetryConfig>;
 }
@@ -84,7 +85,7 @@ export const resilientCall = async (
   fn: () => Promise<GenerateContentResponse>,
   options: ResilientCallOptions,
 ): Promise<GenerateContentResponse> => {
-  const { endpoint, retryConfig } = options;
+  const { endpoint, retryConfig, signal } = options;
 
   const completeRequest = apiHealthMonitorService.startRequest(endpoint);
 
@@ -92,6 +93,7 @@ export const resilientCall = async (
     const response = await retryOperation<GenerateContentResponse>(fn, 3, 1000, {
       circuitBreakerEndpoint: endpoint,
       ...retryConfig,
+      ...(signal ? { signal } : {}),
     });
 
     // Record success
@@ -100,7 +102,9 @@ export const resilientCall = async (
     return response;
   } catch (error) {
     // Record failure
-    completeRequest(false);
+    completeRequest(
+      signal?.aborted || (error instanceof Error && error.name === 'AbortError') ? null : false,
+    );
     throw error;
   }
 };

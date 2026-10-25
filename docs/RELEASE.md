@@ -4,18 +4,22 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v19.0.0 Reviewable Video Production & Deterministic Workbench
+## v20.0.0 Project-Safe Editing & Reviewed Delivery
 
-v19 introduces selected-variant AI and zero-token batch local refinement, expanded cinematic AST conflict detection (`OPT-001`, `MOT-001`, `LGT-002`, `DOF-001`, `TMP-001`), synchronized Pro A/B video comparison, multi-shot production batch tools with timeline sync, NLE frame-stepping (`J/K/L`), zero-token chapter timestamp generation, and cryptographically bound `hashVersion: 2` paid request approvals. Bundled source-built FFmpeg resources support Linux and Windows without external dependencies. Existing project and archive formats remain fully compatible.
+v20 includes all changes from PR #96: durable project/media saves, explicit edit-preserving timeline
+placement, selected music/video edits with lyric and dialogue safeguards, cancellable AI requests,
+desktop-local Whisper transcription, reviewed delivery and persistent cost accounting. Three Start
+destinations and six updated locales make the workflow easier to follow. Existing project and
+archive formats remain supported.
 
-Published v17.0.0 evidence: [release verification](V17_0_0_RELEASE.md).
-
-See [v16 workflow](CREATOR_V16.md), [timeline editing](V16_TIMELINE_EDITING.md), and [local verification](CREATOR_V16_VERIFICATION.md).
+See [v20 release notes](releases/RELEASE-NOTES-v20.0.0.md),
+[v16 workflow](CREATOR_V16.md), and [timeline editing](V16_TIMELINE_EDITING.md).
+Historical v17 publication evidence remains in [release verification](V17_0_0_RELEASE.md).
 
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v19.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v19.0.0)
+[v20.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -23,19 +27,19 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-19.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-19.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-20.0.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-20.0.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.
 Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
 
-The stabilization PR passed 4,312 unit/integration tests, native desktop checks, 111 Chromium
-scenarios (the packaged-only test is deferred to the package jobs), and production smoke/stability
-checks. See [the stabilization report](V16_STABILIZATION.md) for local benchmarks and dated
-verification evidence. The canonical tag workflow qualifies the actual release packages independently.
+The source gate runs unit/integration tests with coverage, native desktop checks and performance
+benchmarks. The final PR checks and canonical tag workflow qualify the exact release commit and packages.
+See [the earlier stabilization report](V16_STABILIZATION.md) for historical benchmarks and dated
+verification evidence.
 
 ## Local release gates
 
@@ -86,7 +90,7 @@ sha256sum -c SHA256SUMS.txt
 The COPR package is a Fedora 44 x86_64 custom-source build. The checked-in
 [`packaging/copr/fetch-release.sh`](../packaging/copr/fetch-release.sh) downloads the exact GitHub
 RPM, downloads `SHA256SUMS.txt`, fails if the artifact entry is missing or mismatched, and fetches
-the tracked spec. The spec repackages the qualified Electron payload as `veo-prompt-generator`.
+the spec from the matching release tag. The spec repackages the qualified Electron payload as `veo-prompt-generator`.
 
 The bundled Electron/Sharp runtime objects `libc.musl-x86_64.so.1` and
 `libvips-cpp.so.*` are not host package requirements. The spec filters only those two false
@@ -94,9 +98,11 @@ requirements from RPM's automatic ELF scan; GTK, NSS, libsecret, X11, and other 
 requirements remain visible to DNF.
 
 ```bash
-copr-cli add-package-custom loofitheboss/loofi-creator-studio \
+copr-cli edit-package-custom loofitheboss/loofi-creator-studio \
   --name veo-prompt-generator \
-  --script packaging/copr/fetch-release.sh
+  --script packaging/copr/fetch-release.sh \
+  --script-chroot fedora-44-x86_64 \
+  --script-builddeps "curl ca-certificates"
 copr-cli build-package loofitheboss/loofi-creator-studio \
   --name veo-prompt-generator -r fedora-44-x86_64
 ```

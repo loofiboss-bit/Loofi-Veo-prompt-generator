@@ -292,8 +292,9 @@ const compileVariant = (
   let prompt = '';
 
   if (input.mode === 'image-to-video') {
+    const subjectMotion = action || cleanSentence(input.idea);
     const motionOnly = [
-      action ? `Subject motion: ${action}` : '',
+      subjectMotion ? `Subject motion: ${subjectMotion}` : '',
       camera ? `Camera motion: ${camera}` : '',
       environment ? `Atmosphere motion: ${environment}` : '',
     ]

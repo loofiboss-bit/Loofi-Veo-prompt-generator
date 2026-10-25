@@ -2,6 +2,7 @@ import { paidJobService } from '@core/services/paidJobService';
 import type { PaidJobTask, GenerationTask } from '@core/types';
 import { studioRevisionService } from '@core/services/studioRevisionService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import {
   exportProjectOtioBundle,
   preflightProjectOtioExport,
@@ -23,7 +24,11 @@ import {
   type PreflightRecommendation,
 } from '@core/services/productionPreflightService';
 import { productionReviewService } from '@core/services/productionReviewService';
-import { productionRunService } from '@core/services/productionRunService';
+import { resolveProductionReviewMedia } from '@core/services/localMediaResolver';
+import {
+  getProductionReviewInputIdentity,
+  productionRunService,
+} from '@core/services/productionRunService';
 import { continuityService } from '@core/services/continuityService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
@@ -466,38 +471,88 @@ export function useCreateWorkflow() {
   };
 
   const handleReview = async (shot: ProductionShot, take: ProductionTake) => {
-    if (!activeRun) return;
+    const runId = activeRun?.id;
+    const projectId = useProjectStore.getState().currentProjectId;
+    const useGemini = useGeminiReview;
     if (
-      useGeminiReview &&
-      !activeRun.approvals.some(
-        (approval) =>
-          approval.kind === 'continuity-review' &&
-          approval.status === 'active' &&
-          approval.shotIds.includes(shot.id),
-      )
+      !runId ||
+      !projectId ||
+      activeRun?.projectId !== projectId ||
+      useEditorSessionStore.getState().projectSnapshot?.id !== projectId
     ) {
-      setFeedback(t('messages.continuityReviewRequired'));
+      setFeedback(t('messages.projectChanged'));
       return;
     }
-    let video: { data: string; mimeType: string } | undefined;
-    if (useGeminiReview && take.localMediaKey) {
-      const record = await mediaAssetService.getRecord(take.localMediaKey);
-      if (record) {
-        video = { data: await blobToBase64(record.blob), mimeType: record.mimeType };
-      }
-    }
-    const referenceImages = (take.continuitySnapshot?.referenceAssetIds ?? [])
-      .map((assetId) => assetToInput(assets.find((asset) => asset.id === assetId)))
-      .filter((input): input is VeoExecutionImage => Boolean(input));
+    const isCurrentProject = () =>
+      useProjectStore.getState().currentProjectId === projectId &&
+      useEditorSessionStore.getState().projectSnapshot?.id === projectId;
     try {
+      const currentRun = await productionRunService.getRun(runId);
+      const currentShot = currentRun?.shots.find((item) => item.id === shot.id);
+      const currentTake = currentShot?.takes.find((item) => item.id === take.id);
+      if (
+        !currentRun ||
+        currentRun.projectId !== projectId ||
+        !currentShot ||
+        !currentTake ||
+        !isCurrentProject()
+      ) {
+        setFeedback(t('messages.reviewStale'));
+        return;
+      }
+      const frozenShot = structuredClone(currentShot);
+      const frozenTake = structuredClone(currentTake);
+      const inputIdentity = getProductionReviewInputIdentity(frozenShot, frozenTake);
+      if (
+        useGemini &&
+        !currentRun.approvals.some(
+          (approval) =>
+            approval.kind === 'continuity-review' &&
+            approval.status === 'active' &&
+            approval.shotIds.includes(shot.id),
+        )
+      ) {
+        setFeedback(t('messages.continuityReviewRequired'));
+        return;
+      }
+
+      let video: { data: string; mimeType: string } | undefined;
+      let referenceImages: VeoExecutionImage[] = [];
+      if (useGemini) {
+        const resolved = await resolveProductionReviewMedia(
+          frozenTake,
+          useAppStore.getState().assets,
+        );
+        video = resolved.video;
+        referenceImages = resolved.referenceImages;
+      }
+      if (!isCurrentProject()) {
+        setFeedback(t('messages.reviewStale'));
+        return;
+      }
       const review = await productionReviewService.reviewTake({
-        shot,
-        take,
+        shot: frozenShot,
+        take: frozenTake,
         video,
         referenceImages,
-        useGemini: useGeminiReview,
+        useGemini,
       });
-      await productionRunService.recordReview(activeRun.id, shot.id, take.id, review);
+      const latestRun = await productionRunService.getRun(runId);
+      const latestTake = latestRun?.shots
+        .find((item) => item.id === shot.id)
+        ?.takes.find((item) => item.id === take.id);
+      const latestShot = latestRun?.shots.find((item) => item.id === shot.id);
+      const latestIdentity =
+        latestShot && latestTake ? getProductionReviewInputIdentity(latestShot, latestTake) : null;
+      if (
+        !isCurrentProject() ||
+        latestRun?.projectId !== projectId ||
+        latestIdentity !== inputIdentity
+      ) {
+        setFeedback(t('messages.reviewStale'));
+        return;
+      }
+      await productionRunService.recordReview(runId, shot.id, take.id, review, inputIdentity);
       await refreshActiveRun();
       setFeedback(
         review.source === 'local'
@@ -505,7 +560,14 @@ export function useCreateWorkflow() {
           : t('messages.reviewComplete', { score: review.overallScore }),
       );
     } catch (failure) {
-      setFeedback(t('flow.reviewFailed') + ' ' + (failure instanceof Error ? failure.message : ''));
+      setFeedback(
+        useGemini
+          ? `${t('messages.aiReviewNotRun', {
+              defaultValue:
+                'AI review was not run. Review locally or retry after fixing the media or provider issue.',
+            })} ${failure instanceof Error ? failure.message : ''}`
+          : `${t('flow.reviewFailed')} ${failure instanceof Error ? failure.message : ''}`,
+      );
     }
   };
 
@@ -528,6 +590,19 @@ export function useCreateWorkflow() {
 
   const handleAccept = async (shot: ProductionShot, take: ProductionTake) => {
     if (!activeRun) return;
+    const projectId = useProjectStore.getState().currentProjectId;
+    if (
+      !projectId ||
+      projectId !== activeRun.projectId ||
+      useEditorSessionStore.getState().projectSnapshot?.id !== projectId
+    ) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
     const localMediaUrl =
       take.localMediaUrl ||
       (take.localMediaKey ? await mediaAssetService.getObjectUrl(take.localMediaKey) : null) ||
@@ -537,51 +612,55 @@ export function useCreateWorkflow() {
       return;
     }
 
+    const timelineState = useAppStore.getState();
+    const storyboardShot = timelineState.sbShots.find((item) => item.id === shot.id);
+    const sourceAsset = storyboardShot?.generatedVideoUrl
+      ? timelineState.assets.find(
+          (asset) =>
+            asset.url === storyboardShot.generatedVideoUrl ||
+            asset.proxyUrl === storyboardShot.generatedVideoUrl,
+        )
+      : undefined;
+    const previousTakeId =
+      shot.selectedTakeId ??
+      shot.takes.find(
+        (item) =>
+          item.localMediaUrl === storyboardShot?.generatedVideoUrl ||
+          (sourceAsset && item.localMediaKey === sourceAsset.storageKey),
+      )?.id;
+    const frozenCount = timelineState.freezeTimelineTakeReferences(
+      shot.id,
+      previousTakeId,
+      previousTakeId ? undefined : sourceAsset?.id,
+    );
+    if (frozenCount > 0) {
+      try {
+        await projectSaveCoordinator.saveProject(projectId);
+      } catch {
+        setFeedback(
+          t('messages.timelineFreezeSaveFailed', {
+            defaultValue:
+              'Existing timeline references could not be saved. Retry saving the project before accepting this take.',
+          }),
+        );
+        return;
+      }
+    }
+    if (useProjectStore.getState().currentProjectId !== projectId) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+
     try {
       await productionRunService.acceptTake(activeRun.id, shot.id, take.id);
     } catch (failure) {
       setFeedback(failure instanceof Error ? failure.message : t('flow.reviewFailed'));
       return;
     }
-    const appState = useAppStore.getState();
-    appState.setSbShots((currentShots) => {
-      const existing = currentShots.find((item) => item.id === shot.id);
-      const nextTakeUrls = existing?.takes.includes(localMediaUrl)
-        ? existing.takes
-        : [...(existing?.takes ?? []), localMediaUrl];
-      if (existing) {
-        return currentShots.map((item) =>
-          item.id === shot.id
-            ? {
-                ...item,
-                action: shot.prompt,
-                camera: shot.camera,
-                duration: shot.durationSeconds,
-                generatedVideoUrl: localMediaUrl,
-                takes: nextTakeUrls,
-                selectedTakeIndex: nextTakeUrls.indexOf(localMediaUrl),
-              }
-            : item,
-        );
-      }
-      return [
-        ...currentShots,
-        {
-          id: shot.id,
-          type: 'video',
-          action: shot.prompt,
-          camera: shot.camera,
-          characterId: '',
-          generatedVideoUrl: localMediaUrl,
-          takes: [localMediaUrl],
-          selectedTakeIndex: 0,
-          visualLink: false,
-          duration: shot.durationSeconds,
-          transition: { type: 'cut', duration: 0 },
-        },
-      ];
-    });
-    appState.syncTimelineFromShots();
     storeMediator.emit('production:takeAccepted', {
       runId: activeRun.id,
       shotId: shot.id,
@@ -607,6 +686,111 @@ export function useCreateWorkflow() {
           })
         : t('messages.takeAccepted', { id: shot.id }),
     );
+  };
+
+  const handlePlaceTake = async (
+    shot: ProductionShot,
+    take: ProductionTake,
+    targetClipId?: string,
+  ) => {
+    if (!activeRun) return;
+    const projectId = useProjectStore.getState().currentProjectId;
+    if (!projectId || activeRun.projectId !== projectId) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+    const run = await productionRunService.getRun(activeRun.id);
+    if (!run || run.projectId !== projectId) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+    const latestShot = run.shots.find((item) => item.id === shot.id);
+    const latestTake = latestShot?.takes.find((item) => item.id === take.id);
+    if (
+      !latestShot ||
+      !latestTake ||
+      latestShot.selectedTakeId !== take.id ||
+      latestTake.localMediaKey !== take.localMediaKey ||
+      latestTake.status !== 'accepted'
+    ) {
+      setFeedback(
+        t('messages.takeChanged', {
+          defaultValue: 'This accepted take changed. Refresh review before placing it.',
+        }),
+      );
+      return;
+    }
+    if (!take.localMediaKey) {
+      setFeedback(
+        t('messages.localMediaRequired', {
+          defaultValue: 'Save this take locally before placing it in the timeline.',
+        }),
+      );
+      return;
+    }
+
+    const asset = useAppStore
+      .getState()
+      .assets.find((item) => item.id === take.id || item.storageKey === take.localMediaKey);
+    const metadata = await window.electron?.inspectTimelineRenderMedia?.(take.localMediaKey);
+    if (metadata && !metadata.available) {
+      setFeedback(metadata.reason ?? t('messages.localMediaRequired'));
+      return;
+    }
+    const duration = metadata?.durationSeconds ?? asset?.durationSeconds;
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+      setFeedback(
+        t('messages.mediaDurationUnverified', {
+          defaultValue:
+            'The local video duration could not be verified. Reimport the video and retry.',
+        }),
+      );
+      return;
+    }
+    if (
+      useProjectStore.getState().currentProjectId !== projectId ||
+      useEditorSessionStore.getState().projectSnapshot?.id !== projectId
+    ) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+
+    try {
+      const clipId = useAppStore.getState().placeProductionTake({
+        assetId: asset?.id ?? take.id,
+        takeId: take.id,
+        label: `${shot.title} · ${take.id.slice(0, 8)}`,
+        duration,
+        targetClipId,
+      });
+      await projectSaveCoordinator.saveProject(projectId);
+      setFeedback(
+        targetClipId
+          ? t('messages.takeReplaced', { defaultValue: 'The timeline clip was replaced.' })
+          : t('messages.takePlaced', {
+              defaultValue: 'The accepted take was added as a separate timeline clip.',
+            }),
+      );
+      useAppStore
+        .getState()
+        .setCurrentTime(
+          useAppStore.getState().clips.find((clip) => clip.id === clipId)?.startTime ?? 0,
+        );
+    } catch (failure) {
+      setFeedback(failure instanceof Error ? failure.message : t('flow.reviewFailed'));
+    }
   };
 
   const handleReject = async (shot: ProductionShot, take: ProductionTake) => {
@@ -669,73 +853,6 @@ export function useCreateWorkflow() {
         count: targetShots.length,
       }),
     );
-  };
-
-  const handleSyncAcceptedTakesToTimeline = async (): Promise<number> => {
-    if (!activeRun) return 0;
-    let syncedCount = 0;
-    const appState = useAppStore.getState();
-    for (const shot of activeRun.shots) {
-      const acceptedTake =
-        shot.takes.find((item) => item.id === shot.selectedTakeId) ??
-        [...shot.takes].reverse().find((item) => item.status === 'accepted');
-      if (!acceptedTake) continue;
-      const localMediaUrl =
-        acceptedTake.localMediaUrl ||
-        (acceptedTake.localMediaKey
-          ? await mediaAssetService.getObjectUrl(acceptedTake.localMediaKey)
-          : null) ||
-        acceptedTake.providerMediaUri;
-      if (!localMediaUrl) continue;
-      syncedCount += 1;
-      appState.setSbShots((currentShots) => {
-        const existing = currentShots.find((item) => item.id === shot.id);
-        const nextTakeUrls = existing?.takes.includes(localMediaUrl)
-          ? existing.takes
-          : [...(existing?.takes ?? []), localMediaUrl];
-        if (existing) {
-          return currentShots.map((item) =>
-            item.id === shot.id
-              ? {
-                  ...item,
-                  action: shot.prompt,
-                  camera: shot.camera,
-                  duration: shot.durationSeconds,
-                  generatedVideoUrl: localMediaUrl,
-                  takes: nextTakeUrls,
-                  selectedTakeIndex: nextTakeUrls.indexOf(localMediaUrl),
-                }
-              : item,
-          );
-        }
-        return [
-          ...currentShots,
-          {
-            id: shot.id,
-            type: 'video',
-            action: shot.prompt,
-            camera: shot.camera,
-            characterId: '',
-            generatedVideoUrl: localMediaUrl,
-            takes: [localMediaUrl],
-            selectedTakeIndex: 0,
-            visualLink: false,
-            duration: shot.durationSeconds,
-            transition: { type: 'cut', duration: 0 },
-          },
-        ];
-      });
-    }
-    if (syncedCount > 0) {
-      appState.syncTimelineFromShots();
-      setFeedback(
-        t('messages.acceptedSyncedToTimeline', {
-          defaultValue: 'Synced {{count}} accepted takes to Timeline.',
-          count: syncedCount,
-        }),
-      );
-    }
-    return syncedCount;
   };
 
   const handleExport = async () => {
@@ -850,11 +967,11 @@ export function useCreateWorkflow() {
     handleApproveContinuityReview,
     handleContinuityOverride,
     handleAccept,
+    handlePlaceTake,
     handleReject,
     handlePrepareRetake,
     handleWaiveMediaRisk,
     handleBatchShotSettings,
-    handleSyncAcceptedTakesToTimeline,
     handleExport,
   };
 }

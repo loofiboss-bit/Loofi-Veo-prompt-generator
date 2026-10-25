@@ -1,8 +1,8 @@
 # Export your first offline video
 
 **Result:** a playable MP4 made from included example clips, with no account, provider key, or
-watermark. These steps describe v15 development; desktop export requires the verified bundled
-rendering runtime. Stable v14.2.1 installers do not include this new workflow.
+watermark. Desktop export requires the verified bundled rendering runtime for the running platform.
+This guide describes source behavior and makes no claim about a new package or public release.
 
 1. Open **Start**. In the welcome guide, choose your language and creative goal, then select
    **Try an offline example**. You can also skip the guide and use Start directly.

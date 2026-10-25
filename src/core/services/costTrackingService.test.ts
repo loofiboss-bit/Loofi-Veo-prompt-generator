@@ -5,6 +5,9 @@ const mockStore = new Map<string, unknown>();
 vi.mock('idb-keyval', () => ({
   createStore: vi.fn(() => 'mock-store'),
   get: vi.fn((key: string, _store?: unknown) => Promise.resolve(mockStore.get(key))),
+  update: vi.fn(async (key: string, updater: (value: unknown) => unknown) => {
+    mockStore.set(key, updater(mockStore.get(key)));
+  }),
   set: vi.fn((key: string, value: unknown, _store?: unknown) => {
     mockStore.set(key, value);
     return Promise.resolve();
@@ -21,11 +24,14 @@ vi.mock('./loggerService', () => ({
   },
 }));
 
-import { costTrackingService } from './costTrackingService';
+let costTrackingService: (typeof import('./costTrackingService'))['costTrackingService'];
 
 describe('costTrackingService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await costTrackingService?.flush();
     mockStore.clear();
+    vi.resetModules();
+    costTrackingService = (await import('./costTrackingService')).costTrackingService;
     costTrackingService.resetSession();
   });
 
@@ -430,6 +436,7 @@ describe('costTrackingService', () => {
       });
 
       await costTrackingService.hydrate();
+      await costTrackingService.flush();
 
       const state = costTrackingService.getState();
       expect(state.lifetimeTotalUsd).toBeGreaterThan(0);

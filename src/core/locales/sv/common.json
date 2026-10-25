@@ -121,7 +121,12 @@
     "video": "Video",
     "music": "Musik",
     "cancel": "Avbryt",
-    "retry": "Försök igen"
+    "retry": "Försök igen",
+    "approvedMaximum": "Godkänd maxkostnad {{cost}}",
+    "estimatedUsage": "Uppskattad förbrukning",
+    "estimateUnavailable": "Saknas",
+    "actualCost": "Verifierad faktisk kostnad",
+    "actualUnavailable": "Tillhandahålls inte av tjänsten"
   },
   "commandPalette": {
     "title": "Kommandopalett",

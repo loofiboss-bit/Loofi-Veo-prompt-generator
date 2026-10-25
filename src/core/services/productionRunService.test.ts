@@ -40,7 +40,7 @@ vi.mock('@core/store/useAppStore', () => ({
   },
 }));
 
-import { productionRunService } from './productionRunService';
+import { getProductionReviewInputIdentity, productionRunService } from './productionRunService';
 
 const makeRun = (): ProductionRun => ({
   schemaVersion: 2,
@@ -492,6 +492,32 @@ describe('productionRunService', () => {
     await expect(productionRunService.recordReview('run-1', 1, take.id, review)).rejects.toThrow(
       'No active review approval',
     );
+  });
+
+  it('rejects an AI review when the take or prompt changed after its input was frozen', async () => {
+    await productionRunService.createRun(makeRun());
+    await productionRunService.approveShots('run-1', [1], 0.8);
+    const take = await productionRunService.createApprovedTake('run-1', 1);
+    const current = await productionRunService.getRun('run-1');
+    const shot = current!.shots[0];
+    const identity = getProductionReviewInputIdentity(shot, take);
+    const review = {
+      id: 'stale-review',
+      shotId: 1,
+      takeId: take.id,
+      source: 'local' as const,
+      overallScore: 80,
+      dimensions: [],
+      findings: [],
+      createdAt: Date.now(),
+    };
+
+    await productionRunService.updateTake('run-1', 1, take.id, {
+      request: { ...take.request, prompt: 'A materially different source prompt.' },
+    });
+    await expect(
+      productionRunService.recordReview('run-1', 1, take.id, review, identity),
+    ).rejects.toThrow('changed while review was running');
   });
 
   it('requires a separate one-time approval for multimodal continuity review', async () => {

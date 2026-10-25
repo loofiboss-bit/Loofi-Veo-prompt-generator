@@ -19,9 +19,8 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const { t, i18n } = useTranslation('studio');
   const navigate = useNavigate();
   const { setWelcomeShown } = useOnboarding();
-  const [mode, setMode] = useState<'video' | 'music'>('video');
+  const [mode, setMode] = useState<'clips' | 'video' | 'music'>('video');
   const { t: creatorT } = useTranslation('creator');
-  const [source, setSource] = useState<'example' | 'own'>('example');
   const [busy, setBusy] = useState(false);
   const language = SUPPORTED_LANGUAGES.includes(i18n.language as SupportedLanguage)
     ? (i18n.language as SupportedLanguage)
@@ -30,7 +29,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     setWelcomeShown();
     localStorage.setItem('v8-onboarding-complete', 'true');
     onClose();
-    navigate((source === 'example' ? ROUTES.START : ROUTES.STUDIO) + '?mode=' + mode);
+    navigate(mode === 'clips' ? `${ROUTES.START}?mode=clips` : `${ROUTES.STUDIO}?mode=${mode}`);
   };
   return (
     <Modal isOpen={isOpen} onClose={finish} size="lg" closeOnBackdropClick>
@@ -57,33 +56,34 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             ))}
           </select>
         </label>
-        <div className="studio-toolbar mt-4">
-          <button aria-pressed={mode === 'video'} onClick={() => setMode('video')}>
-            {t('videoMode')}
-          </button>
-          <button aria-pressed={mode === 'music'} onClick={() => setMode('music')}>
-            {t('musicMode')}
-          </button>
-        </div>
         <fieldset className="mt-4">
-          <legend>{creatorT('welcome.source', 'How would you like to begin?')}</legend>
+          <legend>{creatorT('start.goals', 'Choose how to begin')}</legend>
           <label className="studio-field">
             <input
               type="radio"
-              name="welcome-source"
-              checked={source === 'example'}
-              onChange={() => setSource('example')}
+              name="welcome-goal"
+              checked={mode === 'clips'}
+              onChange={() => setMode('clips')}
             />
-            {creatorT('welcome.example', 'Try an offline example')}
+            {creatorT('start.ownClips', 'Use my own clips')}
           </label>
           <label className="studio-field">
             <input
               type="radio"
-              name="welcome-source"
-              checked={source === 'own'}
-              onChange={() => setSource('own')}
+              name="welcome-goal"
+              checked={mode === 'video'}
+              onChange={() => setMode('video')}
             />
-            {creatorT('welcome.own', 'Use my own idea or media')}
+            {creatorT('start.videoPrompts', 'Open video prompts')}
+          </label>
+          <label className="studio-field">
+            <input
+              type="radio"
+              name="welcome-goal"
+              checked={mode === 'music'}
+              onChange={() => setMode('music')}
+            />
+            {creatorT('start.musicLyrics', 'Open music and lyrics')}
           </label>
         </fieldset>
         <button

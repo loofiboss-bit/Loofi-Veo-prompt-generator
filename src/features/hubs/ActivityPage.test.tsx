@@ -205,9 +205,9 @@ describe('ActivityPage', () => {
     const { user } = render(<ActivityPage />);
 
     expect(await screen.findByText('lyria-3-clip-preview')).toBeVisible();
-    expect(screen.getByText('$0.04')).toBeVisible();
+    expect(screen.getByText('Approved maximum $0.04')).toBeVisible();
     expect(screen.getByText('veo-3.1-fast-generate-001')).toBeVisible();
-    expect(screen.getByText('$1.20')).toBeVisible();
+    expect(screen.getByText('Approved maximum $1.20')).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Completed (1)' }));
     expect(screen.getByText('Finished hero take')).toBeVisible();

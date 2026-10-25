@@ -112,6 +112,10 @@ export interface TimelineTrack {
   type: 'video' | 'audio' | 'text';
   trackType: 'captions' | 'dialogue' | 'sfx' | 'music' | 'ambience';
   zIndex: number;
+  /** Tracks remain enabled by default when loading older project files. */
+  active?: boolean;
+  /** Track mute is separate from each clip's stored source volume. */
+  muted?: boolean;
 }
 
 export interface Keyframe {

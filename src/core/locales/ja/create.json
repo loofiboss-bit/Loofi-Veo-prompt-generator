@@ -210,7 +210,8 @@
     "continuityReviewNoTakes": "継続性レビューを承認する前にテイクを生成または保存してください。",
     "continuityReviewApproved": "このスナップショットの任意のGemini継続性レビューを承認しました。",
     "longShot": "{{duration}}秒のショットはVeoの1セグメントを超えます。分割するか8秒を生成し、有効なVeoテイクから延長してください。",
-    "otioReady": "OTIOバンドルの準備完了。"
+    "otioReady": "OTIOバンドルの準備完了。",
+    "aiReviewNotRun": "AIレビューは実行されませんでした。ローカルで確認するか、メディアまたはプロバイダーの問題を解決して再試行してください。"
   },
   "saveStatus": {
     "failed": "制作プランを読み込みまたは保存できませんでした。",
@@ -249,6 +250,7 @@
     "findings": "確認事項",
     "reviewWarnings": "ローカル確認は動画の品質を評価しません。",
     "reviewFailed": "AIによる確認に失敗しました。手動で確認できます。",
-    "openFailed": "リンク先の制作シーンを開けませんでした。現在の作業は保持されています。"
+    "openFailed": "リンク先の制作シーンを開けませんでした。現在の作業は保持されています。",
+    "improvePromptFromNotes": "メモからプロンプトを改善"
   }
 }

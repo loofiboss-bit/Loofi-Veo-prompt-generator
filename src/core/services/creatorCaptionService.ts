@@ -169,7 +169,7 @@ class CreatorCaptionService {
     return validateCreatorCaptions(await transcribeAudio(blob), duration);
   }
 
-  async proposeLocal(input: ProposeLocalCaptionsInput): Promise<Caption[]> {
+  async createTimeBlocks(input: ProposeLocalCaptionsInput): Promise<Caption[]> {
     const {
       mediaId,
       clipOffset = 0,
@@ -217,7 +217,7 @@ class CreatorCaptionService {
     const captions: Caption[] = rawSpeechSegments.map((seg, index) => {
       const relStart = Math.max(0, Number((seg.start - clipOffset).toFixed(3)));
       const relEnd = Math.min(clipDuration, Number((seg.end - clipOffset).toFixed(3)));
-      const text = scriptLines[index] ?? `[Dialogue ${index + 1}]`;
+      const text = scriptLines[index] ?? '';
 
       return {
         id: crypto.randomUUID(),
@@ -228,7 +228,7 @@ class CreatorCaptionService {
       };
     });
 
-    return validateCreatorCaptions(captions, clipDuration);
+    return captions;
   }
 }
 export const creatorCaptionService = CreatorCaptionService.getInstance();

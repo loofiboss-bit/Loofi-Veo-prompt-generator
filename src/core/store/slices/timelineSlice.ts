@@ -43,8 +43,24 @@ export interface TimelineSlice {
 
   // Timeline Actions
   syncTimelineFromShots: () => void;
+  freezeTimelineTakeReferences: (
+    shotId: number,
+    takeId?: string,
+    fallbackAssetId?: string,
+  ) => number;
+  placeProductionTake: (input: {
+    assetId: string;
+    takeId: string;
+    label: string;
+    duration: number;
+    targetClipId?: string;
+  }) => string;
   updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>, ripple?: boolean) => void;
   addTimelineClip: (clip: TimelineClip) => void;
+  updateTimelineTrack: (
+    trackId: string,
+    updates: Pick<Partial<TimelineTrack>, 'active' | 'muted'>,
+  ) => void;
   splitTimelineClip: (clipId: string, relativeTime: number) => void;
   setTimelineClipTransition: (clipId: string, transition: ClipTransition) => void;
   importTimelineCaptions: (
@@ -70,7 +86,7 @@ export interface TimelineSlice {
   gcTimeline: () => void;
 }
 
-export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => ({
+export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
   sbShots: [
     {
       id: 1,
@@ -137,9 +153,17 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
 
   syncTimelineFromShots: () =>
     set((state) => {
-      const manualClips = state.clips.filter(
-        (c) => c.trackId !== 'video_main' && c.trackId !== 'audio_dialogue',
-      );
+      const activeShotIds = new Set(state.sbShots.map((s) => s.id));
+      const generatedClipIds = new Set<string>();
+
+      // Any clip not matching generated shot clip conventions is a manual or imported clip
+      const isShotClip = (clip: TimelineClip) => {
+        const match = clip.id.match(/^(video|audio|sfx)_(\d+)(?:_(\d+))?$/);
+        return match ? activeShotIds.has(Number(match[2])) : false;
+      };
+
+      const manualClips = state.clips.filter((c) => !isShotClip(c));
+      const existingClipsById = new Map(state.clips.map((c) => [c.id, c]));
 
       const generatedClips: TimelineClip[] = [];
       let cursor = 0;
@@ -147,66 +171,175 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
       state.sbShots.forEach((shot) => {
         if (!shot.generatedVideoUrl && shot.type !== 'title') return;
         const duration = shot.duration || 5;
+        const videoId = `video_${shot.id}`;
+        generatedClipIds.add(videoId);
 
-        generatedClips.push({
-          id: `video_${shot.id}`,
-          resourceId: shot.id,
-          trackId: 'video_main',
-          startTime: cursor,
-          duration: duration,
-          offset: 0,
-          type: 'video',
-          label: shot.type === 'title' ? `Title` : `Shot ${shot.id}`,
-          transition: shot.transition,
-          opacity: 1.0,
-          volume: 1.0,
-          panning: { x: 0, z: 0 },
-          maskSequence: shot.maskSequence,
-        });
-
-        if (shot.audioUrl) {
+        const existingVideo = existingClipsById.get(videoId);
+        if (existingVideo) {
+          // Preserve existing user edits on timeline (trimming, start time, volume, opacity)
           generatedClips.push({
-            id: `audio_${shot.id}`,
+            ...existingVideo,
             resourceId: shot.id,
-            trackId: 'audio_dialogue',
+            transition: shot.transition ?? existingVideo.transition,
+            maskSequence: shot.maskSequence ?? existingVideo.maskSequence,
+          });
+          cursor = Math.max(cursor, existingVideo.startTime + existingVideo.duration);
+        } else {
+          generatedClips.push({
+            id: videoId,
+            resourceId: shot.id,
+            trackId: 'video_main',
             startTime: cursor,
-            duration: shot.audioDuration || duration,
+            duration: duration,
             offset: 0,
-            type: 'audio',
-            label: `Dialog ${shot.id}`,
+            type: 'video',
+            label: shot.type === 'title' ? `Title` : `Shot ${shot.id}`,
+            transition: shot.transition,
+            opacity: 1.0,
             volume: 1.0,
             panning: { x: 0, z: 0 },
+            maskSequence: shot.maskSequence,
           });
+          cursor += duration;
+        }
+
+        if (shot.audioUrl) {
+          const audioId = `audio_${shot.id}`;
+          generatedClipIds.add(audioId);
+          const existingAudio = existingClipsById.get(audioId);
+          if (existingAudio) {
+            generatedClips.push(existingAudio);
+          } else {
+            const audioStart = existingVideo ? existingVideo.startTime : cursor - duration;
+            generatedClips.push({
+              id: audioId,
+              resourceId: shot.id,
+              trackId: 'audio_dialogue',
+              startTime: audioStart,
+              duration: shot.audioDuration || duration,
+              offset: 0,
+              type: 'audio',
+              label: `Dialog ${shot.id}`,
+              volume: 1.0,
+              panning: { x: 0, z: 0 },
+            });
+          }
         }
 
         if (shot.sfx) {
           shot.sfx.forEach((sfx, idx) => {
-            generatedClips.push({
-              id: `sfx_${shot.id}_${idx}`,
-              resourceId: shot.id,
-              trackId: 'audio_sfx',
-              startTime: cursor + sfx.timestamp,
-              duration: 2,
-              offset: 0,
-              type: 'audio',
-              label: sfx.description,
-              volume: 1.0,
-              panning: { x: 0, z: 0 },
-            });
+            const sfxId = `sfx_${shot.id}_${idx}`;
+            generatedClipIds.add(sfxId);
+            const existingSfx = existingClipsById.get(sfxId);
+            if (existingSfx) {
+              generatedClips.push(existingSfx);
+            } else {
+              const baseStart = existingVideo ? existingVideo.startTime : cursor - duration;
+              generatedClips.push({
+                id: sfxId,
+                resourceId: shot.id,
+                trackId: 'audio_sfx',
+                startTime: baseStart + sfx.timestamp,
+                duration: 2,
+                offset: 0,
+                type: 'audio',
+                label: sfx.description,
+                volume: 1.0,
+                panning: { x: 0, z: 0 },
+              });
+            }
           });
         }
-
-        cursor += duration;
       });
 
-      const cleanManualClips = manualClips.filter(
-        (c) => !generatedClips.some((gc) => gc.id === c.id),
-      );
+      const cleanManualClips = manualClips.filter((c) => !generatedClipIds.has(c.id));
 
       return {
         clips: [...generatedClips, ...cleanManualClips],
       };
     }),
+
+  freezeTimelineTakeReferences: (shotId, takeId, fallbackAssetId) => {
+    if (!takeId && !fallbackAssetId) return 0;
+    let frozen = 0;
+    set((state) => {
+      const clips = state.clips.map((clip) => {
+        if (
+          clip.type !== 'video' ||
+          clip.resourceId !== shotId ||
+          clip.selectedTakeId !== undefined
+        )
+          return clip;
+        frozen += 1;
+        return {
+          ...clip,
+          ...(takeId ? { selectedTakeId: takeId } : { resourceId: fallbackAssetId! }),
+        };
+      });
+      return frozen ? { clips } : state;
+    });
+    return frozen;
+  },
+
+  placeProductionTake: (input) => {
+    if (!Number.isFinite(input.duration) || input.duration <= 0)
+      throw new Error('Verified media duration is required before placing a take.');
+    const current = get();
+    if (input.targetClipId) {
+      const target = current.clips.find((clip) => clip.id === input.targetClipId);
+      if (!target || target.type !== 'video')
+        throw new Error('Choose an existing video clip to replace.');
+      if (target.offset + target.duration > input.duration + 0.001)
+        throw new Error('The new source is too short for this clip. Add it as a separate clip.');
+      set((state) => ({
+        clips: state.clips.map((clip) =>
+          clip.id === input.targetClipId
+            ? {
+                ...clip,
+                resourceId: input.assetId,
+                selectedTakeId: input.takeId,
+                label: input.label,
+              }
+            : clip,
+        ),
+      }));
+      return input.targetClipId;
+    }
+
+    const track = current.tracks.find((item) => item.type === 'video');
+    const newTrack = track ?? {
+      id: 'video_main',
+      label: 'Video',
+      type: 'video' as const,
+      trackType: 'dialogue' as const,
+      zIndex: 1,
+    };
+    const startTime = Math.max(
+      0,
+      ...current.clips
+        .filter((clip) => clip.trackId === newTrack.id)
+        .map((clip) => clip.startTime + clip.duration),
+    );
+    const clipId = crypto.randomUUID();
+    const clip: TimelineClip = {
+      id: clipId,
+      resourceId: input.assetId,
+      selectedTakeId: input.takeId,
+      trackId: newTrack.id,
+      startTime,
+      duration: input.duration,
+      offset: 0,
+      type: 'video',
+      label: input.label,
+      volume: 1,
+      transition: { type: 'cut', duration: 0 },
+    };
+    set((state) => ({
+      tracks: track ? state.tracks : [...state.tracks, newTrack],
+      clips: [...state.clips, clip],
+    }));
+    return clipId;
+  },
 
   updateTimelineClip: (clipId, updates, ripple = false) =>
     set((state) => {
@@ -457,6 +590,13 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
   addTimelineClip: (clip) =>
     set((state) => ({
       clips: [...state.clips, { ...clip, panning: clip.panning || { x: 0, z: 0 } }],
+    })),
+
+  updateTimelineTrack: (trackId, updates) =>
+    set((state) => ({
+      tracks: state.tracks.map((track) =>
+        track.id === trackId ? { ...track, ...updates } : track,
+      ),
     })),
 
   updateShotTransition: (shotId, transition) =>

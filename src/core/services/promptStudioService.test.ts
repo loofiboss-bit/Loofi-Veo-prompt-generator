@@ -192,6 +192,25 @@ describe('promptStudioService', () => {
     expect(validatePromptArtifact(artifact)).toEqual([]);
   });
 
+  it('rejects full-package video optimization that changes supplied dialogue', async () => {
+    await expect(
+      optimizeVideoPromptArtifact(
+        {
+          idea: 'A runner crosses a quiet park',
+          mode: 'text-to-video',
+          target: 'flow-veo',
+          aspectRatio: '16:9',
+          durationSeconds: 8,
+          dialogue: 'Hello from the other side.',
+        },
+        {
+          optimizeVideo: async () => ({ prompt: 'A runner crosses a quiet park silently.' }),
+          optimizeMusic: async () => ({}),
+        },
+      ),
+    ).rejects.toThrow(/changed or omitted protected dialogue/);
+  });
+
   it('compiles universal targets (kling, runway, sora, luma) into valid artifacts with model-specific syntax', () => {
     const targets = [
       'kling',
@@ -224,4 +243,44 @@ describe('promptStudioService', () => {
       );
     }
   });
+});
+
+describe('image-to-video motion across all Studio and Arena compiler targets', () => {
+  const targets = [
+    'flow-veo',
+    'veo-api',
+    'kling',
+    'runway-gen3',
+    'sora',
+    'luma-ray',
+    'wan-video',
+    'minimax-hailuo',
+  ] as const;
+  it.each(targets)(
+    'uses the primary field as motion for every %s variant and prioritizes explicit action',
+    (target) => {
+      const input = {
+        idea: 'The bird flaps its wings and leaves the frame',
+        mode: 'image-to-video' as const,
+        target,
+        aspectRatio: '16:9' as const,
+        durationSeconds: 8 as const,
+        subject: 'STATIC SUBJECT',
+        lighting: 'STATIC LIGHTING',
+      };
+      for (const action of [undefined, 'The bird tilts its head twice']) {
+        const artifact = compileVideoPromptArtifact({ ...input, action });
+        for (const variant of [
+          artifact.primary,
+          ...artifact.alternatives,
+        ] as VideoPromptVariant[]) {
+          expect(variant.prompt).toContain('Subject motion: ' + (action ?? input.idea));
+          expect(variant.prompt).not.toContain('STATIC SUBJECT');
+          expect(variant.prompt).not.toContain('STATIC LIGHTING');
+          if (action) expect(variant.prompt).not.toContain(input.idea);
+          expect(variant.copyPrompt).toBe(variant.prompt);
+        }
+      }
+    },
+  );
 });

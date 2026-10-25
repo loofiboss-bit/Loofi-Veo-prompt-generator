@@ -20,7 +20,7 @@ const tokens = (value) =>
     .join(',');
 const english = load('en');
 const errors = [];
-for (const language of ['es', 'fr', 'ja', 'ar']) {
+for (const language of ['sv', 'es', 'fr', 'ja', 'ar']) {
   const translated = load(language);
   for (const [key, value] of english) {
     if (!translated.get(key)) errors.push(`${language}: missing ${key}`);
@@ -34,4 +34,4 @@ if (errors.length) {
   console.error(`Studio translation gate failed:\n${errors.join('\n')}`);
   process.exit(1);
 }
-console.log(`Studio translation gate passed (${english.size} keys x 5 languages).`);
+console.log(`Studio translation gate passed (${english.size} keys x 6 languages).`);

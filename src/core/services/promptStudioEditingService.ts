@@ -1,5 +1,13 @@
 import type { PromptArtifactV1, VideoPromptVariant, MusicPromptVariant } from '@core/types';
 import { optimizeMusicPromptArtifact, revalidatePromptArtifact } from './promptStudioService';
+import {
+  haveMatchingLyricStructure,
+  LyricSectionError,
+  isLyricSectionLocked,
+  parseLyricSections,
+  replaceLyricSectionContent,
+  resolveLyricSection,
+} from './lyricSectionService';
 
 export type StudioVariantEdits = Partial<Pick<VideoPromptVariant, 'prompt' | 'negativePrompt'>> &
   Partial<Pick<MusicPromptVariant, 'lyrics' | 'styleOfMusic'>>;
@@ -45,42 +53,52 @@ export function editStudioVariant(
   });
 }
 
-/** Reapply locked source blocks after a whole-pack optimization. */
+/** Ambiguous AI structures are rejected; locked blocks never move or get appended. */
 export function preserveLockedLyricSections(
   original: string,
   proposed: string,
   locks: string[],
 ): string {
-  const blocks = (value: string) => value.split(/(?=^\[[^\]]+\])/m);
-  const locked = blocks(original).filter((block) => locks.some((tag) => block.startsWith(tag)));
-  const seen = new Set<string>();
-  const result = blocks(proposed)
-    .map((block) => {
-      const source = locked.find(
-        (entry) =>
-          entry.slice(0, entry.indexOf(']') + 1) === block.slice(0, block.indexOf(']') + 1),
-      );
-      if (source) seen.add(source);
-      return source ?? block;
-    })
-    .join('');
-  return result + locked.filter((block) => !seen.has(block)).join('');
+  const source = parseLyricSections(original);
+  if (!source.some((section) => isLyricSectionLocked(section, locks))) return proposed;
+  const candidate = parseLyricSections(proposed);
+  if (!haveMatchingLyricStructure(source, candidate)) {
+    throw new LyricSectionError('structure');
+  }
+  return (
+    proposed.slice(0, candidate[0].start) +
+    source
+      .map((section, index) =>
+        isLyricSectionLocked(section, locks) ? section.raw : candidate[index].raw,
+      )
+      .join('')
+  );
 }
 
-/** Keep every non-selected section byte-identical, especially locked sections. */
+/** Keep every non-selected section byte-identical, including repeated locked sections. */
 export function replaceStudioLyricSection(
   original: string,
   proposed: string,
   section: string,
   locks: string[],
 ): string {
-  if (locks.includes(section)) throw new Error('That section is locked.');
-  const blocks = (value: string) => value.split(/(?=^\[[^\]]+\])/m);
-  const replacement = blocks(proposed).find((block) => block.startsWith(section));
-  if (!replacement?.trim()) throw new Error('The AI response omitted the selected section.');
-  return blocks(original)
-    .map((block) => (block.startsWith(section) ? replacement : block))
-    .join('');
+  const selected = resolveLyricSection(original, section);
+  if (!selected) throw new LyricSectionError('missing');
+  if (isLyricSectionLocked(selected, locks)) throw new LyricSectionError('locked');
+  const source = parseLyricSections(original);
+  const candidate = parseLyricSections(proposed);
+  const replacement =
+    candidate.length === 1 && candidate[0].name === selected.name
+      ? candidate[0]
+      : haveMatchingLyricStructure(source, candidate)
+        ? candidate[source.findIndex((entry) => entry.id === selected.id)]
+        : undefined;
+  if (!replacement?.content) throw new LyricSectionError('response');
+  return (
+    original.slice(0, selected.start) +
+    replaceLyricSectionContent(selected, replacement.content) +
+    original.slice(selected.end)
+  );
 }
 
 export async function rewriteStudioLyricSection(
@@ -89,12 +107,16 @@ export async function rewriteStudioLyricSection(
   direction: string,
   locks: string[],
   variantIndex: 0 | 1 | 2 = 0,
+  signal?: AbortSignal,
 ): Promise<PromptArtifactV1> {
+  if (signal?.aborted) throw new DOMException('AI request cancelled.', 'AbortError');
   if (artifact.kind !== 'music') throw new Error('A music artifact is required.');
-  if (locks.includes(section)) throw new Error('That section is locked.');
   const primary = [artifact.primary, ...artifact.alternatives][variantIndex] as MusicPromptVariant;
+  const selected = resolveLyricSection(primary.lyrics, section);
+  if (!selected) throw new LyricSectionError('missing');
+  if (isLyricSectionLocked(selected, locks)) throw new LyricSectionError('locked');
   const input = artifact.input as import('@core/types').MusicPromptArtifactInput;
-  const optimized = await optimizeMusicPromptArtifact({
+  const optimizeInput = {
     ...input,
     lyrics: primary.lyrics,
     mixNotes: [
@@ -107,7 +129,10 @@ export async function rewriteStudioLyricSection(
     ]
       .filter(Boolean)
       .join('\n'),
-  });
+  };
+  const optimized = signal
+    ? await optimizeMusicPromptArtifact(optimizeInput, undefined, signal)
+    : await optimizeMusicPromptArtifact(optimizeInput);
   const next = editStudioVariant(artifact, variantIndex, {
     lyrics: replaceStudioLyricSection(
       primary.lyrics,

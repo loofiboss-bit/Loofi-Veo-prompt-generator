@@ -1,4 +1,4 @@
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
@@ -8,6 +8,7 @@ import { createEmptyProjectDocument } from '@core/store/editorSessionAdapters';
 import { useProjectAutosave } from './useProjectAutosave';
 const mocks = vi.hoisted(() => ({ save: vi.fn(), register: vi.fn() }));
 vi.mock('@core/services/projectDocumentService', () => ({
+  ProjectConflictError: class ProjectConflictError extends Error {},
   projectDocumentService: { save: mocks.save },
 }));
 vi.mock('@core/services/projectService', () => ({
@@ -25,6 +26,7 @@ describe('canonical project autosave', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     vi.clearAllMocks();
+    Object.defineProperty(globalThis, 'indexedDB', { value: {}, configurable: true });
     useAppStore.getState().resetAll();
     useProjectStore.setState({
       currentProjectId: 'p',
@@ -64,7 +66,7 @@ describe('canonical project autosave', () => {
     expect(mocks.save).not.toHaveBeenCalled();
     listener(event as BeforeUnloadEvent);
     expect(event.defaultPrevented).toBe(true);
-    expect(mocks.save).toHaveBeenCalledOnce();
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledOnce());
     unmount();
     expect(removed).toHaveBeenCalledWith('beforeunload', listener);
     expect(removed).toHaveBeenCalledWith('pagehide', expect.any(Function));

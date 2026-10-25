@@ -6,6 +6,7 @@ import type { CreatorRecipeV1, CreatorStyleProfileV1 } from '@core/types/creator
 import { creatorRecipeService } from '@core/services/creatorRecipeService';
 import { creatorStyleService, validateCreatorStyle } from '@core/services/creatorStyleService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
@@ -18,10 +19,10 @@ async function preserveCurrent(): Promise<void> {
     throw new Error('Save the Studio draft before continuing.');
   const projects = useProjectStore.getState();
   const current = projects.projects.find((project) => project.id === projects.currentProjectId);
-  if (current && useProjectSaveStore.getState().projects[current.id]?.status !== 'saved')
-    await projectDocumentService.save(
-      useEditorSessionStore.getState().captureCurrentProjectDocument(current),
-    );
+  const session = useEditorSessionStore.getState().projectSnapshot;
+  if (!current || session?.id !== current.id) return;
+  if (useProjectSaveStore.getState().projects[current.id]?.status !== 'saved')
+    await projectSaveCoordinator.saveProject(current.id);
 }
 interface RecentCreatorProject {
   project: Pick<Project, 'id' | 'name' | 'lastModified'>;
@@ -107,17 +108,17 @@ export const useCreatorStore = create<CreatorStore>()(
               name,
               offline,
             );
-            assets.forEach((asset) => useAppStore.getState().addAsset(asset));
             await useProjectStore.getState().refreshProjects();
             await activate(project);
+            assets.forEach((asset) => useAppStore.getState().addAsset(asset));
           }),
         createFromFiles: async (files, name) =>
           run(async () => {
             await preserveCurrent();
             const { project, assets } = await creatorRecipeService.createFromFiles(files, name);
-            assets.forEach((asset) => useAppStore.getState().addAsset(asset));
             await useProjectStore.getState().refreshProjects();
             await activate(project);
+            assets.forEach((asset) => useAppStore.getState().addAsset(asset));
             void (async () => {
               for (const asset of assets) {
                 try {

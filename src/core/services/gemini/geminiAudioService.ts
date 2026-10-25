@@ -383,7 +383,10 @@ const normalizeSunoPack = (pack: Partial<SunoPack>, settings: SunoSettings): Sun
   };
 };
 
-export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack> => {
+export const generateSunoPack = async (
+  settings: SunoSettings,
+  signal?: AbortSignal,
+): Promise<SunoPack> => {
   const ai = await getAiClientAsync();
   const effectiveStyleInfluence = settings.styleInfluence ?? DEFAULT_STYLE_INFLUENCE;
   const inputContext = [
@@ -430,15 +433,20 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
     - Mention what makes the style prompt suitable for Suno playback.`;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: getPromptModel(),
-        contents: `Generate a song package based on: ${inputContext}`,
-        config: {
-          systemInstruction: systemInstruction,
-          responseMimeType: 'application/json',
-        },
-      }),
+    const response = await retryOperation<GenerateContentResponse>(
+      () =>
+        ai.models.generateContent({
+          model: getPromptModel(),
+          contents: `Generate a song package based on: ${inputContext}`,
+          config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: 'application/json',
+            abortSignal: signal,
+          },
+        }),
+      3,
+      1000,
+      { signal },
     );
     return normalizeSunoPack(JSON.parse(cleanJson(response.text)) as Partial<SunoPack>, settings);
   } catch (error) {

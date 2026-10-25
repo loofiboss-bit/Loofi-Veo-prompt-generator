@@ -11,6 +11,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/#/start', { waitUntil: 'domcontentloaded' });
       await dismissModals(page, { waitForPrompt: false });
+      await page.goto('/#/start');
       await expect(page.getByRole('heading', { name: 'Your next creative moment' })).toBeVisible();
       const start = page.locator('.creator-start');
       const contrast = await start.evaluate((element) => {

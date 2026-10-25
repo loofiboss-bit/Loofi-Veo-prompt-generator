@@ -9,6 +9,7 @@ import { persist } from 'zustand/middleware';
 import { projectService, type Project } from '@core/services/projectService';
 import { logger } from '@core/services/loggerService';
 import { usePromptStudioDraftStore } from './usePromptStudioDraftStore';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 
 interface ProjectStore {
   // State
@@ -79,6 +80,7 @@ export const useProjectStore = create<ProjectStore>()(
           if (!(await usePromptStudioDraftStore.getState().flush())) {
             throw new Error('Save the current Studio draft before changing projects.');
           }
+          await projectSaveCoordinator.flushBeforeProjectChange(_get().currentProjectId);
           const project = await projectService.createProject(data);
           const projects = await projectService.getAllProjects(true);
 
@@ -104,6 +106,7 @@ export const useProjectStore = create<ProjectStore>()(
           if (!(await usePromptStudioDraftStore.getState().flush())) {
             throw new Error('Save the current Studio draft before changing projects.');
           }
+          await projectSaveCoordinator.flushBeforeProjectChange(_get().currentProjectId);
           const project = await projectService.getProject(id);
           if (project) {
             await projectService.setCurrentProject(id);
@@ -226,6 +229,7 @@ export const useProjectStore = create<ProjectStore>()(
           if (!(await usePromptStudioDraftStore.getState().flush())) {
             throw new Error('Save the current Studio draft before changing projects.');
           }
+          await projectSaveCoordinator.flushBeforeProjectChange(_get().currentProjectId);
           const success = await projectService.setCurrentProject(id);
           if (success) {
             set({ currentProjectId: id, isLoading: false });

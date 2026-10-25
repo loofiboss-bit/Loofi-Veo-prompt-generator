@@ -37,6 +37,7 @@ interface PromptStudioDraftStore {
     artifact: PromptArtifactV1,
     expected: PromptStudioDraftV1,
     isCurrent: () => boolean,
+    updates?: Pick<PromptStudioDraftV1, 'music'>,
   ) => Promise<boolean>;
   updateVideo: (updates: Partial<VideoPromptArtifactInput>) => void;
   updateMusic: (updates: Partial<MusicPromptArtifactInput>) => void;
@@ -162,13 +163,14 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
       if (result && dirty) return get().flush(projectId);
       return result;
     },
-    acceptArtifact: async (artifact, expected, isCurrent) => {
+    acceptArtifact: async (artifact, expected, isCurrent, updates) => {
       // A checkpoint must have durably saved the exact source first. Persist the
       // replacement before exposing it so a failed write preserves manual edits.
       if (get().draft !== expected || get().status !== 'saved' || dirty || saving || !isCurrent())
         return false;
       const next: PromptStudioDraftV1 = {
         ...expected,
+        ...updates,
         artifact,
         artifacts: { ...expected.artifacts, [expected.mode]: artifact },
         revision: expected.revision + 1,

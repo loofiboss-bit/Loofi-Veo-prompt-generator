@@ -95,7 +95,7 @@ describe('local offline caption generation', () => {
     expect(intervals[1]).toEqual({ start: 2.5, end: 4.8 });
   });
 
-  it('proposes valid local captions based on detected silences', async () => {
+  it('creates honest empty text blocks based on detected silences', async () => {
     const originalElectron = window.electron;
     window.electron = {
       detectTimelineSilence: vi.fn().mockResolvedValue([
@@ -105,7 +105,7 @@ describe('local offline caption generation', () => {
     } as unknown as NonNullable<Window['electron']>;
 
     try {
-      const captions = await creatorCaptionService.proposeLocal({
+      const captions = await creatorCaptionService.createTimeBlocks({
         mediaId: 'test-media',
         clipOffset: 0,
         clipDuration: 6.0,
@@ -114,14 +114,14 @@ describe('local offline caption generation', () => {
       expect(captions.length).toBeGreaterThan(0);
       expect(captions[0].startTime).toBe(1.0);
       expect(captions[0].endTime).toBe(3.5);
-      expect(captions[0].text).toContain('Dialogue 1');
+      expect(captions[0].text).toBe('');
     } finally {
       window.electron = originalElectron;
     }
   });
 
   it('aligns provided script lines to speech intervals', async () => {
-    const captions = await creatorCaptionService.proposeLocal({
+    const captions = await creatorCaptionService.createTimeBlocks({
       clipOffset: 0,
       clipDuration: 4.0,
       transcriptScript: 'Hello world!\nWelcome to Creator Studio.',

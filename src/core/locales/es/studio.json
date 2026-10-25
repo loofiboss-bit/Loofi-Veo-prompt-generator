@@ -393,7 +393,8 @@
     "error": "No se pudo guardar el resultado.",
     "relink": "Volver a vincular en Recursos",
     "refresh": "Actualizar medios locales",
-    "replace": "Elegir vídeo de sustitución"
+    "replace": "Elegir vídeo de sustitución",
+    "improvePromptFromNotes": "Mejorar el prompt a partir de notas"
   },
   "comparison": {
     "title": "Comparación de vídeos",
@@ -435,6 +436,46 @@
     "acceptField": "Aceptar {{field}}",
     "fieldDiff": "Cambios en {{field}}",
     "accept": "Aceptar campos seleccionados",
-    "aiEdited": "Editado con IA"
+    "aiEdited": "Editado con IA",
+    "musicTitle": "Mejorar la variante musical seleccionada",
+    "musicStyle": "Estilo musical",
+    "musicBoth": "Estilo musical y letra",
+    "musicDirection": "Describe cómo debe cambiar la música",
+    "musicReview": "Revisar cambios musicales",
+    "musicReviewHint": "Acepta cada campo por separado. Las otras variantes, el título y las notas de producción se conservan.",
+    "styleOfMusic": "Estilo musical",
+    "lyrics": "Letra",
+    "proposeMusic": "Proponer cambios musicales",
+    "allowDialogueRewrite": "Permitir reescribir el diálogo",
+    "cancel": "Cancelar",
+    "cancelled": "Se detuvo la espera. Una solicitud de Gemini ya enviada aún podría generar cargos."
+  },
+  "metrics": {
+    "tokens": "~{{count}} tokens estimados"
+  },
+  "openLyriaSetup": "Abrir configuración de Lyria 3 · introduce la letra por separado",
+  "motionDescription": "Describe el movimiento",
+  "motionPlaceholder": "Describe qué se mueve en la imagen y cómo lo hace.",
+  "motionHint": "Describe el movimiento, no la apariencia. Si Acción contiene texto, tiene prioridad.",
+  "lyricSectionErrors": {
+    "ambiguous": "Elige una aparición concreta de esta sección de la letra.",
+    "missing": "La sección de letra seleccionada ya no existe.",
+    "locked": "Esa sección está bloqueada.",
+    "structure": "La respuesta cambió el orden o la cantidad de secciones. Conserva el borrador original.",
+    "response": "La respuesta de IA omitió o cambió de forma ambigua la sección seleccionada."
+  },
+  "enhanceAll": "Mejorar el paquete completo",
+  "resultFeedback": {
+    "title": "Mejorar el prompt a partir de notas",
+    "description": "Usa tus notas de revisión de {{source}} para mejorar la variante seleccionada actual. La fuente congelada solo aporta contexto.",
+    "notes": "Notas de revisión",
+    "fields": "Campos que mejorar",
+    "promptAndNegative": "Prompt y prompt negativo",
+    "source": "Contexto de la fuente congelada",
+    "compatibility": "La sugerencia requiere el mismo proyecto y objetivo que la variante de vídeo actual.",
+    "receiver": "Los cambios se aplican a la variante seleccionada actual. El prompt y los ajustes de la fuente congelada solo aportan contexto.",
+    "propose": "Proponer cambios al prompt",
+    "productionTake": "toma de producción",
+    "importedResult": "resultado importado"
   }
 }

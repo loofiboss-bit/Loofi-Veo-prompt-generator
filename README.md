@@ -20,7 +20,7 @@
 
 [![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1600)
+[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v2000)
 [![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
@@ -29,9 +29,9 @@
 The download counter counts all release assets, including checksums and metadata; it is not a count
 of unique users or installations.
 
-## Unreleased: reviewable video prompts and production
+## v20: project-safe editing and reviewed delivery
 
-The current source adds **Improve selected variant** for Gemini and Ollama. Start from the exact
+Loofi Creator Studio v20 includes **Improve selected variant** for Gemini and Ollama. Start from the exact
 variant you edited, choose prompt, negative prompt or both, and review the proposed changes before
 accepting selected fields together. Other variants and settings remain intact. Failed requests,
 stale proposals and checkpoint failures preserve the original text.
@@ -43,9 +43,22 @@ Production takes and imported Studio results share an A/B comparison with synchr
 pause and seeking, audio from one side, and differences between their frozen source prompts and
 settings. Save notes separately for each result; saving a note does not confirm review or accept it.
 
+Improve a selected music variant's style, lyrics, or both from its latest edited text. Review and
+accept each field separately; section locks and other variants are preserved. Video edits protect
+dialogue unless you explicitly allow rewriting. Studio AI requests can be cancelled, with the note
+that work already sent to Gemini may still be billed. Use production or imported-result notes to
+propose prompt changes against today's selected variant; the source prompt is context only and no
+video images are analyzed.
+
 New desktop Veo/Lyria approvals bind the complete frozen outgoing request. Changing generation
 settings or image content requires fresh approval. Existing operations can still resume retrieval
-without submitting again. These source changes do not establish a new public release.
+without submitting again.
+
+Desktop transcription uses a checksum-verified local Whisper model after explicit download
+confirmation, with no cloud fallback. Project saves wait for media and catalog durability,
+timeline source replacement preserves existing edits, and saving delivery requires a current
+review. Start offers three destinations, recent projects and a next action; the persistent cost
+ledger distinguishes estimates, approved ceilings and verified provider charges.
 
 ## Your clips to a finished video
 
@@ -208,19 +221,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v19.0.0
+## Install v20.0.0
 
-Download the [v16.0.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v19.0.0)
+Download the [v20.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-19.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-19.0.0-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-20.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-20.0.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -238,8 +251,8 @@ if an older package is already installed.
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-19.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.AppImage
 ```
 
 ## v15: from an idea to a video

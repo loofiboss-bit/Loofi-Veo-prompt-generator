@@ -97,17 +97,7 @@ describe('paidJobService', () => {
 
   it('records cost for completed paid jobs into costTrackingService idempotently', async () => {
     const { costTrackingService } = await import('./costTrackingService');
-    const spy = vi.spyOn(costTrackingService, 'recordCost').mockReturnValue({
-      id: 'cost-1',
-      modelId: 'veo-3.1-fast',
-      endpointId: 'desktop-paid-job',
-      inputTokens: 0,
-      outputTokens: 0,
-      description: 'test',
-      costUsd: 0.6,
-      timestamp: 1,
-      isEstimated: false,
-    });
+    const spy = vi.spyOn(costTrackingService, 'recordPaidJobCost').mockResolvedValue(undefined);
     const completeJob = {
       id: 'paid-job-complete-1',
       status: 'Complete' as const,
@@ -128,12 +118,13 @@ describe('paidJobService', () => {
       expect.objectContaining({
         modelId: 'veo-3.1-fast',
         costUsd: 0.6,
-        isEstimated: false,
+        isEstimated: true,
+        sourceJobId: completeJob.id,
       }),
     );
-    // Calling list again should not duplicate the cost
+    // Every observation uses the same durable identity; the ledger owns deduplication.
     spy.mockClear();
     await paidJobService.list();
-    expect(spy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sourceJobId: completeJob.id }));
   });
 });

@@ -393,7 +393,8 @@
     "error": "Result could not be saved.",
     "relink": "Relink in Assets",
     "refresh": "Refresh local media",
-    "replace": "Choose replacement video"
+    "replace": "Choose replacement video",
+    "improvePromptFromNotes": "Improve prompt from notes"
   },
   "comparison": {
     "title": "Video comparison",
@@ -435,6 +436,46 @@
     "acceptField": "Accept {{field}}",
     "fieldDiff": "{{field}} changes",
     "accept": "Accept selected fields",
-    "aiEdited": "Edited with AI"
+    "aiEdited": "Edited with AI",
+    "musicTitle": "Improve selected music variant",
+    "musicStyle": "Music style",
+    "musicBoth": "Music style and lyrics",
+    "musicDirection": "Describe how the music should change",
+    "musicReview": "Review music changes",
+    "musicReviewHint": "Accept either field separately. Other variants, title and production notes stay unchanged.",
+    "styleOfMusic": "Music style",
+    "lyrics": "Lyrics",
+    "proposeMusic": "Propose music changes",
+    "allowDialogueRewrite": "Allow dialogue rewriting",
+    "cancel": "Cancel",
+    "cancelled": "Client waiting stopped. A Gemini request already sent may still be billed."
+  },
+  "metrics": {
+    "tokens": "~{{count}} estimated tokens"
+  },
+  "openLyriaSetup": "Open Lyria 3 setup · enter lyrics separately",
+  "motionDescription": "Describe the motion",
+  "motionPlaceholder": "Describe what moves in the image and how it moves.",
+  "motionHint": "Describe movement, not appearance. If Action is filled in, it takes priority.",
+  "lyricSectionErrors": {
+    "ambiguous": "Choose a specific occurrence of this lyric section.",
+    "missing": "The selected lyric section no longer exists.",
+    "locked": "That section is locked.",
+    "structure": "The response changed lyric section order or count. Keep the original draft.",
+    "response": "The AI response omitted or ambiguously changed the selected section."
+  },
+  "enhanceAll": "Improve full package",
+  "resultFeedback": {
+    "title": "Improve prompt from notes",
+    "description": "Use your review notes from this {{source}} to improve the current selected variant. The frozen source is context only.",
+    "notes": "Reviewer notes",
+    "fields": "Fields to improve",
+    "promptAndNegative": "Prompt and negative prompt",
+    "source": "Frozen source context",
+    "compatibility": "Feedback requires the same project and prompt target as the current video variant.",
+    "receiver": "The current selected variant receives changes. The frozen source prompt and settings are context only.",
+    "propose": "Propose prompt changes",
+    "productionTake": "production take",
+    "importedResult": "imported result"
   }
 }

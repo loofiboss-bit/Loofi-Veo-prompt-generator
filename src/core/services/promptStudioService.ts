@@ -21,6 +21,16 @@ import { transpilePrompt } from './modelTranspilerService';
 import { validateStudioVideo, validateStudioMusic } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { DEFAULT_PROMPT_MODEL } from './gemini/aiClient';
+import { assertProtectedPromptTextPreserved } from './promptTextSegments';
+
+import {
+  isLyricSectionLocked,
+  LyricSectionError,
+  parseLyricSections,
+  replaceLyricSectionContent,
+  resolveLyricSection,
+  transformLyricSections,
+} from './lyricSectionService';
 
 const DEFAULT_NEGATIVE =
   'unintended text, subtitles, logos, watermarks, extra limbs, visual glitches';
@@ -173,8 +183,8 @@ const artifactId = (kind: 'video' | 'music', inputHash: string): string =>
   `prompt-${kind}-${inputHash}`;
 
 export interface PromptArtifactOptimizer {
-  optimizeVideo(input: VideoPromptArtifactInput): Promise<unknown>;
-  optimizeMusic(input: MusicPromptArtifactInput): Promise<unknown>;
+  optimizeVideo(input: VideoPromptArtifactInput, signal?: AbortSignal): Promise<unknown>;
+  optimizeMusic(input: MusicPromptArtifactInput, signal?: AbortSignal): Promise<unknown>;
 }
 
 const parseStructuredJson = <T>(value: unknown, label: string): T => {
@@ -195,10 +205,10 @@ const parseStructuredJson = <T>(value: unknown, label: string): T => {
 };
 
 const defaultOptimizer: PromptArtifactOptimizer = {
-  async optimizeVideo(input) {
-    return generatePromptWithCurrentProvider(toVideoPromptState(input));
+  async optimizeVideo(input, signal) {
+    return generatePromptWithCurrentProvider(toVideoPromptState(input), undefined, signal);
   },
-  async optimizeMusic(input) {
+  async optimizeMusic(input, signal) {
     if (resolvePromptGenerationProvider() === 'ollama') {
       const settings = useSettingsStore.getState();
       return generatePromptWithOllama(
@@ -215,10 +225,11 @@ const defaultOptimizer: PromptArtifactOptimizer = {
         {
           baseUrl: settings.localLlmEndpoint,
           model: settings.localLlmModel,
+          signal,
         },
       );
     }
-    return generateSunoPack(toSunoSettings(input));
+    return generateSunoPack(toSunoSettings(input), signal);
   },
 };
 
@@ -256,8 +267,9 @@ const buildVideoPrompt = (
   const instruction = formatModeInstruction(input);
 
   if (input.mode === 'image-to-video') {
+    const subjectMotion = action || sentence(input.idea);
     const motion = [
-      action ? `Subject motion: ${action}` : '',
+      subjectMotion ? `Subject motion: ${subjectMotion}` : '',
       camera ? `Camera motion: ${camera}` : '',
       environment ? `Environment motion: ${environment}` : '',
       audio ? `Audio: ${audio}` : '',
@@ -751,73 +763,40 @@ export const updateLyricsSection = (
   replacement: string,
   lockedSections: string[] = [],
 ): string => {
-  const normalizedSection = section
-    .replace(/^\[|\]$/g, '')
-    .trim()
-    .toLowerCase();
-  if (
-    lockedSections.some(
-      (locked) =>
-        locked
-          .replace(/^\[|\]$/g, '')
-          .trim()
-          .toLowerCase() === normalizedSection,
-    )
-  ) {
-    return lyrics;
+  const selected = resolveLyricSection(lyrics, section);
+  if (selected) {
+    if (isLyricSectionLocked(selected, lockedSections)) return lyrics;
+    return (
+      lyrics.slice(0, selected.start) +
+      replaceLyricSectionContent(selected, replacement) +
+      lyrics.slice(selected.end)
+    );
   }
-  const escapedSection = normalizedSection.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const sectionPattern = new RegExp(
-    `(\\[${escapedSection}\\])([\\s\\S]*?)(?=\\n\\[[^\\]]+\\]|$)`,
-    'i',
-  );
+  if (/#[0-9]+$/.test(section)) throw new LyricSectionError('missing');
   const tag = section.startsWith('[') ? section : `[${section}]`;
-  const content = trim(replacement);
-  if (sectionPattern.test(lyrics)) return lyrics.replace(sectionPattern, `${tag}\n${content}`);
-  return `${trim(lyrics)}\n\n${tag}\n${content}`.trim();
+  if (lockedSections.some((lock) => lock.toLowerCase() === tag.toLowerCase())) return lyrics;
+  return `${trim(lyrics)}\n\n${tag}\n${trim(replacement)}`.trim();
 };
 
-export const getLyricSections = (lyrics: string): string[] =>
-  Array.from(lyrics.matchAll(/\[([^\]]+)\]/g), (match) => `[${match[1]}]`);
-
-const normalizeSectionName = (section: string): string =>
-  section
-    .replace(/^\[|\]$/g, '')
-    .trim()
-    .toLowerCase();
-
-const splitLyricSections = (lyrics: string): Array<{ tag: string; content: string }> => {
-  const chunks = lyrics.match(/\[[^\]]+\][\s\S]*?(?=\n\[[^\]]+\]|$)/g) ?? [];
-  return chunks.map((chunk) => {
-    const tagMatch = chunk.match(/^\[[^\]]+\]/);
-    const tag = tagMatch?.[0] ?? '[Verse]';
-    return {
-      tag,
-      content: trim(chunk.slice(tag.length)),
-    };
-  });
-};
-
-const isLockedSection = (tag: string, lockedSections: string[]): boolean => {
-  const normalized = normalizeSectionName(tag);
-  return lockedSections.some((section) => normalizeSectionName(section) === normalized);
+export const getLyricSections = (lyrics: string): string[] => {
+  const sections = parseLyricSections(lyrics);
+  return sections.map((section) =>
+    sections.filter((item) => item.name === section.name).length > 1 ? section.id : section.tag,
+  );
 };
 
 /** Shorten unlocked sections while keeping their tags and locked text byte-identical. */
 export const shortenLyrics = (lyrics: string, lockedSections: string[] = []): string => {
-  const sections = splitLyricSections(lyrics);
-  if (!sections.length) return trim(lyrics);
-  return sections
-    .map(({ tag, content }) => {
-      if (isLockedSection(tag, lockedSections)) return `${tag}\n${content}`.trim();
-      const lines = content
-        .split(/\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-      const shortened = lines.slice(0, Math.max(1, Math.ceil(lines.length / 2))).join('\n');
-      return `${tag}\n${shortened}`.trim();
-    })
-    .join('\n\n');
+  if (!parseLyricSections(lyrics).length) return lyrics;
+  return transformLyricSections(lyrics, (section) => {
+    if (isLyricSectionLocked(section, lockedSections)) return section.raw;
+    const lines = section.content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const shortened = lines.slice(0, Math.max(1, Math.ceil(lines.length / 2))).join('\n');
+    return replaceLyricSectionContent(section, shortened);
+  });
 };
 
 /** Regenerate unlocked lyric sections locally; locked sections are preserved exactly. */
@@ -827,27 +806,23 @@ export const regenerateLyrics = (
   language: string,
   lockedSections: string[] = [],
 ): string => {
-  const sections = splitLyricSections(lyrics);
-  if (!sections.length) return normalizeLyrics('', topic, language, false);
+  if (!parseLyricSections(lyrics).length) return normalizeLyrics('', topic, language, false);
   const localized = FALLBACK_LYRICS[language.trim().toLowerCase()] ?? FALLBACK_LYRICS.english;
   const seed = trim(topic) || 'a new beginning';
-  return sections
-    .map(({ tag, content }) => {
-      if (isLockedSection(tag, lockedSections)) return `${tag}\n${content}`.trim();
-      const name = normalizeSectionName(tag);
-      const replacement =
-        name === 'chorus' || name === 'refrain'
-          ? `${localized.chorus}\n${seed}`
-          : name === 'bridge'
-            ? `${localized.bridge}\n${localized.outro}`
-            : name === 'outro'
-              ? localized.outro
-              : name === 'intro'
-                ? seed
-                : `${seed}\n${localized.verse}`;
-      return `${tag}\n${replacement}`.trim();
-    })
-    .join('\n\n');
+  return transformLyricSections(lyrics, (section) => {
+    if (isLyricSectionLocked(section, lockedSections)) return section.raw;
+    const replacement =
+      section.name === 'chorus' || section.name === 'refrain'
+        ? `${localized.chorus}\n${seed}`
+        : section.name === 'bridge'
+          ? `${localized.bridge}\n${localized.outro}`
+          : section.name === 'outro'
+            ? localized.outro
+            : section.name === 'intro'
+              ? seed
+              : `${seed}\n${localized.verse}`;
+    return replaceLyricSectionContent(section, replacement);
+  });
 };
 
 const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState => ({
@@ -938,12 +913,13 @@ const applySunoPack = (
 export const optimizeVideoPromptArtifact = async (
   input: VideoPromptArtifactInput,
   optimizer: PromptArtifactOptimizer = defaultOptimizer,
+  signal?: AbortSignal,
 ): Promise<PromptArtifactV1> => {
   const provider = resolvePromptGenerationProvider();
   const local = compileVideoPromptArtifact(input);
   if (provider === 'gemini' || provider === 'ollama') {
     const result = parseStructuredJson<{ prompt?: unknown }>(
-      await optimizer.optimizeVideo(input),
+      await optimizer.optimizeVideo(input, signal),
       'video optimizer',
     );
     if (typeof result.prompt !== 'string') {
@@ -951,6 +927,11 @@ export const optimizeVideoPromptArtifact = async (
     }
     if (!trim(result.prompt)) throw new Error('The video optimizer returned an empty prompt.');
     const primary = local.primary as VideoPromptVariant;
+    assertProtectedPromptTextPreserved(
+      primary.prompt,
+      result.prompt,
+      (local.input as VideoPromptArtifactInput).dialogue ?? '',
+    );
     const optimized: PromptArtifactV1 = {
       ...local,
       primary: (() => {
@@ -989,6 +970,7 @@ export const optimizeVideoPromptArtifact = async (
 export const optimizeMusicPromptArtifact = async (
   input: MusicPromptArtifactInput,
   optimizer: PromptArtifactOptimizer = defaultOptimizer,
+  signal?: AbortSignal,
 ): Promise<PromptArtifactV1> => {
   const local = compileMusicPromptArtifact(input);
   const provider = resolvePromptGenerationProvider();
@@ -998,7 +980,7 @@ export const optimizeMusicPromptArtifact = async (
       style?: unknown;
       lyrics?: unknown;
       explanation?: unknown;
-    }>(await optimizer.optimizeMusic(input), 'music optimizer');
+    }>(await optimizer.optimizeMusic(input, signal), 'music optimizer');
     if (
       typeof pack.style !== 'string' ||
       typeof pack.lyrics !== 'string' ||

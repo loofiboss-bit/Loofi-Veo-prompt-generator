@@ -4,6 +4,8 @@ import type { Asset } from '@core/types';
 import { mediaAssetService } from '@core/services/mediaAssetService';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 
 export function appendEditorMedia(assets: Asset[]): void {
   const state = useAppStore.getState();
@@ -81,15 +83,26 @@ export function EditorMediaPanel() {
           event.target.value = '';
           if (!files.length) return;
           const projectId = useProjectStore.getState().currentProjectId;
+          const projectRevision =
+            useEditorSessionStore.getState().projectSnapshot?.documentRevision;
+          const mutationVersion = useAppStore.getState().mutationVersion;
           void run(async () => {
+            if (!projectId)
+              throw new Error(t('v16.openProjectFirst', 'Open a project before importing media.'));
             const imported = await Promise.all(
               files.map((file) => mediaAssetService.importLocalFile(file)),
             );
-            if (projectId !== useProjectStore.getState().currentProjectId)
+            if (
+              projectId !== useProjectStore.getState().currentProjectId ||
+              projectId !== useEditorSessionStore.getState().projectSnapshot?.id ||
+              projectRevision !==
+                useEditorSessionStore.getState().projectSnapshot?.documentRevision ||
+              mutationVersion !== useAppStore.getState().mutationVersion
+            )
               throw new Error(
                 t(
                   'v16.projectChanged',
-                  'The project changed. Import the media again in the intended project.',
+                  'The project or its edits changed while importing. Import the media again in the intended project.',
                 ),
               );
             imported.forEach((asset) => useAppStore.getState().addAsset(asset));
@@ -107,6 +120,7 @@ export function EditorMediaPanel() {
                 }
               }),
             );
+            await projectSaveCoordinator.saveProject(projectId);
           });
         }}
       />

@@ -62,7 +62,7 @@ describe('promptGenerationService', () => {
     const result = await generatePromptWithCurrentProvider(promptState);
 
     expect(result.prompt).toBe('Gemini prompt');
-    expect(mockGenerateGeminiPrompt).toHaveBeenCalledWith(promptState);
+    expect(mockGenerateGeminiPrompt).toHaveBeenCalledWith(promptState, undefined);
     expect(mockGenerateOllamaPrompt).not.toHaveBeenCalled();
   });
 

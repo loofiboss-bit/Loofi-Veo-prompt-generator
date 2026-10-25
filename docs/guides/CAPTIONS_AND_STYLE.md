@@ -1,11 +1,13 @@
 # Add readable captions and your own style
 
 **Result:** a short video with reviewed caption timing, consistent colors and your own local style.
-These controls are part of v15 development. Manual captions and styles need no AI service.
+Manual captions, SRT import and local style profiles do not need an AI service. Local speech
+transcription is available in the desktop source after you install its model; it has no cloud
+fallback. See [Local speech transcription](../LOCAL_SPEECH_TRANSCRIPTION.md) for model details.
 
 ## Make the project your own
 
-1. Open the project you want to change, then open **Start → My style**.
+1. Open the project you want to change, then open **Settings → My style**.
 2. Choose **New style**, enter a name and pick a primary color, text color, Noto Sans or Noto Serif,
    and a creative direction. For a logo, first import a local image in **Assets**, then select it
    from **Logo from media library**.
@@ -14,6 +16,16 @@ These controls are part of v15 development. Manual captions and styles need no A
 4. Return to **Timeline → Export video**. Expand the crop preview, check the style and adjust
    **Safe margin** to keep text and the logo away from the edges. Check portrait and square crops
    separately when making multiple formats.
+
+## Transcribe a local clip (desktop)
+
+1. In Timeline, open the local speech transcription controls in delivery.
+2. If prompted, review the pinned model and its total download size, then explicitly confirm its
+   installation. You can cancel or remove the model from the same panel.
+3. Choose a clip occurrence (audio or video); the current timeline trim is used. Select automatic
+   language detection or one of the six supported languages, then choose **Transcribe selected clip locally**.
+4. Edit the proposed transcript and timings before accepting them. A changed project, clip, media
+   checksum or trim invalidates the proposal. Web mode continues to support manual captions and SRT.
 
 The project keeps an independent copy of the style. Editing the library profile later does not
 change older projects. Creative direction updates the Studio input: rebuild its pack if you want

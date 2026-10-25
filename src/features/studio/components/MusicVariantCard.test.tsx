@@ -28,11 +28,10 @@ describe('MusicVariantCard', () => {
     expect(screen.getByText('Neon Odyssey')).toBeInTheDocument();
     expect(screen.getByDisplayValue(/synthwave, energetic/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/Driving in the night/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Copy prompt/i })).toBeInTheDocument();
-    expect(screen.getByText('Copy options').closest('details')).not.toHaveAttribute('open');
-    await user.click(screen.getByText('Copy options'));
     expect(screen.getByRole('button', { name: /Copy style/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy lyrics/i })).toBeInTheDocument();
+    expect(screen.getByText('Copy options').closest('details')).not.toHaveAttribute('open');
+    await user.click(screen.getByText('Copy options'));
     expect(screen.getByRole('button', { name: /Copy all/i })).toBeInTheDocument();
   });
 
@@ -42,13 +41,12 @@ describe('MusicVariantCard', () => {
       <MusicVariantCard variant={MOCK_MUSIC_VARIANT} primary onCopy={onCopy} />,
     );
 
-    await user.click(screen.getByRole('button', { name: /Copy prompt/i }));
-    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyStyle, 'Copied.');
-    await user.click(screen.getByText('Copy options'));
     await user.click(screen.getByRole('button', { name: /Copy style/i }));
     expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyStyle, 'Copied.');
-
     await user.click(screen.getByRole('button', { name: /Copy lyrics/i }));
     expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyLyrics, 'Copied.');
+    await user.click(screen.getByText('Copy options'));
+    await user.click(screen.getByRole('button', { name: /Copy all/i }));
+    expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyAll, 'Copied.');
   });
 });

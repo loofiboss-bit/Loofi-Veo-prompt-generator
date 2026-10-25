@@ -32,6 +32,8 @@ const mockCostTrackingService = vi.hoisted(() => ({
     lifetimeTotalUsd: 15.75,
     monthlyBudgetUsd: 50,
   })),
+  subscribe: vi.fn((_listener: unknown) => vi.fn()),
+  hydrate: vi.fn().mockResolvedValue(undefined),
   isWithinBudget: vi.fn(() => true),
   setMonthlyBudget: vi.fn(),
 }));
@@ -226,4 +228,17 @@ describe('useCostStore', () => {
       expect(useCostStore.getState().monthlyBudget).toBeNull();
     });
   });
+});
+
+it('subscribes before hydrating so later recorded costs refresh the UI', async () => {
+  await useCostStore.getState().initialize();
+  expect(mockCostTrackingService.subscribe).toHaveBeenCalledOnce();
+  const refresh = mockCostTrackingService.subscribe.mock.calls[0][0] as () => void;
+  mockCostTrackingService.getState.mockReturnValue({
+    sessionRecords: [],
+    lifetimeTotalUsd: 3,
+    monthlyBudgetUsd: 20,
+  });
+  refresh();
+  expect(useCostStore.getState().lifetimeCost).toBe(3);
 });

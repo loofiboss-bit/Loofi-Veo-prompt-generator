@@ -35,6 +35,7 @@ const DOCUMENT_MUTATION_KEYS = [
   'clips',
   'tracks',
   'sbShots',
+  'assets',
   'sbGlobalContext',
   'characterBank',
   'visualDNA',
@@ -79,6 +80,7 @@ export const useAppStore = create<AppState>()(
           get as Parameters<typeof createUiSlice>[1],
           api as Parameters<typeof createUiSlice>[2],
         );
+
         const timelineSlice = createTimelineSlice(
           versionedSet as Parameters<typeof createTimelineSlice>[0],
           get as Parameters<typeof createTimelineSlice>[1],
@@ -192,6 +194,8 @@ export const useAppStore = create<AppState>()(
           }).productionBible;
           return {
             ...state,
+            assetCatalogRevisions: state.assetCatalogRevisions ?? {},
+            assetCatalogTombstones: state.assetCatalogTombstones ?? {},
             promptState: state.promptState
               ? migratePromptStateTarget(state.promptState)
               : INITIAL_STATE,
@@ -232,6 +236,8 @@ export const useAppStore = create<AppState>()(
 
             // Asset Slice (user data)
             assets: s.assets,
+            assetCatalogRevisions: s.assetCatalogRevisions,
+            assetCatalogTombstones: s.assetCatalogTombstones,
             characterBank: s.characterBank,
             history: s.history,
             customPresets: s.customPresets,
@@ -258,6 +264,27 @@ export const useAppStore = create<AppState>()(
     },
   ),
 ) as unknown as UseBoundStore<StoreApi<AppState>> & { temporal: StoreApi<TemporalState<AppState>> };
+
+/** Explicitly persist the latest user data and wait for catalog writes to finish. */
+export async function persistAppStoreNow(): Promise<void> {
+  const persistApi = useAppStore as typeof useAppStore & {
+    persist: {
+      getOptions: () => {
+        name: string;
+        version?: number;
+        partialize?: (state: AppState) => unknown;
+      };
+    };
+  };
+  const options = persistApi.persist.getOptions();
+  const state = useAppStore.getState();
+  const persistedState = options.partialize ? options.partialize(state) : state;
+  await idbStorage.setItem(
+    options.name,
+    JSON.stringify({ state: persistedState, version: options.version }),
+  );
+  await idbStorage.flush(options.name);
+}
 
 const rawSetState = useAppStore.setState;
 useAppStore.setState = (next, replace) => {

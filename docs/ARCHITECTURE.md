@@ -1,14 +1,31 @@
 # Loofi Creator Studio Architecture
 
-> **Baseline Status (v17.0.0 Qualified & v18+ Deterministic Architecture):**
-> Loofi Creator Studio v17.0.0 Smart Local Editing is fully qualified and released with local
-> video editing, microphone voiceover recording, reviewable silence-cut trimming, local offline
-> speech-to-text / linked captions, EBU R128 loudness normalization, and save-on-close flush resilience.
-> The v18+ engineering roadmap establishes strict architectural guardrails: deterministic systems,
-> thread isolation, non-blocking persistence, rule-based compilation, and zero AI slop.
-> See [ROADMAP.md](../ROADMAP.md) for active v18+ engineering targets and architectural guardrails.
+> **Current source:** package version 20.0.0. The v20 scope from PR #96 is documented in
+> `CHANGELOG.md`. Public publication and physical platform qualification require their own dated
+> evidence. Historical milestone records below remain dated snapshots.
 
-## Unreleased: Reviewable Video Production
+## v20: Creator Studio reliability
+
+- Project saves await durable media bytes and the merged media catalog before writing the project
+  document and reporting a saved state. The Zustand storage adapter reads both legacy state objects
+  and `{ state, version }` envelopes; catalog additions and tombstones merge atomically.
+- Timeline take references are frozen before new accepted takes are offered. Acceptance does not
+  place media; explicit append/replace operations preserve existing trim, audio, transition and
+  caption links and form single undo steps.
+- Lyric locks use section occurrence identities while honoring legacy all-occurrences locks. Prompt
+  dialogue is treated as protected text segments. Local Whisper transcription is an explicit,
+  desktop-only model installation plus a worker that receives only FFmpeg-extracted clip audio.
+- Timeline source playback shares a playhead and Web Audio output; project-scoped export batches and
+  an idempotent cost ledger survive navigation. Native delivery review remains the check for the
+  frozen output that will be saved.
+- The cost ledger uses the dedicated `veo-cost-tracking` IndexedDB database. A read-only probe
+  migrates legacy cost history and budgets without upgrading the shared database or overwriting
+  newer ledger data.
+- Production review resolves registered local video and reference bytes before calling Gemini and
+  rejects review results after project or source inputs change. Estimates, approved ceilings and
+  verified provider charges remain separate values.
+
+## v19–v20: Reviewable Video Production
 
 Selective video edits use a temporary, typed proposal against the actual selected variant, not a
 fresh compilation of the brief. The proposal captures project identity, draft revision, selected
@@ -35,6 +52,34 @@ provider operations may poll/download without reapproval. Unsent legacy approval
 explicit new approval, and ambiguous submissions without an operation identity are never resent.
 Extension references bind the submitted provider URI, not mutable remote content behind that URI.
 The additive `hashVersion` does not change existing project or archive schema identities.
+
+## v20: Music Editing, Cancellation and Result Feedback
+
+`proposeMusicVariantEdit` receives the selected artifact variant as currently edited, the requested
+fields and the creative brief as context. It returns a temporary field patch with a typed proposal
+contract; the review accepts fields independently through `editStudioVariant`. Occurrence-specific
+lyric locks are preserved exactly and ambiguous section-structure changes are rejected. Instrumental
+mode cannot request lyric changes. Full-package optimization remains a separate operation.
+
+Video prompt edits preserve ordered quoted text and supplied dialogue by default. A validated proposal
+that changes or omits protected dialogue is rejected before review; rewriting requires an explicit
+user choice. Local target-grammar rules operate only on unprotected segments. Proposal acceptance
+checkpoints and flushes the current draft, then verifies project, revision, selected variant and
+operation identity. Persistence completes before the accepted artifact is exposed, so a failed save
+leaves the editable prompt unchanged.
+
+Studio editing requests accept an optional `AbortSignal`. Electron assigns request IDs bound to the
+originating IPC sender and forwards cancellation to the actual fetch or SDK request. Cancellation
+stops retries and late responses cannot replace a newer proposal. It stops the client's wait; a Gemini
+request already sent may still be billed. Ollama structured edit calls use the requested JSON schema
+and validate locally without a provider fallback on malformed output.
+
+Production and imported-result feedback is passed through ephemeral router state containing only
+prompt text, settings, notes and source identity. Studio uses the current selected variant as the edit
+source and the frozen source prompt/settings as context. Project and target must still match; the
+source video is not sent or analyzed. Prompt-only is the default, negative-prompt editing is optional,
+and generation remains a separate cost-approved action. Audio duration is captured before transferring
+the transcription buffer to its worker.
 
 ## 1. Runtime Shape
 

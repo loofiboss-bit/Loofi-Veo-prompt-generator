@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { isTakePlayable } from '@core/services/productionReadinessService';
-import type { ProductionTake } from '@core/types';
+import type { ProductionTake, PromptArtifactTarget } from '@core/types';
+import { ROUTES } from '@core/config/routes';
 import {
   VideoResultCompare,
   type VideoComparisonResult,
@@ -10,6 +12,8 @@ import {
 interface TakeCompareProps {
   takes: ProductionTake[];
   contextId?: string;
+  projectId?: string;
+  feedbackTarget?: PromptArtifactTarget;
   onSaveComparisonNotes?: (take: ProductionTake, notes: string) => Promise<void>;
   onKeep: (take: ProductionTake) => void;
   onReject: (take: ProductionTake) => void;
@@ -20,6 +24,8 @@ interface TakeCompareProps {
 export function TakeCompare({
   takes,
   contextId = 'production',
+  projectId,
+  feedbackTarget,
   onSaveComparisonNotes,
   onKeep,
   onReject,
@@ -27,6 +33,7 @@ export function TakeCompare({
   onManualReview,
 }: TakeCompareProps) {
   const { t } = useTranslation('create');
+  const navigate = useNavigate();
   const available = useMemo(() => takes.filter(isTakePlayable), [takes]);
   const results: VideoComparisonResult[] = available.map((take) => {
     const rawIndex = takes.findIndex((candidate) => candidate.id === take.id);
@@ -118,6 +125,54 @@ export function TakeCompare({
             {take.manualReview.notes ? `: ${take.manualReview.notes}` : ''}
           </p>
         )}
+        {projectId &&
+          feedbackTarget &&
+          take.sourceArtifactId &&
+          take.sourceVariantIndex !== undefined && (
+            <button
+              type="button"
+              disabled={!notes.trim()}
+              onClick={() =>
+                navigate(`${ROUTES.STUDIO}?mode=video`, {
+                  state: {
+                    kind: 'studio-feedback',
+                    source: {
+                      projectId,
+                      sourceKind: 'production-take',
+                      sourceId: take.id,
+                      artifactId: take.sourceArtifactId,
+                      variantIndex: take.sourceVariantIndex,
+                      target: feedbackTarget,
+                      prompt: take.prompt,
+                      negativePrompt: take.request.negativePrompt ?? '',
+                      settings: JSON.stringify(
+                        {
+                          model: take.request.modelId,
+                          mode: take.request.mode,
+                          aspectRatio: take.request.aspectRatio,
+                          resolution: take.request.resolution,
+                          durationSeconds: take.request.durationSeconds,
+                          seed: take.request.seed,
+                          firstFrameAssetId: take.request.firstFrameAssetId,
+                          lastFrameAssetId: take.request.lastFrameAssetId,
+                          referenceAssetIds: take.request.referenceAssetIds,
+                          extensionSourceTakeId: take.request.extensionSourceTakeId,
+                        },
+                        null,
+                        2,
+                      ),
+                      notes,
+                    },
+                  },
+                })
+              }
+              className="rounded border border-blue-600 px-2 py-1 text-xs disabled:opacity-50"
+            >
+              {t('flow.improvePromptFromNotes', {
+                defaultValue: 'Improve prompt from notes',
+              })}
+            </button>
+          )}
         <div className="flex flex-wrap gap-2">
           {onManualReview &&
             (!take.review || take.review.source === 'local') &&

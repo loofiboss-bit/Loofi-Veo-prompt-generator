@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductionTake } from '@core/types';
 import { TakeCompare } from './TakeCompare';
 
+const mocks = vi.hoisted(() => ({ navigate: vi.fn() }));
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useNavigate: () => mocks.navigate,
+}));
+
 const take = (id: string, score: number): ProductionTake => ({
   id,
   prompt: 'Tracking shot',
@@ -38,6 +44,7 @@ const take = (id: string, score: number): ProductionTake => ({
 });
 
 beforeEach(() => {
+  mocks.navigate.mockReset();
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
 });
 
@@ -69,6 +76,47 @@ describe('TakeCompare', () => {
     expect(onRevise).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'a' }),
       'Preserve subject identity.',
+    );
+  });
+  it('opens Studio with the frozen take source and its current comparison notes', () => {
+    const source = take('a', 70);
+    source.sourceArtifactId = 'artifact-a';
+    source.sourceVariantIndex = 2;
+    render(
+      <TakeCompare
+        takes={[source]}
+        projectId="project-a"
+        feedbackTarget="flow-veo"
+        onKeep={vi.fn()}
+        onReject={vi.fn()}
+        onRevise={vi.fn()}
+      />,
+    );
+    const improve = screen.getByRole('button', { name: 'Improve prompt from notes' });
+    expect(improve).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Comparison notes · A'), {
+      target: { value: 'Keep the framing, soften the camera move.' },
+    });
+    fireEvent.click(improve);
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/studio?mode=video',
+      expect.objectContaining({
+        state: {
+          kind: 'studio-feedback',
+          source: expect.objectContaining({
+            projectId: 'project-a',
+            sourceKind: 'production-take',
+            sourceId: 'a',
+            artifactId: 'artifact-a',
+            variantIndex: 2,
+            target: 'flow-veo',
+            prompt: 'Tracking shot',
+            negativePrompt: '',
+            notes: 'Keep the framing, soften the camera move.',
+            settings: expect.stringContaining('"model": "veo-3.1-fast"'),
+          }),
+        },
+      }),
     );
   });
   it('shows local checks without quality scores and requires manual confirmation', () => {

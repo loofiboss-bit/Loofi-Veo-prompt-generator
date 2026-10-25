@@ -1,25 +1,26 @@
 import type { PaidJobTask } from '@core/types';
 import { costTrackingService } from './costTrackingService';
 
-const recordedJobIds = new Set<string>();
-
-export function recordCompletedPaidJobCost(job: PaidJobTask): void {
-  if (job.status !== 'Complete' || recordedJobIds.has(job.id)) return;
-  recordedJobIds.add(job.id);
+export async function recordCompletedPaidJobCost(job: PaidJobTask): Promise<void> {
+  if (job.status !== 'Complete') return;
   const cost = job.costApproval?.maximumChargeUsd ?? 0;
   if (cost > 0 && job.request) {
     const isMusic = 'jobKind' in job && job.jobKind === 'music';
     const duration = 'durationSeconds' in job.request ? job.request.durationSeconds : undefined;
-    costTrackingService.recordCost({
-      modelId: job.request.modelId,
-      endpointId: 'desktop-paid-job',
-      inputTokens: 0,
-      outputTokens: 0,
-      videoDurationSeconds: duration,
-      costUsd: cost,
-      isEstimated: false,
-      description: `${isMusic ? 'Lyria' : 'Veo'} (${job.request.modelId}): ${job.prompt.slice(0, 40)}`,
-    });
+    await costTrackingService
+      .recordPaidJobCost({
+        sourceJobId: job.id,
+        timestamp: job.timestamp,
+        modelId: job.request.modelId,
+        endpointId: 'desktop-paid-job',
+        inputTokens: 0,
+        outputTokens: 0,
+        videoDurationSeconds: duration,
+        costUsd: cost,
+        isEstimated: true,
+        description: `${isMusic ? 'Lyria' : 'Veo'} (${job.request.modelId}): ${job.prompt.slice(0, 40)}`,
+      })
+      .catch(() => {});
   }
 }
 
@@ -39,7 +40,10 @@ class PaidJobService {
 
   async list(): Promise<PaidJobTask[]> {
     const jobs = (await window.electron?.listPaidJobs?.()) ?? [];
-    for (const job of jobs) recordCompletedPaidJobCost(job);
+    for (const job of jobs) {
+      // A ledger failure must not hide the native job or invite another submission.
+      await recordCompletedPaidJobCost(job).catch(() => {});
+    }
     return jobs;
   }
 

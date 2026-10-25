@@ -4,11 +4,17 @@ import { EditorMediaPanel, appendEditorMedia } from './EditorMediaPanel';
 import { mediaAssetService } from '@core/services/mediaAssetService';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { createEmptyProjectDocument } from '@core/store/editorSessionAdapters';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback || key,
   }),
+}));
+
+vi.mock('@core/services/projectSaveCoordinator', () => ({
+  projectSaveCoordinator: { saveProject: vi.fn().mockResolvedValue(undefined) },
 }));
 
 describe('EditorMediaPanel', () => {
@@ -20,6 +26,9 @@ describe('EditorMediaPanel', () => {
     });
     useProjectStore.setState({
       currentProjectId: 'project-1',
+    });
+    useEditorSessionStore.setState({
+      projectSnapshot: createEmptyProjectDocument({ id: 'project-1', name: 'Project 1' }),
     });
     vi.restoreAllMocks();
   });
@@ -118,7 +127,7 @@ describe('EditorMediaPanel', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(
-        'The project changed. Import the media again in the intended project.',
+        'The project or its edits changed while importing. Import the media again in the intended project.',
       );
     });
   });
