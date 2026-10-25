@@ -1,0 +1,1935 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-10-12T17:45:20.697Z",
+  "workloads": ["studio"],
+  "methodology": {
+    "startup": "Warm system cache, isolated prepared profile, process launch to usable rendered Prompt Studio. Native readiness emitted after frame; Electron CDP checks editable idea field and two animation frames. Electron timing includes Playwright launch/attachment and userData verification overhead. Observation methods are asymmetric; no cold-cache claim.",
+    "resources": "Root plus all current descendants, /proc/smaps_rollup PSS/RSS. CPU user+system delta, one core = 100%. Short-lived processes exiting between samples may be missed. Sampler and harness excluded. Per-run CPU is a time-weighted mean; memory is a per-run median, with summary statistics across runs.",
+    "emptyProjectsFixture": "Both displayed inventory models have zero rows. Packaged v15 automatically bootstraps a default project, so its existing exported Zustand store is set to an empty session fixture in the verified temporary profile before sampling. No Electron source or persisted format is changed; default metadata remains in the temporary profile.",
+    "comparisonLimit": "M0 has fewer features. Only these workloads are compared; video import/setup is excluded from stable sampling."
+  },
+  "configuration": {
+    "electron": "/opt/Loofi Creator Studio/veo-prompt-generator",
+    "startup-pairs": "0",
+    "resource-pairs": "1",
+    "workloads": "studio",
+    "settle": "10",
+    "duration": "30",
+    "interval": "1",
+    "source-package": "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/package.json",
+    "native": "/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/loofi-creator-studio-native",
+    "video": "/tmp/native-m0-fixtures/benchmark.webm",
+    "output": "native/docs/benchmarks/2026-10-12-studio-retry.json",
+    "size": {
+      "width": 1280,
+      "height": 800
+    },
+    "isolatedProfiles": true
+  },
+  "environment": {
+    "os": "NAME=\"Fedora Linux\"\nVERSION=\"44 (KDE Plasma Desktop Edition)\"\nRELEASE_TYPE=stable\nID=fedora\nVERSION_ID=44\nVERSION_CODENAME=\"\"\nPRETTY_NAME=\"Fedora Linux 44 (KDE Plasma Desktop Edition)\"\nANSI_COLOR=\"0;38;2;60;110;180\"\nLOGO=fedora-logo-icon\nCPE_NAME=\"cpe:/o:fedoraproject:fedora:44\"\nDEFAULT_HOSTNAME=\"fedora\"\nHOME_URL=\"https://fedoraproject.org/\"\nDOCUMENTATION_URL=\"https://docs.fedoraproject.org/en-US/fedora/f44/\"\nSUPPORT_URL=\"https://ask.fedoraproject.org/\"\nBUG_REPORT_URL=\"https://bugzilla.redhat.com/\"\nREDHAT_BUGZILLA_PRODUCT=\"Fedora\"\nREDHAT_BUGZILLA_PRODUCT_VERSION=44\nREDHAT_SUPPORT_PRODUCT=\"Fedora\"\nREDHAT_SUPPORT_PRODUCT_VERSION=44\nSUPPORT_END=2027-05-19\nVARIANT=\"KDE Plasma Desktop Edition\"\nVARIANT_ID=kde",
+    "kernel": "Linux fedora-laptop 7.2.9-201.fc44.x86_64 #1 SMP PREEMPT_DYNAMIC Fri Oct  9 15:04:46 UTC 2026 x86_64 GNU/Linux",
+    "rust": "rustc 1.93.0 (254b59607 2026-01-19)",
+    "qt": "6.11.2",
+    "package": "veo-prompt-generator-15.0.0-1.fc44.x86_64",
+    "gpu": "00:00.0 Host bridge [0600]: Intel Corporation Tiger Lake-UP3/H35 4 cores Host Bridge/DRAM Registers [8086:9a14] (rev 01)\n00:02.0 VGA compatible controller [0300]: Intel Corporation TigerLake-LP GT2 [Iris Xe Graphics] [8086:9a49] (rev 01)\n00:04.0 Signal processing controller [1180]: Intel Corporation TigerLake-LP Dynamic Tuning Processor Participant [8086:9a03] (rev 01)\n00:07.0 PCI bridge [0604]: Intel Corporation Tiger Lake-LP Thunderbolt 4 PCI Express Root Port #0 [8086:9a23] (rev 01)\n00:07.1 PCI bridge [0604]: Intel Corporation Tiger Lake-LP Thunderbolt 4 PCI Express Root Port #1 [8086:9a25] (rev 01)\n00:0a.0 Signal processing controller [1180]: Intel Corporation Tigerlake Telemetry Aggregator Driver [8086:9a0d] (rev 01)\n00:0d.0 USB controller [0c03]: Intel Corporation Tiger Lake-LP Thunderbolt 4 USB Controller [8086:9a13] (rev 01)\n00:0d.2 USB controller [0c03]: Intel Corporation Tiger Lake-LP Thunderbolt 4 NHI #0 [8086:9a1b] (rev 01)\n00:0e.0 RAID bus controller [0104]: Intel Corporation Volume Management Device NVMe RAID Controller [8086:9a0b]\n00:12.0 Serial controller [0700]: Intel Corporation 500 Series Chipset Family On-Package Integrated Sensor Hub [8086:a0fc] (rev 20)\n00:14.0 USB controller [0c03]: Intel Corporation 500 Series Chipset Family On-Package USB 3.2 Gen 2x1 (10 Gbs) xHCI Host Controller [8086:a0ed] (rev 20)\n00:14.2 RAM memory [0500]: Intel Corporation 500 Series Chipset Family On-Package Shared SRAM [8086:a0ef] (rev 20)\n00:14.3 Network controller [0280]: Intel Corporation Wi-Fi 6 AX201 [8086:a0f0] (rev 20)\n00:15.0 Serial bus controller [0c80]: Intel Corporation 500 Series Chipset Family On-Package I2C Controller #0 [8086:a0e8] (rev 20)\n00:16.0 Communication controller [0780]: Intel Corporation 500 Series Chipset Family On-Package CSME HECI #1 [8086:a0e0] (rev 20)\n00:16.3 Serial controller [0700]: Intel Corporation 500 Series Chipset Family On-Package CSME Keyboard and Text (KT) Redirection [8086:a0e3] (rev 20)\n00:1c.0 PCI bridge [0604]: Intel Corporation 500 Series Chipset Family On-Package PCI Express Root Port #8 [8086:a0bf] (rev 20)\n00:1d.0 PCI bridge [0604]: Intel Corporation 500 Series Chipset Family On-Package PCI Express Root Port #9 [8086:a0b0] (rev 20)\n00:1f.0 ISA bridge [0601]: Intel Corporation 500 Series Chipset Family On-Package eSPI Controller [8086:a082] (rev 20)\n00:1f.3 Multimedia audio controller [0401]: Intel Corporation 500 Series Chipset Family On-Package High Definition Audio (HD Audio) [8086:a0c8] (rev 20)\n00:1f.4 SMBus [0c05]: Intel Corporation 500 Series Chipset Family On-Package System Management Bus (SMBus) [8086:a0a3] (rev 20)\n00:1f.5 Serial bus controller [0c80]: Intel Corporation 500 Series Chipset Family On-Package SPI (flash) Controller [8086:a0a4] (rev 20)\n55:00.0 Cellular controller/modem [0d40]: Intel Corporation XMM7360 LTE Advanced Modem [8086:7360] (rev 01)\n56:00.0 Non-Volatile memory controller [0108]: Samsung Electronics Co Ltd NVMe SSD Controller 980 (DRAM-less) [144d:a809]",
+    "displays": "\u001b[01;32mOutput: \u001b[0;0m1 eDP-1 9e232cbe-bf6c-48a3-9f6c-1861192ddb44\n\t\u001b[01;32menabled\u001b[0;0m\n\t\u001b[01;32mconnected\u001b[0;0m\n\t\u001b[01;32mpriority 1\u001b[0;0m\n\t\u001b[01;33mPanel\u001b[0;0m\n\t\u001b[01;33mreplication source:\u001b[0;0m0\n\t\u001b[01;34mModes: \u001b[0;0m 1:\u001b[01;32m1920x1080@60.01*\u001b[0;0m!  10:1368x768@59.88  11:1368x768@59.88  12:1280x720@59.85  13:1280x720@59.85  2:1280x1024@59.90  3:1280x1024@59.90  4:1024x768@59.92  5:1024x768@59.92  6:1280x800@59.81  7:1280x800@59.81  8:1600x900@59.95  9:1600x900@59.95 \n\u001b[01;33m\tCustom modes:\u001b[0;0m None\n\u001b[01;33m\tGeometry: \u001b[0;0m0,0 1920x1080\n\u001b[01;33m\tScale: \u001b[0;0m1\n\u001b[01;33m\tRotation: \u001b[0;0m1\n\u001b[01;33m\tOverscan: \u001b[0;0m0\n\u001b[01;33m\tVrr: \u001b[0;0mincapable\n\u001b[01;33m\tRgbRange: \u001b[0;0mAutomatic\n\u001b[01;33m\tHDR: \u001b[0;0mincapable\n\u001b[01;33m\tWide Color Gamut: \u001b[0;0mincapable\n\u001b[01;33m\tICC profile: \u001b[0;0mnone\n\u001b[01;33m\tColor profile source: \u001b[0;0msRGB\n\u001b[01;33m\tColor power preference: \u001b[0;0mprefer efficiency and performance\n\u001b[01;33m\tBrightness control: \u001b[0;0msupported, set to 50% and dimming to 100%\n\u001b[01;33m\tColor resolution: \u001b[0;0mautomatic (10), range: [6; 12] bits per color\n\u001b[01;33m\tAllow EDR: \u001b[0;0malways\n\u001b[01;33m\tSharpness control: \u001b[0;0munsupported\n\u001b[01;33m\tAutomatic brightness: \u001b[0;0munsupported\n\u001b[01;33m\tAuto Rotate Policy: \u001b[0;0mincapable\n\u001b[01;33m\tAdaptive backlight modulation: \u001b[0;0munsupported",
+    "sessionType": "wayland",
+    "waylandDisplay": "wayland-0",
+    "qtPlatform": "default",
+    "sourceRevision": "fac29104eab98fd85e79a2ea9a839710cd5b66b4",
+    "nativeSha256": "4f843ff6517580f94b7b86f03af2e65ffd823c4132167f8baeb2836f76939953",
+    "electronSha256": "5b87aacaae7521dcd94302997ee180fb49e5c4c17165ac2e542a3e60a438a4d6",
+    "videoSha256": "b89cb237ddd602aa2e9453daae0e44508022d57bf68391a818e8b4ab1d22c566",
+    "electronVersion": "15.0.0",
+    "electronGpu": {
+      "features": {
+        "2d_canvas": "enabled",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "enabled",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "enabled_on",
+        "rasterization": "enabled",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "enabled",
+        "video_encode": "disabled_software",
+        "vulkan": "enabled_on",
+        "webgl": "enabled",
+        "webgpu": "enabled",
+        "webgpu_on_vk_via_gl_interop": "enabled",
+        "webnn": "disabled_off"
+      },
+      "basic": {
+        "auxAttributes": {
+          "amdSwitchable": false,
+          "canSupportThreadedTextureMailbox": false,
+          "glImplementationParts": "(gl=none,angle=none)",
+          "glResetNotificationStrategy": 0,
+          "hardwareSupportsVulkan": false,
+          "inProcessGpu": true,
+          "initializationTime": 0,
+          "isAsan": false,
+          "isClangCoverage": false,
+          "jpegDecodeAcceleratorSupported": false,
+          "optimus": false,
+          "passthroughCmdDecoder": false,
+          "sandboxed": false,
+          "skiaBackendType": "None",
+          "subpixelFontRendering": true,
+          "targetCpuBits": 64,
+          "visibilityCallbackCallCount": 0
+        },
+        "gpuDevice": [
+          {
+            "active": true,
+            "deviceId": 39497,
+            "gpuPreference": 0,
+            "vendorId": 32902
+          }
+        ]
+      }
+    }
+  },
+  "records": [
+    {
+      "kind": "native",
+      "scenario": "studio",
+      "pair": 0,
+      "phase": "resources",
+      "timestamp": "2026-10-12T17:45:22.880Z",
+      "startupMs": 471.5670370012522,
+      "resources": {
+        "pid": 84943,
+        "duration_seconds": 30.000085772000602,
+        "interval_seconds": 1,
+        "samples": [
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 1.0000744260014471
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 2.0092287080005917
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 3.0278103810014727
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 4.045874971001467
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 5.054125767999722
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 6.069368427000882
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 7.087017744001059
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 8.099013749000733
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 9.108510459000172
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 10.124312535999707
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 11.142537130001074
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 12.162587621000057
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 13.181433900001139
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 14.201068682001278
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 15.218968962000872
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 16.23018473800039
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 17.241502602000764
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 18.26168372200118
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 19.282360940000217
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 20.30059840300055
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 21.31565591800063
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 22.33517226300137
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 23.353388622999773
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 24.373307855999883
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 25.39364439700148
+          },
+          {
+            "pss_kib": 164206,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164206
+              }
+            ],
+            "elapsed_seconds": 26.41173466700093
+          },
+          {
+            "pss_kib": 164205,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164205
+              }
+            ],
+            "elapsed_seconds": 27.435305935001452
+          },
+          {
+            "pss_kib": 164205,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164205
+              }
+            ],
+            "elapsed_seconds": 28.451492086000144
+          },
+          {
+            "pss_kib": 164205,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164205
+              }
+            ],
+            "elapsed_seconds": 29.47174454800006
+          },
+          {
+            "pss_kib": 164205,
+            "rss_kib": 218788,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 84943,
+                "name": "loofi-creator-studio-native",
+                "rss": 218788,
+                "pss": 164205
+              }
+            ],
+            "elapsed_seconds": 30.000085772000602
+          }
+        ]
+      },
+      "status": "passed",
+      "applicationLog": "Failed to open VDPAU backend libvdpau_nvidia.so: cannot open shared object file: No such file or directory\nlibva info: VA-API version 1.23.0\nlibva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so\nlibva info: Found init function __vaDriverInit_1_23\nlibva info: va_openDriver() returns 0\nlibva info: VA-API version 1.23.0\nlibva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so\nlibva info: Found init function __vaDriverInit_1_23\nlibva info: va_openDriver() returns 0\nNATIVE_PLATFORM\twayland\nNATIVE_RENDER_BACKEND\tOpenGL\nNATIVE_READY\tstudio\n"
+    },
+    {
+      "kind": "electron",
+      "scenario": "studio",
+      "pair": 0,
+      "phase": "resources",
+      "timestamp": "2026-10-12T17:46:03.492Z",
+      "startupMs": 1601.4661860000342,
+      "resources": {
+        "pid": 85017,
+        "duration_seconds": 30.000089092000053,
+        "interval_seconds": 1,
+        "samples": [
+          {
+            "pss_kib": 392041,
+            "rss_kib": 820156,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258680,
+                "pss": 143505
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31888
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92819
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169704,
+                "pss": 93186
+              }
+            ],
+            "elapsed_seconds": 1.0000968589993136
+          },
+          {
+            "pss_kib": 392041,
+            "rss_kib": 820156,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258680,
+                "pss": 143505
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31888
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92819
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169704,
+                "pss": 93186
+              }
+            ],
+            "elapsed_seconds": 2.026564205998511
+          },
+          {
+            "pss_kib": 392041,
+            "rss_kib": 820156,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258680,
+                "pss": 143505
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31888
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92819
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169704,
+                "pss": 93186
+              }
+            ],
+            "elapsed_seconds": 3.055182222999065
+          },
+          {
+            "pss_kib": 392041,
+            "rss_kib": 820220,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258680,
+                "pss": 143500
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 4.083789488999173
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 5.113457550998646
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 6.137667467999563
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 7.16537144099857
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 8.189566766999633
+          },
+          {
+            "pss_kib": 392051,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143511
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15245
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 9.225260207000247
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 10.245208579999598
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 11.270647960000133
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 12.298899309000262
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 13.325716692999777
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 14.354418898999938
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 15.383613871999842
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 16.413120302999232
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 17.441371244000038
+          },
+          {
+            "pss_kib": 392053,
+            "rss_kib": 820232,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 258692,
+                "pss": 143512
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15397
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15246
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31882
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 155012,
+                "pss": 92814
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93202
+              }
+            ],
+            "elapsed_seconds": 18.463137232998633
+          },
+          {
+            "pss_kib": 384908,
+            "rss_kib": 813672,
+            "cpu_percent_one_core": 7.845724151673368,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140195
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31831
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89050
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93194
+              }
+            ],
+            "elapsed_seconds": 19.482800918000066
+          },
+          {
+            "pss_kib": 384908,
+            "rss_kib": 813672,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140195
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98160,
+                "pss": 31831
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89050
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93194
+              }
+            ],
+            "elapsed_seconds": 20.50038796899935
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 21.52958997299902
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 22.557095023999864
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 23.585855458999504
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 24.616170433999287
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 25.64591768599894
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 26.671878072000254
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 27.698890691999623
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 28.730207259999588
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 29.758897576999516
+          },
+          {
+            "pss_kib": 384913,
+            "rss_kib": 813740,
+            "cpu_percent_one_core": 0,
+            "processes": [
+              {
+                "pid": 85017,
+                "name": "veo-prompt-gene",
+                "rss": 255528,
+                "pss": 140190
+              },
+              {
+                "pid": 85021,
+                "name": "veo-prompt-gene",
+                "rss": 69720,
+                "pss": 15395
+              },
+              {
+                "pid": 85022,
+                "name": "veo-prompt-gene",
+                "rss": 68880,
+                "pss": 15243
+              },
+              {
+                "pid": 85058,
+                "name": "veo-prompt-gene",
+                "rss": 98228,
+                "pss": 31851
+              },
+              {
+                "pid": 85078,
+                "name": "veo-prompt-gene",
+                "rss": 151616,
+                "pss": 89045
+              },
+              {
+                "pid": 85054,
+                "name": "veo-prompt-gene",
+                "rss": 169768,
+                "pss": 93189
+              }
+            ],
+            "elapsed_seconds": 30.000089092000053
+          }
+        ]
+      },
+      "status": "passed",
+      "applicationLog": "[85017:1012/194604.171258:ERROR:ui/ozone/platform/wayland/host/wayland_wp_color_manager.cc:277] Unable to set image transfer function.\n[85017:1012/194604.171280:ERROR:ui/ozone/platform/wayland/host/wayland_wp_color_manager.cc:195] Failed to populate image description for color space {primaries:BT709, transfer:SRGB, matrix:RGB, range:FULL}\n[85017:1012/194604.216910:ERROR:ui/ozone/platform/wayland/host/wayland_wp_color_manager.cc:277] Unable to set image transfer function.\n[85017:1012/194604.216925:ERROR:ui/ozone/platform/wayland/host/wayland_wp_color_manager.cc:195] Failed to populate image description for color space {primaries:BT709, transfer:SRGB, matrix:RGB, range:FULL}\n[85017:1012/194604.216936:ERROR:ui/ozone/platform/wayland/host/wayland_wp_color_management_surface.cc:64] Failed to get image description for color space.\nDebugger ending on ws://127.0.0.1:39471/bbd1019a-0382-4920-b9a6-a0e978302c14\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n",
+      "processExit": {
+        "code": 0,
+        "signal": null
+      }
+    }
+  ],
+  "summary": {
+    "native": {
+      "startupMs": null,
+      "resources": {
+        "studio": {
+          "pss_kib": {
+            "count": 1,
+            "median": 164206,
+            "minimum": 164206,
+            "maximum": 164206,
+            "p95": 164206
+          },
+          "rss_kib": {
+            "count": 1,
+            "median": 218788,
+            "minimum": 218788,
+            "maximum": 218788,
+            "p95": 218788
+          },
+          "cpu_percent_one_core": {
+            "count": 1,
+            "median": 0,
+            "minimum": 0,
+            "maximum": 0,
+            "p95": 0
+          }
+        }
+      }
+    },
+    "electron": {
+      "startupMs": null,
+      "resources": {
+        "studio": {
+          "pss_kib": {
+            "count": 1,
+            "median": 392041,
+            "minimum": 392041,
+            "maximum": 392041,
+            "p95": 392041
+          },
+          "rss_kib": {
+            "count": 1,
+            "median": 820188,
+            "minimum": 820188,
+            "maximum": 820188,
+            "p95": 820188
+          },
+          "cpu_percent_one_core": {
+            "count": 1,
+            "median": 0.26666587474012937,
+            "minimum": 0.26666587474012937,
+            "maximum": 0.26666587474012937,
+            "p95": 0.26666587474012937
+          }
+        }
+      }
+    }
+  },
+  "failedRuns": 0,
+  "finishedAt": "2026-10-12T17:46:45.355Z"
+}
