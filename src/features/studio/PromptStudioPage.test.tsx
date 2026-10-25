@@ -68,7 +68,9 @@ async function buildPack(
   idea = 'A courier crosses a rainy street',
 ) {
   // Seed the fixture atomically; browser scenarios cover the actual editing interaction.
-  const field = screen.getByRole('textbox', { name: 'Core idea' }) as HTMLTextAreaElement;
+  const field = screen.getByRole('textbox', {
+    name: /^(Core idea|Describe the motion)$/,
+  }) as HTMLTextAreaElement;
   fireEvent.change(field, { target: { value: field.value + idea } });
   await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
   await screen.findByRole('textbox', { name: 'Primary prompt' });
@@ -876,7 +878,7 @@ describe('PromptStudioPage durable copy desk', () => {
   it('shows live token metrics, primary diff on alternatives, and guards no-op local transforms', async () => {
     const { user } = await openStudio();
     await buildPack(user, 'A cyclist rides across a misty bridge');
-    expect(screen.getByText(/\/ 280 tokens/)).toBeInTheDocument();
+    expect(screen.getByText(/estimated tokens/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cinematic' }));
     expect(screen.getByText('Compare with Primary')).toBeInTheDocument();
     fireEvent.change(screen.getByRole('textbox', { name: 'Cinematic prompt' }), {
@@ -909,5 +911,47 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(screen.getByRole('textbox', { name: 'Primary lyrics' })).toHaveValue(
       '[Verse 1]\nRaw line\n[Chorus]\nKeep chorus intact',
     );
+  });
+  it('labels the image-to-video primary field as motion and compiles its value', async () => {
+    const { user } = await openStudio();
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Prompt recipe' }),
+      'image-to-video',
+    );
+    const motion = screen.getByRole('textbox', { name: 'Describe the motion' });
+    expect(motion).toHaveAttribute(
+      'placeholder',
+      'Describe what moves in the image and how it moves.',
+    );
+    fireEvent.change(motion, { target: { value: 'The bird spreads its wings' } });
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    const result = await screen.findByRole('textbox', { name: 'Primary prompt' });
+    expect((result as HTMLTextAreaElement).value).toContain(
+      'Subject motion: The bird spreads its wings',
+    );
+  });
+
+  it('selects and locks repeated choruses independently without duplicate option identities', async () => {
+    const { user } = await openStudio();
+    await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.type(await screen.findByRole('textbox', { name: 'Song idea / story' }), 'Home');
+    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
+    const box = await screen.findByRole('textbox', { name: 'Primary lyrics' });
+    fireEvent.change(box, {
+      target: { value: '[Chorus]\nFirst hook\n\n[Verse]\nMiddle\n\n[Chorus]\nSecond hook' },
+    });
+    await user.click(screen.getByText('Revise lyrics with AI', { exact: true }));
+    const selector = screen.getByRole('combobox', { name: 'Section' });
+    await user.selectOptions(selector, '[Chorus] #2');
+    await user.click(screen.getByRole('checkbox', { name: 'Lock this section' }));
+    expect(usePromptStudioDraftStore.getState().draft!.lockedSections).toContain('[Chorus] #2');
+    await user.selectOptions(selector, '[Chorus] #1');
+    expect(screen.getByRole('checkbox', { name: 'Lock this section' })).not.toBeChecked();
+    await user.selectOptions(selector, '[Chorus] #2');
+    expect(screen.getByRole('checkbox', { name: 'Lock this section' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Rewrite section' })).toBeDisabled();
+    fireEvent.change(box, { target: { value: 'Unsectioned text' } });
+    expect(screen.getByRole('checkbox', { name: 'Lock this section' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Rewrite section' })).toBeDisabled();
   });
 });

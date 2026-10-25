@@ -5,8 +5,7 @@ import { useLocationStore } from '@core/store/useLocationStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
-import { projectDocumentService } from '@core/services/projectDocumentService';
-import { projectService } from '@core/services/projectService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { logger } from '@core/services/loggerService';
 
 /** Debounced canonical snapshots. Conflicts stop autosave until explicit recovery. */
@@ -43,15 +42,7 @@ export function useProjectAutosave() {
       if (status?.status === 'conflict' || status?.status === 'error') return;
       inFlight = true;
       try {
-        const document = session.captureCurrentProjectDocument(project);
-        await projectDocumentService.save(document);
-        await projectService.registerDocument(document);
-        // Only advance the persistence baseline, never reapply a document over live edits.
-        const current = useEditorSessionStore.getState().projectSnapshot;
-        if (current?.id === id)
-          useEditorSessionStore.setState({
-            projectSnapshot: { ...current, documentRevision: document.documentRevision },
-          });
+        await projectSaveCoordinator.saveProject(id);
         if (useProjectSaveStore.getState().projects[id]?.status === 'unsaved') schedule();
       } catch (error) {
         logger.warn('Project autosave paused', error);
@@ -107,6 +98,7 @@ export function useProjectAutosave() {
             state.clips !== previous.clips ||
             state.tracks !== previous.tracks ||
             state.sbShots !== previous.sbShots ||
+            state.assets !== previous.assets ||
             state.sbGlobalContext !== previous.sbGlobalContext ||
             state.characterBank !== previous.characterBank ||
             state.visualDNA !== previous.visualDNA ||

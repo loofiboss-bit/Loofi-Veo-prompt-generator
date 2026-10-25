@@ -5,9 +5,8 @@ import { blockExternalRequests, dismissModals } from './helpers';
 async function startLocalEditor(page: import('@playwright/test').Page) {
   await page.goto('/#/start');
   await dismissModals(page, { waitForPrompt: false });
-  await expect(
-    page.getByRole('button', { name: 'Create from your own clips', exact: true }),
-  ).toBeEnabled();
+  await page.goto('/#/start');
+  await expect(page.getByRole('button', { name: 'Use my own clips', exact: true })).toBeEnabled();
   await page.getByLabel('Choose local media', { exact: true }).setInputFiles({
     name: 'original.webm',
     mimeType: 'video/webm',

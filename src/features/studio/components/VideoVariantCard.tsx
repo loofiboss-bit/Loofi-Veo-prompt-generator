@@ -38,7 +38,10 @@ export function VideoVariantCard({
             className="studio-metric-badge"
             data-status={tokenCount > 280 ? 'warning' : tokenCount > 220 ? 'caution' : 'ok'}
           >
-            {t('metrics.tokens', { defaultValue: '~{{count}} / 280 tokens', count: tokenCount })}
+            {t('metrics.tokens', {
+              defaultValue: '~{{count}} estimated tokens',
+              count: tokenCount,
+            })}
           </span>
         </div>
         <button aria-expanded={open} onClick={() => setOpen(!open)}>

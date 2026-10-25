@@ -115,16 +115,24 @@ export class CreatorSilenceService {
       (targetClip.startTime + targetClip.duration - currentTimelineTime).toFixed(3),
     );
 
-    const newTargetClips: TimelineClip[] = segments.map((seg, index) => ({
-      ...targetClip,
-      id:
-        index === 0
-          ? targetClip.id
-          : `${targetClip.id}_cut_${index}_${crypto.randomUUID().slice(0, 8)}`,
-      startTime: seg.startTime,
-      offset: seg.offset,
-      duration: seg.duration,
-    }));
+    const newTargetClips: TimelineClip[] = segments.map((seg, index) => {
+      const transition = targetClip.transition
+        ? index === 0 && targetClip.transition.duration <= seg.duration
+          ? targetClip.transition
+          : { type: 'cut' as const, duration: 0 }
+        : undefined;
+      return {
+        ...targetClip,
+        id:
+          index === 0
+            ? targetClip.id
+            : `${targetClip.id}_cut_${index}_${crypto.randomUUID().slice(0, 8)}`,
+        startTime: seg.startTime,
+        offset: seg.offset,
+        duration: seg.duration,
+        ...(transition ? { transition } : {}),
+      };
+    });
 
     // Find all clips rippled on the target clip's track
     const rippledClipIds = new Set(
@@ -193,9 +201,9 @@ export class CreatorSilenceService {
       } else if (
         c.type === 'text' &&
         c.startTime >= targetClip.startTime + targetClip.duration - 0.001 &&
-        (!c.sourceClipId || rippledClipIds.has(c.sourceClipId))
+        Boolean(c.sourceClipId && rippledClipIds.has(c.sourceClipId))
       ) {
-        // Shift later text clips (or captions linked to rippled clips)
+        // Only captions linked to clips on the rippled track move; free text is independent.
         const newStart = Math.max(0, Number((c.startTime - totalDurationRemoved).toFixed(3)));
         const newEnd = Number((newStart + c.duration).toFixed(3));
         result.push({

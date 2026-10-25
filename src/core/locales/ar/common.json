@@ -120,7 +120,12 @@
     "video": "فيديو",
     "music": "موسيقى",
     "cancel": "إلغاء",
-    "retry": "إعادة المحاولة"
+    "retry": "إعادة المحاولة",
+    "approvedMaximum": "الحد الأقصى المعتمد {{cost}}",
+    "estimatedUsage": "الاستهلاك التقديري",
+    "estimateUnavailable": "غير متاح",
+    "actualCost": "التكلفة الفعلية المؤكدة",
+    "actualUnavailable": "لم يقدمها المزود"
   },
   "commandPalette": {
     "title": "لوحة الأوامر",

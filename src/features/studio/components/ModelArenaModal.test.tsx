@@ -135,4 +135,28 @@ describe('ModelArenaModal', () => {
     expect(opener).toHaveFocus();
     opener.remove();
   });
+  it('copies the primary motion field for image-to-video across every Arena target', async () => {
+    const motionInput = {
+      ...input,
+      mode: 'image-to-video' as const,
+      idea: 'The bird flaps its wings and flies away',
+      action: undefined,
+    };
+    renderArena({ input: motionInput });
+    for (const target of ARENA_TARGETS) {
+      const region = within(
+        screen.getByRole('region', { name: STUDIO_CAPABILITIES[target].label }),
+      );
+      fireEvent.click(region.getByRole('button', { name: 'Copy prompt package' }));
+      const artifact = compileVideoPromptArtifact({ ...motionInput, target });
+      await waitFor(() =>
+        expect(writeText).toHaveBeenLastCalledWith(
+          (artifact.primary as VideoPromptVariant).copyAll,
+        ),
+      );
+      expect((artifact.primary as VideoPromptVariant).prompt).toContain(
+        'Subject motion: ' + motionInput.idea,
+      );
+    }
+  });
 });

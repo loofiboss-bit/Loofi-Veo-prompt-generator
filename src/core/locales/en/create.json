@@ -210,7 +210,8 @@
     "continuityReviewNoTakes": "Generate or cache a take before approving a continuity review.",
     "continuityReviewApproved": "Optional Gemini continuity review approved for this snapshot.",
     "longShot": "This {{duration}}s shot exceeds one Veo segment. Split it now, or generate eight seconds and use extension mode from a non-expired Veo take.",
-    "otioReady": "OTIO bundle ready."
+    "otioReady": "OTIO bundle ready.",
+    "aiReviewNotRun": "AI review was not run. Review locally or retry after fixing the media or provider issue."
   },
   "saveStatus": {
     "failed": "Production plan could not be loaded or saved.",

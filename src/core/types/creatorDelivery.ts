@@ -69,6 +69,8 @@ export interface TimelineRenderClipV1 {
   crop: CreatorCropV1;
 }
 export interface TimelineRenderPlanV1 {
+  /** Idempotent local batch submission identity, included in the frozen content hash. */
+  clientRequestId?: string;
   schemaVersion: 1;
   mediaHashes?: Record<string, string>;
   purpose?: 'preview' | 'delivery';

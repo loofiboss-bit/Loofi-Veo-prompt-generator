@@ -294,7 +294,7 @@ describe('selected video variant proposals', () => {
       const primary = res.artifact.primary as { lyrics: string };
       expect(primary.lyrics).toContain('[Verse 1]\nWalking alone');
       expect(primary.lyrics).toContain('[Chorus]\nLocked chorus line');
-      expect(primary.lyrics).toContain('[Bridge]\nTurning back');
+      expect(primary.lyrics).toContain('[Chorus]\nLocked chorus line\nbridge -\nTurning back');
     });
 
     it('cleans style tags, removes visual diffusion terms, and caps style length at 200 chars', async () => {
@@ -338,5 +338,48 @@ describe('selected video variant proposals', () => {
         'indie pop',
       );
     });
+  });
+});
+
+describe('full dialogue segment preservation', () => {
+  it.each([
+    'We use 4k resolution. Our city is photorealistic. Unreal Engine 5 is our subject.',
+    'Dr. Clara paid 4.50. She said: "Keep 8k resolution, please." Then we left.',
+    'First sentence. Second sentence with trending on artstation. Third sentence!',
+  ])('keeps all spoken sentences byte-identical: %s', async (dialogue) => {
+    const { compileVideoPromptArtifact } = await import('./promptStudioService');
+    const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+    const artifact = compileVideoPromptArtifact({
+      idea: 'photorealistic stage',
+      mode: 'text-to-video',
+      target: 'flow-veo',
+      aspectRatio: '16:9',
+      durationSeconds: 8,
+      dialogue,
+      audio: 'photorealistic room tone',
+    });
+    const result = applyLocalPromptTransform(artifact, 0, 'clean-compact');
+    expect(result.patch.prompt).toContain(dialogue);
+    expect(result.patch.prompt).not.toContain('photorealistic stage');
+    expect(result.patch.prompt).not.toContain('photorealistic room tone');
+  });
+  it('protects edited dialogue, escaped quotes and literal placeholder-looking text without substitution', async () => {
+    const { compileVideoPromptArtifact } = await import('./promptStudioService');
+    const { editStudioVariant } = await import('./promptStudioEditingService');
+    const { applyLocalPromptTransform } = await import('./videoVariantEditService');
+    const spoken =
+      'Dialogue: the speaker says: First sentence. Second says photorealistic. __DIALOGUE_SPAN_0__';
+    const artifact = editStudioVariant(
+      compileVideoPromptArtifact({
+        idea: 'A stage',
+        mode: 'text-to-video',
+        target: 'flow-veo',
+        aspectRatio: '16:9',
+        durationSeconds: 8,
+      }),
+      0,
+      { prompt: '4k resolution. ' + spoken },
+    );
+    expect(applyLocalPromptTransform(artifact, 0, 'clean-compact').patch.prompt).toContain(spoken);
   });
 });

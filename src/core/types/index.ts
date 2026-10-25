@@ -25,6 +25,7 @@ import type { CreatorDeliveryV1 } from './creatorDelivery';
 import type { ExternalStudioResultV1 } from './externalStudioResult';
 import type { StudioRevisionV1 } from './studioRevision';
 import type { PromptStudioDraftV1 } from './promptStudioDraft';
+import type { Asset } from './projectPrompt';
 export * from './production';
 export * from './suno';
 export * from './spatialCamera';
@@ -327,6 +328,8 @@ export interface Project {
   /** Canonical v10 continuity source; legacy v5-v9 wire data is normalized on read. */
   productionBible: ProductionBible;
   storyboard: StoryboardState;
+  /** Stable references to media used by this project's timeline and workspace. */
+  assets?: Asset[];
   composer?: ProjectComposerState;
 }
 
@@ -579,6 +582,8 @@ export interface CostEstimate {
 
 /** Recorded cost for a completed API call */
 export interface CostRecord {
+  /** Stable source identity for durable deduplication. */
+  sourceJobId?: string;
   /** Unique record ID */
   id: string;
   /** Timestamp of the API call */
@@ -603,6 +608,7 @@ export interface CostRecord {
 
 /** Aggregate cost tracking state */
 export interface CostTrackingState {
+  persistenceError?: string;
   /** Cost records for the current session */
   sessionRecords: CostRecord[];
   /** Total cost this session in USD */

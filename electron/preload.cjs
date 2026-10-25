@@ -24,12 +24,24 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.invoke('timeline-render-inspect-media', mediaId),
   createDesktopMediaProxy: (mediaId) => ipcRenderer.invoke('timeline-render-proxy', mediaId),
   detectTimelineSilence: (input) => ipcRenderer.invoke('timeline-render-detect-silence', input),
+  extractTimelineAudio: (input) => ipcRenderer.invoke('timeline-render-extract-audio', input),
   cancelTimelineRender: (id) => ipcRenderer.invoke('timeline-render-cancel', id),
   saveTimelineRender: (input) => ipcRenderer.invoke('timeline-render-save', input),
   onTimelineRenderUpdate: (callback) => {
     const listener = (_event, job) => callback(job);
     ipcRenderer.on('timeline-render-update', listener);
     return () => ipcRenderer.removeListener('timeline-render-update', listener);
+  },
+
+  getCreatorAsrModelInfo: () => ipcRenderer.invoke('creator-asr-model-info'),
+  installCreatorAsrModel: (request) => ipcRenderer.invoke('creator-asr-model-install', request),
+  cancelCreatorAsrModelInstall: (installId) =>
+    ipcRenderer.invoke('creator-asr-model-cancel', installId),
+  removeCreatorAsrModel: () => ipcRenderer.invoke('creator-asr-model-remove'),
+  onCreatorAsrModelProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('creator-asr-model-progress', listener);
+    return () => ipcRenderer.removeListener('creator-asr-model-progress', listener);
   },
 
   // Download progress listener

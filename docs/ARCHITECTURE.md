@@ -1,12 +1,26 @@
 # Loofi Creator Studio Architecture
 
-> **Baseline Status (v17.0.0 Qualified & v18+ Deterministic Architecture):**
-> Loofi Creator Studio v17.0.0 Smart Local Editing is fully qualified and released with local
-> video editing, microphone voiceover recording, reviewable silence-cut trimming, local offline
-> speech-to-text / linked captions, EBU R128 loudness normalization, and save-on-close flush resilience.
-> The v18+ engineering roadmap establishes strict architectural guardrails: deterministic systems,
-> thread isolation, non-blocking persistence, rule-based compilation, and zero AI slop.
-> See [ROADMAP.md](../ROADMAP.md) for active v18+ engineering targets and architectural guardrails.
+> **Current source:** package version 19.0.0. This checkout contains additional unreleased Creator
+> Studio work documented in the `Unreleased` changelog entry. It does not claim a new package,
+> publication, or platform qualification. Historical milestone records below remain dated snapshots.
+
+## Unreleased: Creator Studio reliability follow-up
+
+- Project saves await durable media bytes and the merged media catalog before writing the project
+  document and reporting a saved state. The Zustand storage adapter reads both legacy state objects
+  and `{ state, version }` envelopes; catalog additions and tombstones merge atomically.
+- Timeline take references are frozen before new accepted takes are offered. Acceptance does not
+  place media; explicit append/replace operations preserve existing trim, audio, transition and
+  caption links and form single undo steps.
+- Lyric locks use section occurrence identities while honoring legacy all-occurrences locks. Prompt
+  dialogue is treated as protected text segments. Local Whisper transcription is an explicit,
+  desktop-only model installation plus a worker that receives only FFmpeg-extracted clip audio.
+- Timeline source playback shares a playhead and Web Audio output; project-scoped export batches and
+  an idempotent cost ledger survive navigation. Native delivery review remains the check for the
+  frozen output that will be saved.
+- Production review resolves registered local video and reference bytes before calling Gemini and
+  rejects review results after project or source inputs change. Estimates, approved ceilings and
+  verified provider charges remain separate values.
 
 ## Unreleased: Reviewable Video Production
 

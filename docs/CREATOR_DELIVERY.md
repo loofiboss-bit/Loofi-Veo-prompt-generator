@@ -1,16 +1,17 @@
-# Creator delivery in v15 development
+# Creator workflow and local delivery
 
-This documents the v15 source implementation. It does not announce a public release. The published
-v15.0.0 downloads remain the stable installation path. The v16 source implementation is described in
-[Local Creator Editing](CREATOR_V16.md). Desktop MP4 export is available only when a
-verified rendering runtime is provisioned for the running platform.
+This describes source behavior; it does not announce a new release or change the package version.
+Earlier implementation and qualification records remain in [Local Creator Editing](CREATOR_V16.md).
+Desktop MP4 export is available only when a verified rendering runtime is provisioned for the
+running platform. Current unreleased changes are listed in the `Unreleased` changelog entry.
 
 ## From an idea to a deliverable
 
-Start provides twelve editable recipes: six for social video, three for storytelling, and three for
-music or music visuals. Recipe creation compiles a local Studio draft and three to five storyboard
-scenes. It does not submit generation or charge an account. Customized recipe inputs can be saved
-in the existing Studio template library.
+Start offers three primary destinations: work from your own clips, create video prompts, or work on
+music and lyrics. It surfaces recent projects and a project-specific next action before recipes and
+examples. Navigation does not start generation. Recipe creation compiles a local Studio draft and
+storyboard scenes; it does not submit generation or charge an account. Style profiles are managed
+from Settings and applied to a project explicitly.
 
 Three offline examples include original programmatic geometric clips, synthesized audio, and
 caption clips. Their CC0 dedication and checksums are in `public/creator-examples/rights.json`.
@@ -25,23 +26,26 @@ Existing character, location, and continuity profiles remain available.
 
 ## Local rendering limits
 
-| Capability  | Current behavior                                                                     |
-| ----------- | ------------------------------------------------------------------------------------ |
-| Duration    | Greater than zero and at most 60 seconds                                             |
-| Output      | MP4, H.264 video and AAC audio, 30 fps                                               |
-| Size        | 720p or 1080p; 9:16, 16:9, or 1:1                                                    |
-| Composition | One main video/image track, multiple separate audio clips, caption clips             |
-| Timing      | Clip start times, source trim offsets, cuts, and black gaps                          |
-| Transitions | Cuts, fade through black, and a simple dissolve with matching clip overlap           |
-| Crop        | Fit the entire image by default; explicit fill crop and horizontal/vertical position |
-| Audio       | Separate timeline audio clips, levels, and fade in/out                               |
-| Text        | Classic, Pop, or Karaoke caption style; SRT or burned-in captions                    |
-| Branding    | Project style colors/font, optional logo, and adjustable safe margins                |
+| Capability  | Current behavior                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Duration    | Greater than zero and at most 180 seconds                                                                                   |
+| Output      | MP4, H.264 video and AAC audio, 30 fps                                                                                      |
+| Size        | 720p or 1080p; 9:16, 16:9, or 1:1                                                                                           |
+| Composition | Timeline tracks for video, image, audio and captions; source preview respects enabled tracks                                |
+| Timing      | Clip start times, source trim offsets, cuts, and black gaps                                                                 |
+| Transitions | Cuts, fade through black, and a simple dissolve with matching clip overlap                                                  |
+| Crop        | Fit the entire image by default; explicit fill crop and horizontal/vertical position                                        |
+| Audio       | Shared source-preview mix; per-track mute/enable, clip levels/keyframes, and fades; rendered delivery is checked separately |
+| Text        | Classic, Pop, or Karaoke caption style; SRT or burned-in captions                                                           |
+| Branding    | Project style colors/font, optional logo, and adjustable safe margins                                                       |
 
-Embedded video sound follows that clip's audio level and joins the mix. Add separate timeline audio
-clips for additional music or narration. Unsupported effects, transforms, reactive effects, or animated volume
-keyframes block export instead of being silently omitted. Missing or damaged selected media also
-blocks export and identifies the affected clip.
+Embedded video sound follows its timeline track and clip level and joins the source-preview mix.
+Add separate timeline audio clips for additional music or narration. Source preview includes track
+mute/enable, clip volume keyframes, fades, and captions. It is an editing aid; **Review delivery**
+renders the selected project revision and is authoritative for transitions and rendered effects.
+Unsupported effects, transforms, reactive effects, or animated volume keyframes block export instead
+of being silently omitted. Missing or damaged selected media also blocks export and identifies the
+affected clip.
 
 Rendering uses a frozen, content-hashed timeline plan. Editing the project while rendering does
 not change that job. Start a new export after editing to produce an updated deliverable. Only one
@@ -56,14 +60,12 @@ The web preview retains project and prompt features but explains when native exp
 ## Captions and publication
 
 Manual caption editing and SRT import/export work locally. Start and end times are in seconds and
-must fall inside the timeline duration. Import and accepted AI proposals **add** caption clips;
-remove earlier clips when replacing their text to avoid duplicate captions.
-
-Gemini transcription is optional. The selected **complete audio file** is sent after approval,
-not just its timeline trim. Proposed timings are mapped back to the selected trimmed clip.
-The UI identifies the file and the desktop approval dialog shows a maximum charge before sending.
-An empty or invalid response fails. A proposal requires review and explicit acceptance; changing
-the project or captions invalidates a stale proposal.
+must fall inside the timeline duration. Accepted proposals remain editable before acceptance and
+are bound to project, clip occurrence, media checksum and trim; changing that source invalidates
+the proposal. Local desktop transcription uses the installed Whisper model; web mode retains manual
+captions and SRT import. See [Local speech transcription](LOCAL_SPEECH_TRANSCRIPTION.md) for its
+download, network and model-integrity contract. **Create time blocks** proposes timing only; it does
+not claim to recognize speech.
 
 A publication title and description can be edited without AI. Optional Gemini polishing sends
 only those text fields in the selected language, uses the existing approval gate, and presents a

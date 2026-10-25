@@ -1,5 +1,13 @@
 import type { PromptArtifactV1, VideoPromptVariant, MusicPromptVariant } from '@core/types';
 import { optimizeMusicPromptArtifact, revalidatePromptArtifact } from './promptStudioService';
+import {
+  haveMatchingLyricStructure,
+  LyricSectionError,
+  isLyricSectionLocked,
+  parseLyricSections,
+  replaceLyricSectionContent,
+  resolveLyricSection,
+} from './lyricSectionService';
 
 export type StudioVariantEdits = Partial<Pick<VideoPromptVariant, 'prompt' | 'negativePrompt'>> &
   Partial<Pick<MusicPromptVariant, 'lyrics' | 'styleOfMusic'>>;
@@ -45,90 +53,52 @@ export function editStudioVariant(
   });
 }
 
-/** Reapply locked source blocks after a whole-pack optimization, preserving repeated section identities. */
+/** Ambiguous AI structures are rejected; locked blocks never move or get appended. */
 export function preserveLockedLyricSections(
   original: string,
   proposed: string,
   locks: string[],
 ): string {
-  const blocks = (value: string) => value.split(/(?=^\[[^\]]+\])/m);
-  const origBlocks = blocks(original);
-
-  const tagCounts = new Map<string, number>();
-  const originalTagged = origBlocks.map((block) => {
-    const tagMatch = block.match(/^\[[^\]]+\]/);
-    const tag = tagMatch ? tagMatch[0] : '';
-    const occurrence = (tagCounts.get(tag) ?? 0) + 1;
-    tagCounts.set(tag, occurrence);
-    const indexedTag = `${tag} #${occurrence}`;
-    const isLocked = locks.some((l) => l === tag || l === indexedTag);
-    return { block, tag, occurrence, indexedTag, isLocked };
-  });
-
-  const lockedEntries = originalTagged.filter((item) => item.isLocked);
-  if (lockedEntries.length === 0) return proposed;
-
-  const usedOriginalBlocks = new Set<string>();
-  const propCounts = new Map<string, number>();
-
-  const proposedMapped = blocks(proposed).map((block) => {
-    const tagMatch = block.match(/^\[[^\]]+\]/);
-    const tag = tagMatch ? tagMatch[0] : '';
-    const occurrence = (propCounts.get(tag) ?? 0) + 1;
-    propCounts.set(tag, occurrence);
-    const indexedTag = `${tag} #${occurrence}`;
-
-    const match =
-      lockedEntries.find(
-        (entry) =>
-          !usedOriginalBlocks.has(entry.block) &&
-          (entry.indexedTag === indexedTag ||
-            (entry.tag === tag && entry.occurrence === occurrence)),
-      ) ?? lockedEntries.find((entry) => !usedOriginalBlocks.has(entry.block) && entry.tag === tag);
-
-    if (match) {
-      usedOriginalBlocks.add(match.block);
-      return match.block;
-    }
-    return block;
-  });
-
-  const unplaced = lockedEntries.filter((entry) => !usedOriginalBlocks.has(entry.block));
-  return proposedMapped.join('') + unplaced.map((e) => e.block).join('');
+  const source = parseLyricSections(original);
+  if (!source.some((section) => isLyricSectionLocked(section, locks))) return proposed;
+  const candidate = parseLyricSections(proposed);
+  if (!haveMatchingLyricStructure(source, candidate)) {
+    throw new LyricSectionError('structure');
+  }
+  return (
+    proposed.slice(0, candidate[0].start) +
+    source
+      .map((section, index) =>
+        isLyricSectionLocked(section, locks) ? section.raw : candidate[index].raw,
+      )
+      .join('')
+  );
 }
 
-/** Keep every non-selected section byte-identical, especially locked sections. */
+/** Keep every non-selected section byte-identical, including repeated locked sections. */
 export function replaceStudioLyricSection(
   original: string,
   proposed: string,
   section: string,
   locks: string[],
 ): string {
-  if (locks.includes(section)) throw new Error('That section is locked.');
-  const indexMatch = section.match(/^(\[[^\]]+\])\s*#(\d+)$/);
-  const targetTag = indexMatch ? indexMatch[1] : section;
-  const targetOccurrence = indexMatch ? parseInt(indexMatch[2], 10) : 1;
-
-  if (locks.includes(targetTag) || locks.includes(`${targetTag} #${targetOccurrence}`)) {
-    throw new Error('That section is locked.');
-  }
-
-  const blocks = (value: string) => value.split(/(?=^\[[^\]]+\])/m);
-  const replacement = blocks(proposed).find((block) => block.startsWith(targetTag));
-  if (!replacement?.trim()) throw new Error('The AI response omitted the selected section.');
-
-  let currentOccur = 0;
-  return blocks(original)
-    .map((block) => {
-      if (block.startsWith(targetTag)) {
-        currentOccur += 1;
-        if (currentOccur === targetOccurrence || (!indexMatch && currentOccur === 1)) {
-          return replacement;
-        }
-      }
-      return block;
-    })
-    .join('');
+  const selected = resolveLyricSection(original, section);
+  if (!selected) throw new LyricSectionError('missing');
+  if (isLyricSectionLocked(selected, locks)) throw new LyricSectionError('locked');
+  const source = parseLyricSections(original);
+  const candidate = parseLyricSections(proposed);
+  const replacement =
+    candidate.length === 1 && candidate[0].name === selected.name
+      ? candidate[0]
+      : haveMatchingLyricStructure(source, candidate)
+        ? candidate[source.findIndex((entry) => entry.id === selected.id)]
+        : undefined;
+  if (!replacement?.content) throw new LyricSectionError('response');
+  return (
+    original.slice(0, selected.start) +
+    replaceLyricSectionContent(selected, replacement.content) +
+    original.slice(selected.end)
+  );
 }
 
 export async function rewriteStudioLyricSection(
@@ -139,8 +109,10 @@ export async function rewriteStudioLyricSection(
   variantIndex: 0 | 1 | 2 = 0,
 ): Promise<PromptArtifactV1> {
   if (artifact.kind !== 'music') throw new Error('A music artifact is required.');
-  if (locks.includes(section)) throw new Error('That section is locked.');
   const primary = [artifact.primary, ...artifact.alternatives][variantIndex] as MusicPromptVariant;
+  const selected = resolveLyricSection(primary.lyrics, section);
+  if (!selected) throw new LyricSectionError('missing');
+  if (isLyricSectionLocked(selected, locks)) throw new LyricSectionError('locked');
   const input = artifact.input as import('@core/types').MusicPromptArtifactInput;
   const optimized = await optimizeMusicPromptArtifact({
     ...input,

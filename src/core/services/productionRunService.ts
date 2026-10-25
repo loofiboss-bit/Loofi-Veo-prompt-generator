@@ -33,6 +33,27 @@ const takeContentChanged = (take: ProductionTake, updates: Partial<ProductionTak
   ('continuitySnapshot' in updates &&
     updates.continuitySnapshot?.snapshotHash !== take.continuitySnapshot?.snapshotHash);
 
+export function getProductionReviewInputIdentity(
+  shot: ProductionShot,
+  take: ProductionTake,
+): string {
+  return JSON.stringify({
+    shotId: shot.id,
+    prompt: shot.prompt,
+    negativePrompt: shot.negativePrompt,
+    camera: shot.camera,
+    generationRequest: shot.generationRequest,
+    shotContinuitySnapshotHash: shot.continuitySnapshot?.snapshotHash,
+    takeId: take.id,
+    mediaKey: take.localMediaKey,
+    providerMediaUri: take.providerMediaUri,
+    createdAt: take.createdAt,
+    request: take.request,
+    continuitySnapshotHash: take.continuitySnapshot?.snapshotHash,
+    referenceAssetIds: take.continuitySnapshot?.referenceAssetIds,
+  });
+}
+
 const RUN_STORE = createStore('veo-production-runs', 'production-runs-v1');
 const RUN_PREFIX = 'production-run:';
 
@@ -846,8 +867,22 @@ class ProductionRunService {
     shotId: number,
     takeId: string,
     review: ShotReviewResult,
+    expectedInputIdentity?: string,
   ): Promise<ProductionRun> {
     return this.mutateRun(runId, (run) => {
+      const shot = run.shots.find((item) => item.id === shotId);
+      if (!shot) {
+        throw new Error(`Production shot ${shotId} was not found.`);
+      }
+      const take = shot.takes.find((item) => item.id === takeId);
+      if (!take) throw new Error(`Production take ${takeId} was not found.`);
+      if (
+        expectedInputIdentity &&
+        getProductionReviewInputIdentity(shot, take) !== expectedInputIdentity
+      )
+        throw new Error(
+          'The take or review inputs changed while review was running. Review again.',
+        );
       const approvalIndex = run.approvals.findIndex(
         (approval) =>
           approval.status === 'active' &&
@@ -858,10 +893,6 @@ class ProductionRunService {
       );
       if (approvalIndex < 0) {
         throw new Error('No active review approval is available for this shot.');
-      }
-      const shot = run.shots.find((item) => item.id === shotId);
-      if (!shot) {
-        throw new Error(`Production shot ${shotId} was not found.`);
       }
       assertCurrentContinuitySnapshot(shot);
       const currentSnapshotHash = shot.continuitySnapshot?.snapshotHash;

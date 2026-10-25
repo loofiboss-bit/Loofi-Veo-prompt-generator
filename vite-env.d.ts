@@ -29,6 +29,62 @@ interface ElectronAPI {
     noiseThresholdDb?: number;
     minDurationSeconds?: number;
   }) => Promise<Array<{ start: number; end: number; duration: number }>>;
+  extractTimelineAudio?: (input: {
+    mediaId: string;
+    offsetSeconds: number;
+    durationSeconds: number;
+  }) => Promise<{
+    mediaId: string;
+    mediaSha256: string;
+    sampleRate: 16000;
+    channels: 1;
+    durationSeconds: number;
+    pcm: ArrayBuffer;
+  }>;
+  getCreatorAsrModelInfo?: () => Promise<{
+    manifest: {
+      modelId: string;
+      revision: string;
+      totalBytes: number;
+      files: Array<{ path: string; size: number }>;
+      source: string;
+    };
+    status: {
+      installed: boolean;
+      state: 'not-installed' | 'ready' | 'corrupt';
+      revision: string;
+      totalBytes: number;
+    };
+  }>;
+  installCreatorAsrModel?: (request: {
+    installId: string;
+    modelId: string;
+    revision: string;
+    confirmedBytes: number;
+    confirmed: true;
+  }) => Promise<{
+    installed: boolean;
+    state: 'not-installed' | 'ready' | 'corrupt';
+    revision: string;
+    totalBytes: number;
+  }>;
+  cancelCreatorAsrModelInstall?: (installId: string) => Promise<boolean>;
+  removeCreatorAsrModel?: () => Promise<{
+    installed: boolean;
+    state: 'not-installed' | 'ready' | 'corrupt';
+    revision: string;
+    totalBytes: number;
+  }>;
+  onCreatorAsrModelProgress?: (
+    callback: (progress: {
+      installId: string;
+      status: 'downloading' | 'verifying' | 'ready';
+      file: string | null;
+      loadedBytes: number;
+      totalBytes: number;
+      complete?: boolean;
+    }) => void,
+  ) => () => void;
   getTimelineRenderCapabilities?: () => Promise<
     import('./src/core/types').TimelineRenderCapabilities
   >;

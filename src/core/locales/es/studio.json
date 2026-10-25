@@ -436,5 +436,19 @@
     "fieldDiff": "Cambios en {{field}}",
     "accept": "Aceptar campos seleccionados",
     "aiEdited": "Editado con IA"
+  },
+  "metrics": {
+    "tokens": "~{{count}} tokens estimados"
+  },
+  "openLyriaSetup": "Abrir configuración de Lyria 3 · introduce la letra por separado",
+  "motionDescription": "Describe el movimiento",
+  "motionPlaceholder": "Describe qué se mueve en la imagen y cómo lo hace.",
+  "motionHint": "Describe el movimiento, no la apariencia. Si Acción contiene texto, tiene prioridad.",
+  "lyricSectionErrors": {
+    "ambiguous": "Elige una aparición concreta de esta sección de la letra.",
+    "missing": "La sección de letra seleccionada ya no existe.",
+    "locked": "Esa sección está bloqueada.",
+    "structure": "La respuesta cambió el orden o la cantidad de secciones. Conserva el borrador original.",
+    "response": "La respuesta de IA omitió o cambió de forma ambigua la sección seleccionada."
   }
 }

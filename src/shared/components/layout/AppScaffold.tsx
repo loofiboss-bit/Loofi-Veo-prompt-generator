@@ -14,6 +14,7 @@ import { AppOverlays } from './AppOverlays';
 import { AppPanels } from './AppPanels';
 import { AppBackground } from './AppBackground';
 import { AppCollaborationPanels } from './AppCollaborationPanels';
+import { CostBadge } from '@shared/components/resilience/CostBadge';
 
 export interface AppScaffoldProps {
   onOpenCommandPalette?: () => void;
@@ -199,6 +200,7 @@ export function AppScaffold({
               {currentProject?.name ?? t('sidebar.noProject', 'No project selected')}
             </span>
           </span>
+          <CostBadge className="hidden sm:inline-flex" />
           <button
             type="button"
             onClick={onOpenCommandPalette}

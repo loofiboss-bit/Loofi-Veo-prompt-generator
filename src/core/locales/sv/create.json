@@ -210,7 +210,8 @@
     "continuityReviewNoTakes": "Skapa eller lagra en tagning före godkännande av kontinuitetsgranskning.",
     "continuityReviewApproved": "Valfri Gemini-granskning av kontinuitet godkänd för denna ögonblicksbild.",
     "longShot": "Denna scen på {{duration}} s är längre än ett Veo-segment. Dela upp den nu, eller skapa åtta sekunder och förläng en tagning som inte gått ut.",
-    "otioReady": "OTIO-paket klart."
+    "otioReady": "OTIO-paket klart.",
+    "aiReviewNotRun": "AI-granskningen genomfördes inte. Granska lokalt eller försök igen när media- eller tjänstefelet är löst."
   },
   "saveStatus": {
     "failed": "Produktionsplanen kunde inte läsas eller sparas.",

@@ -8,6 +8,11 @@ import crypto from 'node:crypto';
 const require = createRequire(import.meta.url);
 const { CreatorRenderEngine, validatePlan, planHash, srt, ass } = require('./creator-render.cjs');
 const { registerCreatorRenderIpc } = require('./ipc/creator-render-ipc.cjs');
+const sha256FileForTest = async (file) =>
+  crypto
+    .createHash('sha256')
+    .update(await fs.readFile(file))
+    .digest('hex');
 function plan(changes = {}) {
   const p = {
     schemaVersion: 1,
@@ -618,6 +623,70 @@ test(
     }
   },
 );
+test(
+  'extractTimelineAudio returns registered trim as mono 16 kHz float PCM',
+  { skip: !realBinary },
+  async () => {
+    const { promisify } = await import('node:util');
+    const { execFile } = await import('node:child_process');
+    const exec = promisify(execFile);
+    const binary = path.join(realBinary, 'ffmpeg' + (process.platform === 'win32' ? '.exe' : ''));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-asr-extract-'));
+    try {
+      const audioFile = path.join(root, 'speech-source.wav');
+      await exec(binary, ['-y', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', audioFile]);
+      const engine = new CreatorRenderEngine({
+        root: path.join(root, 'jobs'),
+        runtimeRoot: path.resolve('packaging/media-runtime'),
+        getMediaStore: () => ({
+          read: async (key) =>
+            key === 'sound'
+              ? {
+                  path: audioFile,
+                  mimeType: 'audio/wav',
+                  sha256: await sha256FileForTest(audioFile),
+                }
+              : null,
+        }),
+      });
+      await engine.initialize();
+      engine.binaryDirectory = realBinary;
+      engine.probe = async () => ({
+        format: { duration: '2' },
+        streams: [{ codec_type: 'audio' }],
+      });
+      await assert.rejects(
+        engine.extractTimelineAudio({
+          mediaId: '../outside',
+          offsetSeconds: 0,
+          durationSeconds: 1,
+        }),
+        /Invalid local speech extraction request/,
+      );
+      await assert.rejects(
+        engine.extractTimelineAudio({ mediaId: 'missing', offsetSeconds: 0, durationSeconds: 1 }),
+        /Registered media is missing/,
+      );
+      await assert.rejects(
+        engine.extractTimelineAudio({ mediaId: 'sound', offsetSeconds: 1.5, durationSeconds: 1 }),
+        /exceeds the verified source duration/,
+      );
+      const extracted = await engine.extractTimelineAudio({
+        mediaId: 'sound',
+        offsetSeconds: 0.5,
+        durationSeconds: 1,
+      });
+      const pcm = new Float32Array(extracted.pcm);
+      assert.equal(extracted.sampleRate, 16000);
+      assert.equal(extracted.channels, 1);
+      assert.ok(Math.abs(pcm.length - 16000) < 100);
+      assert.ok(pcm.every((sample) => Number.isFinite(sample)));
+      assert.equal(extracted.mediaSha256.length, 64);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);
 test('cancellation remains terminal and removes render artifacts', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-cancel-'));
   try {
@@ -1143,6 +1212,25 @@ test('committed delivery remains successful if its job metadata cannot be saved'
     );
   } finally {
     context.mock.restoreAll();
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('local batch request identity recovers a lost start acknowledgement without creating another render', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-idempotent-start-'));
+  try {
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    engine.capabilities = async () => ({ available: true });
+    engine.render = async () => {};
+    const snapshot = plan({ clientRequestId: 'batch:format:0' });
+    const first = await engine.start(snapshot);
+    const recovered = await engine.start(structuredClone(snapshot));
+    assert.equal(recovered.id, first.id);
+    assert.equal(engine.jobs.size, 1);
+    const changed = plan({ clientRequestId: 'batch:format:0', title: 'Changed content' });
+    await assert.rejects(engine.start(changed), /identity changed/);
+    assert.throws(() => validatePlan(plan({ clientRequestId: 42 })), /Invalid render settings/);
+  } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
 });

@@ -121,7 +121,12 @@
     "video": "Video",
     "music": "Music",
     "cancel": "Cancel",
-    "retry": "Retry"
+    "retry": "Retry",
+    "approvedMaximum": "Approved maximum {{cost}}",
+    "estimatedUsage": "Estimated usage",
+    "estimateUnavailable": "Unavailable",
+    "actualCost": "Verified actual cost",
+    "actualUnavailable": "Not provided by the provider"
   },
   "commandPalette": {
     "title": "Command Palette",

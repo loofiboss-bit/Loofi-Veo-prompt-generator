@@ -210,7 +210,8 @@
     "continuityReviewNoTakes": "Genera o guarda una toma antes de aprobar una revisión de continuidad.",
     "continuityReviewApproved": "Revisión de continuidad opcional de Gemini aprobada para esta instantánea.",
     "longShot": "Esta toma de {{duration}} s supera un segmento Veo. Divídela o genera ocho segundos y usa la extensión desde una toma Veo no caducada.",
-    "otioReady": "Paquete OTIO listo."
+    "otioReady": "Paquete OTIO listo.",
+    "aiReviewNotRun": "No se realizó la revisión de IA. Revisa el resultado localmente o vuelve a intentarlo tras corregir el problema del medio o proveedor."
   },
   "saveStatus": {
     "failed": "No se pudo cargar o guardar el plan de producción.",

@@ -9,7 +9,7 @@
  * @since v2.5.0
  */
 
-import { createStore, get, set } from 'idb-keyval';
+import { createStore, get, set, update } from 'idb-keyval';
 import { logger } from './loggerService';
 import type { CostEstimate, CostRecord, CostTrackingState } from '@core/types';
 import { getModel } from '@core/models/catalog';
@@ -32,6 +32,16 @@ const IDB_KEY_RECORDS = 'cost-records-v1';
 const IDB_KEY_LIFETIME = 'cost-lifetime-v1';
 const IDB_KEY_BUDGET = 'cost-budget-v1';
 const MAX_RECORDS = 500;
+const IDB_KEY_LEDGER = 'cost-ledger-v2';
+interface CostLedgerV2 {
+  schemaVersion: 2;
+  records: CostRecord[];
+  seen: string[];
+  totalUsd: number;
+  monthlyUsd: number;
+  monthKey: string;
+  legacyCutoff: number;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +59,7 @@ type CostListener = (state: CostTrackingState) => void;
 // Service
 // ---------------------------------------------------------------------------
 
-class CostTrackingService {
+export class CostTrackingService {
   private static instance: CostTrackingService;
 
   private sessionRecords: CostRecord[] = [];
@@ -60,6 +70,9 @@ class CostTrackingService {
   private currentMonthKey = '';
   private listeners = new Set<CostListener>();
   private hydrated = false;
+  private hydration: Promise<void> | null = null;
+  private pendingWrites: Promise<void> = Promise.resolve();
+  private persistenceError: string | undefined;
 
   private constructor() {
     this.currentMonthKey = this.getMonthKey();
@@ -77,33 +90,120 @@ class CostTrackingService {
   /** Restore persisted cost data from IndexedDB */
   async hydrate(): Promise<void> {
     if (this.hydrated) return;
-    try {
-      const [lifetime, budget] = await Promise.all([
+    if (this.hydration) return this.hydration;
+    this.hydration = (async () => {
+      const [lifetime, budget, records] = await Promise.all([
         get<LifetimeData>(IDB_KEY_LIFETIME, IDB_STORE),
         get<number | null>(IDB_KEY_BUDGET, IDB_STORE),
+        get<CostRecord[]>(IDB_KEY_RECORDS, IDB_STORE),
       ]);
-
-      if (lifetime) {
-        this.lifetimeTotalUsd = lifetime.totalUsd;
-        // Reset monthly if new month
-        if (lifetime.monthKey === this.currentMonthKey) {
-          this.monthlySpentUsd = lifetime.monthlyUsd;
-        } else {
-          this.monthlySpentUsd = 0;
-        }
-      }
-
-      if (budget !== undefined && budget !== null) {
-        this.monthlyBudgetUsd = budget;
-      }
-
-      logger.info(
-        `[CostTracking] Hydrated — lifetime: $${this.lifetimeTotalUsd.toFixed(4)}, monthly: $${this.monthlySpentUsd.toFixed(4)}`,
+      await update<CostLedgerV2>(
+        IDB_KEY_LEDGER,
+        (stored) =>
+          stored ?? {
+            schemaVersion: 2,
+            records: records ?? [],
+            seen: (records ?? []).map((record) => record.sourceJobId ?? record.id),
+            totalUsd: lifetime?.totalUsd ?? 0,
+            monthlyUsd: lifetime?.monthKey === this.getMonthKey() ? lifetime.monthlyUsd : 0,
+            monthKey: this.getMonthKey(),
+            // Old totals contain no job identities. Preserve them without replaying old jobs.
+            legacyCutoff: lifetime?.totalUsd ? Date.now() : 0,
+          },
+        IDB_STORE,
       );
-    } catch (err) {
-      logger.warn('[CostTracking] Failed to hydrate from IDB', err);
-    }
-    this.hydrated = true;
+      const ledger = await get<CostLedgerV2>(IDB_KEY_LEDGER, IDB_STORE);
+      if (ledger) this.applyLedger(ledger);
+      if (budget !== undefined) this.monthlyBudgetUsd = budget;
+      this.hydrated = true;
+      this.persistenceError = undefined;
+      this.notifyListeners();
+    })()
+      .catch((error: unknown) => {
+        this.persistenceError = 'Cost history could not be saved or restored.';
+        this.notifyListeners();
+        throw error;
+      })
+      .finally(() => {
+        this.hydration = null;
+      });
+    return this.hydration;
+  }
+
+  private applyLedger(ledger: CostLedgerV2): void {
+    this.lifetimeTotalUsd = ledger.totalUsd;
+    this.currentMonthKey = this.getMonthKey();
+    this.monthlySpentUsd = ledger.monthKey === this.currentMonthKey ? ledger.monthlyUsd : 0;
+  }
+
+  private async commit(record: CostRecord): Promise<boolean> {
+    await this.hydrate();
+    let added = false;
+    await update<CostLedgerV2>(
+      IDB_KEY_LEDGER,
+      (ledger) => {
+        if (!ledger) throw new Error('Cost history is unavailable.');
+        const identity = record.sourceJobId ?? record.id;
+        if (ledger.seen.includes(identity)) return ledger;
+        const migrated = Boolean(record.sourceJobId && record.timestamp <= ledger.legacyCutoff);
+        added = !migrated;
+        const monthKey = this.getMonthKey();
+        const sameMonth = this.getMonthKeyForTime(record.timestamp) === monthKey;
+        return {
+          ...ledger,
+          seen: [...ledger.seen, identity],
+          records: migrated ? ledger.records : [...ledger.records, record].slice(-MAX_RECORDS),
+          totalUsd: ledger.totalUsd + (migrated ? 0 : record.costUsd),
+          monthlyUsd:
+            (ledger.monthKey === monthKey ? ledger.monthlyUsd : 0) +
+            (!migrated && sameMonth ? record.costUsd : 0),
+          monthKey,
+        };
+      },
+      IDB_STORE,
+    );
+    const ledger = await get<CostLedgerV2>(IDB_KEY_LEDGER, IDB_STORE);
+    if (ledger) this.applyLedger(ledger);
+    this.persistenceError = undefined;
+    this.notifyListeners();
+    return added;
+  }
+
+  /** Durable idempotency survives route changes, renderer restart and concurrent observers. */
+  async recordPaidJobCost(record: Omit<CostRecord, 'id'> & { sourceJobId: string }): Promise<void> {
+    const operation = this.pendingWrites
+      .catch(() => {})
+      .then(async () => {
+        const added = await this.commit({
+          ...record,
+          id: `paid:${record.sourceJobId}`,
+          isEstimated: true,
+        });
+        if (added && !this.sessionRecords.some((item) => item.sourceJobId === record.sourceJobId)) {
+          this.sessionRecords.push({
+            ...record,
+            id: `paid:${record.sourceJobId}`,
+            isEstimated: true,
+          });
+          this.sessionTotalUsd += record.costUsd;
+        }
+        this.notifyListeners();
+      });
+    this.pendingWrites = operation.catch((error: unknown) => {
+      this.persistenceError = 'Cost history could not be saved or restored.';
+      this.notifyListeners();
+      logger.warn('[CostTracking] Failed to persist job cost', error);
+    });
+    return operation;
+  }
+
+  async flush(): Promise<void> {
+    await this.pendingWrites;
+  }
+
+  private getMonthKeyForTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   }
 
   // ── Estimation ───────────────────────────────────────────────────────
@@ -196,6 +296,10 @@ class CostTrackingService {
 
   /** Record the cost of a completed API call */
   recordCost(record: Omit<CostRecord, 'id' | 'timestamp'>): CostRecord {
+    const existing =
+      record.sourceJobId &&
+      this.sessionRecords.find((item) => item.sourceJobId === record.sourceJobId);
+    if (existing) return existing;
     const fullRecord: CostRecord = {
       ...record,
       id: crypto.randomUUID(),
@@ -216,7 +320,16 @@ class CostTrackingService {
     this.checkBudget(fullRecord.costUsd);
 
     this.notifyListeners();
-    this.persist();
+    const write = this.pendingWrites
+      .catch(() => {})
+      .then(async () => {
+        await this.commit(fullRecord);
+      });
+    this.pendingWrites = write.catch((error: unknown) => {
+      this.persistenceError = 'Cost history could not be saved or restored.';
+      this.notifyListeners();
+      logger.warn('[CostTracking] Failed to persist cost', error);
+    });
 
     logger.debug(
       `[CostTracking] Recorded: $${fullRecord.costUsd.toFixed(6)} for ${fullRecord.modelId} (${fullRecord.description})`,
@@ -226,8 +339,14 @@ class CostTrackingService {
   }
 
   /** Record cost from a CostEstimate (estimated data, marks isEstimated=true) */
-  recordEstimatedCost(estimate: CostEstimate, endpointId: string, description: string): CostRecord {
+  recordEstimatedCost(
+    estimate: CostEstimate,
+    endpointId: string,
+    description: string,
+    sourceJobId?: string,
+  ): CostRecord {
     return this.recordCost({
+      sourceJobId,
       modelId: estimate.modelId,
       endpointId,
       inputTokens: estimate.estimatedInputTokens,
@@ -254,12 +373,14 @@ class CostTrackingService {
 
   /** Check if spending is within budget */
   isWithinBudget(): boolean {
+    this.getState();
     if (this.monthlyBudgetUsd === null) return true;
     return this.monthlySpentUsd < this.monthlyBudgetUsd;
   }
 
   /** Get remaining budget (null if no budget set) */
   getRemainingBudget(): number | null {
+    this.getState();
     if (this.monthlyBudgetUsd === null) return null;
     return Math.max(0, this.monthlyBudgetUsd - this.monthlySpentUsd);
   }
@@ -268,12 +389,17 @@ class CostTrackingService {
 
   /** Get the current cost tracking state */
   getState(): CostTrackingState {
+    if (this.currentMonthKey !== this.getMonthKey()) {
+      this.currentMonthKey = this.getMonthKey();
+      this.monthlySpentUsd = 0;
+    }
     return {
       sessionRecords: [...this.sessionRecords],
       sessionTotalUsd: this.sessionTotalUsd,
       lifetimeTotalUsd: this.lifetimeTotalUsd,
       monthlyBudgetUsd: this.monthlyBudgetUsd,
       monthlySpentUsd: this.monthlySpentUsd,
+      persistenceError: this.persistenceError,
     };
   }
 
@@ -335,26 +461,6 @@ class CostTrackingService {
       }
     }
   }
-
-  private async persist(): Promise<void> {
-    try {
-      const lifetimeData: LifetimeData = {
-        totalUsd: this.lifetimeTotalUsd,
-        monthlyUsd: this.monthlySpentUsd,
-        monthKey: this.currentMonthKey,
-      };
-      await Promise.all([
-        set(IDB_KEY_RECORDS, this.sessionRecords.slice(-MAX_RECORDS), IDB_STORE),
-        set(IDB_KEY_LIFETIME, lifetimeData, IDB_STORE),
-      ]);
-    } catch (err) {
-      logger.warn('[CostTracking] Failed to persist state', err);
-    }
-  }
 }
-
-// ---------------------------------------------------------------------------
-// Singleton export
-// ---------------------------------------------------------------------------
 
 export const costTrackingService = CostTrackingService.getInstance();

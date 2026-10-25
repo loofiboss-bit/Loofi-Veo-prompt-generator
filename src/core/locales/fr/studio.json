@@ -436,5 +436,19 @@
     "fieldDiff": "Modifications de {{field}}",
     "accept": "Accepter les champs sélectionnés",
     "aiEdited": "Modifié avec l’IA"
+  },
+  "metrics": {
+    "tokens": "~{{count}} jetons estimés"
+  },
+  "openLyriaSetup": "Ouvrir la configuration Lyria 3 · saisir les paroles séparément",
+  "motionDescription": "Décrivez le mouvement",
+  "motionPlaceholder": "Décrivez ce qui bouge dans l’image et comment.",
+  "motionHint": "Décrivez le mouvement, pas l’apparence. Le champ Action est prioritaire s’il est rempli.",
+  "lyricSectionErrors": {
+    "ambiguous": "Choisissez une occurrence précise de cette section de paroles.",
+    "missing": "La section de paroles sélectionnée n’existe plus.",
+    "locked": "Cette section est verrouillée.",
+    "structure": "La réponse a changé l’ordre ou le nombre de sections. Conservez le brouillon d’origine.",
+    "response": "La réponse de l’IA a omis ou modifié de façon ambiguë la section sélectionnée."
   }
 }

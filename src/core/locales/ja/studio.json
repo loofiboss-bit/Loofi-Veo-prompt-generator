@@ -436,5 +436,19 @@
     "fieldDiff": "{{field}}の変更",
     "accept": "選択した項目を適用",
     "aiEdited": "AIで編集済み"
+  },
+  "metrics": {
+    "tokens": "推定{{count}}トークン"
+  },
+  "openLyriaSetup": "Lyria 3の設定を開く · 歌詞は別途入力",
+  "motionDescription": "動きを説明",
+  "motionPlaceholder": "画像の何がどのように動くかを説明してください。",
+  "motionHint": "見た目ではなく動きを説明してください。「アクション」に入力がある場合はそちらが優先されます。",
+  "lyricSectionErrors": {
+    "ambiguous": "この歌詞セクションの特定の出現箇所を選択してください。",
+    "missing": "選択した歌詞セクションは存在しません。",
+    "locked": "このセクションはロックされています。",
+    "structure": "応答によってセクションの順序または数が変わりました。元の下書きを維持してください。",
+    "response": "AIの応答で選択したセクションが省略または曖昧に変更されました。"
   }
 }

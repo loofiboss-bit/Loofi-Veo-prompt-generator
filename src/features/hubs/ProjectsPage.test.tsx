@@ -7,12 +7,14 @@ import { ProjectsPage } from './ProjectsPage';
 const {
   captureCurrentProjectDocument,
   commitProjectDocument,
+  flushBeforeProjectChange,
   loadProject,
   saveProject,
   setCurrentProject,
 } = vi.hoisted(() => ({
   captureCurrentProjectDocument: vi.fn(),
   commitProjectDocument: vi.fn(),
+  flushBeforeProjectChange: vi.fn().mockResolvedValue(undefined),
   loadProject: vi.fn(),
   saveProject: vi.fn().mockResolvedValue(undefined),
   setCurrentProject: vi.fn().mockResolvedValue(true),
@@ -58,7 +60,7 @@ vi.mock('@core/store/useProjectStore', () => ({
   useProjectStore: Object.assign(
     (selector: (state: Record<string, unknown>) => unknown) =>
       selector({ projects, currentProjectId: 'project-a', setCurrentProject }),
-    { getState: () => ({ projects }) },
+    { getState: () => ({ projects, currentProjectId: 'project-a' }) },
   ),
 }));
 
@@ -71,6 +73,10 @@ vi.mock('@core/services/projectDocumentService', () => ({
   projectDocumentService: { load: loadProject, save: saveProject },
 }));
 
+vi.mock('@core/services/projectSaveCoordinator', () => ({
+  projectSaveCoordinator: { flushBeforeProjectChange },
+}));
+
 vi.mock('@core/store/useEditorSessionStore', () => ({
   useEditorSessionStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({ captureCurrentProjectDocument, commitProjectDocument }),
@@ -79,19 +85,18 @@ vi.mock('@core/store/useEditorSessionStore', () => ({
 describe('ProjectsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    flushBeforeProjectChange.mockResolvedValue(undefined);
   });
 
   it('keeps the current project when saving its document fails', async () => {
-    saveProject.mockRejectedValueOnce(new Error('Local storage unavailable'));
+    flushBeforeProjectChange.mockRejectedValueOnce(new Error('Local storage unavailable'));
     const { user } = render(<ProjectsPage />);
     await user.click(screen.getByRole('button', { name: /Project B/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Local storage unavailable');
     expect(setCurrentProject).not.toHaveBeenCalled();
     expect(commitProjectDocument).not.toHaveBeenCalled();
   });
-  it('loads the selected project document before persisting the current project id', async () => {
-    const currentDocument = { ...projectDocument, id: 'project-a', name: 'Project A' };
-    captureCurrentProjectDocument.mockReturnValue(currentDocument);
+  it('saves the current project before loading and selecting the next project', async () => {
     loadProject.mockReturnValue(projectDocument);
     const { user } = render(<ProjectsPage />);
 
@@ -100,11 +105,10 @@ describe('ProjectsPage', () => {
     await waitFor(() => {
       expect(commitProjectDocument).toHaveBeenCalledWith(projectDocument, 'load');
     });
-    expect(captureCurrentProjectDocument).toHaveBeenCalledWith({
-      id: 'project-a',
-      name: 'Project A',
-    });
-    expect(saveProject).toHaveBeenCalledWith(currentDocument);
+    expect(flushBeforeProjectChange).toHaveBeenCalledWith('project-a');
+    expect(flushBeforeProjectChange.mock.invocationCallOrder[0]).toBeLessThan(
+      loadProject.mock.invocationCallOrder[0],
+    );
     expect(loadProject).toHaveBeenCalledWith('project-b');
     expect(setCurrentProject).toHaveBeenCalledWith('project-b');
   });

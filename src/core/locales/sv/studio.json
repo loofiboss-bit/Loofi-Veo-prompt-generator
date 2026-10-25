@@ -436,5 +436,19 @@
     "fieldDiff": "Ändringar i {{field}}",
     "accept": "Acceptera valda fält",
     "aiEdited": "Redigerad med AI"
+  },
+  "metrics": {
+    "tokens": "Cirka {{count}} uppskattade token"
+  },
+  "openLyriaSetup": "Öppna Lyria 3 · ange låttext separat",
+  "motionDescription": "Beskriv rörelsen",
+  "motionPlaceholder": "Beskriv vad som rör sig i bilden och hur det rör sig.",
+  "motionHint": "Beskriv rörelse, inte utseende. Ett ifyllt fält för Handling har företräde.",
+  "lyricSectionErrors": {
+    "ambiguous": "Välj en specifik förekomst av den här låtsektionen.",
+    "missing": "Den valda låtsektionen finns inte längre.",
+    "locked": "Sektionen är låst.",
+    "structure": "Svaret ändrade låtsektionernas ordning eller antal. Behåll originalutkastet.",
+    "response": "AI-svaret utelämnade eller ändrade den valda sektionen på ett tvetydigt sätt."
   }
 }

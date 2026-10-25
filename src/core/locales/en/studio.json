@@ -436,5 +436,19 @@
     "fieldDiff": "{{field}} changes",
     "accept": "Accept selected fields",
     "aiEdited": "Edited with AI"
+  },
+  "metrics": {
+    "tokens": "~{{count}} estimated tokens"
+  },
+  "openLyriaSetup": "Open Lyria 3 setup · enter lyrics separately",
+  "motionDescription": "Describe the motion",
+  "motionPlaceholder": "Describe what moves in the image and how it moves.",
+  "motionHint": "Describe movement, not appearance. If Action is filled in, it takes priority.",
+  "lyricSectionErrors": {
+    "ambiguous": "Choose a specific occurrence of this lyric section.",
+    "missing": "The selected lyric section no longer exists.",
+    "locked": "That section is locked.",
+    "structure": "The response changed lyric section order or count. Keep the original draft.",
+    "response": "The AI response omitted or ambiguously changed the selected section."
   }
 }

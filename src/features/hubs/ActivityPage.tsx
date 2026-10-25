@@ -8,6 +8,7 @@ import {
   recordCompletedPaidJobCost,
 } from '@core/services/paidJobService';
 import { useGenerationQueueStore } from '@core/store/useGenerationQueueStore';
+import { useCostStore } from '@core/store/useCostStore';
 import type { PaidJobTask } from '@core/types';
 
 const ACTIVE_DURABLE_STATUSES = new Set([
@@ -46,6 +47,7 @@ export function ActivityPage() {
   const pendingCount = useGenerationQueueStore((state) => state.pendingCount);
   const cancelQueueItem = useGenerationQueueStore((state) => state.cancel);
   const retryQueueItem = useGenerationQueueStore((state) => state.retry);
+  const costRecords = useCostStore((state) => state.recentRecords);
   const [durableJobs, setDurableJobs] = useState<PaidJobTask[]>([]);
   const [durableJobsLoaded, setDurableJobsLoaded] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -87,6 +89,13 @@ export function ActivityPage() {
       unsubscribe();
     };
   }, [refreshDurableJobs]);
+
+  useEffect(() => {
+    void useCostStore
+      .getState()
+      .initialize()
+      .catch(() => {});
+  }, []);
 
   const durableActiveCount = useMemo(
     () => durableJobs.filter((job) => ACTIVE_DURABLE_STATUSES.has(job.status)).length,
@@ -318,6 +327,9 @@ export function ActivityPage() {
                   job.costApproval?.modelId ??
                   ('request' in job && job.request?.modelId ? job.request.modelId : undefined);
                 const approvedCostUsd = job.costApproval?.maximumChargeUsd;
+                const jobCosts = costRecords.filter((record) => record.sourceJobId === job.id);
+                const estimatedCost = jobCosts.find((record) => record.isEstimated);
+                const actualCost = jobCosts.find((record) => !record.isEstimated);
                 const canCancel =
                   ACTIVE_DURABLE_STATUSES.has(job.status) ||
                   job.status === 'Queued' ||
@@ -356,12 +368,37 @@ export function ActivityPage() {
                         )}
                         {typeof approvedCostUsd === 'number' && (
                           <span className="rounded bg-slate-800 px-2 py-1 font-mono text-xs tabular-nums text-slate-300">
-                            ${approvedCostUsd.toFixed(2)}
+                            {t('activity.approvedMaximum', {
+                              cost: `$${approvedCostUsd.toFixed(2)}`,
+                              defaultValue: 'Approved maximum {{cost}}',
+                            })}
                           </span>
                         )}
                         <span className="rounded bg-slate-800 px-2 py-1 text-xs">{job.status}</span>
                       </div>
                     </div>
+                    <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                      <div>
+                        <dt className="inline">
+                          {t('activity.estimatedUsage', 'Estimated usage')}:{' '}
+                        </dt>
+                        <dd className="inline">
+                          {estimatedCost
+                            ? `$${estimatedCost.costUsd.toFixed(2)}`
+                            : t('activity.estimateUnavailable', 'Unavailable')}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="inline">
+                          {t('activity.actualCost', 'Verified actual cost')}:{' '}
+                        </dt>
+                        <dd className="inline">
+                          {actualCost
+                            ? `$${actualCost.costUsd.toFixed(2)}`
+                            : t('activity.actualUnavailable', 'Not provided by the provider')}
+                        </dd>
+                      </div>
+                    </dl>
                     {job.error && <p className="mt-2 text-sm text-amber-300">{job.error}</p>}
                     {videoJob && (
                       <Link

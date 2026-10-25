@@ -9,7 +9,14 @@ import { useSettingsStore } from '@core/store/useSettingsStore';
 import { cleanJson, getAiClientAsync, getPromptModel, resilientCall } from './gemini/aiClient';
 import { generatePromptWithOllama } from './ollamaProvider';
 import { resolvePromptGenerationProvider } from './promptGenerationService';
-import { editStudioVariant, preserveLockedLyricSections } from './promptStudioEditingService';
+import { editStudioVariant } from './promptStudioEditingService';
+
+import { segmentPromptText } from './promptTextSegments';
+import {
+  isLyricSectionLocked,
+  parseLyricSections,
+  transformLyricSections,
+} from './lyricSectionService';
 
 export type VideoVariantEditField = 'prompt' | 'negativePrompt';
 export type VideoVariantEditPatch = Partial<Pick<VideoPromptVariant, VideoVariantEditField>>;
@@ -196,35 +203,26 @@ export function applyLocalPromptTransform(
   const patch: VideoVariantEditPatch = {};
 
   if (transformId === 'clean-compact') {
-    const protectedSpans: string[] = [];
-    const placeholderPrefix = '__DIALOGUE_SPAN_';
-
-    // Protect Dialogue: the speaker says: ... and quoted dialogue from buzzword strip
-    const withPlaceholders = before.prompt.replace(
-      /(?:Dialogue:\s*the speaker says:[^.]*\.?|["“][^"”]*["”])/gi,
-      (match) => {
-        const key = `${placeholderPrefix}${protectedSpans.length}__`;
-        protectedSpans.push(match);
-        return key;
-      },
-    );
-
-    let cleaned = withPlaceholders
-      .replace(
-        /\b(?:highly detailed|hyperrealistic|photorealistic|trending on artstation|octane render|unreal engine 5|4k resolution|8k resolution)\b[,.]?/gi,
-        '',
-      )
-      .replace(/\s*,\s*,+/g, ',')
-      .replace(/,\s*\./g, '.')
-      .replace(/,\s*$/g, '.')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-    // Restore protected dialogue and quote spans
-    protectedSpans.forEach((span, idx) => {
-      cleaned = cleaned.replace(`${placeholderPrefix}${idx}__`, span);
-    });
-
+    const sourceDialogue = (snapshot.input as import('@core/types').VideoPromptArtifactInput)
+      .dialogue;
+    const segments = segmentPromptText(before.prompt, sourceDialogue);
+    const cleaned = segments
+      .map((segment, index) => {
+        if (segment.protected) return segment.text;
+        let text = segment.text
+          .replace(
+            /\b(?:highly detailed|hyperrealistic|photorealistic|trending on artstation|octane render|unreal engine 5|4k resolution|8k resolution)\b[,.]?/gi,
+            '',
+          )
+          .replace(/\s*,\s*,+/g, ',')
+          .replace(/,\s*\./g, '.')
+          .replace(/,\s*$/g, '.')
+          .replace(/\s{2,}/g, ' ');
+        if (index === 0) text = text.trimStart();
+        if (index === segments.length - 1) text = text.trimEnd();
+        return text;
+      })
+      .join('');
     patch.prompt = cleaned || before.prompt;
   } else if (transformId === 'sync-target-grammar') {
     let formatted = before.prompt;
@@ -375,41 +373,50 @@ export function applyLocalMusicTransform(
   let nextStyle = selected.styleOfMusic;
 
   if (transformId === 'normalize-sections') {
-    const normalizedLines = selected.lyrics.split('\n').map((line) => {
-      const trimmed = line.trim();
-      const bracketMatch = /^\[([^\]]+)\]$/.exec(trimmed);
-      if (bracketMatch) {
-        const inner = bracketMatch[1]
-          .trim()
-          .replace(/\b([a-z])/gi, (m, c: string, offset: number) =>
-            offset === 0 ||
-            bracketMatch[1][offset - 1] === ' ' ||
-            bracketMatch[1][offset - 1] === '-'
-              ? c.toUpperCase()
-              : c.toLowerCase(),
-          );
-        return `[${inner}]`;
-      }
-      const headerMatch =
-        /^(verse|chorus|pre-chorus|bridge|intro|outro|hook|instrumental)(?:\s+(\d+))?\s*[:-]?$/i.exec(
-          trimmed,
-        );
-      if (headerMatch) {
-        const name = headerMatch[1]
-          .split('-')
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-          .join('-');
-        return `[${name}${headerMatch[2] ? ` ${headerMatch[2]}` : ''}]`;
-      }
-      return line;
-    });
-    let candidate = normalizedLines.join('\n').trim();
+    const normalizeText = (text: string) =>
+      text
+        .split('\n')
+        .map((line) => {
+          const trimmed = line.trim();
+          const bracketMatch = /^\[([^\]]+)\]$/.exec(trimmed);
+          if (bracketMatch) {
+            const inner = bracketMatch[1]
+              .trim()
+              .replace(/\b([a-z])/gi, (m, c: string, offset: number) =>
+                offset === 0 ||
+                bracketMatch[1][offset - 1] === ' ' ||
+                bracketMatch[1][offset - 1] === '-'
+                  ? c.toUpperCase()
+                  : c.toLowerCase(),
+              );
+            return `[${inner}]`;
+          }
+          const headerMatch =
+            /^(verse|chorus|pre-chorus|bridge|intro|outro|hook|instrumental)(?:\s+(\d+))?\s*[:-]?$/i.exec(
+              trimmed,
+            );
+          if (headerMatch) {
+            const name = headerMatch[1]
+              .split('-')
+              .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+              .join('-');
+            return `[${name}${headerMatch[2] ? ` ${headerMatch[2]}` : ''}]`;
+          }
+          return line;
+        })
+        .join('\n');
+    const sections = parseLyricSections(selected.lyrics);
+    let candidate = sections.length
+      ? normalizeText(selected.lyrics.slice(0, sections[0].start)) +
+        transformLyricSections(selected.lyrics, (section) =>
+          isLyricSectionLocked(section, lockedSections) ? section.raw : normalizeText(section.raw),
+        ).slice(sections[0].start)
+      : normalizeText(selected.lyrics);
+    if (!lockedSections.length) candidate = candidate.trim();
     if (candidate && !/\[[^\]]+\]/.test(candidate)) {
       candidate = `${input.instrumental ? '[Instrumental]' : '[Verse 1]'}\n${candidate}`;
     }
-    nextLyrics = lockedSections.length
-      ? preserveLockedLyricSections(selected.lyrics, candidate, lockedSections)
-      : candidate;
+    nextLyrics = candidate;
   } else if (transformId === 'clean-style') {
     const stripped = selected.styleOfMusic.replace(VISUAL_DIFFUSION_TERMS_RX, '');
     const seen = new Set<string>();
@@ -437,12 +444,15 @@ export function applyLocalMusicTransform(
       .replace(/^[,\s]+|[,\s]+$/g, '')
       .replace(/\s{2,}/g, ' ')
       .trim();
-    const cleanedLyrics = selected.lyrics
-      .replace(VISUAL_DIFFUSION_TERMS_RX, '')
-      .replace(/[ \t]{2,}/g, ' ');
-    nextLyrics = lockedSections.length
-      ? preserveLockedLyricSections(selected.lyrics, cleanedLyrics, lockedSections)
-      : cleanedLyrics;
+    const cleanText = (text: string) =>
+      text.replace(VISUAL_DIFFUSION_TERMS_RX, '').replace(/[ \t]{2,}/g, ' ');
+    const sections = parseLyricSections(selected.lyrics);
+    nextLyrics = sections.length
+      ? cleanText(selected.lyrics.slice(0, sections[0].start)) +
+        transformLyricSections(selected.lyrics, (section) =>
+          isLyricSectionLocked(section, lockedSections) ? section.raw : cleanText(section.raw),
+        ).slice(sections[0].start)
+      : cleanText(selected.lyrics);
   }
 
   const changed = nextLyrics !== selected.lyrics || nextStyle !== selected.styleOfMusic;

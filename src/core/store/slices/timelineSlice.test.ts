@@ -530,3 +530,113 @@ describe('timelineSlice — delivery transitions', () => {
     expect(useAppStore.getState().clips[0].transition).toBeUndefined();
   });
 });
+
+describe('timelineSlice — production take placement', () => {
+  beforeEach(() => {
+    useAppStore.temporal.getState().clear();
+  });
+
+  it('freezes existing shot placements before another accepted take can be selected', () => {
+    useAppStore.setState({
+      clips: [makeClip('legacy-shot'), { ...makeClip('imported'), resourceId: 'asset-1' }],
+    });
+    const historyBeforeFreeze = useAppStore.temporal.getState().pastStates.length;
+
+    expect(useAppStore.getState().freezeTimelineTakeReferences(1, 'previous-take')).toBe(1);
+    expect(useAppStore.getState().clips).toMatchObject([
+      { id: 'legacy-shot', selectedTakeId: 'previous-take' },
+      { id: 'imported', resourceId: 'asset-1' },
+    ]);
+    expect(useAppStore.temporal.getState().pastStates).toHaveLength(historyBeforeFreeze + 1);
+  });
+
+  it('pins legacy storyboard clips to their current asset when there is no take identity', () => {
+    useAppStore.setState({ clips: [makeClip('legacy-shot')] });
+    useAppStore.getState().freezeTimelineTakeReferences(1, undefined, 'current-asset');
+
+    expect(useAppStore.getState().clips[0]).toMatchObject({
+      id: 'legacy-shot',
+      resourceId: 'current-asset',
+    });
+  });
+
+  it('replaces one explicit clip while preserving its trim, mix, transition and linked captions', () => {
+    const target = {
+      ...makeClip('target', 'video_main', 4, 3),
+      resourceId: 'old-media',
+      offset: 2,
+      volume: 0.35,
+      transition: { type: 'dissolve' as const, duration: 0.5 },
+    };
+    const caption: TimelineClip = {
+      ...makeClip('caption', 'text_main', 5, 1),
+      type: 'text',
+      sourceClipId: 'target',
+      caption: { id: 'caption', text: 'Keep this', startTime: 5, endTime: 6, style: 'classic' },
+    };
+    const original = [target, caption];
+    useAppStore.setState({ clips: original });
+    useAppStore.temporal.getState().clear();
+
+    useAppStore.getState().placeProductionTake({
+      assetId: 'new-media',
+      takeId: 'take-2',
+      label: 'New take',
+      duration: 5,
+      targetClipId: 'target',
+    });
+
+    expect(useAppStore.getState().clips).toMatchObject([
+      {
+        ...target,
+        resourceId: 'new-media',
+        selectedTakeId: 'take-2',
+        label: 'New take',
+      },
+      caption,
+    ]);
+    expect(useAppStore.temporal.getState().pastStates).toHaveLength(1);
+    useAppStore.temporal.getState().undo();
+    expect(useAppStore.getState().clips).toEqual(original);
+  });
+
+  it('blocks a short source without mutating the selected clip', () => {
+    const original = { ...makeClip('target'), offset: 3, duration: 4 };
+    useAppStore.setState({ clips: [original] });
+    useAppStore.temporal.getState().clear();
+
+    expect(() =>
+      useAppStore.getState().placeProductionTake({
+        assetId: 'short-media',
+        takeId: 'take-short',
+        label: 'Short take',
+        duration: 6,
+        targetClipId: 'target',
+      }),
+    ).toThrow('too short');
+    expect(useAppStore.getState().clips).toEqual([original]);
+    expect(useAppStore.temporal.getState().pastStates).toHaveLength(0);
+  });
+});
+
+describe('timelineSlice — source preview track state', () => {
+  it('updates mute and active state as one undoable track mutation', () => {
+    const original = [
+      {
+        id: 'audio_music',
+        label: 'Music',
+        type: 'audio' as const,
+        trackType: 'music' as const,
+        zIndex: 0,
+      },
+    ];
+    useAppStore.setState({ tracks: original });
+    useAppStore.temporal.getState().clear();
+
+    useAppStore.getState().updateTimelineTrack('audio_music', { muted: true, active: false });
+    expect(useAppStore.getState().tracks).toEqual([{ ...original[0], muted: true, active: false }]);
+    expect(useAppStore.temporal.getState().pastStates).toHaveLength(1);
+    useAppStore.temporal.getState().undo();
+    expect(useAppStore.getState().tracks).toEqual(original);
+  });
+});

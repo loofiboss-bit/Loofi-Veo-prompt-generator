@@ -6,6 +6,7 @@ const {
   shell,
   ipcMain,
   screen,
+  protocol,
   crashReporter,
   dialog,
 } = require('electron');
@@ -26,6 +27,11 @@ const { registerCreatorRenderIpc } = require('./ipc/creator-render-ipc.cjs');
 const { registerMediaIpc } = require('./ipc/media-ipc.cjs');
 const { registerProjectIpc } = require('./ipc/project-ipc.cjs');
 const { registerDiagnosticsIpc } = require('./ipc/diagnostics-ipc.cjs');
+const {
+  createCreatorAsrModelStore,
+  registerCreatorAsrIpc,
+  registerCreatorAsrProtocol,
+} = require('./ipc/creator-asr-ipc.cjs');
 const { createApplicationWindow, createSafeModeController } = require('./window-lifecycle.cjs');
 const { DesktopMediaStore, generateVideoDerivatives } = require('./media-store.cjs');
 const { ProjectBackupStore } = require('./project-backup-store.cjs');
@@ -56,8 +62,16 @@ let paidJobEngine;
 let desktopMediaStore;
 let projectBackupStore;
 let creatorRenderEngine;
+let creatorAsrModelStore;
 const isSmokeTest = process.argv.includes('--smoke-test');
 const PROJECT_ROOT_FILE = 'project-root.json';
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'loofi-asr',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
 
 function getConfiguredProjectRoot() {
   const fallback = path.join(app.getPath('userData'), 'projects');
@@ -476,6 +490,15 @@ app.whenReady().then(async () => {
   });
 
   safeMode.initialize();
+  creatorAsrModelStore = createCreatorAsrModelStore(
+    path.join(app.getPath('userData'), 'creator-asr-models'),
+  );
+  registerCreatorAsrProtocol({ protocol, getStore: () => creatorAsrModelStore });
+  registerCreatorAsrIpc({
+    ipcMain,
+    getStore: () => creatorAsrModelStore,
+    getMainWindow: () => mainWindow,
+  });
   const projectRoot = getConfiguredProjectRoot();
   desktopMediaStore = new DesktopMediaStore(projectRoot, fetch, generateVideoDerivatives);
   paidJobEngine = new PaidJobEngine({

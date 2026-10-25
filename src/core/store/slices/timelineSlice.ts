@@ -43,8 +43,24 @@ export interface TimelineSlice {
 
   // Timeline Actions
   syncTimelineFromShots: () => void;
+  freezeTimelineTakeReferences: (
+    shotId: number,
+    takeId?: string,
+    fallbackAssetId?: string,
+  ) => number;
+  placeProductionTake: (input: {
+    assetId: string;
+    takeId: string;
+    label: string;
+    duration: number;
+    targetClipId?: string;
+  }) => string;
   updateTimelineClip: (clipId: string, updates: Partial<TimelineClip>, ripple?: boolean) => void;
   addTimelineClip: (clip: TimelineClip) => void;
+  updateTimelineTrack: (
+    trackId: string,
+    updates: Pick<Partial<TimelineTrack>, 'active' | 'muted'>,
+  ) => void;
   splitTimelineClip: (clipId: string, relativeTime: number) => void;
   setTimelineClipTransition: (clipId: string, transition: ClipTransition) => void;
   importTimelineCaptions: (
@@ -70,7 +86,7 @@ export interface TimelineSlice {
   gcTimeline: () => void;
 }
 
-export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => ({
+export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
   sbShots: [
     {
       id: 1,
@@ -242,6 +258,88 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
         clips: [...generatedClips, ...cleanManualClips],
       };
     }),
+
+  freezeTimelineTakeReferences: (shotId, takeId, fallbackAssetId) => {
+    if (!takeId && !fallbackAssetId) return 0;
+    let frozen = 0;
+    set((state) => {
+      const clips = state.clips.map((clip) => {
+        if (
+          clip.type !== 'video' ||
+          clip.resourceId !== shotId ||
+          clip.selectedTakeId !== undefined
+        )
+          return clip;
+        frozen += 1;
+        return {
+          ...clip,
+          ...(takeId ? { selectedTakeId: takeId } : { resourceId: fallbackAssetId! }),
+        };
+      });
+      return frozen ? { clips } : state;
+    });
+    return frozen;
+  },
+
+  placeProductionTake: (input) => {
+    if (!Number.isFinite(input.duration) || input.duration <= 0)
+      throw new Error('Verified media duration is required before placing a take.');
+    const current = get();
+    if (input.targetClipId) {
+      const target = current.clips.find((clip) => clip.id === input.targetClipId);
+      if (!target || target.type !== 'video')
+        throw new Error('Choose an existing video clip to replace.');
+      if (target.offset + target.duration > input.duration + 0.001)
+        throw new Error('The new source is too short for this clip. Add it as a separate clip.');
+      set((state) => ({
+        clips: state.clips.map((clip) =>
+          clip.id === input.targetClipId
+            ? {
+                ...clip,
+                resourceId: input.assetId,
+                selectedTakeId: input.takeId,
+                label: input.label,
+              }
+            : clip,
+        ),
+      }));
+      return input.targetClipId;
+    }
+
+    const track = current.tracks.find((item) => item.type === 'video');
+    const newTrack = track ?? {
+      id: 'video_main',
+      label: 'Video',
+      type: 'video' as const,
+      trackType: 'dialogue' as const,
+      zIndex: 1,
+    };
+    const startTime = Math.max(
+      0,
+      ...current.clips
+        .filter((clip) => clip.trackId === newTrack.id)
+        .map((clip) => clip.startTime + clip.duration),
+    );
+    const clipId = crypto.randomUUID();
+    const clip: TimelineClip = {
+      id: clipId,
+      resourceId: input.assetId,
+      selectedTakeId: input.takeId,
+      trackId: newTrack.id,
+      startTime,
+      duration: input.duration,
+      offset: 0,
+      type: 'video',
+      label: input.label,
+      volume: 1,
+      transition: { type: 'cut', duration: 0 },
+    };
+    set((state) => ({
+      tracks: track ? state.tracks : [...state.tracks, newTrack],
+      clips: [...state.clips, clip],
+    }));
+    return clipId;
+  },
 
   updateTimelineClip: (clipId, updates, ripple = false) =>
     set((state) => {
@@ -492,6 +590,13 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, _get) => (
   addTimelineClip: (clip) =>
     set((state) => ({
       clips: [...state.clips, { ...clip, panning: clip.panning || { x: 0, z: 0 } }],
+    })),
+
+  updateTimelineTrack: (trackId, updates) =>
+    set((state) => ({
+      tracks: state.tracks.map((track) =>
+        track.id === trackId ? { ...track, ...updates } : track,
+      ),
     })),
 
   updateShotTransition: (shotId, transition) =>

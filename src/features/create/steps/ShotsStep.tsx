@@ -11,6 +11,7 @@ import { veoGenerationService } from '@core/services/veoGenerationService';
 import { ModelDecision } from '@features/production/components/ModelDecision';
 import { TakeCompare } from '@features/production/components/TakeCompare';
 import type { ProductionStepId } from '@features/production/hooks/useProductionWorkflow';
+import { useAppStore } from '@core/store/useAppStore';
 import { ShotRequestEditor } from '../components/ShotRequestEditor';
 import type { CreateWorkflowController } from '../hooks/useCreateWorkflow';
 
@@ -22,6 +23,8 @@ interface ShotsStepProps {
 export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
   const { t } = useTranslation('create');
   const [shotFilter, setShotFilter] = useState<'all' | 'action-needed' | 'accepted'>('all');
+  const [replacementTargets, setReplacementTargets] = useState<Record<number, string>>({});
+  const timelineClips = useAppStore((state) => state.clips);
   const { activeRun } = workflow;
 
   if (!activeRun || !['scenes', 'assets', 'generate', 'review'].includes(activeStep)) return null;
@@ -157,23 +160,20 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                   {allAwaitingSelected ? 'Clear selection' : 'Select all ready'}
                 </button>
               )}
-            {acceptedCount > 0 && workflow.handleSyncAcceptedTakesToTimeline && (
-              <button
-                type="button"
-                onClick={() => void workflow.handleSyncAcceptedTakesToTimeline()}
-                className="rounded border border-emerald-700 bg-emerald-950/50 px-2.5 py-1 font-semibold text-emerald-300"
-              >
-                {t('actions.syncAcceptedToTimeline', {
-                  defaultValue: 'Send accepted takes to Timeline ({{count}})',
-                  count: acceptedCount,
-                })}
-              </button>
-            )}
           </div>
         </div>
       )}
       {visibleShots.map((shot) => {
         const latestTake = shot.takes.at(-1);
+        const acceptedTake =
+          shot.takes.find(
+            (take) => take.id === shot.selectedTakeId && take.status === 'accepted',
+          ) ?? [...shot.takes].reverse().find((take) => take.status === 'accepted');
+        const replacementTarget = timelineClips.some(
+          (clip) => clip.id === replacementTargets[shot.id] && clip.type === 'video',
+        )
+          ? replacementTargets[shot.id]
+          : '';
         const reviewIsCurrent = Boolean(latestTake && isTakeReviewCurrent(shot, latestTake));
         const evidenceIsCurrent = Boolean(latestTake && isReviewEvidenceCurrent(shot, latestTake));
         const readiness = shotReadiness(shot, workflow.imageAssets);
@@ -254,6 +254,45 @@ export function ShotsStep({ activeStep, workflow }: ShotsStepProps) {
                   >
                     {t('flow.recoveryCheck')}
                   </button>
+                )}
+                {activeStep === 'review' && acceptedTake && (
+                  <div className="flex flex-wrap items-center gap-2" role="group">
+                    <select
+                      aria-label={t('labels.placementTarget', { title: shot.title })}
+                      value={replacementTarget}
+                      onChange={(event) =>
+                        setReplacementTargets((targets) => ({
+                          ...targets,
+                          [shot.id]: event.target.value,
+                        }))
+                      }
+                      className="rounded-md border border-slate-700 bg-slate-950 px-2 py-2 text-xs"
+                    >
+                      <option value="">{t('actions.appendAsSeparate')}</option>
+                      {timelineClips
+                        .filter((clip) => clip.type === 'video')
+                        .map((clip) => (
+                          <option key={clip.id} value={clip.id}>
+                            {clip.label} · {clip.startTime.toFixed(1)}s
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void workflow.handlePlaceTake(
+                          shot,
+                          acceptedTake,
+                          replacementTarget || undefined,
+                        )
+                      }
+                      className="rounded-md border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-xs font-semibold text-emerald-300"
+                    >
+                      {replacementTarget
+                        ? t('actions.replaceTimelineClip')
+                        : t('actions.addToTimeline')}
+                    </button>
+                  </div>
                 )}
                 {latestTake && ['failed', 'recovery-required'].includes(latestTake.status) && (
                   <button

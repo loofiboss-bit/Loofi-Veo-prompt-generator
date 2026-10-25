@@ -2,6 +2,7 @@ import type {
   Project,
   PromptState,
   CharacterProfile,
+  Asset,
   LocationProfile,
   VisualDNA,
   ProductionBible,
@@ -51,6 +52,7 @@ interface BuildProjectDocumentInput {
   productionBible?: ProductionBible;
   storyboard: StoryboardState;
   composer?: ProjectComposerState;
+  assets?: Asset[];
   lastModified?: number;
   baseDocument?: Project;
 }
@@ -103,6 +105,7 @@ export function buildProjectDocument({
   productionBible,
   storyboard,
   composer,
+  assets,
   lastModified,
   baseDocument,
 }: BuildProjectDocumentInput): EditorProjectDocument {
@@ -117,6 +120,7 @@ export function buildProjectDocument({
     visualDNA,
     productionBible: productionBible ?? continuityService.createEmptyBible(),
     storyboard,
+    ...(assets ? { assets } : {}),
     composer: composer ?? snapshotComposerState(),
   };
 }
@@ -186,6 +190,7 @@ export function captureProjectDocumentFromStores(
       },
     },
     composer: snapshotComposerState(),
+    assets: appState.assets,
   });
 }
 
@@ -206,6 +211,13 @@ export function applyProjectDocumentToStores(project: EditorProjectDocument): vo
   const storyboard = project.storyboard;
   const timeline = storyboard?.timeline;
   const composer = project.composer ?? createDefaultProjectComposerState();
+  const assets = project.assets
+    ? [
+        ...new Map(
+          [...project.assets, ...appState.assets].map((asset) => [asset.id, asset]),
+        ).values(),
+      ]
+    : appState.assets;
 
   appState.setFullState({
     promptState: project.promptState,
@@ -218,6 +230,7 @@ export function applyProjectDocumentToStores(project: EditorProjectDocument): vo
     characterBank,
     visualDNA,
     productionBible: normalizedBible,
+    assets,
   });
 
   useLocationStore.getState().setLocations(locationBank);

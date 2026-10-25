@@ -120,7 +120,12 @@
     "video": "動画",
     "music": "音楽",
     "cancel": "キャンセル",
-    "retry": "再試行"
+    "retry": "再試行",
+    "approvedMaximum": "承認済み上限 {{cost}}",
+    "estimatedUsage": "推定使用額",
+    "estimateUnavailable": "利用不可",
+    "actualCost": "確認済み実費",
+    "actualUnavailable": "プロバイダーから提供されていません"
   },
   "commandPalette": {
     "title": "コマンドパレット",

@@ -1,9 +1,10 @@
 import { useRenderJobsStore } from '@core/store/useRenderJobsStore';
+import { useRenderBatchStore } from '@core/store/useRenderBatchStore';
 import { getCreatorCaptionOverlaps } from '@core/services/creatorCaptionService';
 import type { CreatorDeliveryDiagnostic } from '@core/services/creatorDeliveryService';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Caption, Project } from '@core/types';
+import type { Asset, Caption, Project, TimelineClip } from '@core/types';
 import type {
   CreatorAspectRatio,
   CreatorDeliveryV1,
@@ -24,12 +25,22 @@ import {
   validateCreatorCaptions,
 } from '@core/services/creatorCaptionService';
 import {
+  assertClipAudioRequestCurrent,
+  creatorAsrService,
+  CREATOR_ASR_LANGUAGES,
+  type CaptionProposal,
+  type ClipAudioRequest,
+  type CreatorAsrLanguage,
+  type CreatorAsrModelInfo,
+} from '@core/services/creatorAsrService';
+import {
   buildTimelineChapterTimestamps,
   creatorPublishingService,
   mergeChapterTimestampsIntoDescription,
   type CreatorPublishingText,
 } from '@core/services/creatorPublishingService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { downloadProjectBlob } from '@core/services/projectTransferService';
 import { resolveOtioSelection } from '@core/services/otioExportService';
 import { resolveProjectAssetBlob } from '@core/utils/projectArchiver';
@@ -37,6 +48,16 @@ import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
+
+const creatorAsrLanguageLabels: Record<CreatorAsrLanguage, string> = {
+  auto: 'Auto-detect',
+  en: 'English',
+  sv: 'Swedish',
+  es: 'Spanish',
+  fr: 'French',
+  ja: 'Japanese',
+  ar: 'Arabic',
+};
 
 export function CreatorDeliveryPanel() {
   const { t, i18n } = useTranslation('creator');
@@ -70,12 +91,41 @@ export function CreatorDeliveryPanel() {
   const [errorClip, setErrorClip] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [resolution, setResolution] = useState<'720p' | '1080p'>('1080p');
-  const [batchProgress, setBatchProgress] = useState<{
-    current: number;
-    total: number;
-    format: CreatorAspectRatio;
-  } | null>(null);
+  const batches = useRenderBatchStore((state) => state.batches);
+  const batch = batches.filter((item) => item.projectId === projectId).at(-1);
+  const batchProgress =
+    batch?.status === 'running'
+      ? {
+          current: Math.min(
+            batch.items.filter((item) => item.complete).length + 1,
+            batch.items.length,
+          ),
+          total: batch.items.length,
+          format:
+            batch.items.find((item) => !item.complete)?.plan.aspectRatio ??
+            batch.items.at(-1)!.plan.aspectRatio,
+        }
+      : null;
+  const anyBatchRunning = batches.some((item) => item.status === 'running');
   const [audioId, setAudioId] = useState('');
+  const [asrClipId, setAsrClipId] = useState('');
+  const [asrLanguage, setAsrLanguage] = useState<CreatorAsrLanguage>('auto');
+  const [asrModelInfo, setAsrModelInfo] = useState<CreatorAsrModelInfo | null>(null);
+  const [asrModelError, setAsrModelError] = useState('');
+  const [asrInstallConfirm, setAsrInstallConfirm] = useState(false);
+  const [asrRemoveConfirm, setAsrRemoveConfirm] = useState(false);
+  const [asrInstalling, setAsrInstalling] = useState(false);
+  const [asrInstallPhase, setAsrInstallPhase] = useState<'downloading' | 'verifying' | 'ready'>(
+    'downloading',
+  );
+  const [asrInstallProgress, setAsrInstallProgress] = useState({ loadedBytes: 0, totalBytes: 0 });
+  const [asrBusy, setAsrBusy] = useState(false);
+  const [asrStatus, setAsrStatus] = useState('');
+  const [asrProposal, setAsrProposal] = useState<{
+    proposal: CaptionProposal;
+    binding: string;
+    captions: Caption[];
+  } | null>(null);
   const [consent, setConsent] = useState(false);
   const [audioDuration, setAudioDuration] = useState(0);
   const [publishProposal, setPublishProposal] = useState<{
@@ -84,7 +134,12 @@ export function CreatorDeliveryPanel() {
   } | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  const [proposal, setProposal] = useState<{ captions: Caption[]; binding: string } | null>(null);
+  const [proposal, setProposal] = useState<{
+    captions: Caption[];
+    binding: string;
+    sourceClipId?: string;
+    kind?: 'time-blocks' | 'provider';
+  } | null>(null);
   const idRef = useRef(projectId);
   idRef.current = projectId;
   const busyRef = useRef(false);
@@ -92,7 +147,6 @@ export function CreatorDeliveryPanel() {
   audioRef.current = audioId;
   const jobRef = useRef(job);
   jobRef.current = job;
-  const batchCancelRef = useRef(false);
   const duration = Math.max(
     0,
     ...clips.filter((clip) => clip.type !== 'text').map((clip) => clip.startTime + clip.duration),
@@ -109,6 +163,41 @@ export function CreatorDeliveryPanel() {
       audioId: audioRef.current,
       clips: useAppStore.getState().clips,
     });
+  const getAssetForTimelineClip = (clip: TimelineClip | undefined): Asset | undefined => {
+    if (!clip) return undefined;
+    const resourceId = String(clip.resourceId);
+    return assets.find((asset) => asset.id === resourceId || asset.storageKey === resourceId);
+  };
+  const refreshAsrModelInfo = useCallback(async () => {
+    try {
+      setAsrModelInfo(await creatorAsrService.getModelInfo());
+      setAsrModelError('');
+    } catch (reason) {
+      setAsrModelInfo(null);
+      setAsrModelError(
+        window.electron?.getCreatorAsrModelInfo
+          ? reason instanceof Error
+            ? reason.message
+            : String(reason)
+          : '',
+      );
+    }
+  }, []);
+  const formatBytes = (bytes: number) => {
+    if (!Number.isFinite(bytes) || bytes < 0) return '0 MB';
+    return bytes >= 1024 ** 3
+      ? `${(bytes / 1024 ** 3).toFixed(1)} GB`
+      : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  };
+  const asrSourceClips = clips.filter(
+    (clip) =>
+      (clip.type === 'audio' || clip.type === 'video') &&
+      Boolean(getAssetForTimelineClip(clip)) &&
+      clip.offset >= 0 &&
+      clip.duration > 0,
+  );
+  const selectedAsrClip = asrSourceClips.find((clip) => clip.id === asrClipId);
+  const selectedAsrAsset = getAssetForTimelineClip(selectedAsrClip);
   const publicationBinding = async (id: string | null): Promise<string> => {
     const snapshot = canonicalRenderJson({ projectId: id, settings: settingsRef.current });
     const hash = await hashRenderContent(JSON.parse(snapshot));
@@ -125,6 +214,7 @@ export function CreatorDeliveryPanel() {
     setSettings(null);
     setJob(null);
     setProposal(null);
+    setAsrProposal(null);
     setPublishProposal(null);
     setConsent(false);
     setError('');
@@ -153,6 +243,10 @@ export function CreatorDeliveryPanel() {
       live = false;
     };
   }, [projectId]);
+  useEffect(() => {
+    void refreshAsrModelInfo();
+    // Model status is app-scoped and is refreshed after explicit install/removal actions.
+  }, [refreshAsrModelInfo]);
   useEffect(
     () =>
       useEditorSessionStore.subscribe((state, previous) => {
@@ -185,6 +279,12 @@ export function CreatorDeliveryPanel() {
               reason: 'Local rendering could not be initialized.',
             });
         });
+    void useRenderBatchStore
+      .getState()
+      .hydrate()
+      .catch((reason: unknown) => {
+        if (live) setError(String(reason));
+      });
     void useRenderJobsStore
       .getState()
       .hydrate()
@@ -269,6 +369,8 @@ export function CreatorDeliveryPanel() {
       if (!settings || !window.electron?.startTimelineRender)
         throw new Error('Local export requires the desktop app.');
       const requested = settingsRef.current!;
+      await projectSaveCoordinator.saveProject(id);
+      if (idRef.current !== id) return;
       await capture(id);
       const savedSettings = await creatorDeliveryService.saveSettings(id, requested);
       if (idRef.current !== id || settingsRef.current !== requested) return;
@@ -314,6 +416,8 @@ export function CreatorDeliveryPanel() {
       const targetFormats = (
         requested.batchFormats?.length ? requested.batchFormats : [requested.aspectRatio]
       ) as CreatorAspectRatio[];
+      await projectSaveCoordinator.saveProject(id);
+      if (idRef.current !== id) return;
       await capture(id);
       const savedSettings = await creatorDeliveryService.saveSettings(id, requested);
       if (idRef.current !== id || settingsRef.current !== requested) return;
@@ -341,38 +445,7 @@ export function CreatorDeliveryPanel() {
       );
       if (idRef.current !== id || timelineBinding() !== frozenBinding) return;
 
-      batchCancelRef.current = false;
-      try {
-        for (let i = 0; i < plans.length; i++) {
-          if (idRef.current !== id || batchCancelRef.current) break;
-          const plan = plans[i];
-          setBatchProgress({ current: i + 1, total: plans.length, format: plan.aspectRatio });
-          const started = await useRenderJobsStore.getState().start(plan);
-          if (idRef.current !== id || batchCancelRef.current) break;
-          setJob(started);
-          jobRef.current = started;
-
-          let currentJob = started;
-          while (['queued', 'rendering', 'verifying'].includes(currentJob.status)) {
-            if (batchCancelRef.current) {
-              await useRenderJobsStore.getState().cancel(currentJob.id);
-              break;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            if (idRef.current !== id || batchCancelRef.current) break;
-            const poll = await window.electron.getTimelineRenderJob?.(currentJob.id);
-            if (poll) {
-              currentJob = poll;
-              setJob(poll);
-            }
-          }
-          if (currentJob.status !== 'complete' || batchCancelRef.current) {
-            break;
-          }
-        }
-      } finally {
-        setBatchProgress(null);
-      }
+      await useRenderBatchStore.getState().start(plans);
     });
   const addCaptions = (
     values: Caption[],
@@ -381,6 +454,201 @@ export function CreatorDeliveryPanel() {
   ) => {
     validateCreatorCaptions(values, duration);
     useAppStore.getState().importTimelineCaptions(values, mode, sourceClipId);
+  };
+  const createAsrProposal = async () => {
+    const sourceClip = selectedAsrClip;
+    const sourceAsset = selectedAsrAsset;
+    const projectIdAtStart = projectId;
+    if (!sourceClip || !sourceAsset || !projectIdAtStart) return;
+    if (!asrModelInfo?.status.installed) {
+      setAsrModelError(
+        t('delivery.asrInstallFirst', 'Install the local speech model before transcribing.'),
+      );
+      return;
+    }
+    if (!window.electron?.extractTimelineAudio || !window.electron.inspectTimelineRenderMedia) {
+      setAsrModelError(
+        t('delivery.asrDesktopOnly', 'Local speech transcription is available in the desktop app.'),
+      );
+      return;
+    }
+    const mediaId = sourceAsset.storageKey || sourceAsset.id;
+    const clipsAtStart = structuredClone(useAppStore.getState().clips);
+    const selectionBinding = JSON.stringify({
+      projectId: projectIdAtStart,
+      clips: clipsAtStart,
+      selectedClipId: sourceClip.id,
+      mediaId,
+      language: asrLanguage,
+    });
+    setAsrBusy(true);
+    setAsrStatus(t('delivery.asrPreparing', 'Preparing the selected local clip…'));
+    setAsrModelError('');
+    setError('');
+    setAsrProposal(null);
+    try {
+      const project = await projectDocumentService.load(projectIdAtStart);
+      if (!project)
+        throw new Error(
+          t('delivery.asrProjectMissing', 'The current project could not be loaded.'),
+        );
+      const inspection = await window.electron.inspectTimelineRenderMedia(mediaId);
+      if (!inspection.available || !inspection.streamTypes?.includes('audio'))
+        throw new Error(
+          t('delivery.asrNoAudio', 'The selected clip has no readable audio stream.'),
+        );
+      const extracted = await window.electron.extractTimelineAudio({
+        mediaId,
+        offsetSeconds: sourceClip.offset,
+        durationSeconds: sourceClip.duration,
+      });
+      if (inspection.sha256 && extracted.mediaSha256 !== inspection.sha256)
+        throw new Error(
+          t('delivery.asrMediaChanged', 'The source media changed. Select it again.'),
+        );
+      if (
+        idRef.current !== projectIdAtStart ||
+        JSON.stringify({
+          projectId: idRef.current,
+          clips: useAppStore.getState().clips,
+          selectedClipId: asrClipId,
+          mediaId,
+          language: asrLanguage,
+        }) !== selectionBinding
+      )
+        throw new Error(
+          t(
+            'delivery.asrStale',
+            'The project or selected clip changed. Start a new transcription.',
+          ),
+        );
+
+      const request: ClipAudioRequest = {
+        requestId: crypto.randomUUID(),
+        projectId: projectIdAtStart,
+        projectRevision: project.documentRevision ?? 0,
+        clipId: sourceClip.id,
+        mediaId,
+        mediaSha256: extracted.mediaSha256,
+        offsetSeconds: sourceClip.offset,
+        durationSeconds: sourceClip.duration,
+        language: asrLanguage,
+      };
+      setAsrStatus(t('delivery.asrLoading', 'Loading the local speech model…'));
+      const result = await creatorAsrService.transcribe(extracted.pcm, asrLanguage, (status) => {
+        setAsrStatus(
+          status === 'loading-model'
+            ? t('delivery.asrLoading', 'Loading the local speech model…')
+            : t('delivery.asrTranscribing', 'Transcribing on this device…'),
+        );
+      });
+      if (
+        idRef.current !== projectIdAtStart ||
+        JSON.stringify({
+          projectId: idRef.current,
+          clips: useAppStore.getState().clips,
+          selectedClipId: asrClipId,
+          mediaId,
+          language: asrLanguage,
+        }) !== selectionBinding
+      )
+        throw new Error(
+          t(
+            'delivery.asrStale',
+            'The project or selected clip changed. Start a new transcription.',
+          ),
+        );
+      const captions = result.segments.map((caption) => ({
+        ...caption,
+        startTime: sourceClip.startTime + caption.startTime,
+        endTime: sourceClip.startTime + caption.endTime,
+      }));
+      validateCreatorCaptions(captions, duration);
+      setAsrProposal({
+        proposal: {
+          request,
+          modelId: result.modelId,
+          modelRevision: result.modelRevision,
+          segments: result.segments,
+          transcript: result.transcript,
+        },
+        binding: selectionBinding,
+        captions,
+      });
+      setAsrStatus(t('delivery.asrReview', 'Review and edit the transcript before accepting it.'));
+    } catch (reason) {
+      setAsrModelError(reason instanceof Error ? reason.message : String(reason));
+      setAsrStatus('');
+    } finally {
+      setAsrBusy(false);
+    }
+  };
+  const acceptAsrProposal = async () => {
+    const current = asrProposal;
+    if (!current || !window.electron?.inspectTimelineRenderMedia) return;
+    setAsrBusy(true);
+    setAsrModelError('');
+    try {
+      const request = current.proposal.request;
+      const latestClip = useAppStore.getState().clips.find((clip) => clip.id === request.clipId);
+      const latestAsset = getAssetForTimelineClip(latestClip);
+      if (
+        idRef.current !== request.projectId ||
+        asrClipId !== request.clipId ||
+        !latestClip ||
+        !latestAsset ||
+        (latestAsset.storageKey || latestAsset.id) !== request.mediaId ||
+        latestClip.offset !== request.offsetSeconds ||
+        latestClip.duration !== request.durationSeconds
+      )
+        throw new Error(
+          t(
+            'delivery.asrStale',
+            'The project or selected clip changed. Start a new transcription.',
+          ),
+        );
+      const inspection = await window.electron.inspectTimelineRenderMedia(request.mediaId);
+      if (!inspection.available || !inspection.sha256)
+        throw new Error(
+          t('delivery.asrMediaChanged', 'The source media changed. Select it again.'),
+        );
+      const latestProject = await projectDocumentService.load(request.projectId);
+      if (!latestProject)
+        throw new Error(
+          t('delivery.asrProjectMissing', 'The current project could not be loaded.'),
+        );
+      assertClipAudioRequestCurrent(request, {
+        projectId: idRef.current ?? '',
+        projectRevision: latestProject.documentRevision ?? 0,
+        clipId: latestClip.id,
+        mediaId: latestAsset.storageKey || latestAsset.id,
+        mediaSha256: inspection.sha256,
+        offsetSeconds: latestClip.offset,
+        durationSeconds: latestClip.duration,
+      });
+      if (
+        JSON.stringify({
+          projectId: idRef.current,
+          clips: useAppStore.getState().clips,
+          selectedClipId: asrClipId,
+          mediaId: request.mediaId,
+          language: asrLanguage,
+        }) !== current.binding
+      )
+        throw new Error(
+          t(
+            'delivery.asrStale',
+            'The project or selected clip changed. Start a new transcription.',
+          ),
+        );
+      addCaptions(current.captions, 'append', request.clipId);
+      setAsrProposal(null);
+      setAsrStatus('');
+    } catch (reason) {
+      setAsrModelError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setAsrBusy(false);
+    }
   };
   useEffect(() => {
     if (!projectId || !settings || !job || job.status !== 'complete' || job.purpose !== 'preview')
@@ -832,6 +1100,345 @@ export function CreatorDeliveryPanel() {
             </select>
           </label>
         </div>
+        <section className="my-4 space-y-3 rounded-lg border border-slate-700 p-3">
+          <div>
+            <h3 className="font-semibold">
+              {t('delivery.asrTitle', 'Local speech transcription')}
+            </h3>
+            <p className="text-sm text-slate-300">
+              {t(
+                'delivery.asrPrivacy',
+                'Whisper runs on this device. After the model is installed, transcription works offline and sends no audio to a provider.',
+              )}
+            </p>
+          </div>
+          {asrModelError && <p role="alert">{asrModelError}</p>}
+          {!window.electron?.getCreatorAsrModelInfo && (
+            <p role="status" className="text-sm text-slate-300">
+              {t(
+                'delivery.asrDesktopOnly',
+                'Use the desktop app to install the local speech model and transcribe clips.',
+              )}
+            </p>
+          )}
+          {asrModelInfo && !asrModelInfo.status.installed && !asrInstalling && (
+            <div className="space-y-2">
+              <p role={asrModelInfo.status.state === 'corrupt' ? 'alert' : 'status'}>
+                {asrModelInfo.status.state === 'corrupt'
+                  ? t(
+                      'delivery.asrModelCorrupt',
+                      'The installed speech model failed its integrity check. Reinstall the verified model.',
+                    )
+                  : t(
+                      'delivery.asrModelMissing',
+                      'The local Whisper Base q8 model is not installed.',
+                    )}{' '}
+                {formatBytes(asrModelInfo.manifest.totalBytes)}
+              </p>
+              {!asrInstallConfirm ? (
+                <button
+                  type="button"
+                  className={buttonClass}
+                  onClick={() => setAsrInstallConfirm(true)}
+                >
+                  {t('delivery.asrPrepareInstall', 'Review model download')}
+                </button>
+              ) : (
+                <div
+                  className="space-y-2 rounded border border-slate-600 p-3"
+                  role="group"
+                  aria-label={t('delivery.asrConfirmGroup', 'Confirm local speech model download')}
+                >
+                  <p>
+                    {t(
+                      'delivery.asrConfirmDownload',
+                      'Download the pinned Whisper Base q8 model ({{size}}) from Hugging Face? It is stored locally and used only for offline transcription.',
+                      { size: formatBytes(asrModelInfo.manifest.totalBytes) },
+                    )}
+                  </p>
+                  <a href={asrModelInfo.manifest.source} target="_blank" rel="noreferrer">
+                    {t('delivery.asrModelSource', 'Model source and revision')}
+                  </a>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      onClick={() => {
+                        setAsrInstalling(true);
+                        setAsrInstallConfirm(false);
+                        setAsrInstallProgress({
+                          loadedBytes: 0,
+                          totalBytes: asrModelInfo.manifest.totalBytes,
+                        });
+                        void creatorAsrService
+                          .installModel(asrModelInfo.manifest, (progress) => {
+                            setAsrInstallProgress({
+                              loadedBytes: progress.loadedBytes,
+                              totalBytes: progress.totalBytes,
+                            });
+                            setAsrInstallPhase(progress.status);
+                          })
+                          .then(async () => {
+                            await refreshAsrModelInfo();
+                            setAsrModelError('');
+                          })
+                          .catch((reason: unknown) =>
+                            setAsrModelError(
+                              reason instanceof Error ? reason.message : String(reason),
+                            ),
+                          )
+                          .finally(() => setAsrInstalling(false));
+                      }}
+                    >
+                      {t('delivery.asrConfirmInstall', 'Download and install')}
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      onClick={() => setAsrInstallConfirm(false)}
+                    >
+                      {t('delivery.discard', 'Cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {asrInstalling && (
+            <div className="space-y-2">
+              <p role="status">
+                {asrInstallPhase === 'verifying'
+                  ? t('delivery.asrVerifying', 'Verifying downloaded model files…')
+                  : t('delivery.asrDownloading', 'Downloading local model…')}{' '}
+                {formatBytes(asrInstallProgress.loadedBytes)} /{' '}
+                {formatBytes(asrInstallProgress.totalBytes)}
+              </p>
+              <progress
+                className="w-full"
+                max={asrInstallProgress.totalBytes || 1}
+                value={asrInstallProgress.loadedBytes}
+                aria-label={t('delivery.asrDownloadProgress', 'Model download progress')}
+              />
+              <button
+                type="button"
+                className={buttonClass}
+                onClick={() => void creatorAsrService.cancelInstall()}
+              >
+                {t('delivery.asrCancelDownload', 'Cancel download')}
+              </button>
+            </div>
+          )}
+          {asrModelInfo?.status.installed && (
+            <div className="flex flex-wrap items-center gap-2">
+              <p role="status">
+                {t('delivery.asrModelReady', 'Whisper Base q8 is installed for offline use.')} ·{' '}
+                {formatBytes(asrModelInfo.status.totalBytes)}
+              </p>
+              {!asrRemoveConfirm ? (
+                <button
+                  type="button"
+                  className={buttonClass}
+                  disabled={asrBusy}
+                  onClick={() => setAsrRemoveConfirm(true)}
+                >
+                  {t('delivery.asrRemoveModel', 'Remove model')}
+                </button>
+              ) : (
+                <span className="flex gap-2">
+                  <button
+                    type="button"
+                    className={buttonClass}
+                    disabled={asrBusy}
+                    onClick={() => {
+                      void creatorAsrService
+                        .removeModel()
+                        .then(async () => {
+                          setAsrRemoveConfirm(false);
+                          setAsrProposal(null);
+                          await refreshAsrModelInfo();
+                        })
+                        .catch((reason: unknown) =>
+                          setAsrModelError(
+                            reason instanceof Error ? reason.message : String(reason),
+                          ),
+                        );
+                    }}
+                  >
+                    {t('delivery.asrConfirmRemove', 'Confirm removal')}
+                  </button>
+                  <button
+                    type="button"
+                    className={buttonClass}
+                    onClick={() => setAsrRemoveConfirm(false)}
+                  >
+                    {t('delivery.discard', 'Cancel')}
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+          {asrModelInfo?.status.installed && (
+            <div className="flex flex-wrap gap-3">
+              <label>
+                {t('delivery.asrClipOccurrence', 'Clip occurrence')}{' '}
+                <select
+                  className={inputClass}
+                  aria-label={t('delivery.asrClipOccurrence', 'Clip occurrence')}
+                  value={asrClipId}
+                  disabled={asrBusy}
+                  onChange={(event) => {
+                    setAsrClipId(event.target.value);
+                    setAsrProposal(null);
+                    setAsrStatus('');
+                    setAsrModelError('');
+                  }}
+                >
+                  <option value="">—</option>
+                  {asrSourceClips.map((clip) => {
+                    const asset = getAssetForTimelineClip(clip);
+                    return (
+                      <option key={clip.id} value={clip.id}>
+                        {asset?.name ?? clip.label} ·{' '}
+                        {clip.type === 'video'
+                          ? t('delivery.asrVideoAudio', 'video audio')
+                          : t('delivery.asrAudio', 'audio')}{' '}
+                        {clip.startTime.toFixed(1)}s
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              <label>
+                {t('delivery.asrLanguage', 'Speech language')}{' '}
+                <select
+                  className={inputClass}
+                  aria-label={t('delivery.asrLanguage', 'Speech language')}
+                  value={asrLanguage}
+                  disabled={asrBusy}
+                  onChange={(event) => {
+                    setAsrLanguage(event.target.value as CreatorAsrLanguage);
+                    setAsrProposal(null);
+                  }}
+                >
+                  {CREATOR_ASR_LANGUAGES.map((language) => (
+                    <option key={language} value={language}>
+                      {t(
+                        `delivery.asrLanguageOptions.${language}`,
+                        creatorAsrLanguageLabels[language],
+                      )}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className={buttonClass}
+                disabled={asrBusy || !selectedAsrClip || !window.electron?.extractTimelineAudio}
+                onClick={() => void createAsrProposal()}
+              >
+                {asrBusy
+                  ? t('delivery.asrWorking', 'Working…')
+                  : t('delivery.asrTranscribe', 'Transcribe selected clip locally')}
+              </button>
+            </div>
+          )}
+          {asrModelInfo?.status.installed && asrSourceClips.length === 0 && (
+            <p role="status">
+              {t(
+                'delivery.asrNoClips',
+                'Add a local audio or video clip to the timeline to transcribe it.',
+              )}
+            </p>
+          )}
+          {asrStatus && <p role="status">{asrStatus}</p>}
+          {asrProposal && (
+            <div className="space-y-3 rounded-lg border border-slate-600 p-3">
+              <p className="font-semibold">
+                {t('delivery.asrReview', 'Review and edit the transcript before accepting it.')}
+              </p>
+              <p className="text-sm text-slate-300">
+                {asrProposal.proposal.modelId} · {asrProposal.proposal.modelRevision} ·{' '}
+                {t(
+                  `delivery.asrLanguageOptions.${asrProposal.proposal.request.language}`,
+                  creatorAsrLanguageLabels[asrProposal.proposal.request.language],
+                )}
+              </p>
+              <details>
+                <summary>{t('delivery.asrTranscript', 'Full transcript')}</summary>
+                <p className="whitespace-pre-wrap">{asrProposal.proposal.transcript}</p>
+              </details>
+              <div className="max-h-72 space-y-2 overflow-y-auto">
+                {asrProposal.captions.map((caption, index) => (
+                  <div key={caption.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
+                    <input
+                      type="text"
+                      aria-label={t('delivery.asrCaptionText', 'Caption {{number}} text', {
+                        number: index + 1,
+                      })}
+                      className={inputClass}
+                      value={caption.text}
+                      onChange={(event) => {
+                        const next = [...asrProposal.captions];
+                        next[index] = { ...caption, text: event.target.value };
+                        setAsrProposal({ ...asrProposal, captions: next });
+                      }}
+                    />
+                    <input
+                      type="number"
+                      aria-label={t('delivery.asrCaptionStart', 'Caption {{number}} start', {
+                        number: index + 1,
+                      })}
+                      className={`${inputClass} w-24`}
+                      min={selectedAsrClip?.startTime ?? 0}
+                      max={duration}
+                      step="0.01"
+                      value={caption.startTime}
+                      onChange={(event) => {
+                        const next = [...asrProposal.captions];
+                        next[index] = { ...caption, startTime: Number(event.target.value) };
+                        setAsrProposal({ ...asrProposal, captions: next });
+                      }}
+                    />
+                    <input
+                      type="number"
+                      aria-label={t('delivery.asrCaptionEnd', 'Caption {{number}} end', {
+                        number: index + 1,
+                      })}
+                      className={`${inputClass} w-24`}
+                      min={selectedAsrClip?.startTime ?? 0}
+                      max={duration}
+                      step="0.01"
+                      value={caption.endTime}
+                      onChange={(event) => {
+                        const next = [...asrProposal.captions];
+                        next[index] = { ...caption, endTime: Number(event.target.value) };
+                        setAsrProposal({ ...asrProposal, captions: next });
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={buttonClass}
+                  disabled={asrBusy || asrProposal.captions.some((caption) => !caption.text.trim())}
+                  onClick={() => void acceptAsrProposal()}
+                >
+                  {t('delivery.asrAccept', 'Accept captions')}
+                </button>
+                <button
+                  type="button"
+                  className={buttonClass}
+                  disabled={asrBusy}
+                  onClick={() => setAsrProposal(null)}
+                >
+                  {t('delivery.discard', 'Discard')}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
         {captionClips.map((clip) => (
           <div key={clip.id} className="my-2 flex flex-wrap gap-2">
             <label>
@@ -1104,7 +1711,7 @@ export function CreatorDeliveryPanel() {
                 void act(async (id) => {
                   const before = binding();
                   const audioClip = selectedAudioClip!;
-                  const sourceCaptions = await creatorCaptionService.proposeLocal({
+                  const sourceCaptions = await creatorCaptionService.createTimeBlocks({
                     mediaId: selectedAudio!.storageKey || selectedAudio!.id,
                     clipOffset: audioClip.offset,
                     clipDuration: audioClip.duration,
@@ -1114,14 +1721,19 @@ export function CreatorDeliveryPanel() {
                     startTime: audioClip.startTime + caption.startTime,
                     endTime: audioClip.startTime + caption.endTime,
                   }));
-                  validateCreatorCaptions(values, duration);
                   if (idRef.current === id && before === binding())
-                    setProposal({ captions: values, binding: before });
-                  else throw new Error('Project or captions changed. Request a new proposal.');
+                    setProposal({
+                      captions: values,
+                      binding: before,
+                      sourceClipId: audioClip.id,
+                      kind: 'time-blocks',
+                    });
+                  else
+                    throw new Error('Project or captions changed. Create the time blocks again.');
                 })
               }
             >
-              {t('delivery.proposeLocal', 'Generate local captions (offline)')}
+              {t('delivery.createTimeBlocks', 'Create time blocks')}
             </button>
             <button
               type="button"
@@ -1157,7 +1769,12 @@ export function CreatorDeliveryPanel() {
                     }));
                   validateCreatorCaptions(values, duration);
                   if (idRef.current === id && before === binding())
-                    setProposal({ captions: values, binding: before });
+                    setProposal({
+                      captions: values,
+                      binding: before,
+                      sourceClipId: audioClip.id,
+                      kind: 'provider',
+                    });
                   else throw new Error('Project or captions changed. Request a new proposal.');
                 })
               }
@@ -1169,7 +1786,12 @@ export function CreatorDeliveryPanel() {
         {proposal && (
           <div className="space-y-3 rounded-lg bg-slate-800/40 p-3 border border-slate-700/60 my-3">
             <p className="font-semibold text-sm text-slate-200">
-              {t('delivery.reviewProposal', 'Review caption proposal before accepting')}
+              {proposal.kind === 'time-blocks'
+                ? t(
+                    'delivery.timeBlocksNeedText',
+                    'These are silence-based timing blocks, not recognized speech. Enter caption text before accepting.',
+                  )
+                : t('delivery.reviewProposal', 'Review caption proposal before accepting')}
             </p>
             <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
               {proposal.captions.map((caption, idx) => (
@@ -1194,6 +1816,7 @@ export function CreatorDeliveryPanel() {
               <button
                 type="button"
                 className={buttonClass}
+                disabled={proposal.captions.some((caption) => !caption.text.trim())}
                 onClick={() => {
                   if (proposal.binding !== binding())
                     setError(
@@ -1203,7 +1826,11 @@ export function CreatorDeliveryPanel() {
                       ),
                     );
                   else {
-                    addCaptions(proposal.captions, 'append', selectedAudioClip?.id);
+                    addCaptions(
+                      proposal.captions,
+                      'append',
+                      proposal.sourceClipId ?? selectedAudioClip?.id,
+                    );
                     setProposal(null);
                   }
                 }}
@@ -1329,7 +1956,7 @@ export function CreatorDeliveryPanel() {
         </button>
         <button
           className={buttonClass}
-          disabled={busy || !!running || !capabilities.available}
+          disabled={busy || !!running || anyBatchRunning || !capabilities.available}
           onClick={() => void render('preview')}
         >
           {t('v16.reviewDelivery', 'Review delivery')}
@@ -1351,7 +1978,7 @@ export function CreatorDeliveryPanel() {
         <button
           className={buttonClass}
           aria-label={t('delivery.render', 'Export video')}
-          disabled={busy || !!running || batchProgress !== null || !capabilities.available}
+          disabled={busy || !!running || anyBatchRunning || !capabilities.available}
           onClick={() => void render()}
         >
           {t('delivery.render', 'Export video')}
@@ -1359,7 +1986,7 @@ export function CreatorDeliveryPanel() {
         {(settings.batchFormats?.length ?? 1) > 1 && (
           <button
             className={buttonClass}
-            disabled={busy || !!running || batchProgress !== null || !capabilities.available}
+            disabled={busy || !!running || anyBatchRunning || !capabilities.available}
             onClick={() => void renderBatch()}
           >
             {t('delivery.renderBatch', 'Batch export')} ({settings.batchFormats?.length} formats)
@@ -1369,10 +1996,12 @@ export function CreatorDeliveryPanel() {
           <button
             className={buttonClass}
             onClick={() => {
-              batchCancelRef.current = true;
-              if (job) {
-                void useRenderJobsStore.getState().cancel(job.id);
-              }
+              if (batch?.status === 'running') {
+                void useRenderBatchStore
+                  .getState()
+                  .cancel(batch.id)
+                  .catch((reason: unknown) => setError(String(reason)));
+              } else if (job) void useRenderJobsStore.getState().cancel(job.id);
             }}
           >
             {t('delivery.cancel', 'Cancel export')}
@@ -1474,6 +2103,28 @@ export function CreatorDeliveryPanel() {
             ))}
           </select>
         </label>
+      )}
+      {batch && ['interrupted', 'failed', 'cancelled'].includes(batch.status) && (
+        <div role="status">
+          <p>
+            {t(
+              'delivery.batchInterrupted',
+              'The saved export batch stopped. Completed formats are retained.',
+            )}
+          </p>
+          {batch.error && <p>{batch.error}</p>}
+          <button
+            className={buttonClass}
+            disabled={anyBatchRunning || !!running}
+            onClick={() =>
+              void act(async () => {
+                await useRenderBatchStore.getState().resume(batch.id);
+              })
+            }
+          >
+            {t('delivery.resumeBatch', 'Resume saved batch')}
+          </button>
+        </div>
       )}
       {batchProgress && (
         <div

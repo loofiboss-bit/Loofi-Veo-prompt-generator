@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Desktop-only local speech transcription with a pinned multilingual Whisper Base q8 model,
+  checksum-verified installation, explicit download confirmation, trim-aware clip-occurrence
+  selection, editable proposals, and no cloud fallback. Manual captions and SRT remain available
+  in web mode; silence detection is labelled as timing-only.
+- An occurrence-aware lyric-section parser and lock model, segmented prompt/dialogue editing,
+  and an explicit motion field for image-to-video prompts.
+- Project-scoped render-batch recovery, local media resolution for production review, and a
+  persistent cost ledger that distinguishes estimates from verified charges.
+- Three clear Start destinations, a project summary with a next action, recent projects, and style
+  management under Settings.
+
+### Changed
+
+- Coordinate project saves in media, media catalog, project document, then saved-state order, and
+  serialize catalog changes without dropping other windows' additions.
+- Keep production acceptance separate from timeline placement, freeze existing take references,
+  and preserve a placed clip's trim, audio, transition, and caption links when replacing its source.
+- Mix timeline source audio through a shared Web Audio output with track mute/enable, clip volume
+  keyframes and fades; use native delivery review as the authority for rendered output.
+- Show whether AI review ran, distinguish the approved cost ceiling from estimates and actual
+  provider charges, and require a current delivery review before saving.
+- Complete the six application locales for the changed Studio, Create, Creator, and cost workflows,
+  including Swedish in the Studio translation gate.
+
 ## [19.0.0] - 2026-10-24
 
 ### Added

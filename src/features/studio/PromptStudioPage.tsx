@@ -26,6 +26,12 @@ import {
   normalizeMusicPromptInput,
 } from '@core/services/promptStudioService';
 import {
+  isLyricSectionLocked,
+  LyricSectionError,
+  resolveLyricSection,
+  setLyricSectionLocked,
+} from '@core/services/lyricSectionService';
+import {
   editStudioVariant,
   preserveLockedLyricSections,
   rewriteStudioLyricSection,
@@ -348,7 +354,13 @@ export function PromptStudioPage() {
     try {
       await action();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('actionError'));
+      setError(
+        e instanceof LyricSectionError
+          ? t(`lyricSectionErrors.${e.code}`, { defaultValue: e.message })
+          : e instanceof Error
+            ? e.message
+            : t('actionError'),
+      );
     }
   };
   const change = async (action: () => Promise<void>) => {
@@ -915,6 +927,19 @@ export function PromptStudioPage() {
   const selectedSection = lyricSections.includes(section)
     ? section
     : (lyricSections[0] ?? '[Chorus]');
+  const selectedLyricSection = lyricVariant
+    ? resolveLyricSection(lyricVariant.lyrics, selectedSection)
+    : undefined;
+  const selectedSectionLocked = selectedLyricSection
+    ? isLyricSectionLocked(selectedLyricSection, lockedSections)
+    : false;
+  const motionMode = mode === 'video' && video.mode === 'image-to-video';
+  const primaryInputLabel =
+    mode === 'music'
+      ? t('topic')
+      : motionMode
+        ? t('motionDescription', 'Describe the motion')
+        : t('idea');
   const generationBlocker = mode === 'video' ? studioGenerationBlocker(video) : null;
   const textField = (key: string, value: string, onChange: (value: string) => void) => (
     <Field key={key} label={t(key)}>
@@ -1005,12 +1030,18 @@ export function PromptStudioPage() {
           hidden={!splitLayout && activeView !== 'editor'}
         >
           <fieldset disabled={changing} className="studio-brief">
-            <Field label={mode === 'video' ? t('idea') : t('topic')}>
+            <Field label={primaryInputLabel}>
               <textarea
                 ref={ideaRef}
                 data-studio-field={mode === 'video' ? 'idea' : 'topic'}
-                aria-label={mode === 'video' ? t('idea') : t('topic')}
-                placeholder={mode === 'video' ? t('ideaPlaceholder') : t('topicPlaceholder')}
+                aria-label={primaryInputLabel}
+                placeholder={
+                  motionMode
+                    ? t('motionPlaceholder', 'Describe what moves in the image and how it moves.')
+                    : mode === 'video'
+                      ? t('ideaPlaceholder')
+                      : t('topicPlaceholder')
+                }
                 rows={4}
                 value={mode === 'video' ? video.idea : music.topic}
                 onChange={(e) =>
@@ -1020,6 +1051,14 @@ export function PromptStudioPage() {
                 }
               />
             </Field>
+            {motionMode ? (
+              <p className="studio-hint">
+                {t(
+                  'motionHint',
+                  'Describe movement, not appearance. If Action is filled in, it takes priority.',
+                )}
+              </p>
+            ) : null}
             {mode === 'video' ? (
               <>
                 <div className="studio-fields">
@@ -1366,7 +1405,12 @@ export function PromptStudioPage() {
                       <option value="">{t('chooseHistory')}</option>
                       {history.map((item) => (
                         <option key={item.id} value={item.id}>
-                          {item.primary.title}
+                          {item.primary.title} · {item.target} ·{' '}
+                          {new Date(item.createdAt).toLocaleDateString()} —{' '}
+                          {(item.kind === 'video'
+                            ? (item.input as VideoPromptArtifactInput).idea
+                            : (item.input as MusicPromptArtifactInput).topic
+                          ).slice(0, 72)}
                         </option>
                       ))}
                     </select>
@@ -1567,7 +1611,7 @@ export function PromptStudioPage() {
                       className="studio-secondary"
                       onClick={() => navigate(ROUTES.CREATE, { state: { initialStep: 'assets' } })}
                     >
-                      {t('generateLyria', 'Generate music in app (Lyria 3)')}
+                      {t('openLyriaSetup', 'Open Lyria 3 setup · enter lyrics separately')}
                     </button>
                   </div>
                   <details className="studio-details">
@@ -1582,15 +1626,19 @@ export function PromptStudioPage() {
                     <label className="studio-check">
                       <input
                         type="checkbox"
-                        checked={lockedSections.includes(selectedSection)}
+                        disabled={!selectedLyricSection || busy || changing}
+                        checked={selectedSectionLocked}
                         onChange={() => {
                           store.applyDraft({
                             ...(lyricVariant
                               ? { music: { ...music, lyrics: lyricVariant.lyrics } }
                               : {}),
-                            lockedSections: lockedSections.includes(selectedSection)
-                              ? lockedSections.filter((item) => item !== selectedSection)
-                              : [...lockedSections, selectedSection],
+                            lockedSections: setLyricSectionLocked(
+                              lyricVariant?.lyrics ?? '',
+                              selectedSection,
+                              lockedSections,
+                              !selectedSectionLocked,
+                            ),
                           });
                         }}
                       />
@@ -1598,7 +1646,7 @@ export function PromptStudioPage() {
                     </label>
                     {textField('direction', direction, setDirection)}
                     <button
-                      disabled={busy || changing || lockedSections.includes(selectedSection)}
+                      disabled={busy || changing || !selectedLyricSection || selectedSectionLocked}
                       onClick={() =>
                         void run(async () => {
                           const revision = store.draft?.revision;

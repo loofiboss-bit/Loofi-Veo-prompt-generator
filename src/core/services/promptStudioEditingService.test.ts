@@ -128,13 +128,11 @@ describe('Studio variant editing', () => {
       'Ny alternativ refräng',
     );
   });
-  it('retains locked blocks in full-pack optimization even when AI omits them', () => {
+  it('rejects a full-pack response that omits sections instead of moving locked blocks', () => {
     const proposed = '[Verse 1]\nChanged\n[Chorus]\nWrong chorus\n';
-    const result = preserveLockedLyricSections(lyrics, proposed, ['[Chorus]', '[Verse 2]']);
-    expect(result).toContain('[Verse 1]\nChanged');
-    expect(result).toContain('[Chorus]\nMin gamla refräng\n\n');
-    expect(result).toContain('[Verse 2]\nLås mig exakt!\n');
-    expect(result).not.toContain('Wrong chorus');
+    expect(() => preserveLockedLyricSections(lyrics, proposed, ['[Chorus]', '[Verse 2]'])).toThrow(
+      /section order or count/,
+    );
   });
   it('never invokes AI for a locked section', async () => {
     const artifact = compileMusicPromptArtifact({ topic: 'Home', language: 'Swedish', lyrics });
@@ -160,5 +158,56 @@ describe('Studio variant editing', () => {
     expect(result.indexOf('First unique chorus')).toBeLessThan(
       result.indexOf('Second unique chorus'),
     );
+  });
+});
+
+describe('occurrence-aware lyric editing', () => {
+  const repeated =
+    '[Verse]\nOpening\n\n[Chorus]\nIdentical hook  \n\n[Verse]\nMiddle\n\n[Chorus]\nIdentical hook  \n';
+  it('replaces the second occurrence from a single-section response without touching other bytes', () => {
+    const result = replaceStudioLyricSection(repeated, '[Chorus]\nNew second hook', '[Chorus] #2', [
+      '[Chorus] #1',
+    ]);
+    expect(result).toBe(
+      repeated.slice(0, repeated.lastIndexOf('[Chorus]')) + '[Chorus]\nNew second hook\n',
+    );
+  });
+  it('selects the matching second occurrence from a complete response', () => {
+    const proposed = repeated
+      .replace('Opening', 'AI opening')
+      .replaceAll('Identical hook  ', 'AI hook');
+    const result = replaceStudioLyricSection(repeated, proposed, '[Chorus] #2', []);
+    expect(result).toBe(
+      repeated.slice(0, repeated.lastIndexOf('[Chorus]')) + '[Chorus]\nAI hook\n',
+    );
+  });
+  it('rejects ambiguous bare selectors and reordered or missing full-pack sections', () => {
+    expect(() => replaceStudioLyricSection(repeated, '[Chorus]\nNew', '[Chorus]', [])).toThrow(
+      /specific occurrence/,
+    );
+    expect(() =>
+      preserveLockedLyricSections(repeated, '[Chorus]\nNew\n[Verse]\nChanged', ['[Chorus] #2']),
+    ).toThrow(/order or count/);
+  });
+  it('preserves identical locked blocks as distinct occurrences', () => {
+    const result = preserveLockedLyricSections(
+      repeated,
+      repeated.replaceAll('Identical hook  ', 'AI changed'),
+      ['[Chorus]'],
+    );
+    expect(result).toBe(repeated);
+    expect(result.match(/Identical hook/g)).toHaveLength(2);
+  });
+  it('checks an indexed legacy whole-heading lock before invoking AI', async () => {
+    const artifact = compileMusicPromptArtifact({
+      topic: 'Home',
+      language: 'English',
+      lyrics: repeated,
+    });
+    mocks.optimizeMusic.mockClear();
+    await expect(
+      rewriteStudioLyricSection(artifact, '[Chorus] #2', 'Change', ['Chorus']),
+    ).rejects.toThrow(/locked/);
+    expect(mocks.optimizeMusic).not.toHaveBeenCalled();
   });
 });
