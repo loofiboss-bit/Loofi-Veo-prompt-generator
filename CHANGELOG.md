@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Archive the v19.0.0 end-user review with prioritized workflow findings, proposed acceptance
+  criteria, verification boundaries and selected interface captures. The review records follow-up
+  work; it does not implement the proposed behavior changes.
+
 ## [19.0.0] - 2026-10-24
 
 ### Added

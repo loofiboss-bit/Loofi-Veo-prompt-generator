@@ -29,6 +29,7 @@ Current stable publication: [v17.0.0 verification](V17_0_0_RELEASE.md).
 
 ## Technical references
 
+- [Creator Studio end-user review (2026-10-24)](reviews/2026-10-24-creator-studio/README.md) — Prioritized v19 workflow findings, proposed improvements, acceptance criteria and verification limits
 - [Architecture](./ARCHITECTURE.md)
 - [Engineering Roadmap (v18+)](../ROADMAP.md)
 - [Architecture diagrams](./ARCHITECTURE_DIAGRAMS.md)
