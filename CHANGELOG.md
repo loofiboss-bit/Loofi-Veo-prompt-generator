@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Archive the v19.0.0 end-user review with prioritized workflow findings, proposed acceptance
+  criteria, verification boundaries and selected interface captures. The review records follow-up
+  work; it does not implement the proposed behavior changes.
 - Improve only the selected music variant's style, lyrics, or both from its current manual text. Review
   each proposed field separately; occurrence-specific section locks, instrumental mode, other variants,
   titles and production notes remain protected. Full-package improvement remains a separate action.
