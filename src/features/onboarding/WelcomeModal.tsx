@@ -25,16 +25,24 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const language = SUPPORTED_LANGUAGES.includes(i18n.language as SupportedLanguage)
     ? (i18n.language as SupportedLanguage)
     : 'en';
-  const finish = () => {
+  const dismiss = () => {
     setWelcomeShown();
     localStorage.setItem('v8-onboarding-complete', 'true');
     onClose();
+  };
+  const finish = () => {
+    dismiss();
     navigate(mode === 'clips' ? `${ROUTES.START}?mode=clips` : `${ROUTES.STUDIO}?mode=${mode}`);
   };
   return (
-    <Modal isOpen={isOpen} onClose={finish} size="lg" closeOnBackdropClick>
+    <Modal
+      isOpen={isOpen}
+      onClose={dismiss}
+      title={t('welcomeTitle')}
+      size="lg"
+      closeOnBackdropClick
+    >
       <div className="studio-workspace">
-        <h1 className="text-2xl font-semibold">{t('welcomeTitle')}</h1>
         <p className="studio-hint">{t('welcomeDescription')}</p>
         <label className="studio-field">
           <span>{t('language')}</span>
@@ -56,49 +64,65 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
             ))}
           </select>
         </label>
-        <fieldset className="mt-4">
-          <legend>{creatorT('start.goals', 'Choose how to begin')}</legend>
-          <label className="studio-field">
+        <fieldset className="mt-4 space-y-2">
+          <legend className="text-sm font-medium text-slate-300 mb-2">
+            {creatorT('start.goals', 'Choose how to begin')}
+          </legend>
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-700/80 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-800/50 cursor-pointer transition-colors">
             <input
               type="radio"
               name="welcome-goal"
               checked={mode === 'clips'}
               onChange={() => setMode('clips')}
+              className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-600"
             />
-            {creatorT('start.ownClips', 'Use my own clips')}
+            <span className="text-sm font-medium text-slate-200">
+              {creatorT('start.ownClips', 'Use my own clips')}
+            </span>
           </label>
-          <label className="studio-field">
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-700/80 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-800/50 cursor-pointer transition-colors">
             <input
               type="radio"
               name="welcome-goal"
               checked={mode === 'video'}
               onChange={() => setMode('video')}
+              className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-600"
             />
-            {creatorT('start.videoPrompts', 'Open video prompts')}
+            <span className="text-sm font-medium text-slate-200">
+              {creatorT('start.videoPrompts', 'Open video prompts')}
+            </span>
           </label>
-          <label className="studio-field">
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-700/80 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-800/50 cursor-pointer transition-colors">
             <input
               type="radio"
               name="welcome-goal"
               checked={mode === 'music'}
               onChange={() => setMode('music')}
+              className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-600"
             />
-            {creatorT('start.musicLyrics', 'Open music and lyrics')}
+            <span className="text-sm font-medium text-slate-200">
+              {creatorT('start.musicLyrics', 'Open music and lyrics')}
+            </span>
           </label>
         </fieldset>
-        <button
-          onClick={() => {
-            setWelcomeShown();
-            localStorage.setItem('v8-onboarding-complete', 'true');
-            onClose();
-          }}
-          disabled={busy}
-        >
-          {creatorT('welcome.skip', 'Skip for now')}
-        </button>
-        <button className="studio-primary mt-4" onClick={finish} disabled={busy}>
-          {t('startCreating')}
-        </button>
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            onClick={dismiss}
+            disabled={busy}
+          >
+            {creatorT('welcome.skip', 'Skip for now')}
+          </button>
+          <button
+            type="button"
+            className="studio-primary px-5 py-2.5 rounded-xl text-sm font-semibold"
+            onClick={finish}
+            disabled={busy}
+          >
+            {t('startCreating')}
+          </button>
+        </div>
       </div>
     </Modal>
   );

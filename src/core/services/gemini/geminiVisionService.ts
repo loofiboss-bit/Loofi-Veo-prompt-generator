@@ -11,7 +11,7 @@ import { logger } from '@core/services/loggerService';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 import { resolveProviderModelId } from '@core/models/catalog';
 
-const DEFAULT_IMAGE_MODEL = resolveProviderModelId('nano-banana-2');
+const DEFAULT_IMAGE_MODEL = resolveProviderModelId('gemini-nano-banana-2.1');
 
 // ---------------------------------------------------------------------------
 // Image generation

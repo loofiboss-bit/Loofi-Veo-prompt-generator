@@ -7,6 +7,71 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [21.0.0] - 2026-10-28
+
+### Added
+
+- Review optional local caption suggestions for overlaps, lines over 42 grapheme clusters and
+  reading speeds over 20 grapheme clusters per second. Suggestions focus the affected caption and
+  never change text or timing automatically.
+- Continue the active project from Start, including recovery for known save conflicts, Studio draft
+  errors and missing timeline media. Examples and recipes remain available in expandable sections.
+- Open delivery review from the timeline and locate supported delivery diagnostics in the editor.
+
+### Changed
+
+- Refresh Gemini model routing and prompt guidance while preserving explicit provider approval.
+- Apply compatible dependency security updates required by the release audit.
+- Align the total JavaScript release budget with the bundled local transcription worker, retaining the main-entry limit.
+- Coordinate active-project saves before manual save, production handoff, project copy and export;
+  preserve conflicts and edits made during an in-flight save.
+- Distinguish current render completion from a confirmed file save. Previously saved jobs retain
+  their filename and are identified as previous results when their currentness cannot be established.
+- Localize delivery diagnostics and statuses in all six app languages. Correct welcome-dialog
+  naming, radio layout, close behavior and keyboard focus handling.
+
+### Added
+
+- **Guided 4-Step Delivery Pipeline:**
+  - Introduced `DeliveryStepper` and `DeliveryOutputs` breaking down export into clear sequential steps: Check delivery, Review delivery, Export video, and Save files.
+  - Interactive status badges, live check preflights, clean in-flight job cancellation, and soft recommendations to review before exporting.
+  - Integrated `DisabledReason` component providing tooltips with explanatory text and direct remediation actions for disabled export buttons.
+- **Unified Media Library & Deletion Guards:**
+  - Added `MediaFilterTabs` with live count badges across All, Video, Audio, Images, References, and Generated assets.
+  - Enabled multi-format local file uploading (`video/*,image/*,audio/*`) in Assets Hub.
+  - Built active deletion guards in `AssetsPage` blocking removal of assets actively referenced in timeline clips or Production Bible profiles with granular usage reasons.
+  - Added placed-on-timeline indicator badges in `EditorMediaPanel`.
+- **Top-Bar Project Status Chip:**
+  - Added compact, persistent `ProjectStatusChip` in `AppScaffold` header indicating `saved`, `saving`, `conflict`, and `error` states with a 1-click Save action.
+  - Streamlined `ProjectSaveStatus` to only display intrusive banners during actual merge conflicts or local persistence errors.
+- **Navigation Enhancements:**
+  - Redesigned empty timeline state with a prominent primary "Open editor & import media" button and secondary Production workflow navigation.
+  - Added "Continue editing" shortcut for the active project in Projects Hub with automatic routing to Timeline (if media exists) or Prompt Studio.
+- **Comprehensive Capability Matrix:** Added full offline / desktop / key-required / experimental feature breakdown to `README.md`.
+- **Phase 5 in Roadmap:** Completed Usability, Design Harmony & Production Trust roadmap goals.
+
+### Changed
+
+- **Plugin Sandbox Isolation:**
+  - Removed all `new Function` and `_initRestricted` main-thread execution from `pluginSandboxService.ts`. All external plugins now run strictly inside isolated Web Workers.
+  - Hardened `index.html` Content Security Policy: replaced `'unsafe-eval'` with `'wasm-unsafe-eval'`.
+- **Design Tokens & Accessibility:**
+  - Standardized radio button layouts and borders in `WelcomeModal`.
+  - Removed yellow focus outlines on header titles (`h1[tabindex="-1"]:focus`) across creator views.
+  - Unified color tokens (`var(--color-bg-primary)`, `var(--color-border-primary)`).
+  - Aligned `UniversalTargetSelector` padding to standard `px-3 py-2 text-sm`.
+
+### Fixed
+
+- Apply heading focus styling consistently on the first opened route, while preserving interactive control focus indicators.
+- Keep ordinary durable video generation on supported Veo adapters and reject unsupported Omni submissions before network access.
+- Align new Flash and Argon pricing mirrors with disclosed published post-promotion ceilings.
+- Fixed false "Unsaved" indicator appearing on freshly initialized or loaded projects.
+- Translated all remaining raw strings in UI (Focus Mode, Magnetic, Snap, Snap Cuts) across all supported locales (`en`, `sv`, `fr`, `es`, `ja`, `ar`).
+- Added scoped zero-warning ESLint guard (`react/jsx-no-literals`) for delivery and media components, maintaining 0 warnings under `.lint-threshold: 0`.
+
 ## [20.0.0] - 2026-10-25
 
 ### Added

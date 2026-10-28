@@ -4,22 +4,21 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v20.0.0 Project-Safe Editing & Reviewed Delivery
+## v21.0.0 Polish & Trust
 
-v20 includes all changes from PR #96: durable project/media saves, explicit edit-preserving timeline
-placement, selected music/video edits with lyric and dialogue safeguards, cancellable AI requests,
-desktop-local Whisper transcription, reviewed delivery and persistent cost accounting. Three Start
-destinations and six updated locales make the workflow easier to follow. Existing project and
-archive formats remain supported.
+v21 adds a guided four-step delivery workflow, coordinated project saves, recoverable save conflicts,
+media-library filtering and deletion guards, optional caption suggestions, and clearer navigation.
+Render completion and confirmed file saves are shown separately. Updated translations and keyboard
+focus handling cover all six app languages. Existing project and archive formats remain supported.
 
-See [v20 release notes](releases/RELEASE-NOTES-v20.0.0.md),
+See [v21 release notes](releases/RELEASE-NOTES-v21.0.0.md),
 [v16 workflow](CREATOR_V16.md), and [timeline editing](V16_TIMELINE_EDITING.md).
 Historical v17 publication evidence remains in [release verification](V17_0_0_RELEASE.md).
 
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v20.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0)
+[v21.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0)
 only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -27,10 +26,10 @@ Expected desktop assets:
 
 | Target                | Asset                                                |
 | --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-20.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-20.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-20.0.0-linux-x86_64.AppImage` |
+| Windows x64 installer | `Loofi-Flow-Veo-Studio-21.0.0-win-x64-setup.exe`     |
+| Windows x64 portable  | `Loofi-Flow-Veo-Studio-21.0.0-win-x64-portable.exe`  |
+| Fedora RPM            | `Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.rpm`      |
+| Linux AppImage        | `Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.AppImage` |
 
 The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
 `release-manifest.json` and Windows update metadata. Verify published checksums before installation.

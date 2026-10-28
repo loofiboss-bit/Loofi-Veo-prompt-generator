@@ -59,6 +59,42 @@ export function getCreatorCaptionOverlaps(
   return overlaps;
 }
 
+export interface CaptionReviewIssue {
+  captionId: string;
+  code: 'overlap' | 'line-length' | 'reading-speed';
+}
+
+/** Advisory checks only; the user's text and timing are never changed. */
+export function getCreatorCaptionReviewIssues(captions: Caption[]): CaptionReviewIssue[] {
+  const Segmenter = (
+    Intl as unknown as {
+      Segmenter?: new (
+        locale?: string,
+        options?: { granularity: 'grapheme' },
+      ) => {
+        segment: (text: string) => Iterable<unknown>;
+      };
+    }
+  ).Segmenter;
+  const segmenter = Segmenter ? new Segmenter(undefined, { granularity: 'grapheme' }) : null;
+  const count = (text: string) =>
+    segmenter ? [...segmenter.segment(text)].length : Array.from(text.normalize('NFC')).length;
+  const overlapIds = new Set(
+    getCreatorCaptionOverlaps(captions).flatMap(({ firstId, secondId }) => [firstId, secondId]),
+  );
+  return captions.flatMap((caption) => {
+    const issues: CaptionReviewIssue[] = [];
+    if (overlapIds.has(caption.id)) issues.push({ captionId: caption.id, code: 'overlap' });
+    const lines = caption.text.split(/\r?\n/);
+    if (lines.some((line) => count(line) > 42))
+      issues.push({ captionId: caption.id, code: 'line-length' });
+    const duration = caption.endTime - caption.startTime;
+    if (duration > 0 && lines.reduce((sum, line) => sum + count(line), 0) / duration > 20)
+      issues.push({ captionId: caption.id, code: 'reading-speed' });
+    return issues;
+  });
+}
+
 export function importCreatorSrt(text: string, duration: number): Caption[] {
   const time = (value: string) => {
     const match = /^(\d{2,}):([0-5]\d):([0-5]\d)[,.](\d{3})$/.exec(value);

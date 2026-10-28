@@ -35,6 +35,17 @@ describe('MODEL_CATALOG', () => {
       expect(getModel(modelId)?.pricing.flatRequestUsd).toBe(price);
     }
   });
+  it('uses the published post-promotion Standard ceilings for new text models', () => {
+    expect(getModel('gemini-4-argon')?.pricing).toMatchObject({
+      source: { verifiedDate: '2026-10-28', effectiveDate: '2026-12-01' },
+      tokenTiers: [{ inputPerMillionUsd: { text: 4 }, outputPerMillionUsd: { text: 20 } }],
+    });
+    expect(getModel('gemini-3.8-flash')?.pricing).toMatchObject({
+      source: { verifiedDate: '2026-10-28', effectiveDate: '2027-01-01' },
+      tokenTiers: [{ inputPerMillionUsd: { text: 1.5 }, outputPerMillionUsd: { text: 7.5 } }],
+    });
+  });
+
   it('does not permit shut-down models in the executable catalog', () => {
     expect(MODEL_CATALOG.filter((model) => model.lifecycle === 'shut-down')).toEqual([]);
   });
@@ -80,11 +91,21 @@ describe('MODEL_CATALOG', () => {
   });
 
   it('records current stable general and image models', () => {
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.8-flash')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-4-argon')?.lifecycle).toBe('stable');
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.6-flash')?.lifecycle).toBe(
       'stable',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.5-flash-lite')?.lifecycle).toBe(
       'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-nano-banana-2.1')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-omni-1.1-flash')?.lifecycle).toBe(
+      'preview',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'nano-banana-pro')?.lifecycle).toBe('stable');
   });

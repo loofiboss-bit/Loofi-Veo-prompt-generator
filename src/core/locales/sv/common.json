@@ -194,7 +194,10 @@
     "remoteChange": "Ett annat fönster ändrade projektet.",
     "loadLatest": "Ladda senaste",
     "saveCopy": "Spara som kopia",
-    "backupWarning": "Projektet sparades; automatisk backup misslyckades:"
+    "backupWarning": "Projektet sparades; automatisk backup misslyckades:",
+    "allChangesSaved": "Alla ändringar har sparats lokalt",
+    "checkingSave": "Kontrollerar sparstatus",
+    "saveStatusUnknown": "Sparstatus saknas"
   },
   "assets": {
     "continuityProfiles": "Kontinuitetsprofiler",
@@ -218,6 +221,25 @@
     "duration": "Längd (sekunder)",
     "sourceOffset": "Förskjutning i källfil (sekunder)",
     "volume": "Volym",
-    "caption": "Undertext"
+    "caption": "Undertext",
+    "magneticTitle": "Magnetisk tidslinje (Ripple Edit)",
+    "magnetic": "Magnetisk",
+    "snap": "Fäst",
+    "snapToBeatTitle": "Fäst tagningar mot {{bpm}} BPM-taktstreck",
+    "snapCuts": "Fäst klipp ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "Fokusläge är aktivt",
+    "activeDescription": "Avancerade studios och samarbetsytor döljs så att du kan hålla fokus på promptflödet.",
+    "exit": "Avsluta fokusläge"
+  },
+  "media": {
+    "filterAll": "Alla",
+    "filterVideo": "Video",
+    "filterAudio": "Ljud",
+    "filterImage": "Bilder",
+    "filterReference": "Referenser",
+    "filterGenerated": "Genererade",
+    "filters": "Filtrera medier"
   }
 }

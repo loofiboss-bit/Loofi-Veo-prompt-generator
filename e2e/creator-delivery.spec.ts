@@ -36,6 +36,7 @@ for (const theme of ['light', 'dark'] as const) {
       });
       expect(Math.min(...contrast)).toBeGreaterThanOrEqual(4.5);
       await page.screenshot({ path: testInfo.outputPath(`creator-start-${theme}-${width}.png`) });
+      await page.locator('summary').filter({ hasText: 'Try it offline' }).click();
       const example = page.getByRole('button', { name: 'Open example', exact: true }).first();
       await example.focus();
       await expect(example).toBeFocused();

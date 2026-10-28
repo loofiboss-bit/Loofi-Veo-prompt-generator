@@ -12,7 +12,9 @@ interface ElectronAPI {
     projectId?: string,
   ) => Promise<import('./src/core/types').TimelineRenderJobV1[]>;
   retryTimelineRender?: (id: string) => Promise<import('./src/core/types').TimelineRenderJobV1>;
-  getTimelineRenderPreview?: (id: string) => Promise<{ url: string; contentHash: string }>;
+  getTimelineRenderPreview?: (
+    id: string,
+  ) => Promise<{ url: string; displayUrl?: string; contentHash: string }>;
   inspectTimelineRenderMedia?: (mediaId: string) => Promise<{
     available: boolean;
     durationSeconds?: number;
@@ -237,9 +239,12 @@ interface ElectronAPI {
     operationId?: string;
     sourceAssetId?: string;
   }>;
-  readDesktopMedia?: (
-    key: string,
-  ) => Promise<{ bytes: ArrayBuffer; mimeType: string; localUrl: string } | null>;
+  readDesktopMedia?: (key: string) => Promise<{
+    bytes: ArrayBuffer;
+    mimeType: string;
+    localUrl: string;
+    displayUrl?: string;
+  } | null>;
   importDesktopMedia?: (input: {
     key: string;
     bytes: ArrayBuffer;
@@ -249,6 +254,7 @@ interface ElectronAPI {
     key: string;
     path: string;
     localUrl: string;
+    displayUrl?: string;
     sha256: string;
     sizeBytes: number;
     migratedFrom: 'indexeddb-v1';

@@ -883,39 +883,35 @@ export function useCreateWorkflow() {
     }
   };
 
-  const captureExportProject = () =>
-    useEditorSessionStore
-      .getState()
-      .captureCurrentProjectDocument({ id: currentProjectId, name: projectName });
-
   const handleRelinkExportMedia = async (entry: MissingTimelineMedia, assetId: string) => {
     const state = useAppStore.getState();
     const asset = state.assets.find((item) => item.id === assetId);
     const clip = state.clips.find((item) => item.id === entry.clipId);
     if (!asset || !clip || asset.type !== clip.type) return;
     state.updateTimelineClip(clip.id, { resourceId: assetId, selectedTakeId: undefined });
-    const project = captureExportProject();
-    await projectDocumentService.save(project);
+    await projectSaveCoordinator.saveProject(currentProjectId);
+    const project = await projectDocumentService.load(currentProjectId);
+    if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
+    if (!project) throw new Error('Saved project document is unavailable.');
     const check = await preflightProjectOtioExport(project, activeRun);
+    if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
     setExportMissingMedia(check.missingMedia);
   };
 
   const handleExportOtio = async () => {
     if (!activeRun) return;
     try {
-      const document = useEditorSessionStore
-        .getState()
-        .captureCurrentProjectDocument({ id: currentProjectId, name: projectName });
-      await projectDocumentService.save(document);
+      await projectSaveCoordinator.saveProject(currentProjectId);
       const saved = await projectDocumentService.load(currentProjectId);
+      if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
       if (!saved) throw new Error('Saved project document is unavailable.');
       const check = await preflightProjectOtioExport(saved, activeRun);
+      if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
       setExportMissingMedia(check.missingMedia);
       if (check.missingMedia.length) return;
-      downloadProjectBlob(
-        await exportProjectOtioBundle(saved, activeRun),
-        `${projectName}.otio.zip`,
-      );
+      const bundle = await exportProjectOtioBundle(saved, activeRun);
+      if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
+      downloadProjectBlob(bundle, `${projectName}.otio.zip`);
       setFeedback(t('messages.otioReady', 'OTIO package downloaded with local media.'));
     } catch (failure) {
       setFeedback(failure instanceof Error ? failure.message : 'OTIO export failed');

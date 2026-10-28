@@ -158,7 +158,20 @@
     "create": "Créer un projet",
     "import": "Importer un projet",
     "export": "Exporter le projet",
-    "actions": "Actions du projet"
+    "actions": "Actions du projet",
+    "allChangesSaved": "Toutes les modifications sont enregistrées localement",
+    "checkingSave": "Vérification de l’état d’enregistrement",
+    "saveStatusUnknown": "État d’enregistrement indisponible",
+    "saveUnsaved": "Non enregistré",
+    "saveSaving": "Enregistrement",
+    "saveSaved": "Enregistré",
+    "saveError": "Échec de l’enregistrement",
+    "saveConflict": "Modifications en conflit",
+    "saveNow": "Enregistrer le projet",
+    "remoteChange": "Une autre fenêtre a modifié ce projet.",
+    "loadLatest": "Charger la dernière version",
+    "saveCopy": "Enregistrer une copie",
+    "backupWarning": "Projet enregistré ; échec de la sauvegarde automatique :"
   },
   "assets": {
     "continuityProfiles": "Profils de continuité",
@@ -172,6 +185,29 @@
     "emptyTitle": "Votre chronologie est vide",
     "emptyDescription": "Ajoutez des scènes dans Production pour commencer à modifier votre storyboard.",
     "backToStoryboard": "Retour au storyboard",
-    "backToStudio": "Retour à Prompt Studio"
+    "backToStudio": "Retour à Prompt Studio",
+    "magneticTitle": "Chronologie magnétique (Ripple Edit)",
+    "magnetic": "Magnétique",
+    "snap": "Aligner",
+    "snapToBeatTitle": "Aligner les plans sur le tempo {{bpm}} BPM",
+    "snapCuts": "Coupes rythmées ({{bpm}} BPM)",
+    "splitPlayhead": "Scinder à la tête de lecture",
+    "trimStart": "Rogner le début à la tête de lecture",
+    "trimEnd": "Rogner la fin à la tête de lecture",
+    "remove": "Supprimer le clip"
+  },
+  "focusMode": {
+    "activeTitle": "Le mode concentration est activé",
+    "activeDescription": "Les studios avancés et espaces de collaboration sont masqués.",
+    "exit": "Quitter le mode concentration"
+  },
+  "media": {
+    "filterAll": "Tous",
+    "filterVideo": "Vidéo",
+    "filterAudio": "Audio",
+    "filterImage": "Images",
+    "filterReference": "Références",
+    "filterGenerated": "Générés",
+    "filters": "Filtrer les médias"
   }
 }

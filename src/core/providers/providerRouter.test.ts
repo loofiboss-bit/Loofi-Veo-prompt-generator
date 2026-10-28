@@ -36,7 +36,7 @@ describe('ProviderRouter', () => {
       ),
     ).resolves.toMatchObject({ text: 'ok' });
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({ model: expect.objectContaining({ id: 'gemini-3.6-flash' }) }),
+      expect.objectContaining({ model: expect.objectContaining({ id: 'gemini-3.8-flash' }) }),
     );
   });
 
@@ -62,9 +62,9 @@ describe('ProviderRouter', () => {
         },
       ),
     ).resolves.toMatchObject({
-      selectedModelId: 'veo-3.1-fast',
+      selectedModelId: 'veo-3.1-quality',
       fallbackReason: 'model-unavailable',
-      estimatedMaximumCostUsd: 0.8,
+      estimatedMaximumCostUsd: 3.2,
     });
     expect(execute).toHaveBeenCalledTimes(2);
   });
@@ -129,7 +129,7 @@ describe('ProviderRouter', () => {
 
     await expect(
       router.execute({ operation: 'plan', mode: 'smart' }, request),
-    ).resolves.toMatchObject({ selectedModelId: 'gemini-3.6-flash' });
+    ).resolves.toMatchObject({ selectedModelId: 'gemini-3.8-flash' });
     expect(execute).toHaveBeenNthCalledWith(1, expect.objectContaining(request));
     expect(execute).toHaveBeenNthCalledWith(2, expect.objectContaining(request));
   });
@@ -145,7 +145,7 @@ describe('ProviderRouter', () => {
             operation: 'plan',
             prompt: 'Plan.',
             costContext: {
-              approvedCeilingUsd: 0.01,
+              approvedCeilingUsd: 0.02,
               estimatedInputTokens: 100,
               estimatedOutputTokens: 500,
             },

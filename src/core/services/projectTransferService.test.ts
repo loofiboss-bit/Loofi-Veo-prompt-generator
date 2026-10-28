@@ -137,6 +137,25 @@ describe('portable project transfer', () => {
     network.mockRestore();
   });
 
+  it('restores the desktop streaming URL when reopening a project', async () => {
+    const restored = structuredClone(project);
+    window.electron = {
+      readDesktopMedia: vi.fn().mockResolvedValue({
+        bytes: new ArrayBuffer(1),
+        mimeType: 'video/mp4',
+        localUrl: 'file:///private/video.mp4',
+        displayUrl: 'loofi-media://media/stored-a',
+      }),
+    } as unknown as NonNullable<typeof window.electron>;
+    try {
+      await hydrateProjectMedia(restored);
+      expect(state.assets[0].url).toBe('loofi-media://media/stored-a');
+      expect(restored.storyboard.shots[0].generatedVideoUrl).toBe('loofi-media://media/stored-a');
+    } finally {
+      delete window.electron;
+    }
+  });
+
   it('round trips linked captions without treating caption resource identities as media', async () => {
     const document = structuredClone(project);
     document.documentRevision = 42;

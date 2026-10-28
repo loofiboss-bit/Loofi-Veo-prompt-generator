@@ -1,8 +1,10 @@
 import { useRenderJobsStore } from '@core/store/useRenderJobsStore';
 import { useRenderBatchStore } from '@core/store/useRenderBatchStore';
-import { getCreatorCaptionOverlaps } from '@core/services/creatorCaptionService';
+import { DeliveryStepper } from './components/DeliveryStepper';
+import { DeliveryOutputs } from './components/DeliveryOutputs';
+import { getCreatorCaptionReviewIssues } from '@core/services/creatorCaptionService';
 import type { CreatorDeliveryDiagnostic } from '@core/services/creatorDeliveryService';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Asset, Caption, Project, TimelineClip } from '@core/types';
 import type {
@@ -41,13 +43,17 @@ import {
 } from '@core/services/creatorPublishingService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
 import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
-import { downloadProjectBlob } from '@core/services/projectTransferService';
+import {
+  downloadProjectBlob,
+  preflightProjectOtioExport,
+} from '@core/services/projectTransferService';
 import { resolveOtioSelection } from '@core/services/otioExportService';
 import { resolveProjectAssetBlob } from '@core/utils/projectArchiver';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useTimelineRecoveryStore } from '@core/store/useTimelineRecoveryStore';
 
 const creatorAsrLanguageLabels: Record<CreatorAsrLanguage, string> = {
   auto: 'Auto-detect',
@@ -67,13 +73,22 @@ export function CreatorDeliveryPanel() {
     'Project';
   const clips = useAppStore((state) => state.clips);
   const assets = useAppStore((state) => state.assets);
+  const shots = useAppStore((state) => state.sbShots);
+  const mutationVersion = useAppStore((state) => state.mutationVersion);
+  const activeRun = useProductionRunStore((state) => state.activeRun);
   const currentTime = useAppStore((state) => state.currentTime);
   const [settings, setSettings] = useState<CreatorDeliveryV1 | null>(null);
   const [capabilities, setCapabilities] = useState<TimelineRenderCapabilities>({
     available: false,
   });
   const jobs = useRenderJobsStore((state) => state.jobs);
+  const recovery = useTimelineRecoveryStore((state) => state.recovery);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [deliveryBinding, setDeliveryBinding] = useState<{ id: string; binding: string } | null>(
+    null,
+  );
+  const [batchBinding, setBatchBinding] = useState<{ id: string; binding: string } | null>(null);
+  const [sessionSavedJobs, setSessionSavedJobs] = useState<Record<string, string | null>>({});
   const projectJobs = jobs.filter((item) => item.projectId === projectId);
   const job = projectJobs.find((item) => item.id === selectedJobId) ?? projectJobs.at(-1) ?? null;
   const setJob = (value: TimelineRenderJobV1 | null) => {
@@ -91,6 +106,8 @@ export function CreatorDeliveryPanel() {
   const [errorClip, setErrorClip] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [resolution, setResolution] = useState<'720p' | '1080p'>('1080p');
+  const resolutionRef = useRef(resolution);
+  resolutionRef.current = resolution;
   const batches = useRenderBatchStore((state) => state.batches);
   const batch = batches.filter((item) => item.projectId === projectId).at(-1);
   const batchProgress =
@@ -151,12 +168,29 @@ export function CreatorDeliveryPanel() {
     0,
     ...clips.filter((clip) => clip.type !== 'text').map((clip) => clip.startTime + clip.duration),
   );
-  const captionClips = clips.filter((clip) => clip.type === 'text' && clip.caption);
-  const captions = captionClips.map((clip) => ({
-    ...clip.caption!,
-    startTime: clip.startTime,
-    endTime: clip.startTime + clip.duration,
-  }));
+  const captionClips = useMemo(
+    () => clips.filter((clip) => clip.type === 'text' && clip.caption),
+    [clips],
+  );
+  const captions = useMemo(
+    () =>
+      captionClips.map((clip) => ({
+        ...clip.caption!,
+        startTime: clip.startTime,
+        endTime: clip.startTime + clip.duration,
+      })),
+    [captionClips],
+  );
+  const captionIssues = useMemo(() => getCreatorCaptionReviewIssues(captions), [captions]);
+  const recoveryCurrent = Boolean(
+    recovery &&
+    recovery.projectId === projectId &&
+    recovery.mutationVersion === mutationVersion &&
+    recovery.clips === clips &&
+    recovery.assets === assets &&
+    recovery.shots === shots &&
+    recovery.run === (activeRun?.projectId === projectId ? activeRun : null),
+  );
   const binding = () =>
     JSON.stringify({
       id: idRef.current,
@@ -213,6 +247,9 @@ export function CreatorDeliveryPanel() {
     let live = true;
     setSettings(null);
     setJob(null);
+    setDeliveryBinding(null);
+    setBatchBinding(null);
+    setSessionSavedJobs({});
     setProposal(null);
     setAsrProposal(null);
     setPublishProposal(null);
@@ -326,10 +363,7 @@ export function CreatorDeliveryPanel() {
     }
   };
   const capture = async (id: string): Promise<Project> => {
-    const document = useEditorSessionStore
-      .getState()
-      .captureCurrentProjectDocument({ id, name: projectName });
-    await projectDocumentService.save(document);
+    await projectSaveCoordinator.saveProject(id);
     if (idRef.current !== id) throw new Error('Project changed.');
     const saved = await projectDocumentService.load(id);
     if (!saved) throw new Error('Save this project before exporting.');
@@ -342,10 +376,62 @@ export function CreatorDeliveryPanel() {
       tracks: useAppStore.getState().tracks,
       shots: useAppStore.getState().sbShots,
       settings: settingsRef.current ? { ...settingsRef.current, revision: 0, updatedAt: 0 } : null,
+      resolution: resolutionRef.current,
       assets: useAppStore
         .getState()
         .assets.map(({ id, storageKey, url }) => ({ id, storageKey, url })),
     });
+  const preflight = async (
+    project: Project,
+    run: ReturnType<typeof useProductionRunStore.getState>['activeRun'],
+  ) => {
+    const id = project.id;
+    const initial = useAppStore.getState();
+    const snapshotIdentity = canonicalRenderJson({
+      clips: project.storyboard.timeline.clips,
+      tracks: project.storyboard.timeline.tracks,
+      shots: project.storyboard.shots,
+    });
+    const stateIdentity = canonicalRenderJson({
+      clips: initial.clips,
+      tracks: initial.tracks,
+      shots: initial.sbShots,
+    });
+    const result = await creatorDeliveryService.preflight(project, initial.assets, run);
+    if (
+      snapshotIdentity !== stateIdentity ||
+      !result.some((issue) => issue.code === 'media-missing')
+    )
+      return result;
+    try {
+      const { missingMedia } = await preflightProjectOtioExport(project, run);
+      const current = useAppStore.getState();
+      const activeRun = useProductionRunStore.getState().activeRun;
+      const currentRun = activeRun?.projectId === id ? activeRun : null;
+      if (
+        idRef.current === id &&
+        current.mutationVersion === initial.mutationVersion &&
+        current.clips === initial.clips &&
+        current.assets === initial.assets &&
+        current.sbShots === initial.sbShots &&
+        current.tracks === initial.tracks &&
+        currentRun === run
+      ) {
+        useTimelineRecoveryStore.getState().setRecovery({
+          projectId: id,
+          mutationVersion: initial.mutationVersion,
+          run,
+          clips: initial.clips,
+          assets: initial.assets,
+          shots: initial.sbShots,
+          missingMedia,
+        });
+      }
+    } catch {
+      // Delivery diagnostics remain available when OTIO cannot resolve a recovery target.
+    }
+    return result;
+  };
   const check = () =>
     act(async (id) => {
       const before = timelineBinding();
@@ -354,11 +440,7 @@ export function CreatorDeliveryPanel() {
         .captureCurrentProjectDocument({ id, name: projectName });
       snapshot.creatorDelivery = settingsRef.current!;
       const run = useProductionRunStore.getState().activeRun;
-      const result = await creatorDeliveryService.preflight(
-        snapshot,
-        assets,
-        run?.projectId === id ? run : null,
-      );
+      const result = await preflight(snapshot, run?.projectId === id ? run : null);
       if (idRef.current === id && timelineBinding() === before) {
         setDiagnostics(result);
         setDiagnosticBinding(before);
@@ -369,35 +451,42 @@ export function CreatorDeliveryPanel() {
       if (!settings || !window.electron?.startTimelineRender)
         throw new Error('Local export requires the desktop app.');
       const requested = settingsRef.current!;
-      await projectSaveCoordinator.saveProject(id);
-      if (idRef.current !== id) return;
+      const beforeSave = timelineBinding();
       await capture(id);
+      if (idRef.current !== id || timelineBinding() !== beforeSave)
+        throw new Error(t('v16.changed', 'The edit changed. Check the delivery again.'));
       const savedSettings = await creatorDeliveryService.saveSettings(id, requested);
-      if (idRef.current !== id || settingsRef.current !== requested) return;
+      if (
+        idRef.current !== id ||
+        settingsRef.current !== requested ||
+        timelineBinding() !== beforeSave
+      )
+        throw new Error(t('v16.changed', 'The edit changed. Check the delivery again.'));
       setSettings(savedSettings);
       settingsRef.current = savedSettings;
       const project = (await projectDocumentService.load(id))!;
+      if (idRef.current !== id || timelineBinding() !== beforeSave)
+        throw new Error(t('v16.changed', 'The edit changed. Check the delivery again.'));
       const run = useProductionRunStore.getState().activeRun;
-      const check = await creatorDeliveryService.preflight(
-        project,
-        assets,
-        run?.projectId === id ? run : null,
-      );
-      if (idRef.current !== id) return;
+      const beforeCheck = timelineBinding();
+      const check = await preflight(project, run?.projectId === id ? run : null);
+      if (idRef.current !== id || timelineBinding() !== beforeCheck) return;
       setDiagnostics(check);
-      setDiagnosticBinding(timelineBinding());
+      setDiagnosticBinding(beforeCheck);
       if (check.length) return;
       const frozenBinding = timelineBinding();
+      const frozenResolution = resolutionRef.current;
       const plan = await creatorDeliveryService.buildPlan(
         project,
         assets,
         run?.projectId === id ? run : null,
-        purpose === 'preview' ? '720p' : resolution,
+        purpose === 'preview' ? '720p' : frozenResolution,
         purpose,
       );
       if (idRef.current !== id || timelineBinding() !== frozenBinding) return;
       const started = await useRenderJobsStore.getState().start(plan);
       if (idRef.current !== id) return;
+      if (purpose === 'delivery') setDeliveryBinding({ id: started.id, binding: frozenBinding });
       setJob(started);
       jobRef.current = started;
       if (purpose === 'preview') {
@@ -413,39 +502,46 @@ export function CreatorDeliveryPanel() {
       if (!settings || !window.electron?.startTimelineRender)
         throw new Error('Local export requires the desktop app.');
       const requested = settingsRef.current!;
+      const beforeSave = timelineBinding();
       const targetFormats = (
         requested.batchFormats?.length ? requested.batchFormats : [requested.aspectRatio]
       ) as CreatorAspectRatio[];
-      await projectSaveCoordinator.saveProject(id);
-      if (idRef.current !== id) return;
       await capture(id);
+      if (idRef.current !== id || timelineBinding() !== beforeSave)
+        throw new Error(t('v16.changed', 'The edit changed. Check the delivery again.'));
       const savedSettings = await creatorDeliveryService.saveSettings(id, requested);
-      if (idRef.current !== id || settingsRef.current !== requested) return;
+      if (
+        idRef.current !== id ||
+        settingsRef.current !== requested ||
+        timelineBinding() !== beforeSave
+      )
+        throw new Error(t('v16.changed', 'The edit changed. Check the delivery again.'));
       setSettings(savedSettings);
       settingsRef.current = savedSettings;
       const project = (await projectDocumentService.load(id))!;
+      if (idRef.current !== id || timelineBinding() !== beforeSave)
+        throw new Error(t('v16.changed', 'The edit changed. Check the delivery again.'));
       const run = useProductionRunStore.getState().activeRun;
-      const check = await creatorDeliveryService.preflight(
-        project,
-        assets,
-        run?.projectId === id ? run : null,
-      );
-      if (idRef.current !== id) return;
+      const beforeCheck = timelineBinding();
+      const check = await preflight(project, run?.projectId === id ? run : null);
+      if (idRef.current !== id || timelineBinding() !== beforeCheck) return;
       setDiagnostics(check);
-      setDiagnosticBinding(timelineBinding());
+      setDiagnosticBinding(beforeCheck);
       if (check.length) return;
       const frozenBinding = timelineBinding();
+      const frozenResolution = resolutionRef.current;
       const plans = await creatorDeliveryService.buildBatchPlans(
         project,
         assets,
         targetFormats,
         run?.projectId === id ? run : null,
-        resolution,
+        frozenResolution,
         'delivery',
       );
       if (idRef.current !== id || timelineBinding() !== frozenBinding) return;
 
-      await useRenderBatchStore.getState().start(plans);
+      const idOfBatch = await useRenderBatchStore.getState().start(plans);
+      if (idRef.current === id) setBatchBinding({ id: idOfBatch, binding: frozenBinding });
     });
   const addCaptions = (
     values: Caption[],
@@ -658,7 +754,7 @@ export function CreatorDeliveryPanel() {
     void (async () => {
       const media = await window.electron?.getTimelineRenderPreview?.(job.id);
       if (!live || !media || media.contentHash !== job.contentHash) return;
-      setPreviewUrl(media.url);
+      setPreviewUrl(media.displayUrl ?? media.url);
       if (previewHash === job.contentHash) return;
       // Reopening a completed preview requires matching its frozen plan to the current edit.
       const snapshot = useEditorSessionStore
@@ -693,6 +789,20 @@ export function CreatorDeliveryPanel() {
       </p>
     );
   const running = job && ['queued', 'rendering', 'verifying'].includes(job.status);
+  const isCurrentDelivery = Boolean(
+    job &&
+    job.purpose !== 'preview' &&
+    ((deliveryBinding?.id === job.id && deliveryBinding.binding === timelineBinding()) ||
+      (batchBinding?.binding === timelineBinding() &&
+        batch?.id === batchBinding.id &&
+        batch.items.some(
+          (item) => item.jobId === job.id && item.plan.contentHash === job.contentHash,
+        ))),
+  );
+  const savedName = job ? (sessionSavedJobs[job.id] ?? job.savedName) : undefined;
+  const savedJob = Boolean(
+    job && (Object.prototype.hasOwnProperty.call(sessionSavedJobs, job.id) || job.savedName),
+  );
   const failedClip = job?.error ? clips.find((clip) => job.error!.includes(clip.id)) : undefined;
   const selectedAudio = assets.find((asset) => asset.id === audioId);
   const selectedAudioClip = clips.find(
@@ -1439,11 +1549,59 @@ export function CreatorDeliveryPanel() {
             </div>
           )}
         </section>
+        {captionIssues.length > 0 && (
+          <div
+            role="status"
+            className="my-3 rounded border border-[var(--color-border-primary)] p-3"
+          >
+            <p>{t('delivery.captionReviewTitle', 'Caption suggestions (optional)')}</p>
+            <ul>
+              {captionClips.map((clip, index) => {
+                const issues = captionIssues.filter(
+                  (issue) => issue.captionId === clip.caption!.id,
+                );
+                if (!issues.length) return null;
+                return (
+                  <li key={clip.id}>
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      onClick={() => {
+                        useAppStore.getState().setCurrentTime(clip.startTime);
+                        document.getElementById(`delivery-caption-${clip.id}`)?.focus();
+                      }}
+                    >
+                      {t('delivery.captionReviewNumber', 'Review caption {{number}}', {
+                        number: index + 1,
+                      })}
+                    </button>{' '}
+                    {issues
+                      .map((issue) => {
+                        switch (issue.code) {
+                          case 'overlap':
+                            return t('delivery.captionIssueOverlap', 'Overlaps another caption');
+                          case 'line-length':
+                            return t('delivery.captionIssueLength', 'A line exceeds 42 characters');
+                          case 'reading-speed':
+                            return t(
+                              'delivery.captionIssueSpeed',
+                              'Exceeds 20 characters per second',
+                            );
+                        }
+                      })
+                      .join(' · ')}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
         {captionClips.map((clip) => (
           <div key={clip.id} className="my-2 flex flex-wrap gap-2">
             <label>
               {t('delivery.captionText', 'Text')}
               <textarea
+                id={`delivery-caption-${clip.id}`}
                 aria-label={t('delivery.captionText', 'Text')}
                 className={inputClass}
                 value={clip.caption!.text}
@@ -1640,11 +1798,6 @@ export function CreatorDeliveryPanel() {
             {t('v16.shiftApply', 'Shift all captions')}
           </button>
         </div>
-        {getCreatorCaptionOverlaps(captions).length > 0 && (
-          <p role="status">
-            {t('v16.overlaps', 'Some captions overlap. Review their timing before delivery.')}
-          </p>
-        )}
         <div className="my-4 space-y-2">
           <label>
             {t('delivery.audio', 'Audio to transcribe')}{' '}
@@ -1950,19 +2103,62 @@ export function CreatorDeliveryPanel() {
           </button>
         </div>
       )}
-      <div className="flex flex-wrap gap-3">
-        <button className={buttonClass} disabled={busy} onClick={() => void check()}>
-          {t('v16.checkDelivery', 'Check delivery')}
-        </button>
+      <DeliveryStepper
+        busy={busy}
+        running={!!running}
+        anyBatchRunning={anyBatchRunning}
+        capabilitiesAvailable={capabilities.available}
+        hasDiagnostics={diagnostics?.length === 0}
+        isDiagnosticCurrent={diagnosticBinding === timelineBinding()}
+        hasPreview={!!previewUrl}
+        isPreviewCurrent={previewBinding === timelineBinding()}
+        hasExportedJob={isCurrentDelivery && job?.status === 'complete'}
+        hasSavedJob={isCurrentDelivery && job?.status === 'complete' && savedJob}
+        batchFormatsCount={settings.batchFormats?.length ?? 1}
+        buttonClass={buttonClass}
+        onCheck={() => void check()}
+        onReview={() => void render('preview')}
+        onExport={() => void render()}
+        onBatchExport={() => void renderBatch()}
+        onCancel={() => {
+          if (batch?.status === 'running') {
+            void useRenderBatchStore
+              .getState()
+              .cancel(batch.id)
+              .catch((reason: unknown) => setError(String(reason)));
+          } else if (job) {
+            void useRenderJobsStore.getState().cancel(job.id);
+          }
+        }}
+      />
+
+      <DeliveryOutputs
+        job={job}
+        busy={busy}
+        isCurrent={isCurrentDelivery}
+        saved={savedJob}
+        savedName={savedName ?? undefined}
+        buttonClass={buttonClass}
+        onSaveFile={(pack: boolean) => {
+          if (!job) return;
+          void act(async (id) => {
+            const result = await window.electron?.saveTimelineRender?.({
+              id: job.id,
+              package: pack,
+            });
+            if (result?.saved && idRef.current === id) {
+              setSessionSavedJobs((previous) => ({ ...previous, [job.id]: result.name ?? null }));
+              if (result.name)
+                useRenderJobsStore.getState().receive({ ...job, savedName: result.name });
+            }
+          });
+        }}
+      />
+
+      <div className="flex items-center justify-end">
         <button
-          className={buttonClass}
-          disabled={busy || !!running || anyBatchRunning || !capabilities.available}
-          onClick={() => void render('preview')}
-        >
-          {t('v16.reviewDelivery', 'Review delivery')}
-        </button>
-        <button
-          className={buttonClass}
+          type="button"
+          className="text-xs text-slate-400 hover:text-slate-200 underline cursor-pointer"
           disabled={busy}
           onClick={() =>
             void act(async (id) => {
@@ -1973,64 +2169,8 @@ export function CreatorDeliveryPanel() {
             })
           }
         >
-          {t('delivery.saveSettings', 'Save delivery settings')}
+          {t('delivery.saveSettings', 'Spara leveransinställningar')}
         </button>
-        <button
-          className={buttonClass}
-          aria-label={t('delivery.render', 'Export video')}
-          disabled={busy || !!running || anyBatchRunning || !capabilities.available}
-          onClick={() => void render()}
-        >
-          {t('delivery.render', 'Export video')}
-        </button>
-        {(settings.batchFormats?.length ?? 1) > 1 && (
-          <button
-            className={buttonClass}
-            disabled={busy || !!running || anyBatchRunning || !capabilities.available}
-            onClick={() => void renderBatch()}
-          >
-            {t('delivery.renderBatch', 'Batch export')} ({settings.batchFormats?.length} formats)
-          </button>
-        )}
-        {(running || batchProgress !== null) && (
-          <button
-            className={buttonClass}
-            onClick={() => {
-              if (batch?.status === 'running') {
-                void useRenderBatchStore
-                  .getState()
-                  .cancel(batch.id)
-                  .catch((reason: unknown) => setError(String(reason)));
-              } else if (job) void useRenderJobsStore.getState().cancel(job.id);
-            }}
-          >
-            {t('delivery.cancel', 'Cancel export')}
-          </button>
-        )}
-        {job?.status === 'complete' && job.purpose !== 'preview' && (
-          <>
-            {[false, true].map((pack) => (
-              <button
-                key={String(pack)}
-                className={buttonClass}
-                disabled={busy}
-                onClick={() =>
-                  void act(async () => {
-                    const result = await window.electron?.saveTimelineRender?.({
-                      id: job.id,
-                      package: pack,
-                    });
-                    if (result?.saved) setJob({ ...job, savedName: result.name });
-                  })
-                }
-              >
-                {pack
-                  ? t('delivery.package', 'Save publication package')
-                  : t('delivery.saveMp4', 'Save MP4')}
-              </button>
-            ))}
-          </>
-        )}
       </div>
       {diagnostics && (
         <div role="status">
@@ -2044,14 +2184,50 @@ export function CreatorDeliveryPanel() {
           ) : (
             <ul>
               {diagnostics.map((item, index) => (
-                <li key={`${item.clipId ?? 'project'}-${index}`}>
-                  {item.message} {item.action}
+                <li key={`${item.code ?? 'diagnostic'}-${item.clipId ?? 'project'}-${index}`}>
+                  {item.code
+                    ? t(`delivery.diagnostics.${item.code}`, `${item.message} ${item.action}`, {
+                        clip: clips.find((candidate) => candidate.id === item.clipId)?.label ?? '',
+                      })
+                    : `${item.message} ${item.action}`}
+                  {item.target === 'media' && (
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      onClick={() => {
+                        const target = document.getElementById('timeline-media-panel');
+                        target?.scrollIntoView({ block: 'nearest' });
+                        target?.focus();
+                      }}
+                    >
+                      {t('delivery.openMediaPanel', 'Open media library')}
+                    </button>
+                  )}
+                  {item.code === 'media-missing' &&
+                    recoveryCurrent &&
+                    recovery?.missingMedia.some((missing) => missing.clipId === item.clipId) && (
+                      <button
+                        type="button"
+                        className={buttonClass}
+                        onClick={() => {
+                          const target = document.getElementById('timeline-media-recovery');
+                          target?.scrollIntoView?.({ block: 'start' });
+                          target?.focus();
+                        }}
+                      >
+                        {t('delivery.openMediaRecovery', 'Review missing media')}
+                      </button>
+                    )}
                   {item.clipId && (
                     <button
                       className={buttonClass}
                       onClick={() => {
                         const clip = clips.find((candidate) => candidate.id === item.clipId);
-                        if (clip) useAppStore.getState().setCurrentTime(clip.startTime);
+                        if (clip) {
+                          useAppStore.getState().setCurrentTime(clip.startTime);
+                          if (clip.type === 'text')
+                            document.getElementById(`delivery-caption-${clip.id}`)?.focus();
+                        }
                       }}
                     >
                       {t('delivery.locateClip', 'Locate affected clip')}
@@ -2063,7 +2239,7 @@ export function CreatorDeliveryPanel() {
           )}
         </div>
       )}
-      {previewUrl && job?.purpose === 'preview' && (
+      {previewUrl && (
         <div>
           <p role="status">
             {previewBinding && previewBinding === timelineBinding()

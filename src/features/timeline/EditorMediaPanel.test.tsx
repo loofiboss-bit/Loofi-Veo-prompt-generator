@@ -150,4 +150,58 @@ describe('EditorMediaPanel', () => {
       'Read media duration before adding this file.',
     );
   });
+
+  it('filters assets and shows placed-on-timeline indicator', async () => {
+    useAppStore.setState({
+      assets: [
+        {
+          id: 'asset-video',
+          name: 'scene1.mp4',
+          type: 'video',
+          mimeType: 'video/mp4',
+          data: '',
+          url: 'blob:video',
+          groupId: 'g1',
+          version: 1,
+          tags: [],
+          durationSeconds: 8,
+        },
+        {
+          id: 'asset-audio',
+          name: 'music.mp3',
+          type: 'audio',
+          mimeType: 'audio/mpeg',
+          data: '',
+          url: 'blob:audio',
+          groupId: 'g2',
+          version: 1,
+          tags: [],
+          durationSeconds: 30,
+        },
+      ],
+      clips: [
+        {
+          id: 'clip-1',
+          resourceId: 'asset-video',
+          trackId: 'track-1',
+          type: 'video',
+          label: 'scene1.mp4',
+          duration: 8,
+          startTime: 0,
+          offset: 0,
+          volume: 1,
+        },
+      ],
+    });
+
+    render(<EditorMediaPanel />);
+    expect(screen.getByText('scene1.mp4')).toBeInTheDocument();
+    expect(screen.getByText('music.mp3')).toBeInTheDocument();
+    expect(screen.getByText('Placed on timeline')).toBeInTheDocument();
+
+    // Switch filter to Audio
+    fireEvent.click(screen.getByRole('tab', { name: /^Audio/i }));
+    expect(screen.queryByText('scene1.mp4')).not.toBeInTheDocument();
+    expect(screen.getByText('music.mp3')).toBeInTheDocument();
+  });
 });

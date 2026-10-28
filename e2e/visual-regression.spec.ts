@@ -35,10 +35,9 @@ test.describe('Creator Studio visual regression', () => {
     await page.emulateMedia({ colorScheme: 'dark' });
     // Keep revision and checkpoint timestamps stable while browser timers continue running.
     await page.clock.setFixedTime(new Date('2026-08-01T12:00:00Z'));
-    await page.goto('/');
-    await page.evaluate(async () => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
+    // Each test owns a fresh context. Seed before app startup so live stores
+    // never lose their IndexedDB connections during autosave.
+    await page.addInitScript(() => {
       window.localStorage.setItem('hasSeenWelcome', 'true');
       window.localStorage.setItem(
         'loofi-veo-onboarding',
@@ -51,23 +50,8 @@ test.describe('Creator Studio visual regression', () => {
           lastUpdated: '2026-08-01T00:00:00.000Z',
         }),
       );
-
-      const databases =
-        typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
-      await Promise.all(
-        databases.map(
-          (database) =>
-            new Promise<void>((resolve) => {
-              if (!database.name) return resolve();
-              const request = indexedDB.deleteDatabase(database.name);
-              request.onsuccess = () => resolve();
-              request.onerror = () => resolve();
-              request.onblocked = () => resolve();
-            }),
-        ),
-      );
     });
-    await page.reload();
+    await page.goto('/');
     await dismissModals(page);
     await stabilizeVisualPage(page);
     await expect(page.getByLabel(/^Core idea/)).toBeVisible();

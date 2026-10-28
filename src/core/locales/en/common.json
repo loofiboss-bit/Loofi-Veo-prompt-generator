@@ -194,7 +194,10 @@
     "remoteChange": "Another window changed this project.",
     "loadLatest": "Load latest",
     "saveCopy": "Save as copy",
-    "backupWarning": "Project saved; automatic backup failed:"
+    "backupWarning": "Project saved; automatic backup failed:",
+    "allChangesSaved": "All changes saved locally",
+    "checkingSave": "Checking save status",
+    "saveStatusUnknown": "Save status unavailable"
   },
   "assets": {
     "continuityProfiles": "Continuity profiles",
@@ -218,6 +221,25 @@
     "duration": "Duration (seconds)",
     "sourceOffset": "Source offset (seconds)",
     "volume": "Volume",
-    "caption": "Caption"
+    "caption": "Caption",
+    "magneticTitle": "Magnetic Timeline (Ripple Edit)",
+    "magnetic": "Magnetic",
+    "snap": "Snap",
+    "snapToBeatTitle": "Snap shots to {{bpm}} BPM musical bars",
+    "snapCuts": "Snap Cuts ({{bpm}} BPM)"
+  },
+  "focusMode": {
+    "activeTitle": "Focus Mode is on",
+    "activeDescription": "Advanced studios and collaboration surfaces are hidden so you can stay on the main prompt flow.",
+    "exit": "Exit Focus Mode"
+  },
+  "media": {
+    "filterAll": "All",
+    "filterVideo": "Video",
+    "filterAudio": "Audio",
+    "filterImage": "Images",
+    "filterReference": "References",
+    "filterGenerated": "Generated",
+    "filters": "Filter media"
   }
 }

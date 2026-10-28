@@ -3,15 +3,15 @@
  * v2.0.0 - Platform Transformation
  *
  * Provides isolated execution environments for plugins.
- * Three sandbox modes:
- *   - 'worker'     — Full isolation via Web Worker (untrusted/unsigned plugins)
- *   - 'restricted' — In-process with frozen globals (trusted plugins)
+ * Sandbox modes:
+ *   - 'worker'     — Full process isolation via Web Worker (all external plugins)
+ *   - 'restricted' — Sandboxed via Web Worker with restricted permissions
  *   - 'direct'     — No sandbox, direct execution (internal/builtin only)
  *
  * Architecture:
- *   Plugin code runs inside a sandbox. API calls from plugins are proxied
- *   through postMessage (worker mode) or function wrappers (restricted mode).
- *   Permission checks gate every API call.
+ *   Plugin code runs inside an isolated Web Worker sandbox. API calls from plugins
+ *   are proxied through postMessage and validated against granted permissions.
+ *   In-process evaluation with new Function has been completely removed.
  */
 
 import { logger } from './loggerService';
@@ -229,11 +229,6 @@ class SandboxInstance {
   private _messageResolvers = new Map<string, (msg: SandboxOutMessage) => void>();
   private _onApiCall: ((callId: string, method: string, args: unknown[]) => void) | null = null;
   private _onLog: ((level: string, args: unknown[]) => void) | null = null;
-  private _restrictedInstance: {
-    activate?: (ctx: unknown) => Promise<void>;
-    deactivate?: () => Promise<void>;
-    dispose?: () => Promise<void>;
-  } | null = null;
 
   constructor(config: SandboxConfig) {
     this.config = config;
@@ -265,12 +260,10 @@ class SandboxInstance {
     this._onApiCall = onApiCall;
     this._onLog = onLog;
 
-    if (this.config.mode === 'worker') {
+    if (this.config.mode === 'worker' || this.config.mode === 'restricted') {
       await this._initWorker(sourceCode);
-    } else if (this.config.mode === 'restricted') {
-      await this._initRestricted(sourceCode);
     } else {
-      // Direct mode — no sandbox
+      // Direct mode — internal only, no sandbox
       this._state = 'ready';
     }
   }
@@ -327,37 +320,6 @@ class SandboxInstance {
         reject(err);
       }
     });
-  }
-
-  /**
-   * Initialize restricted in-process sandbox.
-   */
-  private async _initRestricted(sourceCode: string): Promise<void> {
-    try {
-      const factory = new Function('exports', `"use strict";\n${sourceCode}\n`);
-      const exports: Record<string, unknown> = {};
-      factory(exports);
-
-      if (typeof exports.activate === 'function') {
-        this._restrictedInstance = exports as {
-          activate: (ctx: unknown) => Promise<void>;
-          deactivate?: () => Promise<void>;
-          dispose?: () => Promise<void>;
-        };
-      }
-
-      this._state = 'ready';
-    } catch (err) {
-      const error: SandboxError = {
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-        timestamp: Date.now(),
-        fatal: true,
-      };
-      this._errors.push(error);
-      this._state = 'terminated';
-      throw err;
-    }
   }
 
   /**
@@ -438,17 +400,15 @@ class SandboxInstance {
   /**
    * Activate the plugin inside the sandbox.
    */
-  async activate(context?: unknown): Promise<void> {
+  async activate(_context?: unknown): Promise<void> {
     if (this._state !== 'ready' && this._state !== 'suspended') {
       throw new Error(`Cannot activate sandbox in state: ${this._state}`);
     }
 
     this._state = 'running';
 
-    if (this.config.mode === 'worker') {
+    if (this.config.mode === 'worker' || this.config.mode === 'restricted') {
       await this._sendAndWait({ type: 'activate' }, 'activated');
-    } else if (this.config.mode === 'restricted' && this._restrictedInstance?.activate) {
-      await this._restrictedInstance.activate(context);
     }
     // Direct mode — no-op, handled externally
   }
@@ -459,10 +419,8 @@ class SandboxInstance {
   async deactivate(): Promise<void> {
     if (this._state !== 'running') return;
 
-    if (this.config.mode === 'worker') {
+    if (this.config.mode === 'worker' || this.config.mode === 'restricted') {
       await this._sendAndWait({ type: 'deactivate' }, 'deactivated');
-    } else if (this.config.mode === 'restricted' && this._restrictedInstance?.deactivate) {
-      await this._restrictedInstance.deactivate();
     }
 
     this._state = 'suspended';
@@ -475,7 +433,7 @@ class SandboxInstance {
     if (this._state === 'terminated') return;
 
     try {
-      if (this.config.mode === 'worker' && this._worker) {
+      if ((this.config.mode === 'worker' || this.config.mode === 'restricted') && this._worker) {
         if (this._state === 'running') {
           try {
             await this._sendAndWait({ type: 'dispose' }, 'disposed');
@@ -485,9 +443,6 @@ class SandboxInstance {
         }
         this._worker.terminate();
         this._worker = null;
-      } else if (this.config.mode === 'restricted' && this._restrictedInstance?.dispose) {
-        await this._restrictedInstance.dispose();
-        this._restrictedInstance = null;
       }
     } finally {
       this._state = 'terminated';
@@ -549,10 +504,10 @@ class PluginSandboxService {
 
   /**
    * Determine the appropriate sandbox mode for a plugin based on trust.
+   * All external plugins are isolated in Web Workers; trusted status determines permissions.
    */
   determineSandboxMode(trustLevel: string, isInternal: boolean): SandboxMode {
     if (isInternal) return 'direct';
-    if (trustLevel === 'trusted') return 'restricted';
     return 'worker';
   }
 

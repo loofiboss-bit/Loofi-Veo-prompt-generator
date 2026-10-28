@@ -158,7 +158,20 @@
     "create": "Crear proyecto",
     "import": "Importar proyecto",
     "export": "Exportar proyecto",
-    "actions": "Acciones del proyecto"
+    "actions": "Acciones del proyecto",
+    "allChangesSaved": "Todos los cambios se han guardado localmente",
+    "checkingSave": "Comprobando el estado de guardado",
+    "saveStatusUnknown": "Estado de guardado no disponible",
+    "saveUnsaved": "Sin guardar",
+    "saveSaving": "Guardando",
+    "saveSaved": "Guardado",
+    "saveError": "Error al guardar",
+    "saveConflict": "Cambios en conflicto",
+    "saveNow": "Guardar proyecto",
+    "remoteChange": "Otra ventana modificó este proyecto.",
+    "loadLatest": "Cargar la última versión",
+    "saveCopy": "Guardar como copia",
+    "backupWarning": "Proyecto guardado; falló la copia de seguridad automática:"
   },
   "assets": {
     "continuityProfiles": "Perfiles de continuidad",
@@ -172,6 +185,29 @@
     "emptyTitle": "Tu línea de tiempo está vacía",
     "emptyDescription": "Añade escenas en Producción para empezar a editar el guion gráfico.",
     "backToStoryboard": "Volver al guion gráfico",
-    "backToStudio": "Volver a Prompt Studio"
+    "backToStudio": "Volver a Prompt Studio",
+    "magneticTitle": "Línea de tiempo magnética (Ripple Edit)",
+    "magnetic": "Magnético",
+    "snap": "Ajustar",
+    "snapToBeatTitle": "Ajustar tomas al compás de {{bpm}} BPM",
+    "snapCuts": "Cortes al ritmo ({{bpm}} BPM)",
+    "splitPlayhead": "Dividir en el cursor",
+    "trimStart": "Recortar inicio hasta el cursor",
+    "trimEnd": "Recortar final hasta el cursor",
+    "remove": "Eliminar clip"
+  },
+  "focusMode": {
+    "activeTitle": "El modo de enfoque está activado",
+    "activeDescription": "Los estudios avanzados y espacios de colaboración están ocultos.",
+    "exit": "Salir del modo de enfoque"
+  },
+  "media": {
+    "filterAll": "Todos",
+    "filterVideo": "Vídeo",
+    "filterAudio": "Audio",
+    "filterImage": "Imágenes",
+    "filterReference": "Referencias",
+    "filterGenerated": "Generados",
+    "filters": "Filtrar archivos"
   }
 }

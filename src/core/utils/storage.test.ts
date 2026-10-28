@@ -142,6 +142,21 @@ describe('idbStorage', () => {
     expect(parsed.assets[1].data).toBe('inline-data');
   });
 
+  it('keeps registered desktop media without reading the legacy asset store', async () => {
+    const asset = {
+      id: 'local-media:123',
+      storageKey: 'local-media:123',
+      data: '',
+      url: 'loofi-media://media/local-media%3A123',
+    };
+    mockGet.mockResolvedValueOnce(JSON.stringify({ assets: [asset] }));
+
+    const result = await idbStorage.getItem('test-key');
+
+    expect(JSON.parse(result!).assets).toEqual([asset]);
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
   it('rehydrates the Zustand state/version envelope without losing its version', async () => {
     const storedState = JSON.stringify({
       state: {

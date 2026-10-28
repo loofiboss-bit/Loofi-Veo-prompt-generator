@@ -15,6 +15,9 @@ export function timelinePreviewSource(
     const frozenAsset = assets.find(
       (item) => item.id === clip.selectedTakeId || item.id === selected.mediaKey,
     );
+    // A registered streaming URL is usable from both file and development origins.
+    // It belongs to the frozen identity above, never the scene's newer selected take.
+    if (frozenAsset?.url?.startsWith('loofi-media:')) return frozenAsset.url;
     return selected.take?.localMediaUrl || frozenAsset?.proxyUrl || frozenAsset?.url;
   }
   const asset = assets.find((item) => item.id === clip.resourceId);
@@ -166,6 +169,7 @@ function TimedMedia({
     ref: (value: HTMLMediaElement | null) => {
       ref.current = value;
     },
+    crossOrigin: src.startsWith('loofi-media:') ? ('anonymous' as const) : undefined,
     src,
     playsInline: true,
     preload: 'auto' as const,

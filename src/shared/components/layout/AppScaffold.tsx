@@ -1,4 +1,5 @@
 import { ProjectSaveStatus } from '@features/project/ProjectSaveStatus';
+import { ProjectStatusChip } from './ProjectStatusChip';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useViewport } from '@shared/hooks/useViewport';
@@ -194,12 +195,15 @@ export function AppScaffold({
               <Icon name="menu" className="w-5 h-5" />
             </button>
           )}
-          <span className="flex-1 truncate text-sm text-slate-400">
-            {t('sidebar.currentProject')}:{' '}
-            <span className="text-slate-200">
-              {currentProject?.name ?? t('sidebar.noProject', 'No project selected')}
+          <div className="flex-1 flex items-center gap-3 min-w-0">
+            <span className="truncate text-sm text-slate-400">
+              {t('sidebar.currentProject')}:{' '}
+              <span className="font-medium text-slate-200">
+                {currentProject?.name ?? t('sidebar.noProject', 'No project selected')}
+              </span>
             </span>
-          </span>
+            {currentProject && <ProjectStatusChip project={currentProject} />}
+          </div>
           <CostBadge className="hidden sm:inline-flex" />
           <button
             type="button"

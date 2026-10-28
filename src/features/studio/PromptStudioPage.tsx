@@ -1244,9 +1244,6 @@ export function PromptStudioPage() {
           <h1 tabIndex={-1}>{t('title')}</h1>
           <p>{t('description')}</p>
         </div>
-        <span role="status" aria-live="polite" className="studio-save-status">
-          {t('save.' + store.status)}
-        </span>
       </header>
       <div className="studio-toolbar" role="group" aria-label={t('chooseMode')}>
         <button

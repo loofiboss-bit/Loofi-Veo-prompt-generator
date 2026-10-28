@@ -15,7 +15,7 @@ import { VoiceoverRecorderModal } from './components/VoiceoverRecorderModal';
 const EMPTY_AUDIO_FADES: Record<string, { inSeconds: number; outSeconds: number }> = {};
 
 /** Source playback aids editing; native delivery review is the composited output. */
-export function LocalTimelineEditor() {
+export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: () => void }) {
   const { t } = useTranslation('creator');
   const {
     clips,
@@ -128,6 +128,11 @@ export function LocalTimelineEditor() {
             'Source preview for editing. Use Review delivery to check the final mix, transitions and captions.',
           )}
         </p>
+        {onReviewDelivery && (
+          <button type="button" onClick={onReviewDelivery}>
+            {t('timeline.openDeliveryReview', 'Open delivery review')}
+          </button>
+        )}
         <div className="local-editor-transport">
           <button
             disabled={!duration}

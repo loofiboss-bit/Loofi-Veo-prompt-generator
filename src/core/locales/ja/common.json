@@ -158,7 +158,20 @@
     "create": "プロジェクトを作成",
     "import": "プロジェクトをインポート",
     "export": "プロジェクトをエクスポート",
-    "actions": "プロジェクトの操作"
+    "actions": "プロジェクトの操作",
+    "allChangesSaved": "すべての変更をローカルに保存しました",
+    "checkingSave": "保存状態を確認中",
+    "saveStatusUnknown": "保存状態を確認できません",
+    "saveUnsaved": "未保存",
+    "saveSaving": "保存中",
+    "saveSaved": "保存済み",
+    "saveError": "保存に失敗",
+    "saveConflict": "変更が競合",
+    "saveNow": "プロジェクトを保存",
+    "remoteChange": "別のウィンドウでこのプロジェクトが変更されました。",
+    "loadLatest": "最新版を読み込む",
+    "saveCopy": "コピーとして保存",
+    "backupWarning": "プロジェクトは保存されましたが、自動バックアップに失敗しました："
   },
   "assets": {
     "continuityProfiles": "継続性プロファイル",
@@ -172,6 +185,29 @@
     "emptyTitle": "タイムラインは空です",
     "emptyDescription": "制作画面でシーンを追加して、ストーリーボードの編集を始めましょう。",
     "backToStoryboard": "ストーリーボードに戻る",
-    "backToStudio": "Prompt Studioに戻る"
+    "backToStudio": "Prompt Studioに戻る",
+    "magneticTitle": "マグネティックタイムライン（リップル編集）",
+    "magnetic": "マグネット",
+    "snap": "スナップ",
+    "snapToBeatTitle": "ショットを{{bpm}} BPMの小節にスナップ",
+    "snapCuts": "ビートスナップ ({{bpm}} BPM)",
+    "splitPlayhead": "再生位置で分割",
+    "trimStart": "先頭を再生位置までトリミング",
+    "trimEnd": "末尾を再生位置までトリミング",
+    "remove": "クリップを削除"
+  },
+  "focusMode": {
+    "activeTitle": "集中モードが有効です",
+    "activeDescription": "高度なスタジオやコラボレーション画面は非表示になります。",
+    "exit": "集中モードを終了"
+  },
+  "media": {
+    "filterAll": "すべて",
+    "filterVideo": "動画",
+    "filterAudio": "音声",
+    "filterImage": "画像",
+    "filterReference": "参照",
+    "filterGenerated": "生成済み",
+    "filters": "メディアを絞り込む"
   }
 }

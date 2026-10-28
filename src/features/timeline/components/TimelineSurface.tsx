@@ -315,17 +315,17 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
             onClick={() => setRippleEnabled(!rippleEnabled)}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${rippleEnabled ? 'border border-fuchsia-500/30 bg-fuchsia-900/20 text-fuchsia-400' : 'text-slate-500 hover:text-slate-300'}`}
             aria-pressed={rippleEnabled}
-            title="Magnetic Timeline (Ripple Edit)"
+            title={t('timeline.magneticTitle', 'Magnetic Timeline (Ripple Edit)')}
           >
             <Icon name="layers" className="h-3.5 w-3.5" />
-            Magnetic
+            {t('timeline.magnetic', 'Magnetic')}
           </button>
           <button
             aria-pressed={snapEnabled}
             onClick={() => setSnapEnabled(!snapEnabled)}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${snapEnabled ? 'bg-cyan-900/20 text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
-            <Icon name="activity" className="h-3.5 w-3.5" /> Snap
+            <Icon name="activity" className="h-3.5 w-3.5" /> {t('timeline.snap', 'Snap')}
           </button>
         </div>
 

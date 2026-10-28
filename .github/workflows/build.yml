@@ -166,7 +166,9 @@ jobs:
       - name: Bundle size budget check
         run: |
           MAX_MAIN_KB=900
-          MAX_TOTAL_KB=4500
+          # v21 baseline is about 5,050 KiB including the optional ~506 KiB local ASR worker.
+          # Count all emitted workers and lazy chunks, with limited growth headroom.
+          MAX_TOTAL_KB=5500
           echo "=== Bundle Size Budget Check ==="
           echo "Main chunk limit: ${MAX_MAIN_KB} KB"
           echo "Total JS limit: ${MAX_TOTAL_KB} KB"

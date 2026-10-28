@@ -1,9 +1,9 @@
 # Quick Start
 
-Creator Studio v16 adds a local path from your own clips to verified video delivery.
-v16.0.1 stabilizes rendering, export, startup and playback resource use.
+Creator Studio v21 provides a local path from your own clips to verified video delivery,
+with guided checks, coordinated saves and clear recovery actions.
 
-## Finish a local video in v16
+## Finish a local video
 
 1. Open **Start → Create from your own clips** and select video, images or audio.
 2. Trim, split and arrange the timeline. Add captions or import SRT using **Add** or **Replace**.

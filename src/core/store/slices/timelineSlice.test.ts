@@ -481,6 +481,47 @@ describe('timelineSlice — atomic caption editing', () => {
     useAppStore.temporal.getState().undo();
     expect(useAppStore.getState().clips).toEqual(merged);
   });
+
+  it('places imported captions on the project’s existing caption track', () => {
+    useAppStore.setState({
+      clips: [makeClip('video', 'creator-video')],
+      tracks: [
+        { id: 'creator-video', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 0 },
+        {
+          id: 'creator-captions',
+          label: 'Captions',
+          type: 'text',
+          trackType: 'captions',
+          zIndex: 2,
+        },
+      ],
+    });
+    useAppStore.getState().importTimelineCaptions([captionClip('one', 0, 2).caption!], 'append');
+    expect(useAppStore.getState().clips.find((clip) => clip.caption)?.trackId).toBe(
+      'creator-captions',
+    );
+  });
+
+  it('creates a caption track atomically when the project has none', () => {
+    useAppStore.setState({
+      clips: [makeClip('video', 'creator-video')],
+      tracks: [
+        { id: 'creator-video', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 0 },
+      ],
+    });
+    resetHistory();
+    useAppStore.getState().importTimelineCaptions([captionClip('one', 0, 2).caption!], 'append');
+    const { clips, tracks } = useAppStore.getState();
+    expect(
+      tracks.find((track) => track.id === clips.find((clip) => clip.caption)?.trackId),
+    ).toMatchObject({
+      type: 'text',
+      trackType: 'captions',
+    });
+    useAppStore.temporal.getState().undo();
+    expect(useAppStore.getState().tracks).toHaveLength(1);
+    expect(useAppStore.getState().clips).toHaveLength(1);
+  });
 });
 
 describe('timelineSlice — delivery transitions', () => {

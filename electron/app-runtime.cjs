@@ -25,6 +25,7 @@ const { KEYTAR_SERVICE, registerCredentialsIpc } = require('./ipc/credentials-ip
 const { CreatorRenderEngine } = require('./creator-render.cjs');
 const { registerCreatorRenderIpc } = require('./ipc/creator-render-ipc.cjs');
 const { registerMediaIpc } = require('./ipc/media-ipc.cjs');
+const { registerCreatorMediaProtocol } = require('./ipc/creator-media-protocol.cjs');
 const { registerProjectIpc } = require('./ipc/project-ipc.cjs');
 const { registerDiagnosticsIpc } = require('./ipc/diagnostics-ipc.cjs');
 const {
@@ -70,6 +71,16 @@ protocol.registerSchemesAsPrivileged([
   {
     scheme: 'loofi-asr',
     privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+  {
+    scheme: 'loofi-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
   },
 ]);
 
@@ -526,6 +537,22 @@ app.whenReady().then(async () => {
       if (mainWindow && !mainWindow.isDestroyed())
         mainWindow.webContents.send('timeline-render-update', job);
     },
+  });
+  const mediaOrigins = [];
+  if (!app.isPackaged) {
+    try {
+      mediaOrigins.push(new URL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:8080').origin);
+    } catch {
+      console.warn(
+        'Invalid development server URL; local media cross-origin access is unavailable.',
+      );
+    }
+  }
+  registerCreatorMediaProtocol({
+    protocol,
+    getStore: () => desktopMediaStore,
+    getEngine: () => creatorRenderEngine,
+    allowedOrigins: mediaOrigins,
   });
   void creatorRenderEngine.initialize().then(() => {
     if (creatorRenderEngine.initializationError) {

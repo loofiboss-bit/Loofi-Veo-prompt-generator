@@ -141,6 +141,20 @@ describe('mediaAssetService', () => {
     expect(asset.storageKey).toBe(asset.id);
     expect(bridge.inspectTimelineRenderMedia).toHaveBeenCalledWith(asset.id);
   });
+  it('uses the desktop streaming URL while retaining the durable storage identity', async () => {
+    const bridge = verifiedDesktop();
+    const originalImport = bridge.importDesktopMedia.getMockImplementation()!;
+    bridge.importDesktopMedia.mockImplementation(async (input) => ({
+      ...(await originalImport(input)),
+      displayUrl: 'loofi-media://media/local-media%3A123',
+    }));
+    window.electron = bridge as unknown as NonNullable<typeof window.electron>;
+    const asset = await mediaAssetService.importLocalFile(
+      new File(['video'], 'source.mp4', { type: 'video/mp4' }),
+    );
+    expect(asset.url).toBe('loofi-media://media/local-media%3A123');
+    expect(asset.storageKey).toBe(asset.id);
+  });
   it.each([
     [{ available: false }, 'decoded'],
     [{ available: true, streamTypes: ['audio'], durationSeconds: 12 }, 'video stream'],

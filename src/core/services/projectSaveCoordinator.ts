@@ -41,17 +41,39 @@ class ProjectSaveCoordinator {
       await pending;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      useProjectSaveStore.getState().setStatus(projectId, {
-        status: error instanceof ProjectConflictError ? 'conflict' : 'error',
-        error: message,
-        conflictDocument:
-          error instanceof ProjectConflictError ? structuredClone(error.localDocument) : undefined,
-      });
+      const existing = useProjectSaveStore.getState().projects[projectId];
+      if (existing?.status !== 'conflict' || error instanceof ProjectConflictError) {
+        useProjectSaveStore.getState().setStatus(projectId, {
+          status: error instanceof ProjectConflictError ? 'conflict' : 'error',
+          error: message,
+          conflictDocument:
+            error instanceof ProjectConflictError
+              ? structuredClone(error.localDocument)
+              : undefined,
+        });
+      }
       logger.error('Project save coordinator failed', 'ProjectSaveCoordinator', error);
       throw error;
     } finally {
       if (this.saves.get(projectId) === pending) this.saves.delete(projectId);
     }
+  }
+
+  /** Rename the active editor through the same ordered save as its other edits. */
+  async renameProject(projectId: string, name: string): Promise<void> {
+    const session = useEditorSessionStore.getState();
+    if (session.projectSnapshot?.id !== projectId)
+      throw new Error('The active project changed before it could be renamed.');
+    const status = useProjectSaveStore.getState().projects[projectId];
+    if (status?.status === 'conflict')
+      throw new Error(status.error ?? 'Resolve the project conflict before saving.');
+    useEditorSessionStore.setState((state) => ({
+      projectSnapshot: state.projectSnapshot
+        ? { ...state.projectSnapshot, name }
+        : state.projectSnapshot,
+    }));
+    useProjectSaveStore.getState().markDirty(projectId);
+    await this.saveProject(projectId);
   }
 
   /** Persist the active editor before any operation changes the project identity. */
@@ -81,11 +103,13 @@ class ProjectSaveCoordinator {
         id: projectId,
         name: currentDocument.name,
       });
+      const pendingStatus = useProjectSaveStore.getState().projects[projectId];
+      if (pendingStatus?.status === 'conflict')
+        throw new Error(pendingStatus.error ?? 'Resolve the project conflict before saving.');
       useProjectSaveStore.getState().setStatus(projectId, { status: 'saving' });
 
       const result = await projectDocumentService.save(document, { manageSaveStatus: false });
       if (!result.durable) throw new Error(result.error ?? 'Project storage is not durable.');
-      await projectService.registerDocument(document);
 
       const savedSession = useEditorSessionStore.getState();
       if (savedSession.projectSnapshot?.id === projectId) {
@@ -95,10 +119,17 @@ class ProjectSaveCoordinator {
             : state.projectSnapshot,
         }));
       }
+      // The document revision is already durable even if metadata registration
+      // fails. Retain it so a retry does not conflict with our own write.
+      await projectService.registerDocument(document);
 
       const currentStatus = useProjectSaveStore.getState().projects[projectId];
+      if (currentStatus?.status === 'conflict')
+        throw new Error(currentStatus.error ?? 'Resolve the project conflict before saving.');
+      const latestSession = useEditorSessionStore.getState();
+      if (latestSession.projectSnapshot?.id !== projectId)
+        throw new Error('The active project changed while its edits were being saved.');
       const changedDuringSave =
-        savedSession.projectSnapshot?.id !== projectId ||
         useAppStore.getState().mutationVersion !== mutationVersion ||
         currentStatus?.status === 'unsaved';
       if (changedDuringSave) {

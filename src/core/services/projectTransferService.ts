@@ -190,9 +190,10 @@ export async function importPortableProject(file: File): Promise<Project> {
       const blob = new Blob([bytes], { type: asset.mimeType });
       const desktop = window.electron?.importDesktopMedia;
       let url: string;
-      if (desktop)
-        url = (await desktop({ key, bytes: bytes.buffer, mimeType: asset.mimeType })).localUrl;
-      else {
+      if (desktop) {
+        const importedMedia = await desktop({ key, bytes: bytes.buffer, mimeType: asset.mimeType });
+        url = importedMedia.displayUrl ?? importedMedia.localUrl;
+      } else {
         await mediaAssetService.storeBlob(key, blob);
         url = (await mediaAssetService.getObjectUrl(key))!;
       }
@@ -501,7 +502,10 @@ export async function hydrateProjectMedia(project: Project): Promise<void> {
     )
       continue;
     const desktop = await window.electron?.readDesktopMedia?.(asset.storageKey);
-    const url = desktop?.localUrl ?? (await mediaAssetService.getObjectUrl(asset.storageKey));
+    const url =
+      desktop?.displayUrl ??
+      desktop?.localUrl ??
+      (await mediaAssetService.getObjectUrl(asset.storageKey));
     if (url) {
       urls.set(asset.url, url);
       useAppStore.getState().updateAsset(asset.id, { url });

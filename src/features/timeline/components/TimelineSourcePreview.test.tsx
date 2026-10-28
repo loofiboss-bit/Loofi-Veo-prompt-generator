@@ -68,6 +68,35 @@ describe('timeline source preview', () => {
       ),
     ).toBe('blob:retained-old');
   });
+  it('prefers the registered stream for a frozen take over an inaccessible file URL', () => {
+    const run = {
+      shots: [
+        {
+          id: 1,
+          selectedTakeId: 'new',
+          takes: [
+            {
+              id: 'old',
+              localMediaKey: 'local-media:old',
+              localMediaUrl: 'file:///private/old.mp4',
+            },
+            {
+              id: 'new',
+              localMediaKey: 'local-media:new',
+              localMediaUrl: 'file:///private/new.mp4',
+            },
+          ],
+        },
+      ],
+    } as ProductionRun;
+    const assets = [
+      { id: 'local-media:new', url: 'loofi-media://media/local-media%3Anew' },
+      { id: 'local-media:old', url: 'loofi-media://media/local-media%3Aold' },
+    ] as Asset[];
+    expect(timelinePreviewSource(clip, assets, [], run)).toBe(
+      'loofi-media://media/local-media%3Aold',
+    );
+  });
   it('renders overlapping audio and time-aligned captions even during a visual gap', () => {
     const clips = [
       {

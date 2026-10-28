@@ -33,6 +33,46 @@ function compare(language, namespace) {
     if (!english.has(key)) errors.push(`${language}/${namespace}: unknown ${key}`);
 }
 for (const language of ['sv', 'es', 'fr', 'ja', 'ar']) compare(language, 'creator');
+const sharedCreatorKeys = [
+  'closeModal',
+  ...[
+    'saveUnsaved',
+    'saveSaving',
+    'saveSaved',
+    'saveError',
+    'saveConflict',
+    'saveNow',
+    'remoteChange',
+    'loadLatest',
+    'saveCopy',
+    'backupWarning',
+    'allChangesSaved',
+    'checkingSave',
+    'saveStatusUnknown',
+  ].map((key) => `projects.${key}`),
+  ...[
+    'filterAll',
+    'filterVideo',
+    'filterAudio',
+    'filterImage',
+    'filterReference',
+    'filterGenerated',
+    'filters',
+  ].map((key) => `media.${key}`),
+  ...['splitPlayhead', 'trimStart', 'trimEnd', 'remove'].map((key) => `timeline.${key}`),
+];
+const englishCommon = read('en', 'common');
+for (const language of ['sv', 'es', 'fr', 'ja', 'ar']) {
+  const translated = read(language, 'common');
+  for (const key of sharedCreatorKeys) {
+    const source = englishCommon.get(key);
+    const value = translated.get(key);
+    if (typeof source !== 'string' || typeof value !== 'string' || !value.trim())
+      errors.push(`${language}/common: missing ${key}`);
+    else if (tokens(source) !== tokens(value))
+      errors.push(`${language}/common: interpolation mismatch at ${key}`);
+  }
+}
 for (const namespace of [
   'common',
   'prompt',

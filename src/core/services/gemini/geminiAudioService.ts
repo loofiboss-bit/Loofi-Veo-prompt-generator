@@ -10,7 +10,7 @@ import { retryOperation } from '@core/utils/retry';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 import { resolveProviderModelId } from '@core/models/catalog';
 
-const DEFAULT_TTS_MODEL = resolveProviderModelId('gemini-3.1-flash-tts');
+const DEFAULT_TTS_MODEL = resolveProviderModelId('gemini-3.8-flash-tts');
 
 // ---------------------------------------------------------------------------
 // Speech & sound effects

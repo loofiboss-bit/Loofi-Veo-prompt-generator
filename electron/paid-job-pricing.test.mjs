@@ -33,6 +33,33 @@ test('recalculates provider token charges at the privileged boundary', () => {
   assert.equal(validateProviderCostApproval(request()), 0.036);
 });
 
+test('requires the refreshed pricing source and conservative ceiling for Argon', () => {
+  const input = request({ providerModelId: 'gemini-4-argon' });
+  input.costApproval = {
+    ...input.costApproval,
+    providerModelId: input.providerModelId,
+    verifiedDate: '2026-10-28',
+    maximumChargeUsd: 0.096,
+  };
+  assert.equal(validateProviderCostApproval(input), 0.096);
+  assert.throws(
+    () =>
+      validateProviderCostApproval({
+        ...input,
+        costApproval: { ...input.costApproval, verifiedDate: '2026-08-01' },
+      }),
+    /trusted pricing metadata/,
+  );
+  assert.throws(
+    () =>
+      validateProviderCostApproval({
+        ...input,
+        costApproval: { ...input.costApproval, maximumChargeUsd: 0.056 },
+      }),
+    /below the trusted conservative estimate/,
+  );
+});
+
 test('rejects missing, stale, mismatched, and underestimated approvals', () => {
   assert.throws(
     () => validateProviderCostApproval(request({ costApproval: undefined })),

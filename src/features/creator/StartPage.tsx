@@ -6,12 +6,18 @@ import { ROUTES } from '@core/config/routes';
 import { useCreatorStore } from '@core/store/useCreatorStore';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProjectStore } from '@core/store/useProjectStore';
+import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useTimelineRecoveryStore } from '@core/store/useTimelineRecoveryStore';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { WelcomeModal } from '@features/onboarding/WelcomeModal';
 import './creator.css';
 export function StartPage() {
   const { t } = useTranslation('creator');
   const navigate = useNavigate();
   const localFiles = useRef<HTMLInputElement>(null);
+  const recipesDetails = useRef<HTMLDetailsElement>(null);
   const [searchParams] = useSearchParams();
   const state = useCreatorStore();
   const [recipeId, setRecipeId] = useState(
@@ -26,9 +32,38 @@ export function StartPage() {
   const currentProjectId = useProjectStore((store) => store.currentProjectId);
   const projects = useProjectStore((store) => store.projects);
   const currentProject = projects.find((project) => project.id === currentProjectId);
+  const saveStatus = useProjectSaveStore((store) =>
+    currentProjectId ? store.projects[currentProjectId]?.status : undefined,
+  );
+  const draftError = usePromptStudioDraftStore(
+    (store) => store.draft?.projectId === currentProjectId && store.status === 'error',
+  );
+  const editorMode = useEditorSessionStore((store) =>
+    store.projectSnapshot?.id === currentProjectId
+      ? store.projectSnapshot.creatorDelivery?.editorMode
+      : undefined,
+  );
   const clips = useAppStore((store) => store.clips);
+  const assets = useAppStore((store) => store.assets);
+  const shots = useAppStore((store) => store.sbShots);
+  const mutationVersion = useAppStore((store) => store.mutationVersion);
+  const activeRun = useProductionRunStore((store) => store.activeRun);
+  const recovery = useTimelineRecoveryStore((store) => store.recovery);
+  const knownMissingMedia =
+    recovery?.projectId === currentProjectId &&
+    recovery.mutationVersion === mutationVersion &&
+    recovery.clips === clips &&
+    recovery.assets === assets &&
+    recovery.shots === shots &&
+    recovery.run === (activeRun?.projectId === currentProjectId ? activeRun : null) &&
+    recovery.missingMedia.length > 0;
   const hasTimelineMedia = useAppStore((store) =>
-    store.assets.some((asset) => asset.type === 'video' || asset.type === 'audio'),
+    store.assets.some(
+      (asset) =>
+        asset.type === 'video' ||
+        asset.type === 'audio' ||
+        (asset.type === 'image' && editorMode === 'delivery'),
+    ),
   );
   const recipe = CREATOR_RECIPES.find((item) => item.id === recipeId)!;
   useEffect(() => {
@@ -43,7 +78,14 @@ export function StartPage() {
     const app = useAppStore.getState();
     navigate(
       app.clips.length > 0 ||
-        app.assets.some((asset) => asset.type === 'video' || asset.type === 'audio')
+        app.assets.some(
+          (asset) =>
+            asset.type === 'video' ||
+            asset.type === 'audio' ||
+            (asset.type === 'image' &&
+              useEditorSessionStore.getState().projectSnapshot?.creatorDelivery?.editorMode ===
+                'delivery'),
+        )
         ? ROUTES.TIMELINE
         : ROUTES.STUDIO,
     );
@@ -59,6 +101,64 @@ export function StartPage() {
             'Turn an idea into a short video. Work locally, bring your own media, and use AI only when you choose.',
           )}
         </p>
+        {currentProject && (
+          <section aria-labelledby="current-project-title" className="creator-current-project">
+            <h2 id="current-project-title">{currentProject.name}</h2>
+            <p>
+              {saveStatus === 'conflict' || saveStatus === 'error'
+                ? t('recent.resolveSave', 'Resolve the project save issue before continuing.')
+                : draftError
+                  ? t(
+                      'recent.resolveDraft',
+                      'Resolve the Studio draft save issue before continuing.',
+                    )
+                  : knownMissingMedia
+                    ? t(
+                        'recent.missingMedia',
+                        'Some timeline media is missing. Relink it before export.',
+                      )
+                    : clips.length > 0
+                      ? t('recent.ready', 'Media is available — arrange and export')
+                      : hasTimelineMedia
+                        ? t('recent.addMedia', 'Next: arrange your media on the timeline')
+                        : t('recent.addIdea', 'Next: add your idea')}
+            </p>
+            {saveStatus === 'conflict' || saveStatus === 'error' ? (
+              <button
+                className="studio-primary"
+                onClick={() => {
+                  const recovery = document.getElementById('project-save-recovery');
+                  recovery?.scrollIntoView?.({ block: 'center' });
+                  recovery?.focus();
+                }}
+              >
+                {t('recent.reviewSave', 'Review save issue')}
+              </button>
+            ) : draftError ? (
+              <button className="studio-primary" onClick={() => navigate(ROUTES.STUDIO)}>
+                {t('recent.reviewDraft', 'Review Studio draft')}
+              </button>
+            ) : knownMissingMedia ? (
+              <button
+                className="studio-primary"
+                onClick={() => navigate(ROUTES.TIMELINE, { state: { showMediaRecovery: true } })}
+              >
+                {t('recent.relinkMedia', 'Relink missing media')}
+              </button>
+            ) : (
+              <button
+                className="studio-primary"
+                onClick={() =>
+                  navigate(clips.length > 0 || hasTimelineMedia ? ROUTES.TIMELINE : ROUTES.STUDIO)
+                }
+              >
+                {clips.length > 0 || hasTimelineMedia
+                  ? t('recent.continueTimeline', 'Continue in timeline')
+                  : t('recent.continueStudio', 'Continue in Prompt Studio')}
+              </button>
+            )}
+          </section>
+        )}
         <div className="space-y-4">
           <input
             ref={localFiles}
@@ -132,7 +232,11 @@ export function StartPage() {
           <div className="creator-actions">
             <button
               disabled={state.busy}
-              onClick={() => document.getElementById('recipe-title')?.focus()}
+              onClick={() => {
+                if (!recipesDetails.current) return;
+                recipesDetails.current.open = true;
+                recipesDetails.current.querySelector<HTMLElement>('summary')?.focus();
+              }}
             >
               {t('recipes.title', 'Browse recipes')}
             </button>
@@ -147,31 +251,6 @@ export function StartPage() {
       </header>
       {state.error && <p role="alert">{state.error}</p>}
       {state.notice && <p role="status">{state.notice}</p>}
-      {currentProject ? (
-        <section
-          aria-labelledby="current-project-title"
-          className="rounded-xl border border-slate-700 p-4"
-        >
-          <h2 id="current-project-title">{currentProject.name}</h2>
-          <p>
-            {clips.length > 0
-              ? t('recent.ready', 'Media is available — arrange and export')
-              : hasTimelineMedia
-                ? t('recent.addMedia', 'Next: arrange your media on the timeline')
-                : t('recent.addIdea', 'Next: add your idea')}
-          </p>
-          <button
-            className="studio-primary"
-            onClick={() =>
-              navigate(clips.length > 0 || hasTimelineMedia ? ROUTES.TIMELINE : ROUTES.STUDIO)
-            }
-          >
-            {clips.length > 0 || hasTimelineMedia
-              ? t('recent.continueTimeline', 'Continue in timeline')
-              : t('recent.continueStudio', 'Continue in Prompt Studio')}
-          </button>
-        </section>
-      ) : null}
       <section aria-labelledby="recent-projects-title">
         <h2 id="recent-projects-title">{t('recent.title', 'Recent projects')}</h2>
         <div className="creator-grid">
@@ -194,10 +273,12 @@ export function StartPage() {
           <p>{t('recent.empty', 'Your saved projects will appear here.')}</p>
         ) : null}
       </section>
-      <section aria-labelledby="examples-title">
-        <h2 id="examples-title" tabIndex={-1}>
-          {t('examples.title', 'Try it offline — no account or API key')}
-        </h2>
+      <details className="creator-start-disclosure" aria-labelledby="examples-title">
+        <summary>
+          <h2 id="examples-title">
+            {t('examples.title', 'Try it offline — no account or API key')}
+          </h2>
+        </summary>
         <p>
           {t(
             'examples.description',
@@ -222,11 +303,15 @@ export function StartPage() {
             </article>
           ))}
         </div>
-      </section>
-      <section aria-labelledby="recipe-title">
-        <h2 id="recipe-title" tabIndex={-1}>
-          {t('recipes.title', 'Start with a creative recipe')}
-        </h2>
+      </details>
+      <details
+        ref={recipesDetails}
+        className="creator-start-disclosure"
+        aria-labelledby="recipe-title"
+      >
+        <summary>
+          <h2 id="recipe-title">{t('recipes.title', 'Start with a creative recipe')}</h2>
+        </summary>
         <div className="creator-grid">
           {CREATOR_RECIPES.map((item) => (
             <button
@@ -288,7 +373,7 @@ export function StartPage() {
             </button>
           </div>
         </div>
-      </section>
+      </details>
       <section aria-labelledby="creator-more-title">
         <h2 id="creator-more-title">{t('start.moreTools', 'More ways to work')}</h2>
         <p>

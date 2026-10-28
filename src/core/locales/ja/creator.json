@@ -162,7 +162,13 @@
     "addIdea": "次の手順：アイデアを入力",
     "empty": "保存したプロジェクトがここに表示されます。",
     "continueTimeline": "タイムラインを続ける",
-    "continueStudio": "Prompt Studioを続ける"
+    "continueStudio": "Prompt Studioを続ける",
+    "resolveSave": "続行する前にプロジェクトの保存問題を解決してください。",
+    "reviewSave": "保存の問題を確認",
+    "missingMedia": "タイムラインのメディアが一部見つかりません。書き出す前に再リンクしてください。",
+    "relinkMedia": "不足しているメディアを再リンク",
+    "resolveDraft": "続行する前にStudioの下書きの保存問題を解決してください。",
+    "reviewDraft": "Studioの下書きを確認"
   },
   "style": {
     "title": "マイスタイル",
@@ -307,12 +313,65 @@
     "createTimeBlocks": "時間ブロックを作成",
     "timeBlocksNeedText": "時間ブロックはタイミングのみを提案します。採用前に字幕テキストを追加してください。",
     "batchInterrupted": "保存済みの書き出しが停止しました。完了した形式は保持されています。",
-    "resumeBatch": "保存済みの書き出しを再開"
+    "resumeBatch": "保存済みの書き出しを再開",
+    "stepsLabel": "納品の手順",
+    "previousResult": "以前の納品です。現在の編集が含まれていない可能性があります。",
+    "savedConfirmed": "選択した保存先にファイルを保存しました。",
+    "savedHistory": "保存後にファイルが移動または削除された可能性があります。",
+    "captionReviewTitle": "字幕の提案（任意）",
+    "captionReviewNumber": "字幕 {{number}} を確認",
+    "captionIssueOverlap": "別の字幕と重なっています",
+    "captionIssueLength": "1行が42文字を超えています",
+    "captionIssueSpeed": "1秒あたり20文字を超えています",
+    "openMediaPanel": "メディアライブラリを開く",
+    "diagnostics": {
+      "clip-timing": "{{clip}}: 開始位置とソースのオフセットを0以上にし、長さを正の値にしてください。",
+      "media-loading": "{{clip}}: メディアの読み込みが完了するまで待ってください。",
+      "effects-unsupported": "{{clip}}: ローカル書き出しではタイムライン効果を無効にしてください。",
+      "motion-keyframes-unsupported": "{{clip}}: ローカル書き出しではモーションのキーフレームを削除してください。",
+      "color-grading-unsupported": "{{clip}}: ローカル書き出しではカラー調整をリセットしてください。",
+      "camera-motion-unsupported": "{{clip}}: ローカル書き出しではカメラの動きを削除してください。",
+      "audio-reactivity-unsupported": "{{clip}}: ローカル書き出しでは音声連動を無効にしてください。",
+      "masks-unsupported": "{{clip}}: ローカル書き出しではセグメンテーションマスクを削除してください。",
+      "volume-keyframes-unsupported": "{{clip}}: ローカル書き出しでは固定のクリップ音量を使用してください。",
+      "opacity-unsupported": "{{clip}}: クリップの不透明度を100%に戻してください。",
+      "panning-unsupported": "{{clip}}: 音声のパンをリセットしてください。",
+      "transforms-unsupported": "{{clip}}: タイムラインの変形をリセットし、書き出しのクロップを使用してください。",
+      "transition-unsupported": "{{clip}}: カット、ディゾルブ、または黒へのフェードを選択してください。",
+      "wrong-production-run": "このプロジェクトの制作を選択してください。",
+      "timeline-empty": "メディアを読み込み、タイムラインにクリップを追加してください。",
+      "duration-invalid": "タイムラインの長さを0秒より長く180秒以下にしてください。",
+      "visual-track-count": "映像クリップを1つのメイントラックに移動してください。",
+      "duplicate-clip": "{{clip}}: クリップを再度複製して新しい識別子を割り当ててください。",
+      "volume-invalid": "{{clip}}: 音量を0から4の範囲に設定してください。",
+      "crop-invalid": "{{clip}}: クロップ設定をリセットしてください。",
+      "audio-fade-invalid": "{{clip}}: 音声のフェードを短くするかリセットしてください。",
+      "track-missing": "{{clip}}: クリップを既存のトラックに移動してください。",
+      "caption-missing": "{{clip}}: 字幕のテキストを追加してください。",
+      "caption-transition-unsupported": "{{clip}}: テキストのオフセットとトランジションをリセットしてください。",
+      "caption-invalid": "{{clip}}: 字幕のテキストと時間を修正してください。",
+      "media-missing": "{{clip}}: 不足しているローカルメディアを再リンクまたは再読み込みしてください。",
+      "source-duration": "{{clip}}: クリップを短くするかソースのオフセットをリセットしてください。",
+      "media-inspection-failed": "{{clip}}: 元のメディアを確認するか再読み込みしてください。",
+      "overlap-invalid": "{{clip}}: 重なりをディゾルブの長さに合わせるか、重なりを削除してください。",
+      "logo-missing": "スタイルのロゴを再リンクしてください。"
+    },
+    "stepCompleted": "完了",
+    "stepIncomplete": "未完了",
+    "openMediaRecovery": "不足しているメディアを確認",
+    "save": "ファイルを保存",
+    "busyWait": "お待ちください...",
+    "renderBatchWithCount": "一括書き出し（{{count}}形式）",
+    "recommendReview": "ヒント：最終書き出しの前に、手順2でプレビューを確認してください。",
+    "step4Title": "4. 完成した納品を保存",
+    "exportReadyDesc": "動画の書き出しが完了し、端末に保存できます。",
+    "savedAs": "保存名："
   },
   "v16": {
     "chooseMedia": "ローカルメディアを選択",
     "createFromFiles": "自分のクリップから作成",
     "openRecent": "プロジェクトを開いて編集を続けるか、書き出しを準備します。",
+    "openEditorMedia": "エディタを開いてメディアをインポート",
     "mediaLibrary": "メディアライブラリ",
     "importing": "メディアを読み込み中…",
     "importMedia": "メディアを読み込む",
@@ -357,10 +416,27 @@
     "trackMute": "ミュート",
     "trackUnmute": "ミュート解除",
     "trackMuted": "ミュート中",
-    "trackSoundOn": "音声オン"
+    "trackSoundOn": "音声オン",
+    "stepBackFrame": "1フレーム戻る",
+    "stepForwardFrame": "1フレーム進む",
+    "openProjectFirst": "メディアを読み込む前にプロジェクトを開いてください。",
+    "noFilterMatches": "選択したフィルターに一致するメディアはありません。",
+    "placedOnTimeline": "タイムラインに配置済み",
+    "capabilitiesMissing": "書き出しエンジンを利用できません。",
+    "renderRunning": "すでにレンダリングが進行中です。"
   },
   "costs": {
     "estimatedTotal": "推定記録コスト：{{cost}}。プロバイダーの実請求額は確認できません。",
     "storageFailed": "コスト履歴を保存できません。ストレージが利用可能になってから再試行してください。"
+  },
+  "timeline": {
+    "emptyOwnMedia": "自分のメディアを読み込んでローカルで編集するか、制作から生成済みのクリップを追加します。",
+    "openDeliveryReview": "納品プレビューを開く"
+  },
+  "voiceover": {
+    "recordButton": "ナレーションを録音"
+  },
+  "silence": {
+    "button": "無音部分をカット"
   }
 }

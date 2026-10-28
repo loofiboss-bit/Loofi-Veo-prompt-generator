@@ -711,7 +711,7 @@
   font-size: 13px;
   font-weight: 550;
 }
-.studio-workspace input:not([type='checkbox']),
+.studio-workspace input:not([type='checkbox']):not([type='radio']),
 .studio-workspace select,
 .studio-workspace textarea {
   color: var(--color-text-primary);
@@ -921,6 +921,10 @@ body {
   overflow-wrap: anywhere;
   font-style: normal;
   background-image: none;
+}
+/* Route headings receive programmatic focus; interactive controls retain focus rings. */
+h1[tabindex='-1']:focus {
+  outline: none !important;
 }
 .creator-shell :is(button, a, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--color-border-focus);
