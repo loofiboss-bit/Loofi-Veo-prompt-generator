@@ -118,27 +118,28 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
       };
     }
 
-    if (request.mode === 'economy') {
-      const economy = select(
-        ['veo-3.1-lite', 'gemini-omni-1.1-flash', 'gemini-omni-flash'],
-        request,
-      );
-      if (!economy) throw new Error('No priced economy video model is currently available.');
-      return {
-        model: economy,
-        fallback: select(['gemini-omni-1.1-flash', 'gemini-omni-flash', 'veo-3.1-fast'], request),
-        reason: 'Economy mode selected for an unconstrained video request.',
-      };
-    }
-
-    const general = select(['gemini-omni-1.1-flash', 'gemini-omni-flash', 'veo-3.1-fast'], request);
-    if (!general) throw new Error('No priced general video model is currently available.');
+    // Conversational revisions use Interactions; ordinary generation must stay on
+    // Veo because the durable desktop job engine submits predictLongRunning jobs.
+    const candidates =
+      request.operation === 'video-edit'
+        ? ['gemini-omni-1.1-flash', 'gemini-omni-flash']
+        : request.mode === 'economy'
+          ? ['veo-3.1-lite', 'veo-3.1-fast', 'veo-3.1-quality']
+          : request.mode === 'quality'
+            ? ['veo-3.1-quality', 'veo-3.1-fast']
+            : ['veo-3.1-fast', 'veo-3.1-quality'];
+    const model = select(candidates, request);
+    if (!model) throw new Error('No priced general video model is currently available.');
     return {
-      model: general,
-      fallback: select(['veo-3.1-fast', 'veo-3.1-quality'], request),
-      reason: general.id.startsWith('gemini-omni')
-        ? 'Gemini Omni Flash is the recommended general video model for unconstrained requests.'
-        : 'The recommended general video model is unavailable; using a compatible Veo fallback.',
+      model,
+      fallback: select(
+        candidates.filter((id) => id !== model.id),
+        request,
+      ),
+      reason:
+        request.operation === 'video-edit'
+          ? 'Conversational video revisions require an Interactions-compatible model.'
+          : 'A compatible Veo model is selected for durable video generation.',
     };
   }
 

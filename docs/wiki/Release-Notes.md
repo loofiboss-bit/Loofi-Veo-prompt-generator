@@ -1,5 +1,17 @@
 # Release Notes
 
+## v21.0.0 — Polish & Trust
+
+- Follow four delivery steps with explicit checks, review, export and confirmed file saves.
+- Coordinate project saves and recover conflicts before copying, exporting or handing off work.
+- Filter media and protect assets still used by timeline clips or production profiles.
+- Continue projects from Start with recovery actions for missing media and save errors.
+- Review optional caption suggestions and use improved keyboard navigation across six locales.
+- Refresh Gemini model routing and compatible dependency security fixes.
+
+[Download v21.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0).
+See [upgrade notes](../releases/RELEASE-NOTES-v21.0.0.md) and the [release process](../RELEASE.md).
+
 ## v20.0.0 — Project-Safe Editing & Reviewed Delivery
 
 - Save media, catalog and project data in durable order, with edit-preserving timeline placement.

@@ -124,6 +124,18 @@ test('persists operation acknowledgement before polling and completes without du
   assert.equal(calls[0].url.includes('secret'), false);
 });
 
+test('rejects Omni video on the durable Veo submission boundary', () => {
+  const input = task();
+  assert.throws(
+    () =>
+      validatePaidTask({
+        ...input,
+        request: { ...input.request, modelId: 'gemini-omni-1.1-flash' },
+      }),
+    /model/,
+  );
+});
+
 test('rejects malformed or unsupported paid submissions at the IPC engine boundary', () => {
   assert.throws(() => validatePaidTask({ ...task(), id: '../escape' }), /job ID/);
   assert.throws(

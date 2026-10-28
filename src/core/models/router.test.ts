@@ -26,10 +26,11 @@ describe('routeModel', () => {
     expect(decision.model.id).toBe('gemini-omni-1.1-flash');
   });
 
-  it('prefers Omni Flash for ordinary unconstrained video generation', () => {
+  it('keeps ordinary video generation on the supported durable Veo adapter', () => {
     const decision = routeModel({ operation: 'video', mode: 'smart', requestedResolution: '720p' });
-    expect(decision.model.id).toBe('gemini-omni-1.1-flash');
-    expect(decision.reason).toContain('recommended general video model');
+    expect(decision.model.id).toBe('veo-3.1-fast');
+    expect(decision.fallback?.id).toBe('veo-3.1-quality');
+    expect(decision.reason).toContain('durable video generation');
   });
 
   it('uses the current stable Flash-Lite for economy planning', () => {

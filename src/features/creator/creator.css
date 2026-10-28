@@ -30,8 +30,7 @@
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 650;
 }
-.creator-start h1:focus:not(:focus-visible),
-h1[tabindex='-1']:focus {
+.creator-start h1:focus:not(:focus-visible) {
   outline: none !important;
 }
 .creator-start h2 {

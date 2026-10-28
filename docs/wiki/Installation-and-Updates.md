@@ -2,9 +2,9 @@
 
 The supported release channels target Windows 11 / 10 x64 and Fedora 44 x86_64. Windows packages provide an NSIS installer and a portable executable; Fedora packages provide a GitHub RPM, AppImage, and Fedora COPR repository channel. macOS is not a production-supported target.
 
-Download [v20.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0).
+Download [v21.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0).
 It provides the Windows installer and portable EXE, Linux AppImage, Fedora RPM and `SHA256SUMS.txt`.
-See the [README installation steps](../../README.md#install-v2000) for package commands.
+See the [README installation steps](../../README.md#install-v2100) for package commands.
 
 ## Verification & Trust Boundary
 

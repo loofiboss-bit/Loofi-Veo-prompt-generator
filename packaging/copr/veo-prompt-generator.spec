@@ -79,6 +79,10 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Wed Oct 28 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 21.0.0-1
+- Package guided delivery, coordinated saves, media guards and recovery navigation.
+- Preserve matching release checksums and explicit Fedora runtime requirements.
+
 * Sat Oct 24 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 19.0.0-1
 - Release v19.0.0: Reviewable Video Production & Deterministic Workbench.
 - Add zero-token batch local transforms, expanded cinematic AST conflict detection, Pro A/B video comparison, multi-shot batch tools, NLE frame-stepping, zero-token chapter timestamps, and hashVersion 2 paid approvals.

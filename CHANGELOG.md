@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [21.0.0] - 2026-10-28
+
 ### Added
 
 - Review optional local caption suggestions for overlaps, lines over 42 grapheme clusters and
@@ -20,14 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refresh Gemini model routing and prompt guidance while preserving explicit provider approval.
+- Apply compatible dependency security updates required by the release audit.
+- Align the total JavaScript release budget with the bundled local transcription worker, retaining the main-entry limit.
 - Coordinate active-project saves before manual save, production handoff, project copy and export;
   preserve conflicts and edits made during an in-flight save.
 - Distinguish current render completion from a confirmed file save. Previously saved jobs retain
   their filename and are identified as previous results when their currentness cannot be established.
 - Localize delivery diagnostics and statuses in all six app languages. Correct welcome-dialog
   naming, radio layout, close behavior and keyboard focus handling.
-
-## [21.0.0] - 2026-10-25
 
 ### Added
 
@@ -62,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Apply heading focus styling consistently on the first opened route, while preserving interactive control focus indicators.
+- Keep ordinary durable video generation on supported Veo adapters and reject unsupported Omni submissions before network access.
+- Align new Flash and Argon pricing mirrors with disclosed published post-promotion ceilings.
 - Fixed false "Unsaved" indicator appearing on freshly initialized or loaded projects.
 - Translated all remaining raw strings in UI (Focus Mode, Magnetic, Snap, Snap Cuts) across all supported locales (`en`, `sv`, `fr`, `es`, `ja`, `ar`).
 - Added scoped zero-warning ESLint guard (`react/jsx-no-literals`) for delivery and media components, maintaining 0 warnings under `.lint-threshold: 0`.

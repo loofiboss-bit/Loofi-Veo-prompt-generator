@@ -119,9 +119,10 @@ const priceSource = (effectiveDate = VERIFIED_DATE): PricingSource => ({
 const tokenPricing = (
   tokenTiers: readonly TokenPriceTier[],
   assumptions: readonly string[],
+  source: PricingSource = priceSource(),
 ): ModelPrice => ({
   status: 'priced',
-  source: priceSource(),
+  source,
   billingModes: ['input-tokens', 'output-tokens', 'cached-tokens'],
   tokenTiers,
   assumptions,
@@ -173,7 +174,11 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
           cachedInputPerMillionUsd: { text: 0.15, image: 0.15, audio: 0.15, video: 0.15 },
         },
       ],
-      STANDARD_TEXT_ASSUMPTIONS,
+      [
+        ...STANDARD_TEXT_ASSUMPTIONS,
+        'Uses the published Standard ceiling effective 2027-01-01; promotional prices through 2026-12-31 are lower.',
+      ],
+      { ...priceSource('2027-01-01'), verifiedDate: '2026-10-28' },
     ),
   },
   {
@@ -194,12 +199,17 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
     pricing: tokenPricing(
       [
         {
-          inputPerMillionUsd: { text: 2, image: 2, audio: 2, video: 2 },
-          outputPerMillionUsd: { text: 12 },
+          inputPerMillionUsd: { text: 4, image: 4, audio: 4, video: 4 },
+          outputPerMillionUsd: { text: 20 },
           cachedInputPerMillionUsd: { text: 0.2, image: 0.2, audio: 0.2, video: 0.2 },
         },
       ],
-      ['Frontier reasoning and complex narrative video planning.'],
+      [
+        ...STANDARD_TEXT_ASSUMPTIONS,
+        'Uses the published Standard ceiling effective 2026-12-01; promotional prices through 2026-11-30 are lower.',
+        'Only implicit caching is supported; grounding tools are excluded.',
+      ],
+      { ...priceSource('2026-12-01'), verifiedDate: '2026-10-28' },
     ),
   },
   {

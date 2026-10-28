@@ -922,6 +922,10 @@ body {
   font-style: normal;
   background-image: none;
 }
+/* Route headings receive programmatic focus; interactive controls retain focus rings. */
+h1[tabindex='-1']:focus {
+  outline: none !important;
+}
 .creator-shell :is(button, a, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--color-border-focus);
   outline-offset: 3px;
