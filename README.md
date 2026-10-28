@@ -71,6 +71,15 @@ work with **Load latest** and **Save as copy**. Projects exposes search, sorting
 backup recovery. Native jobs survive navigation; rendering interrupted by app exit is marked failed.
 Local media, editing and supported desktop export require no account, key or external request.
 
+Start surfaces the active project's next action and known recovery needs. Expand examples or recipes
+when needed. The timeline's source preview aids editing; **Open delivery review** reaches the rendered
+preview for checking the final mix, transitions and captions. Caption suggestions flag overlaps,
+lines over 42 grapheme clusters and reading speeds over 20 per second for optional manual review.
+
+The delivery steps distinguish rendering from saving the selected output. A saved filename records a
+successful save at that time; the file may subsequently have been moved or deleted. Earlier jobs are
+labelled as previous deliveries when they cannot be matched to the current edit.
+
 See [the v16 workflow and qualification boundaries](docs/CREATOR_V16.md).
 Source-only stabilization and reproducible performance checks are documented in
 [v16 stabilization](docs/V16_STABILIZATION.md).

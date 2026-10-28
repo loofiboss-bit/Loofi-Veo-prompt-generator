@@ -162,7 +162,13 @@
     "addIdea": "Next: add your idea",
     "empty": "Your saved projects will appear here.",
     "continueTimeline": "Continue in Timeline",
-    "continueStudio": "Continue in Prompt Studio"
+    "continueStudio": "Continue in Prompt Studio",
+    "resolveSave": "Resolve the project save issue before continuing.",
+    "reviewSave": "Review save issue",
+    "missingMedia": "Some timeline media is missing. Relink it before export.",
+    "relinkMedia": "Relink missing media",
+    "resolveDraft": "Resolve the Studio draft save issue before continuing.",
+    "reviewDraft": "Review Studio draft"
   },
   "style": {
     "title": "My style",
@@ -307,7 +313,59 @@
     "createTimeBlocks": "Create time blocks",
     "timeBlocksNeedText": "Time blocks provide timing only. Add caption text before accepting them.",
     "batchInterrupted": "The saved export batch stopped. Completed formats are retained.",
-    "resumeBatch": "Resume saved batch"
+    "resumeBatch": "Resume saved batch",
+    "stepsLabel": "Delivery steps",
+    "previousResult": "Previous delivery: it may not include the current edit.",
+    "savedConfirmed": "The file was saved to the chosen destination.",
+    "savedHistory": "The file may have been moved or deleted since saving.",
+    "captionReviewTitle": "Caption suggestions (optional)",
+    "captionReviewNumber": "Review caption {{number}}",
+    "captionIssueOverlap": "Overlaps another caption",
+    "captionIssueLength": "A line exceeds 42 characters",
+    "captionIssueSpeed": "Exceeds 20 characters per second",
+    "openMediaPanel": "Open media library",
+    "diagnostics": {
+      "clip-timing": "{{clip}}: Set a nonnegative start and source offset, and a positive duration.",
+      "media-loading": "{{clip}}: Wait for media import to finish.",
+      "effects-unsupported": "{{clip}}: Disable timeline effects for local export.",
+      "motion-keyframes-unsupported": "{{clip}}: Remove motion keyframes for local export.",
+      "color-grading-unsupported": "{{clip}}: Reset color grading for local export.",
+      "camera-motion-unsupported": "{{clip}}: Remove camera motion for local export.",
+      "audio-reactivity-unsupported": "{{clip}}: Disable audio reactivity for local export.",
+      "masks-unsupported": "{{clip}}: Remove segmentation masks for local export.",
+      "volume-keyframes-unsupported": "{{clip}}: Use a static clip volume for local export.",
+      "opacity-unsupported": "{{clip}}: Reset clip opacity to 100%.",
+      "panning-unsupported": "{{clip}}: Reset audio panning.",
+      "transforms-unsupported": "{{clip}}: Reset timeline transforms and use export crop controls.",
+      "transition-unsupported": "{{clip}}: Choose cut, dissolve or fade to black.",
+      "wrong-production-run": "Select this project’s production run.",
+      "timeline-empty": "Import media and add a clip to the timeline.",
+      "duration-invalid": "Trim the timeline to between 0 and 180 seconds.",
+      "visual-track-count": "Move visual clips to one main track.",
+      "duplicate-clip": "{{clip}}: Duplicate this clip again to assign a fresh identity.",
+      "volume-invalid": "{{clip}}: Set volume between zero and four.",
+      "crop-invalid": "{{clip}}: Reset the crop controls.",
+      "audio-fade-invalid": "{{clip}}: Shorten or reset the audio fades.",
+      "track-missing": "{{clip}}: Move this clip to an existing track.",
+      "caption-missing": "{{clip}}: Add caption text.",
+      "caption-transition-unsupported": "{{clip}}: Reset the text offset and transition.",
+      "caption-invalid": "{{clip}}: Correct caption text and timing.",
+      "media-missing": "{{clip}}: Relink or reimport the missing local media.",
+      "source-duration": "{{clip}}: Shorten the clip or reset its source offset.",
+      "media-inspection-failed": "{{clip}}: Verify or reimport the original media.",
+      "overlap-invalid": "{{clip}}: Match overlap to dissolve duration or remove the overlap.",
+      "logo-missing": "Relink the style logo."
+    },
+    "stepCompleted": "Completed",
+    "stepIncomplete": "Not completed",
+    "openMediaRecovery": "Review missing media",
+    "save": "Save file",
+    "busyWait": "Please wait...",
+    "renderBatchWithCount": "Batch export ({{count}} formats)",
+    "recommendReview": "Tip: We recommend reviewing the preview in Step 2 before the final export.",
+    "step4Title": "4. Save finished delivery",
+    "exportReadyDesc": "Video export complete and ready to save to your local device.",
+    "savedAs": "Saved as:"
   },
   "v16": {
     "openEditorMedia": "Open editor & import media",
@@ -358,10 +416,27 @@
     "trackMute": "Mute track",
     "trackUnmute": "Unmute track",
     "trackMuted": "Muted",
-    "trackSoundOn": "Sound on"
+    "trackSoundOn": "Sound on",
+    "stepBackFrame": "Step back 1 frame",
+    "stepForwardFrame": "Step forward 1 frame",
+    "openProjectFirst": "Open a project before importing media.",
+    "noFilterMatches": "No assets match the selected filter.",
+    "placedOnTimeline": "Placed on timeline",
+    "capabilitiesMissing": "Export renderer is not available.",
+    "renderRunning": "A render is already running."
   },
   "costs": {
     "estimatedTotal": "Estimated recorded cost: {{cost}}. Actual provider billing is not available.",
     "storageFailed": "Cost history is not saved. Retry when storage is available."
+  },
+  "timeline": {
+    "emptyOwnMedia": "Import your own media to edit locally, or add generated clips from Production.",
+    "openDeliveryReview": "Open delivery review"
+  },
+  "voiceover": {
+    "recordButton": "Record voiceover"
+  },
+  "silence": {
+    "button": "Trim pauses"
   }
 }

@@ -12,6 +12,7 @@ export interface DeliveryStepperProps {
   hasPreview: boolean;
   isPreviewCurrent: boolean;
   hasExportedJob: boolean;
+  hasSavedJob: boolean;
   batchFormatsCount: number;
   buttonClass: string;
   onCheck: () => void;
@@ -31,6 +32,7 @@ export function DeliveryStepper({
   hasPreview,
   isPreviewCurrent,
   hasExportedJob,
+  hasSavedJob,
   batchFormatsCount,
   buttonClass,
   onCheck,
@@ -51,14 +53,14 @@ export function DeliveryStepper({
     { number: 1, label: t('v16.checkDelivery', 'Check delivery'), completed: checkCompleted },
     { number: 2, label: t('v16.reviewDelivery', 'Review delivery'), completed: reviewCompleted },
     { number: 3, label: t('delivery.render', 'Export video'), completed: exportCompleted },
-    { number: 4, label: t('delivery.save', 'Save file'), completed: exportCompleted },
+    { number: 4, label: t('delivery.save', 'Save file'), completed: hasSavedJob },
   ];
 
   return (
-    <div className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+    <div className="space-y-5 rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-5">
       {/* Visual Stepper Header */}
       <nav
-        aria-label="Leveranssteg"
+        aria-label={t('delivery.stepsLabel', 'Delivery steps')}
         className="flex items-center justify-between gap-2 overflow-x-auto pb-2"
       >
         {steps.map((step, idx) => {
@@ -68,10 +70,10 @@ export function DeliveryStepper({
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                   step.completed
-                    ? 'bg-emerald-600/90 text-white'
+                    ? 'bg-[var(--color-action-bg)] text-[var(--color-on-accent)]'
                     : isActive
-                      ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/40'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                      ? 'bg-[var(--color-action-bg)] text-[var(--color-on-accent)] ring-2 ring-[var(--color-border-focus)]'
+                      : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] border border-[var(--color-border-primary)]'
                 }`}
               >
                 {step.completed ? '✓' : step.number}
@@ -79,13 +81,18 @@ export function DeliveryStepper({
               <span
                 className={`text-xs font-medium ${
                   isActive
-                    ? 'text-slate-100 font-semibold'
+                    ? 'text-[var(--color-text-primary)] font-semibold'
                     : step.completed
-                      ? 'text-slate-300'
-                      : 'text-slate-400'
+                      ? 'text-[var(--color-text-primary)]'
+                      : 'text-[var(--color-text-secondary)]'
                 }`}
               >
                 {step.label}
+              </span>
+              <span className="sr-only">
+                {step.completed
+                  ? t('delivery.stepCompleted', 'Completed')
+                  : t('delivery.stepIncomplete', 'Not completed')}
               </span>
               {idx < steps.length - 1 && (
                 <div
@@ -133,6 +140,7 @@ export function DeliveryStepper({
         >
           <button
             type="button"
+            id="delivery-review-button"
             className={`${buttonClass} ${currentStepNumber === 2 ? 'studio-primary' : ''}`}
             disabled={busy || !!running || anyBatchRunning || !capabilitiesAvailable}
             onClick={onReview}

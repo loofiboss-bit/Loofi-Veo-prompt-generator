@@ -5,6 +5,7 @@ import {
   calculateSpeechIntervals,
   creatorCaptionService,
   getCreatorCaptionOverlaps,
+  getCreatorCaptionReviewIssues,
   exportCreatorSrt,
   importCreatorSrt,
   validateCreatorCaptions,
@@ -72,6 +73,20 @@ describe('caption review and export order', () => {
   });
   it('does not report touching captions as overlapping', () => {
     expect(getCreatorCaptionOverlaps([caption('a', 0, 2), caption('b', 2, 3)])).toEqual([]);
+  });
+  it('reports optional reading and overlap advice using graphemes and strict thresholds', () => {
+    const captions = [
+      { ...caption('a', 0, 2), text: '👩‍👩‍👧‍👦'.repeat(42) },
+      { ...caption('b', 1, 4), text: 'a'.repeat(43) },
+      { ...caption('c', 4, 5), text: 'a'.repeat(20) },
+    ];
+    expect(getCreatorCaptionReviewIssues(captions)).toEqual([
+      { captionId: 'a', code: 'overlap' },
+      { captionId: 'a', code: 'reading-speed' },
+      { captionId: 'b', code: 'overlap' },
+      { captionId: 'b', code: 'line-length' },
+    ]);
+    expect(captions[1].text).toBe('a'.repeat(43));
   });
 });
 

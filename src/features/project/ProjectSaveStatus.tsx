@@ -2,6 +2,7 @@ import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { projectService } from '@core/services/projectService';
 import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
@@ -34,6 +35,7 @@ export function ProjectSaveStatus() {
     status !== 'conflict' &&
     status !== 'error' &&
     state?.remoteRevision === undefined &&
+    !state?.backupError &&
     !error
   ) {
     return null;
@@ -46,22 +48,17 @@ export function ProjectSaveStatus() {
     conflict: t('projects.saveConflict', 'Conflicting changes'),
   };
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 rounded border border-amber-700/80 bg-amber-950/30 p-2 text-sm text-amber-200">
+    <div
+      id="project-save-recovery"
+      tabIndex={-1}
+      className="mt-3 flex flex-wrap items-center gap-2 rounded border border-amber-700/80 bg-amber-950/30 p-2 text-sm text-amber-200"
+    >
       <span role="status">{labels[status]}</span>
       <button
         disabled={busy || status === 'saving' || status === 'conflict'}
         onClick={() =>
           void run(async () => {
-            const session = useEditorSessionStore.getState();
-            const document = session.captureCurrentProjectDocument(project);
-            await projectDocumentService.save(document);
-            await projectService.registerDocument(document);
-            const current = useEditorSessionStore.getState().projectSnapshot;
-            if (current?.id === document.id)
-              session.commitProjectDocument(
-                { ...current, documentRevision: document.documentRevision },
-                'save',
-              );
+            await projectSaveCoordinator.saveProject(project.id);
           })
         }
         className="rounded border border-slate-600 px-2 py-1"

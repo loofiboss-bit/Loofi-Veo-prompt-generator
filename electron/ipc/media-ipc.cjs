@@ -3,6 +3,7 @@ const {
   validateMediaCacheInput,
   validateMediaRelinkInput,
 } = require('./ipc-validator.cjs');
+const { mediaDisplayUrl } = require('./creator-media-protocol.cjs');
 
 function registerMediaIpc({ ipcMain, getMediaStore, getApiKey }) {
   const requireStore = () => {
@@ -22,13 +23,15 @@ function registerMediaIpc({ ipcMain, getMediaStore, getApiKey }) {
     if (!input || !(input.bytes instanceof Uint8Array || input.bytes instanceof ArrayBuffer)) {
       throw new Error('Invalid desktop media migration payload.');
     }
-    return requireStore().importBytes(input);
+    const record = await requireStore().importBytes(input);
+    return { ...record, displayUrl: mediaDisplayUrl('media', record.key) };
   });
 
   ipcMain.handle('desktop-media-read', async (_, key) => {
     const store = requireStore();
     validateMediaKey(key);
-    return store.read(key);
+    const record = await store.read(key);
+    return record ? { ...record, displayUrl: mediaDisplayUrl('media', key) } : null;
   });
 
   ipcMain.handle('desktop-media-usage', async () => {

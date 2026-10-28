@@ -1,23 +1,24 @@
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { projectDocumentService } from '@core/services/projectDocumentService';
-import { projectService } from '@core/services/projectService';
-import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
+import { useStartupStore } from '@core/store/useStartupStore';
 interface ProjectStatusChipProps {
   project: { id: string; name?: string };
 }
 
 export function ProjectStatusChip({ project }: ProjectStatusChipProps) {
   const { t } = useTranslation('common');
-  const [, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
   const saveState = useProjectSaveStore((state) => state.projects[project.id]);
-  const draftStatus = usePromptStudioDraftStore((state) => state.status);
+  const startupComplete = useStartupStore((state) => state.criticalBootstrapComplete);
+  const draftStatus = usePromptStudioDraftStore((state) =>
+    state.draft?.projectId === project.id ? state.status : undefined,
+  );
 
-  // If state is not yet tracked, default to 'saved' rather than 'unsaved' for a clean project
-  const projectStatus = saveState?.status ?? 'saved';
+  // A missing status is not evidence of either unsaved work or a durable save.
+  const projectStatus = saveState?.status;
 
   const isSaving = projectStatus === 'saving' || draftStatus === 'saving' || busy;
   const isConflict = projectStatus === 'conflict';
@@ -26,32 +27,15 @@ export function ProjectStatusChip({ project }: ProjectStatusChipProps) {
 
   const handleSave = () => {
     setBusy(true);
-    startTransition(async () => {
+    void (async () => {
       try {
-        const session = useEditorSessionStore.getState();
-        const document = session.captureCurrentProjectDocument({
-          id: project.id,
-          name: project.name || 'Untitled',
-        });
-        await projectDocumentService.save(document);
-        await projectService.registerDocument(document);
-        const current = useEditorSessionStore.getState().projectSnapshot;
-        if (current?.id === document.id) {
-          session.commitProjectDocument(
-            { ...current, documentRevision: document.documentRevision },
-            'save',
-          );
-        }
-        useProjectSaveStore.getState().setStatus(project.id, { status: 'saved' });
-      } catch (err) {
-        useProjectSaveStore.getState().setStatus(project.id, {
-          status: 'error',
-          error: err instanceof Error ? err.message : String(err),
-        });
+        await projectSaveCoordinator.saveProject(project.id);
+      } catch {
+        // The coordinator records conflict and persistence details for recovery.
       } finally {
         setBusy(false);
       }
-    });
+    })();
   };
 
   if (isConflict) {
@@ -89,6 +73,16 @@ export function ProjectStatusChip({ project }: ProjectStatusChipProps) {
       >
         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
         {t('projects.saveSaving', 'Saving...')}
+      </span>
+    );
+  }
+
+  if (!projectStatus || (projectStatus === 'saved' && draftStatus === 'loading')) {
+    return (
+      <span role="status" aria-live="polite" className="text-xs text-slate-400">
+        {!projectStatus && startupComplete
+          ? t('projects.saveStatusUnknown', 'Save status unavailable')
+          : t('projects.checkingSave', 'Checking save status')}
       </span>
     );
   }

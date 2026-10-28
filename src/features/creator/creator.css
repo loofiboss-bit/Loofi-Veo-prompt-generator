@@ -7,6 +7,25 @@
 .creator-start section {
   margin: 32px 0;
 }
+.creator-current-project {
+  border: 1px solid var(--color-border-primary);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--color-bg-secondary);
+}
+.creator-start-disclosure {
+  margin: 32px 0;
+}
+.creator-start-disclosure summary {
+  cursor: pointer;
+}
+.creator-start-disclosure summary h2 {
+  display: inline;
+}
+.creator-start-disclosure summary:focus-visible {
+  outline: 3px solid var(--color-accent-600);
+  outline-offset: 3px;
+}
 .creator-start h1 {
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 650;

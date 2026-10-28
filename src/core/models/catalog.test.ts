@@ -80,11 +80,21 @@ describe('MODEL_CATALOG', () => {
   });
 
   it('records current stable general and image models', () => {
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.8-flash')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-4-argon')?.lifecycle).toBe('stable');
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.6-flash')?.lifecycle).toBe(
       'stable',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.5-flash-lite')?.lifecycle).toBe(
       'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-nano-banana-2.1')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-omni-1.1-flash')?.lifecycle).toBe(
+      'preview',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'nano-banana-pro')?.lifecycle).toBe('stable');
   });

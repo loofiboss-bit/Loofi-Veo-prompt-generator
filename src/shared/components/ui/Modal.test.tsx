@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '../../../test-utils';
+import { render, screen, fireEvent, within } from '../../../test-utils';
 import Modal from './Modal';
 
 describe('Modal', () => {
@@ -35,7 +35,7 @@ describe('Modal', () => {
     );
     expect(screen.getByText('My Modal')).toBeInTheDocument();
     const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveAttribute('aria-labelledby', 'modal-title');
+    expect(dialog).toHaveAttribute('aria-labelledby', screen.getByText('My Modal').id);
   });
 
   it('renders footer when provided', () => {
@@ -56,6 +56,64 @@ describe('Modal', () => {
     );
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('keeps keyboard focus inside the dialog', async () => {
+    const { user } = render(
+      <Modal isOpen onClose={vi.fn()} title="Focus test">
+        <button>First action</button>
+        <button>Last action</button>
+      </Modal>,
+    );
+    const close = screen.getAllByRole('button', { name: 'Close modal' })[1];
+    const last = screen.getByRole('button', { name: 'Last action' });
+    last.focus();
+    await user.tab();
+    expect(close).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(last).toHaveFocus();
+  });
+
+  it('traps focus only in the top dialog and skips hidden and disabled controls', async () => {
+    const closeLower = vi.fn();
+    const closeUpper = vi.fn();
+    const { user, rerender } = render(
+      <>
+        <Modal isOpen onClose={closeLower} title="Lower dialog">
+          <button>Lower action</button>
+        </Modal>
+        <Modal isOpen onClose={closeUpper} title="Upper dialog">
+          <button style={{ display: 'none' }}>Hidden action</button>
+          <button disabled>Disabled action</button>
+          <button>Upper action</button>
+        </Modal>
+      </>,
+    );
+    const upper = screen.getByRole('dialog', { name: 'Upper dialog' });
+    const upperClose = within(upper).getByRole('button', { name: 'Close modal' });
+    const upperAction = within(upper).getByRole('button', { name: 'Upper action' });
+    upperAction.focus();
+    await user.tab();
+    expect(upperClose).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(upperAction).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(closeUpper).toHaveBeenCalledOnce();
+    expect(closeLower).not.toHaveBeenCalled();
+    rerender(
+      <>
+        <Modal isOpen={false} onClose={closeLower} title="Lower dialog">
+          <button>Lower action</button>
+        </Modal>
+        <Modal isOpen onClose={closeUpper} title="Upper dialog">
+          <button style={{ display: 'none' }}>Hidden action</button>
+          <button disabled>Disabled action</button>
+          <button>Upper action</button>
+        </Modal>
+      </>,
+    );
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(screen.getByRole('button', { name: 'Upper action' })).toHaveFocus();
   });
 
   it('does not close on escape when closeOnEscape is false', () => {

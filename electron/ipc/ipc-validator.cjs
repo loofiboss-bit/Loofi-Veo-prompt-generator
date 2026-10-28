@@ -1,7 +1,9 @@
 'use strict';
 
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,160}$/;
-const SAFE_MEDIA_KEY = /^[a-zA-Z0-9_\-\.]{1,250}$/;
+// Media identities are opaque store keys, not paths. Local and external imports
+// use a namespaced `prefix:identifier`; path separators remain forbidden.
+const SAFE_MEDIA_KEY = /^[a-zA-Z0-9_:\-.]{1,250}$/;
 
 function validateProjectId(projectId, label = 'project ID') {
   if (typeof projectId !== 'string' || !SAFE_ID_PATTERN.test(projectId.trim())) {

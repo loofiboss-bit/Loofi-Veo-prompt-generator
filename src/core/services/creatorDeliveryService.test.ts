@@ -286,6 +286,21 @@ describe('read-only delivery preflight', () => {
       ),
     ).toHaveLength(3);
     expect(diagnostics.every((item) => item.action.length > 0)).toBe(true);
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'opacity-unsupported', target: 'clip', clipId: 'clip' }),
+        expect.objectContaining({ code: 'source-duration', target: 'clip', clipId: 'clip' }),
+        expect.objectContaining({ code: 'track-missing', target: 'clip', clipId: 'other' }),
+      ]),
+    );
     expect(importMedia).not.toHaveBeenCalled();
+  });
+  it('offers an explicit media-panel target for an empty timeline', async () => {
+    const diagnostics = await creatorDeliveryService.preflight(makeProject([]), []);
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'timeline-empty', target: 'media' }),
+      ]),
+    );
   });
 });

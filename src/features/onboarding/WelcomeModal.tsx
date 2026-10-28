@@ -25,16 +25,24 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const language = SUPPORTED_LANGUAGES.includes(i18n.language as SupportedLanguage)
     ? (i18n.language as SupportedLanguage)
     : 'en';
-  const finish = () => {
+  const dismiss = () => {
     setWelcomeShown();
     localStorage.setItem('v8-onboarding-complete', 'true');
     onClose();
+  };
+  const finish = () => {
+    dismiss();
     navigate(mode === 'clips' ? `${ROUTES.START}?mode=clips` : `${ROUTES.STUDIO}?mode=${mode}`);
   };
   return (
-    <Modal isOpen={isOpen} onClose={finish} size="lg" closeOnBackdropClick>
+    <Modal
+      isOpen={isOpen}
+      onClose={dismiss}
+      title={t('welcomeTitle')}
+      size="lg"
+      closeOnBackdropClick
+    >
       <div className="studio-workspace">
-        <h1 className="text-2xl font-semibold">{t('welcomeTitle')}</h1>
         <p className="studio-hint">{t('welcomeDescription')}</p>
         <label className="studio-field">
           <span>{t('language')}</span>
@@ -101,11 +109,7 @@ export function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
           <button
             type="button"
             className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
-            onClick={() => {
-              setWelcomeShown();
-              localStorage.setItem('v8-onboarding-complete', 'true');
-              onClose();
-            }}
+            onClick={dismiss}
             disabled={busy}
           >
             {creatorT('welcome.skip', 'Skip for now')}

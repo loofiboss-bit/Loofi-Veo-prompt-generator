@@ -162,7 +162,13 @@
     "addIdea": "Siguiente: añade tu idea",
     "empty": "Tus proyectos guardados aparecerán aquí.",
     "continueTimeline": "Continuar en la línea de tiempo",
-    "continueStudio": "Continuar en Prompt Studio"
+    "continueStudio": "Continuar en Prompt Studio",
+    "resolveSave": "Resuelve el problema al guardar el proyecto antes de continuar.",
+    "reviewSave": "Revisar el problema de guardado",
+    "missingMedia": "Faltan algunos archivos de la línea de tiempo. Vuelve a enlazarlos antes de exportar.",
+    "relinkMedia": "Volver a enlazar archivos ausentes",
+    "resolveDraft": "Resuelve el problema al guardar el borrador de Studio antes de continuar.",
+    "reviewDraft": "Revisar borrador de Studio"
   },
   "style": {
     "title": "Mi estilo",
@@ -307,7 +313,59 @@
     "createTimeBlocks": "Crear bloques de tiempo",
     "timeBlocksNeedText": "Los bloques solo proponen tiempos. Añade texto antes de aceptarlos.",
     "batchInterrupted": "La exportación guardada se detuvo. Se conservan los formatos completados.",
-    "resumeBatch": "Reanudar exportación guardada"
+    "resumeBatch": "Reanudar exportación guardada",
+    "stepsLabel": "Pasos de entrega",
+    "previousResult": "Entrega anterior: puede que no incluya la edición actual.",
+    "savedConfirmed": "El archivo se guardó en el destino elegido.",
+    "savedHistory": "El archivo puede haberse movido o eliminado después de guardarlo.",
+    "captionReviewTitle": "Sugerencias de subtítulos (opcionales)",
+    "captionReviewNumber": "Revisar subtítulo {{number}}",
+    "captionIssueOverlap": "Se solapa con otro subtítulo",
+    "captionIssueLength": "Una línea supera los 42 caracteres",
+    "captionIssueSpeed": "Supera los 20 caracteres por segundo",
+    "openMediaPanel": "Abrir biblioteca multimedia",
+    "diagnostics": {
+      "clip-timing": "{{clip}}: Indica un inicio y desplazamiento de origen no negativos y una duración positiva.",
+      "media-loading": "{{clip}}: Espera a que termine la importación del archivo.",
+      "effects-unsupported": "{{clip}}: Desactiva los efectos de la línea de tiempo para la exportación local.",
+      "motion-keyframes-unsupported": "{{clip}}: Elimina los fotogramas clave de movimiento para la exportación local.",
+      "color-grading-unsupported": "{{clip}}: Restablece la corrección de color para la exportación local.",
+      "camera-motion-unsupported": "{{clip}}: Elimina el movimiento de cámara para la exportación local.",
+      "audio-reactivity-unsupported": "{{clip}}: Desactiva la reactividad al audio para la exportación local.",
+      "masks-unsupported": "{{clip}}: Elimina las máscaras de segmentación para la exportación local.",
+      "volume-keyframes-unsupported": "{{clip}}: Usa un volumen fijo para la exportación local.",
+      "opacity-unsupported": "{{clip}}: Restablece la opacidad del clip al 100 %.",
+      "panning-unsupported": "{{clip}}: Restablece la panorámica del audio.",
+      "transforms-unsupported": "{{clip}}: Restablece las transformaciones y usa el recorte de exportación.",
+      "transition-unsupported": "{{clip}}: Elige corte, disolución o fundido a negro.",
+      "wrong-production-run": "Selecciona la ejecución de producción de este proyecto.",
+      "timeline-empty": "Importa archivos y añade un clip a la línea de tiempo.",
+      "duration-invalid": "Ajusta la duración de la línea de tiempo a entre 0 y 180 segundos.",
+      "visual-track-count": "Mueve los clips visuales a una sola pista principal.",
+      "duplicate-clip": "{{clip}}: Duplica de nuevo el clip para asignarle una identidad nueva.",
+      "volume-invalid": "{{clip}}: Define un volumen entre cero y cuatro.",
+      "crop-invalid": "{{clip}}: Restablece los controles de recorte.",
+      "audio-fade-invalid": "{{clip}}: Acorta o restablece los fundidos de audio.",
+      "track-missing": "{{clip}}: Mueve el clip a una pista existente.",
+      "caption-missing": "{{clip}}: Añade texto al subtítulo.",
+      "caption-transition-unsupported": "{{clip}}: Restablece el desplazamiento y la transición del texto.",
+      "caption-invalid": "{{clip}}: Corrige el texto y los tiempos del subtítulo.",
+      "media-missing": "{{clip}}: Vuelve a enlazar o importar el archivo local que falta.",
+      "source-duration": "{{clip}}: Acorta el clip o restablece el desplazamiento de origen.",
+      "media-inspection-failed": "{{clip}}: Verifica o vuelve a importar el archivo original.",
+      "overlap-invalid": "{{clip}}: Iguala el solapamiento a la duración de la disolución o elimínalo.",
+      "logo-missing": "Vuelve a enlazar el logotipo del estilo."
+    },
+    "stepCompleted": "Completado",
+    "stepIncomplete": "Sin completar",
+    "openMediaRecovery": "Revisar archivos ausentes",
+    "save": "Guardar archivo",
+    "busyWait": "Espera...",
+    "renderBatchWithCount": "Exportar lote ({{count}} formatos)",
+    "recommendReview": "Consejo: revisa la vista previa del paso 2 antes de la exportación final.",
+    "step4Title": "4. Guardar entrega terminada",
+    "exportReadyDesc": "La exportación del vídeo ha terminado y está lista para guardarse en tu dispositivo.",
+    "savedAs": "Guardado como:"
   },
   "v16": {
     "chooseMedia": "Elegir medios locales",
@@ -358,10 +416,27 @@
     "trackMute": "Silenciar pista",
     "trackUnmute": "Activar sonido",
     "trackMuted": "Silenciada",
-    "trackSoundOn": "Sonido activo"
+    "trackSoundOn": "Sonido activo",
+    "stepBackFrame": "Retroceder 1 fotograma",
+    "stepForwardFrame": "Avanzar 1 fotograma",
+    "openProjectFirst": "Abre un proyecto antes de importar archivos.",
+    "noFilterMatches": "Ningún archivo coincide con el filtro seleccionado.",
+    "placedOnTimeline": "En la línea de tiempo",
+    "capabilitiesMissing": "El motor de exportación no está disponible.",
+    "renderRunning": "Ya hay una renderización en curso."
   },
   "costs": {
     "estimatedTotal": "Coste registrado estimado: {{cost}}. El proveedor no facilita el coste real.",
     "storageFailed": "No se guarda el historial de costes. Inténtalo de nuevo cuando el almacenamiento esté disponible."
+  },
+  "timeline": {
+    "emptyOwnMedia": "Importa tus propios archivos para editarlos localmente o añade clips generados desde Producción.",
+    "openDeliveryReview": "Abrir revisión de entrega"
+  },
+  "voiceover": {
+    "recordButton": "Grabar narración"
+  },
+  "silence": {
+    "button": "Recortar pausas"
   }
 }

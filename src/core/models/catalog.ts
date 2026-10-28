@@ -15,7 +15,7 @@ export type ModelApiSurface =
   | 'ollama-v1';
 export type MediaModality = 'text' | 'image' | 'audio' | 'video';
 export type AspectRatio = '16:9' | '9:16' | '1:1' | '4:3' | '3:4';
-export type VideoResolution = '720p' | '1080p' | '4k';
+export type VideoResolution = '360p' | '720p' | '1080p' | '4k';
 export type ImageResolution = '0.5k' | '1k' | '2k' | '4k';
 export type AudioFormat = 'mp3' | 'wav';
 export type BillingMode =
@@ -150,6 +150,58 @@ const STANDARD_TEXT_ASSUMPTIONS = [
 ] as const;
 
 const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
+  {
+    id: 'gemini-3.8-flash',
+    displayName: 'Gemini 3.8 Flash',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-3.8-flash',
+    apiSurface: 'google-ai-v1beta',
+    providerBindings: googleBindings('gemini-3.8-flash'),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['plan', 'review'],
+      inputModalities: ['text', 'image', 'audio', 'video'],
+      outputModalities: ['text'],
+    },
+    pricing: tokenPricing(
+      [
+        {
+          inputPerMillionUsd: { text: 1.5, image: 1.5, audio: 1.5, video: 1.5 },
+          outputPerMillionUsd: { text: 7.5 },
+          cachedInputPerMillionUsd: { text: 0.15, image: 0.15, audio: 0.15, video: 0.15 },
+        },
+      ],
+      STANDARD_TEXT_ASSUMPTIONS,
+    ),
+  },
+  {
+    id: 'gemini-4-argon',
+    displayName: 'Gemini 4 Argon',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-4-argon',
+    apiSurface: 'google-ai-v1beta',
+    providerBindings: googleBindings('gemini-4-argon'),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['plan', 'review'],
+      inputModalities: ['text', 'image', 'audio', 'video'],
+      outputModalities: ['text'],
+    },
+    pricing: tokenPricing(
+      [
+        {
+          inputPerMillionUsd: { text: 2, image: 2, audio: 2, video: 2 },
+          outputPerMillionUsd: { text: 12 },
+          cachedInputPerMillionUsd: { text: 0.2, image: 0.2, audio: 0.2, video: 0.2 },
+        },
+      ],
+      ['Frontier reasoning and complex narrative video planning.'],
+    ),
+  },
   {
     id: 'gemini-3.6-flash',
     displayName: 'Gemini 3.6 Flash',
@@ -290,6 +342,33 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
     ),
   },
   {
+    id: 'gemini-nano-banana-2.1',
+    displayName: 'Nano Banana 2.1',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-nano-banana-2.1',
+    apiSurface: 'google-ai-v1beta',
+    providerBindings: googleBindings('gemini-nano-banana-2.1'),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['image'],
+      inputModalities: ['text', 'image'],
+      outputModalities: ['image'],
+      supportsReferenceImages: true,
+      maximumReferenceImages: 14,
+      supportedImageResolutions: ['1k', '2k'],
+    },
+    pricing: {
+      status: 'priced',
+      source: priceSource(),
+      billingModes: ['input-tokens', 'generated-image'],
+      tokenTiers: [{ inputPerMillionUsd: { text: 0.3, image: 0.3 } }],
+      imagePerGenerationByResolutionUsd: { '1k': 0.039, '2k': 0.078 },
+      assumptions: ['Nano Banana 2.1 default generation with multi-image fusion.'],
+    },
+  },
+  {
     id: 'nano-banana',
     displayName: 'Nano Banana',
     provider: 'gemini-api',
@@ -412,6 +491,68 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
     },
   },
   {
+    id: 'gemini-3.8-flash-tts',
+    displayName: 'Gemini 3.8 Flash TTS',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-3.8-flash-tts',
+    apiSurface: 'google-ai-v1beta',
+    providerBindings: googleBindings('gemini-3.8-flash-tts'),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['tts'],
+      inputModalities: ['text'],
+      outputModalities: ['audio'],
+      supportedAudioFormats: ['wav', 'mp3'],
+      supportsAudioOutput: true,
+    },
+    pricing: {
+      status: 'priced',
+      source: priceSource(),
+      billingModes: ['input-tokens', 'audio-output-tokens'],
+      tokenTiers: [
+        {
+          inputPerMillionUsd: { text: 1 },
+          outputPerMillionUsd: { audio: 20 },
+        },
+      ],
+      audioOutputTokensPerSecond: 25,
+      assumptions: ['Gemini 3.8 Flash expressive TTS pricing.'],
+    },
+  },
+  {
+    id: 'gemini-3.8-flash-lite-tts',
+    displayName: 'Gemini 3.8 Flash-Lite TTS',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-3.8-flash-lite-tts',
+    apiSurface: 'google-ai-v1beta',
+    providerBindings: googleBindings('gemini-3.8-flash-lite-tts'),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['tts'],
+      inputModalities: ['text'],
+      outputModalities: ['audio'],
+      supportedAudioFormats: ['wav', 'mp3'],
+      supportsAudioOutput: true,
+    },
+    pricing: {
+      status: 'priced',
+      source: priceSource(),
+      billingModes: ['input-tokens', 'audio-output-tokens'],
+      tokenTiers: [
+        {
+          inputPerMillionUsd: { text: 0.5 },
+          outputPerMillionUsd: { audio: 10 },
+        },
+      ],
+      audioOutputTokensPerSecond: 25,
+      assumptions: ['Gemini 3.8 Flash-Lite fast TTS pricing.'],
+    },
+  },
+  {
     id: 'gemini-3.1-flash-tts',
     displayName: 'Gemini 3.1 Flash TTS',
     provider: 'gemini-api',
@@ -505,6 +646,62 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       flatRequestUsd: 0.08,
       assumptions: [
         'One request produces one full-length song; requested duration is expressed in the prompt.',
+      ],
+    },
+  },
+  {
+    id: 'gemini-omni-1.1-flash',
+    displayName: 'Gemini Omni 1.1 Flash',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-omni-1.1-flash',
+    apiSurface: 'google-ai-interactions-v1beta',
+    providerBindings: googleBindings(
+      'gemini-omni-1.1-flash',
+      'gemini-omni-1.1-flash',
+      'google-ai-interactions-v1beta',
+    ),
+    lifecycle: 'preview',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['video', 'video-edit'],
+      inputModalities: ['text', 'image', 'audio', 'video'],
+      outputModalities: ['text', 'video'],
+      supportsInteraction: true,
+      supportsVideoEditing: true,
+      supportsReferenceImages: true,
+      supportsFirstLastFrame: true,
+      supportsExtension: true,
+      supportsSeed: true,
+      supportedDurationsSeconds: [3, 4, 5, 6, 7, 8, 9, 10],
+      supportedAspectRatios: VIDEO_ASPECTS,
+      supportedResolutions: ['360p', '720p', '1080p', '4k'],
+      maximumReferenceImages: 3,
+      supportsAudioOutput: true,
+    },
+    pricing: {
+      status: 'priced',
+      source: priceSource(),
+      billingModes: ['input-tokens', 'output-tokens', 'video-seconds'],
+      tokenTiers: [
+        {
+          inputPerMillionUsd: { text: 1.5, image: 1.5, audio: 1.5, video: 1.5 },
+          outputPerMillionUsd: { text: 9, video: 17.5 },
+        },
+      ],
+      videoOutputTokensPerSecondByResolution: {
+        '360p': 2_896,
+        '720p': 5_792,
+        '1080p': 13_032,
+        '4k': 52_128,
+      },
+      videoPerSecondByResolutionUsd: {
+        '720p': 0.1,
+        '1080p': 0.23,
+        '4k': 0.91,
+      },
+      assumptions: [
+        'Billed per generated video token across 360p, 720p, 1080p, and 4k with native audio synthesis.',
       ],
     },
   },
@@ -686,9 +883,10 @@ export const isShutdownModel = (modelId: string): boolean =>
 
 export const LEGACY_MODEL_REPLACEMENTS: Readonly<Record<string, string>> = {
   'gemini-3-pro-preview': 'gemini-3.5-flash',
+  'gemini-3.1-pro-preview': 'gemini-3.1-pro',
   'gemini-2.0-flash': 'gemini-3.5-flash-lite',
   'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
-  'gemini-3.1-pro-preview': 'gemini-3.1-pro',
+  'gemini-3.1-flash-image': 'gemini-nano-banana-2.1',
   'veo-3.1-generate-preview': 'veo-3.1-quality',
   'veo-3.1-fast-generate-preview': 'veo-3.1-fast',
   'veo-3.1-lite-generate-preview': 'veo-3.1-lite',

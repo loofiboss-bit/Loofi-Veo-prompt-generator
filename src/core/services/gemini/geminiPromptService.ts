@@ -110,17 +110,21 @@ export const generateVeoPrompt = async (
         () =>
           ai.models.generateContent({
             model: modelName,
-            contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
-              Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
+            contents: `You are an expert cinematic prompt engineer for Google Flow, Veo 3.1, and Gemini Omni 1.1 Flash video workflows.
+              Refine the following user inputs into a production-ready prompt optimized for modern generative video models.
 
               User Input Structure:
               ${constructedPrompt}
 
-              Requirements:
-              1. Consolidate into a cohesive paragraph.
-              2. Enhance visual descriptions (lighting, texture, camera movement).
-              3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
-              4. Keep it under 300 words unless the input is a scene pack.
+              Optimization Requirements:
+              1. Physical Action & Motion: Describe explicit motion trajectories, speed, subject behavior, and physical interactions.
+              2. Cinematography & Optics: Specify precise camera movement (dolly, track, boom, pan, or static), lens framing, and depth of field.
+              3. Lighting & Atmosphere: Detail light sources, color temperature, atmospheric density, and environmental depth.
+              4. Acoustic Synchrony: Provide ambient soundscapes, Foley details, and vocal cues for native synchronized audio generation.
+              5. Modern Model Rules:
+                 - For Image-to-Video: Focus strictly on motion and temporal progression; do not re-describe elements already visible in the source image.
+                 - Avoid obsolete buzzwords (e.g. "photorealistic", "8k", "octane render").
+                 - Consolidate into a cohesive cinematic description under 300 words unless generating a full scene pack.
               `,
             config: {
               tools: tools.length > 0 ? tools : undefined,
@@ -186,17 +190,21 @@ export const generateVeoPromptStreaming = async (
       ai,
       {
         model: modelName,
-        contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
-            Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
+        contents: `You are an expert cinematic prompt engineer for Google Flow, Veo 3.1, and Gemini Omni 1.1 Flash video workflows.
+            Refine the following user inputs into a production-ready prompt optimized for modern generative video models.
 
             User Input Structure:
             ${constructedPrompt}
 
-            Requirements:
-            1. Consolidate into a cohesive paragraph.
-            2. Enhance visual descriptions (lighting, texture, camera movement).
-            3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
-            4. Keep it under 300 words unless the input is a scene pack.
+            Optimization Requirements:
+            1. Physical Action & Motion: Describe explicit motion trajectories, speed, subject behavior, and physical interactions.
+            2. Cinematography & Optics: Specify precise camera movement (dolly, track, boom, pan, or static), lens framing, and depth of field.
+            3. Lighting & Atmosphere: Detail light sources, color temperature, atmospheric density, and environmental depth.
+            4. Acoustic Synchrony: Provide ambient soundscapes, Foley details, and vocal cues for native synchronized audio generation.
+            5. Modern Model Rules:
+               - For Image-to-Video: Focus strictly on motion and temporal progression; do not re-describe elements already visible in the source image.
+               - Avoid obsolete buzzwords (e.g. "photorealistic", "8k", "octane render").
+               - Consolidate into a cohesive cinematic description under 300 words unless generating a full scene pack.
             `,
         config: {
           tools: tools.length > 0 ? tools : undefined,

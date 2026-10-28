@@ -18,6 +18,8 @@ const MUSIC_USD_PER_REQUEST = Object.freeze({
 });
 
 const TEXT_USD_PER_MILLION_TOKENS = Object.freeze({
+  'gemini-3.8-flash': Object.freeze({ input: 1.5, output: 7.5 }),
+  'gemini-4-argon': Object.freeze({ input: 2, output: 12 }),
   'gemini-3.6-flash': Object.freeze({ input: 1.5, output: 7.5 }),
   'gemini-3.5-flash': Object.freeze({ input: 1.5, output: 9 }),
   'gemini-3.5-flash-lite': Object.freeze({ input: 0.3, output: 2.5 }),
@@ -49,15 +51,39 @@ const PROVIDER_PRICING = Object.freeze({
     output: 12,
     images: Object.freeze({ '1k': 0.134, '2k': 0.134, '4k': 0.24 }),
   }),
+  'gemini-nano-banana-2.1': Object.freeze({
+    input: 0.3,
+    images: Object.freeze({ '1k': 0.039, '2k': 0.078 }),
+  }),
   'gemini-3.1-flash-tts-preview': Object.freeze({
     input: 1,
     audioOutput: 20,
+    audioTokensPerSecond: 25,
+  }),
+  'gemini-3.8-flash-tts': Object.freeze({
+    input: 1,
+    audioOutput: 20,
+    audioTokensPerSecond: 25,
+  }),
+  'gemini-3.8-flash-lite-tts': Object.freeze({
+    input: 0.5,
+    audioOutput: 10,
     audioTokensPerSecond: 25,
   }),
   'gemini-omni-flash-preview': Object.freeze({
     input: 1.5,
     videoOutput: 17.5,
     videoTokensPerSecond: Object.freeze({ '720p': 5792 }),
+  }),
+  'gemini-omni-1.1-flash': Object.freeze({
+    input: 1.5,
+    videoOutput: 17.5,
+    videoTokensPerSecond: Object.freeze({
+      '360p': 2896,
+      '720p': 5792,
+      '1080p': 13032,
+      '4k': 52128,
+    }),
   }),
 });
 

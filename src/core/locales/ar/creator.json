@@ -162,7 +162,13 @@
     "addIdea": "التالي: أضف فكرتك",
     "empty": "ستظهر مشاريعك المحفوظة هنا.",
     "continueTimeline": "تابع في المخطط الزمني",
-    "continueStudio": "تابع في استوديو المطالبات"
+    "continueStudio": "تابع في استوديو المطالبات",
+    "resolveSave": "عالج مشكلة حفظ المشروع قبل المتابعة.",
+    "reviewSave": "مراجعة مشكلة الحفظ",
+    "missingMedia": "بعض وسائط الخط الزمني مفقودة. أعد ربطها قبل التصدير.",
+    "relinkMedia": "إعادة ربط الوسائط المفقودة",
+    "resolveDraft": "عالج مشكلة حفظ مسودة الاستوديو قبل المتابعة.",
+    "reviewDraft": "مراجعة مسودة الاستوديو"
   },
   "style": {
     "title": "أسلوبي",
@@ -307,7 +313,59 @@
     "createTimeBlocks": "إنشاء كتل زمنية",
     "timeBlocksNeedText": "تقترح الكتل التوقيت فقط. أضف نص الترجمة قبل قبولها.",
     "batchInterrupted": "توقف التصدير المحفوظ. تم الاحتفاظ بالتنسيقات المكتملة.",
-    "resumeBatch": "استئناف التصدير المحفوظ"
+    "resumeBatch": "استئناف التصدير المحفوظ",
+    "stepsLabel": "خطوات التسليم",
+    "previousResult": "تسليم سابق: قد لا يتضمن التعديل الحالي.",
+    "savedConfirmed": "حُفظ الملف في الوجهة المختارة.",
+    "savedHistory": "قد يكون الملف نُقل أو حُذف بعد حفظه.",
+    "captionReviewTitle": "اقتراحات الترجمة النصية (اختيارية)",
+    "captionReviewNumber": "مراجعة الترجمة {{number}}",
+    "captionIssueOverlap": "تتداخل مع ترجمة نصية أخرى",
+    "captionIssueLength": "يتجاوز السطر 42 حرفًا",
+    "captionIssueSpeed": "تتجاوز 20 حرفًا في الثانية",
+    "openMediaPanel": "فتح مكتبة الوسائط",
+    "diagnostics": {
+      "clip-timing": "{{clip}}: اضبط البداية وإزاحة المصدر على قيمة غير سالبة والمدة على قيمة موجبة.",
+      "media-loading": "{{clip}}: انتظر حتى يكتمل استيراد الوسائط.",
+      "effects-unsupported": "{{clip}}: عطّل تأثيرات الخط الزمني للتصدير المحلي.",
+      "motion-keyframes-unsupported": "{{clip}}: أزل إطارات الحركة الرئيسية للتصدير المحلي.",
+      "color-grading-unsupported": "{{clip}}: أعد ضبط تدرج اللون للتصدير المحلي.",
+      "camera-motion-unsupported": "{{clip}}: أزل حركة الكاميرا للتصدير المحلي.",
+      "audio-reactivity-unsupported": "{{clip}}: عطّل التفاعل مع الصوت للتصدير المحلي.",
+      "masks-unsupported": "{{clip}}: أزل أقنعة التقسيم للتصدير المحلي.",
+      "volume-keyframes-unsupported": "{{clip}}: استخدم مستوى صوت ثابتًا للتصدير المحلي.",
+      "opacity-unsupported": "{{clip}}: أعد عتامة المقطع إلى 100٪.",
+      "panning-unsupported": "{{clip}}: أعد ضبط توزيع الصوت.",
+      "transforms-unsupported": "{{clip}}: أعد ضبط تحويلات الخط الزمني واستخدم قص التصدير.",
+      "transition-unsupported": "{{clip}}: اختر قطعًا أو تلاشيًا متداخلًا أو تلاشيًا إلى الأسود.",
+      "wrong-production-run": "اختر تشغيل الإنتاج الخاص بهذا المشروع.",
+      "timeline-empty": "استورد الوسائط وأضف مقطعًا إلى الخط الزمني.",
+      "duration-invalid": "اجعل مدة الخط الزمني أكبر من صفر ولا تتجاوز 180 ثانية.",
+      "visual-track-count": "انقل المقاطع المرئية إلى مسار رئيسي واحد.",
+      "duplicate-clip": "{{clip}}: كرر هذا المقطع مجددًا لمنحه معرّفًا جديدًا.",
+      "volume-invalid": "{{clip}}: اضبط مستوى الصوت بين صفر وأربعة.",
+      "crop-invalid": "{{clip}}: أعد ضبط إعدادات القص.",
+      "audio-fade-invalid": "{{clip}}: قصّر تلاشي الصوت أو أعد ضبطه.",
+      "track-missing": "{{clip}}: انقل المقطع إلى مسار موجود.",
+      "caption-missing": "{{clip}}: أضف نص الترجمة.",
+      "caption-transition-unsupported": "{{clip}}: أعد ضبط إزاحة النص والانتقال.",
+      "caption-invalid": "{{clip}}: صحح نص الترجمة وتوقيتها.",
+      "media-missing": "{{clip}}: أعد ربط الوسائط المحلية المفقودة أو استوردها مجددًا.",
+      "source-duration": "{{clip}}: قصّر المقطع أو أعد ضبط إزاحة المصدر.",
+      "media-inspection-failed": "{{clip}}: تحقق من الوسائط الأصلية أو استوردها مجددًا.",
+      "overlap-invalid": "{{clip}}: طابق التداخل مع مدة التلاشي أو أزل التداخل.",
+      "logo-missing": "أعد ربط شعار النمط."
+    },
+    "stepCompleted": "مكتمل",
+    "stepIncomplete": "غير مكتمل",
+    "openMediaRecovery": "مراجعة الوسائط المفقودة",
+    "save": "حفظ الملف",
+    "busyWait": "يرجى الانتظار...",
+    "renderBatchWithCount": "تصدير دفعة ({{count}} تنسيقات)",
+    "recommendReview": "نصيحة: راجع المعاينة في الخطوة 2 قبل التصدير النهائي.",
+    "step4Title": "4. حفظ التسليم المكتمل",
+    "exportReadyDesc": "اكتمل تصدير الفيديو وهو جاهز للحفظ على جهازك.",
+    "savedAs": "حُفظ باسم:"
   },
   "v16": {
     "chooseMedia": "اختيار وسائط محلية",
@@ -358,10 +416,27 @@
     "trackMute": "كتم المسار",
     "trackUnmute": "إلغاء كتم المسار",
     "trackMuted": "مكتوم",
-    "trackSoundOn": "الصوت يعمل"
+    "trackSoundOn": "الصوت يعمل",
+    "stepBackFrame": "الرجوع إطارًا واحدًا",
+    "stepForwardFrame": "التقدم إطارًا واحدًا",
+    "openProjectFirst": "افتح مشروعًا قبل استيراد الوسائط.",
+    "noFilterMatches": "لا توجد وسائط تطابق عامل التصفية المحدد.",
+    "placedOnTimeline": "موضوع على الخط الزمني",
+    "capabilitiesMissing": "محرك التصدير غير متاح.",
+    "renderRunning": "يوجد عرض قيد التنفيذ بالفعل."
   },
   "costs": {
     "estimatedTotal": "التكلفة المسجلة التقديرية: {{cost}}. لا تتوفر بيانات الفوترة الفعلية من المزود.",
     "storageFailed": "لم يُحفظ سجل التكلفة. أعد المحاولة عند توفر التخزين."
+  },
+  "timeline": {
+    "emptyOwnMedia": "استورد وسائطك لتحريرها محليًا، أو أضف مقاطع أُنشئت من الإنتاج.",
+    "openDeliveryReview": "فتح مراجعة التسليم"
+  },
+  "voiceover": {
+    "recordButton": "تسجيل تعليق صوتي"
+  },
+  "silence": {
+    "button": "قص فترات الصمت"
   }
 }

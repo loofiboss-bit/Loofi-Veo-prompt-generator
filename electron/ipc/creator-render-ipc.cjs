@@ -1,4 +1,5 @@
 'use strict';
+const { mediaDisplayUrl } = require('./creator-media-protocol.cjs');
 function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
   const authorize = (event) => {
     const window = getMainWindow();
@@ -42,7 +43,10 @@ function registerCreatorRenderIpc({ ipcMain, getEngine, dialog, getMainWindow })
   );
   ipcMain.handle(
     'timeline-render-preview',
-    withReadyEngine((engine, id) => engine.preview(id)),
+    withReadyEngine(async (engine, id) => ({
+      ...(await engine.preview(id)),
+      displayUrl: mediaDisplayUrl('render', id),
+    })),
   );
   ipcMain.handle(
     'timeline-render-inspect-media',

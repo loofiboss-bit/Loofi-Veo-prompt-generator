@@ -119,34 +119,36 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
     }
 
     if (request.mode === 'economy') {
-      const economy = select(['veo-3.1-lite', 'gemini-omni-flash'], request);
+      const economy = select(
+        ['veo-3.1-lite', 'gemini-omni-1.1-flash', 'gemini-omni-flash'],
+        request,
+      );
       if (!economy) throw new Error('No priced economy video model is currently available.');
       return {
         model: economy,
-        fallback: select(['gemini-omni-flash', 'veo-3.1-fast'], request),
+        fallback: select(['gemini-omni-1.1-flash', 'gemini-omni-flash', 'veo-3.1-fast'], request),
         reason: 'Economy mode selected for an unconstrained video request.',
       };
     }
 
-    const general = select(['gemini-omni-flash', 'veo-3.1-fast'], request);
+    const general = select(['gemini-omni-1.1-flash', 'gemini-omni-flash', 'veo-3.1-fast'], request);
     if (!general) throw new Error('No priced general video model is currently available.');
     return {
       model: general,
       fallback: select(['veo-3.1-fast', 'veo-3.1-quality'], request),
-      reason:
-        general.id === 'gemini-omni-flash'
-          ? 'Gemini Omni Flash is the recommended general video model for unconstrained requests.'
-          : 'The recommended general video model is unavailable; using a compatible Veo fallback.',
+      reason: general.id.startsWith('gemini-omni')
+        ? 'Gemini Omni Flash is the recommended general video model for unconstrained requests.'
+        : 'The recommended general video model is unavailable; using a compatible Veo fallback.',
     };
   }
 
   if (request.operation === 'image') {
     const candidates =
       request.mode === 'quality'
-        ? ['nano-banana-pro', 'nano-banana-2']
+        ? ['gemini-3-pro-image', 'nano-banana-pro', 'gemini-nano-banana-2.1', 'nano-banana-2']
         : request.mode === 'economy'
-          ? ['nano-banana-2-lite', 'nano-banana']
-          : ['nano-banana-2', 'nano-banana', 'nano-banana-2-lite'];
+          ? ['gemini-3.1-flash-lite-image', 'nano-banana-2-lite', 'nano-banana']
+          : ['gemini-nano-banana-2.1', 'nano-banana-2', 'nano-banana-pro', 'nano-banana-2-lite'];
     const model = select(candidates, request);
     if (!model) throw new Error('No priced image model supports the requested operation.');
     return {
@@ -156,7 +158,11 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
   }
 
   if (request.operation === 'tts') {
-    const model = select(['gemini-3.1-flash-tts'], request);
+    const candidates =
+      request.mode === 'economy'
+        ? ['gemini-3.8-flash-lite-tts', 'gemini-3.8-flash-tts', 'gemini-3.1-flash-tts']
+        : ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts'];
+    const model = select(candidates, request);
     if (!model) throw new Error('No priced TTS model is currently available.');
     return { model, reason: 'Current priced voiceover model selected.' };
   }
@@ -167,10 +173,16 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
 
   const candidates =
     request.mode === 'quality'
-      ? ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-3.6-flash']
+      ? [
+          'gemini-4-argon',
+          'gemini-3.8-flash',
+          'gemini-3.5-flash',
+          'gemini-3.1-pro',
+          'gemini-3.6-flash',
+        ]
       : request.mode === 'economy'
-        ? ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash']
-        : ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+        ? ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash']
+        : ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
   const model = select(candidates, request);
   const fallback = model
     ? select(

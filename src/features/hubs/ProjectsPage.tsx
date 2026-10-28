@@ -81,16 +81,20 @@ export function ProjectsPage() {
     .sort((a, b) => (sort === 'name' ? a.name.localeCompare(b.name) : b.modifiedAt - a.modifiedAt));
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
-  const captureCurrentProjectDocument = useEditorSessionStore(
-    (state) => state.captureCurrentProjectDocument,
-  );
   const commitProjectDocument = useEditorSessionStore((state) => state.commitProjectDocument);
 
   const continueEditing = () => {
     const current = useAppStore.getState();
+    const deliveryMode =
+      useEditorSessionStore.getState().projectSnapshot?.creatorDelivery?.editorMode === 'delivery';
     navigate(
       current.clips.length > 0 ||
-        current.assets.some((asset) => asset.type === 'video' || asset.type === 'audio')
+        current.assets.some(
+          (asset) =>
+            asset.type === 'video' ||
+            asset.type === 'audio' ||
+            (deliveryMode && asset.type === 'image'),
+        )
         ? ROUTES.TIMELINE
         : ROUTES.STUDIO,
     );
@@ -291,20 +295,24 @@ export function ProjectsPage() {
                       disabled={busy || !renameName.trim()}
                       onClick={() =>
                         void run(async () => {
-                          await projectDocumentService.update(project.id, async (document) => {
-                            if (!document) throw new Error('Project document not found');
-                            return {
-                              ...document,
-                              name: renameName.trim(),
-                              lastModified: Date.now(),
-                            };
-                          });
-                          if (
-                            !(await useProjectStore
-                              .getState()
-                              .updateProject(project.id, { name: renameName.trim() }))
-                          )
-                            throw new Error('Project metadata could not be renamed');
+                          const newName = renameName.trim();
+                          if (project.id === currentProjectId) {
+                            if (!(await usePromptStudioDraftStore.getState().flush(project.id)))
+                              throw new Error('Save the current Studio draft before renaming.');
+                            await projectSaveCoordinator.renameProject(project.id, newName);
+                            await useProjectStore.getState().refreshProjects();
+                          } else {
+                            await projectDocumentService.update(project.id, async (document) => {
+                              if (!document) throw new Error('Project document not found');
+                              return { ...document, name: newName, lastModified: Date.now() };
+                            });
+                            if (
+                              !(await useProjectStore
+                                .getState()
+                                .updateProject(project.id, { name: newName }))
+                            )
+                              throw new Error('Project metadata could not be renamed');
+                          }
                           setRenameId(null);
                         })
                       }
@@ -332,8 +340,11 @@ export function ProjectsPage() {
                   className="rounded border border-slate-700 px-3"
                   onClick={() =>
                     void run(async () => {
-                      if (project.id === currentProjectId)
-                        await projectDocumentService.save(captureCurrentProjectDocument(project));
+                      if (project.id === currentProjectId) {
+                        if (!(await usePromptStudioDraftStore.getState().flush(project.id)))
+                          throw new Error('Save the current Studio draft before duplicating.');
+                        await projectSaveCoordinator.saveProject(project.id);
+                      }
                       const source = await projectDocumentService.load(project.id);
                       if (!source) throw new Error('Project document not found');
                       await projectDocumentService.copy(source);
@@ -381,7 +392,7 @@ export function ProjectsPage() {
                       if (!(await usePromptStudioDraftStore.getState().flush()))
                         throw new Error('Save the current Studio draft before changing projects.');
                       if (project.id === currentProjectId)
-                        await projectDocumentService.save(captureCurrentProjectDocument(project));
+                        await projectSaveCoordinator.saveProject(project.id);
                       downloadProjectBlob(
                         await exportPortableProject(project.id),
                         `${project.name}.loofi-project`,

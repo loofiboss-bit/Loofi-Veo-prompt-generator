@@ -162,7 +162,13 @@
     "addIdea": "Nästa steg: lägg till din idé",
     "empty": "Dina sparade projekt visas här.",
     "continueTimeline": "Fortsätt i tidslinjen",
-    "continueStudio": "Fortsätt i Prompt Studio"
+    "continueStudio": "Fortsätt i Prompt Studio",
+    "resolveSave": "Lös problemet med projektsparningen innan du fortsätter.",
+    "reviewSave": "Granska sparproblemet",
+    "missingMedia": "Vissa medier på tidslinjen saknas. Återlänka dem före export.",
+    "relinkMedia": "Återlänka saknade medier",
+    "resolveDraft": "Lös sparproblemet för Studio-utkastet innan du fortsätter.",
+    "reviewDraft": "Granska Studio-utkastet"
   },
   "style": {
     "title": "Min stil",
@@ -307,7 +313,59 @@
     "createTimeBlocks": "Skapa tidsblock",
     "timeBlocksNeedText": "Tidsblock innehåller bara tider. Lägg till undertext innan du accepterar dem.",
     "batchInterrupted": "Den sparade exporten avbröts. Färdiga format finns kvar.",
-    "resumeBatch": "Återuppta sparad export"
+    "resumeBatch": "Återuppta sparad export",
+    "stepsLabel": "Leveranssteg",
+    "previousResult": "Tidigare leverans: den kanske inte innehåller den aktuella redigeringen.",
+    "savedConfirmed": "Filen sparades på den valda platsen.",
+    "savedHistory": "Filen kan ha flyttats eller tagits bort efter sparningen.",
+    "captionReviewTitle": "Undertextförslag (frivilliga)",
+    "captionReviewNumber": "Granska undertext {{number}}",
+    "captionIssueOverlap": "Överlappar en annan undertext",
+    "captionIssueLength": "En rad är längre än 42 tecken",
+    "captionIssueSpeed": "Fler än 20 tecken per sekund",
+    "openMediaPanel": "Öppna mediebiblioteket",
+    "diagnostics": {
+      "clip-timing": "{{clip}}: Ange start och källförskjutning som är noll eller större och en positiv längd.",
+      "media-loading": "{{clip}}: Vänta tills medieimporten är klar.",
+      "effects-unsupported": "{{clip}}: Stäng av tidslinjeeffekter för lokal export.",
+      "motion-keyframes-unsupported": "{{clip}}: Ta bort rörelsenyckelrutor för lokal export.",
+      "color-grading-unsupported": "{{clip}}: Återställ färgkorrigeringen för lokal export.",
+      "camera-motion-unsupported": "{{clip}}: Ta bort kamerarörelsen för lokal export.",
+      "audio-reactivity-unsupported": "{{clip}}: Stäng av ljudreaktivitet för lokal export.",
+      "masks-unsupported": "{{clip}}: Ta bort segmenteringsmasker för lokal export.",
+      "volume-keyframes-unsupported": "{{clip}}: Använd en fast klippvolym för lokal export.",
+      "opacity-unsupported": "{{clip}}: Återställ klippets opacitet till 100 %.",
+      "panning-unsupported": "{{clip}}: Återställ ljudpanoreringen.",
+      "transforms-unsupported": "{{clip}}: Återställ tidslinjetransformeringar och använd exportens beskärning.",
+      "transition-unsupported": "{{clip}}: Välj klipp, övertoning eller uttoning till svart.",
+      "wrong-production-run": "Välj det här projektets produktionskörning.",
+      "timeline-empty": "Importera medier och lägg ett klipp på tidslinjen.",
+      "duration-invalid": "Korta tidslinjen till högst 180 sekunder och ge den en positiv längd.",
+      "visual-track-count": "Flytta bild- och videoklipp till ett huvudspår.",
+      "duplicate-clip": "{{clip}}: Duplicera klippet igen för att ge det en ny identitet.",
+      "volume-invalid": "{{clip}}: Ange en volym mellan noll och fyra.",
+      "crop-invalid": "{{clip}}: Återställ beskärningen.",
+      "audio-fade-invalid": "{{clip}}: Korta eller återställ ljudets in- och uttoning.",
+      "track-missing": "{{clip}}: Flytta klippet till ett befintligt spår.",
+      "caption-missing": "{{clip}}: Lägg till undertext.",
+      "caption-transition-unsupported": "{{clip}}: Återställ textens förskjutning och övergång.",
+      "caption-invalid": "{{clip}}: Korrigera undertextens text och tider.",
+      "media-missing": "{{clip}}: Återlänka eller importera den saknade lokala mediefilen på nytt.",
+      "source-duration": "{{clip}}: Korta klippet eller återställ källförskjutningen.",
+      "media-inspection-failed": "{{clip}}: Kontrollera eller importera originalmediet på nytt.",
+      "overlap-invalid": "{{clip}}: Anpassa överlappningen till övertoningens längd eller ta bort den.",
+      "logo-missing": "Återlänka stilens logotyp."
+    },
+    "stepCompleted": "Klart",
+    "stepIncomplete": "Inte klart",
+    "openMediaRecovery": "Granska saknade medier",
+    "save": "Spara fil",
+    "busyWait": "Vänta...",
+    "renderBatchWithCount": "Serieexport ({{count}} format)",
+    "recommendReview": "Tips: Granska förhandsvisningen i steg 2 före den slutliga exporten.",
+    "step4Title": "4. Spara färdig leverans",
+    "exportReadyDesc": "Videoexporten är klar och kan sparas på din enhet.",
+    "savedAs": "Sparad som:"
   },
   "v16": {
     "chooseMedia": "Välj lokala medier",
@@ -358,10 +416,27 @@
     "trackMute": "Ljud av",
     "trackUnmute": "Slå på ljudet",
     "trackMuted": "Ljud av",
-    "trackSoundOn": "Ljud på"
+    "trackSoundOn": "Ljud på",
+    "stepBackFrame": "Ett bildsteg bakåt",
+    "stepForwardFrame": "Ett bildsteg framåt",
+    "openProjectFirst": "Öppna ett projekt innan du importerar medier.",
+    "noFilterMatches": "Inga medier matchar det valda filtret.",
+    "placedOnTimeline": "På tidslinjen",
+    "capabilitiesMissing": "Exportmotorn är inte tillgänglig.",
+    "renderRunning": "En rendering pågår redan."
   },
   "costs": {
     "estimatedTotal": "Uppskattad registrerad kostnad: {{cost}}. Faktisk debitering från leverantören är inte tillgänglig.",
     "storageFailed": "Kostnadshistoriken sparas inte. Försök igen när lagringen fungerar."
+  },
+  "timeline": {
+    "emptyOwnMedia": "Importera egna medier för lokal redigering eller lägg till genererade klipp från Produktion.",
+    "openDeliveryReview": "Öppna leveransgranskning"
+  },
+  "voiceover": {
+    "recordButton": "Spela in berättarröst"
+  },
+  "silence": {
+    "button": "Trimma pauser"
   }
 }

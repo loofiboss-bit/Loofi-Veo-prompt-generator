@@ -8,6 +8,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { productionRunService } from '@core/services/productionRunService';
 import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { CreateWorkflow } from './CreateWorkflow';
@@ -82,10 +83,7 @@ export function CreatePage() {
             throw new Error('Save the current Studio draft before changing projects.');
           if (!stillOpening()) return;
           const current = projects.projects.find((item) => item.id === projects.currentProjectId);
-          if (current)
-            await projectDocumentService.save(
-              useEditorSessionStore.getState().captureCurrentProjectDocument(current),
-            );
+          if (current) await projectSaveCoordinator.flushBeforeProjectChange(current.id);
           const document = await projectDocumentService.load(run.projectId);
           if (!document || cancelled) throw new Error('Linked project is unavailable.');
           if (!stillOpening()) return;

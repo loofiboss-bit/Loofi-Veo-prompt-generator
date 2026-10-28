@@ -162,7 +162,13 @@
     "addIdea": "Étape suivante : ajouter votre idée",
     "empty": "Vos projets enregistrés apparaîtront ici.",
     "continueTimeline": "Continuer dans la timeline",
-    "continueStudio": "Continuer dans Prompt Studio"
+    "continueStudio": "Continuer dans Prompt Studio",
+    "resolveSave": "Résolvez le problème d’enregistrement du projet avant de continuer.",
+    "reviewSave": "Examiner le problème d’enregistrement",
+    "missingMedia": "Certains médias du montage sont manquants. Reliez-les avant l’export.",
+    "relinkMedia": "Relier les médias manquants",
+    "resolveDraft": "Résolvez le problème d’enregistrement du brouillon Studio avant de continuer.",
+    "reviewDraft": "Examiner le brouillon Studio"
   },
   "style": {
     "title": "Mon style",
@@ -307,7 +313,59 @@
     "createTimeBlocks": "Créer des blocs temporels",
     "timeBlocksNeedText": "Les blocs proposent uniquement des horaires. Ajoutez le texte avant de les accepter.",
     "batchInterrupted": "L’export enregistré s’est interrompu. Les formats terminés sont conservés.",
-    "resumeBatch": "Reprendre l’export enregistré"
+    "resumeBatch": "Reprendre l’export enregistré",
+    "stepsLabel": "Étapes de livraison",
+    "previousResult": "Livraison précédente : elle peut ne pas inclure les modifications actuelles.",
+    "savedConfirmed": "Le fichier a été enregistré à l’emplacement choisi.",
+    "savedHistory": "Le fichier a peut-être été déplacé ou supprimé depuis son enregistrement.",
+    "captionReviewTitle": "Suggestions de sous-titres (facultatives)",
+    "captionReviewNumber": "Examiner le sous-titre {{number}}",
+    "captionIssueOverlap": "Chevauche un autre sous-titre",
+    "captionIssueLength": "Une ligne dépasse 42 caractères",
+    "captionIssueSpeed": "Dépasse 20 caractères par seconde",
+    "openMediaPanel": "Ouvrir la bibliothèque multimédia",
+    "diagnostics": {
+      "clip-timing": "{{clip}}: Définissez un début et un décalage source positifs ou nuls, ainsi qu’une durée positive.",
+      "media-loading": "{{clip}}: Attendez la fin de l’importation du média.",
+      "effects-unsupported": "{{clip}}: Désactivez les effets de montage pour l’export local.",
+      "motion-keyframes-unsupported": "{{clip}}: Supprimez les images clés de mouvement pour l’export local.",
+      "color-grading-unsupported": "{{clip}}: Réinitialisez l’étalonnage pour l’export local.",
+      "camera-motion-unsupported": "{{clip}}: Supprimez le mouvement de caméra pour l’export local.",
+      "audio-reactivity-unsupported": "{{clip}}: Désactivez la réactivité audio pour l’export local.",
+      "masks-unsupported": "{{clip}}: Supprimez les masques de segmentation pour l’export local.",
+      "volume-keyframes-unsupported": "{{clip}}: Utilisez un volume fixe pour l’export local.",
+      "opacity-unsupported": "{{clip}}: Rétablissez l’opacité du clip à 100 %.",
+      "panning-unsupported": "{{clip}}: Réinitialisez la balance audio.",
+      "transforms-unsupported": "{{clip}}: Réinitialisez les transformations et utilisez le recadrage d’export.",
+      "transition-unsupported": "{{clip}}: Choisissez une coupe, un fondu enchaîné ou un fondu au noir.",
+      "wrong-production-run": "Sélectionnez la production de ce projet.",
+      "timeline-empty": "Importez un média et ajoutez un clip au montage.",
+      "duration-invalid": "Réduisez le montage à une durée positive de 180 secondes maximum.",
+      "visual-track-count": "Placez les clips visuels sur une seule piste principale.",
+      "duplicate-clip": "{{clip}}: Dupliquez à nouveau ce clip pour lui attribuer une nouvelle identité.",
+      "volume-invalid": "{{clip}}: Réglez le volume entre zéro et quatre.",
+      "crop-invalid": "{{clip}}: Réinitialisez les réglages de recadrage.",
+      "audio-fade-invalid": "{{clip}}: Raccourcissez ou réinitialisez les fondus audio.",
+      "track-missing": "{{clip}}: Déplacez le clip vers une piste existante.",
+      "caption-missing": "{{clip}}: Ajoutez le texte du sous-titre.",
+      "caption-transition-unsupported": "{{clip}}: Réinitialisez le décalage et la transition du texte.",
+      "caption-invalid": "{{clip}}: Corrigez le texte et le minutage du sous-titre.",
+      "media-missing": "{{clip}}: Reliez ou importez à nouveau le média local manquant.",
+      "source-duration": "{{clip}}: Raccourcissez le clip ou réinitialisez son décalage source.",
+      "media-inspection-failed": "{{clip}}: Vérifiez ou importez à nouveau le média d’origine.",
+      "overlap-invalid": "{{clip}}: Ajustez le chevauchement à la durée du fondu ou supprimez-le.",
+      "logo-missing": "Reliez à nouveau le logo du style."
+    },
+    "stepCompleted": "Terminé",
+    "stepIncomplete": "Non terminé",
+    "openMediaRecovery": "Examiner les médias manquants",
+    "save": "Enregistrer le fichier",
+    "busyWait": "Veuillez patienter...",
+    "renderBatchWithCount": "Export par lot ({{count}} formats)",
+    "recommendReview": "Conseil : vérifiez l’aperçu à l’étape 2 avant l’export final.",
+    "step4Title": "4. Enregistrer la livraison terminée",
+    "exportReadyDesc": "L’export vidéo est terminé et peut être enregistré sur votre appareil.",
+    "savedAs": "Enregistré sous :"
   },
   "v16": {
     "chooseMedia": "Choisir des médias locaux",
@@ -358,10 +416,27 @@
     "trackMute": "Couper le son",
     "trackUnmute": "Rétablir le son",
     "trackMuted": "Son coupé",
-    "trackSoundOn": "Son activé"
+    "trackSoundOn": "Son activé",
+    "stepBackFrame": "Reculer d’une image",
+    "stepForwardFrame": "Avancer d’une image",
+    "openProjectFirst": "Ouvrez un projet avant d’importer des médias.",
+    "noFilterMatches": "Aucun média ne correspond au filtre sélectionné.",
+    "placedOnTimeline": "Sur la chronologie",
+    "capabilitiesMissing": "Le moteur d’export n’est pas disponible.",
+    "renderRunning": "Un rendu est déjà en cours."
   },
   "costs": {
     "estimatedTotal": "Coût enregistré estimé : {{cost}}. Le coût réel facturé par le fournisseur est indisponible.",
     "storageFailed": "L’historique des coûts n’est pas enregistré. Réessayez lorsque le stockage sera disponible."
+  },
+  "timeline": {
+    "emptyOwnMedia": "Importez vos propres médias pour les modifier localement ou ajoutez des clips générés depuis Production.",
+    "openDeliveryReview": "Ouvrir la vérification de livraison"
+  },
+  "voiceover": {
+    "recordButton": "Enregistrer une voix off"
+  },
+  "silence": {
+    "button": "Couper les pauses"
   }
 }

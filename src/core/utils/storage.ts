@@ -188,6 +188,9 @@ const rehydrateAssets = async (
     const fullAssets: Asset[] = [];
     // We load assets in parallel for speed
     const promises = state.assets.map(async (asset: Asset) => {
+      // Desktop imports are stored by the native media service, not in the
+      // legacy inline-asset store. Their registered URL remains valid on restart.
+      if (asset.storageKey && asset.url?.startsWith('loofi-media:')) return asset;
       if (asset.data === '') {
         try {
           const data = await withStorageTimeout(`read asset ${asset.id}`, () =>

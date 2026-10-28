@@ -71,10 +71,25 @@ export class CreatorRenderError extends Error {
     this.name = 'CreatorRenderError';
   }
 }
+
+function deliveryDiagnostic(
+  code: string,
+  message: string,
+  action: string,
+  clipId?: string,
+): CreatorDeliveryDiagnostic {
+  return {
+    code,
+    message,
+    action,
+    clipId,
+    target: clipId ? 'clip' : code === 'timeline-empty' ? 'media' : undefined,
+  };
+}
 function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
   const issues: CreatorDeliveryDiagnostic[] = [];
-  const add = (message: string, action: string) =>
-    issues.push({ clipId: clip.id, message: `${clip.label}: ${message}`, action });
+  const add = (code: string, message: string, action: string) =>
+    issues.push(deliveryDiagnostic(code, `${clip.label}: ${message}`, action, clip.id));
   if (
     ![clip.startTime, clip.duration, clip.offset].every(Number.isFinite) ||
     clip.startTime < 0 ||
@@ -82,35 +97,59 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
     clip.offset < 0
   )
     add(
+      'clip-timing',
       'Invalid clip timing.',
       'Set a nonnegative start and source offset, and a positive duration.',
     );
-  if (clip.isLoading) add('Media is still loading.', 'Wait for import to finish.');
-  const unsupported: [boolean, string, string][] = [
+  if (clip.isLoading) add('media-loading', 'Media is still loading.', 'Wait for import to finish.');
+  const unsupported: [boolean, string, string, string][] = [
     [
       !!clip.effects?.some((effect) => effect.isEnabled),
+      'effects-unsupported',
       'Timeline effects',
       'Disable enabled timeline effects.',
     ],
-    [!!clip.keyframes?.length, 'Motion keyframes', 'Remove motion keyframes.'],
-    [!!clip.colorGrade, 'Color grading', 'Reset color grading.'],
-    [!!clip.cameraEffect, 'Camera motion', 'Remove camera motion.'],
-    [!!clip.reactivity, 'Audio reactivity', 'Disable audio reactivity.'],
-    [!!clip.maskSequence?.length, 'Segmentation masks', 'Remove segmentation masks.'],
-    [!!clip.volumeKeyframes?.length, 'Volume keyframes', 'Use a static clip volume.'],
+    [
+      !!clip.keyframes?.length,
+      'motion-keyframes-unsupported',
+      'Motion keyframes',
+      'Remove motion keyframes.',
+    ],
+    [!!clip.colorGrade, 'color-grading-unsupported', 'Color grading', 'Reset color grading.'],
+    [!!clip.cameraEffect, 'camera-motion-unsupported', 'Camera motion', 'Remove camera motion.'],
+    [
+      !!clip.reactivity,
+      'audio-reactivity-unsupported',
+      'Audio reactivity',
+      'Disable audio reactivity.',
+    ],
+    [
+      !!clip.maskSequence?.length,
+      'masks-unsupported',
+      'Segmentation masks',
+      'Remove segmentation masks.',
+    ],
+    [
+      !!clip.volumeKeyframes?.length,
+      'volume-keyframes-unsupported',
+      'Volume keyframes',
+      'Use a static clip volume.',
+    ],
     [
       clip.opacity !== undefined && clip.opacity !== 1,
+      'opacity-unsupported',
       'Clip opacity',
       'Reset clip opacity to 100%.',
     ],
     [
       !!clip.panning && (clip.panning.x !== 0 || clip.panning.z !== 0),
+      'panning-unsupported',
       'Audio panning',
       'Reset audio panning.',
     ],
   ];
-  for (const [enabled, name, action] of unsupported)
-    if (enabled) add(`${name} is not supported by local export.`, action);
+  for (const [enabled, code, name, action] of unsupported)
+    if (enabled) add(code, `${name} is not supported by local export.`, action);
   if (
     clip.transform &&
     (clip.transform.scale !== 1 ||
@@ -120,11 +159,16 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
       clip.transform.position.y !== 0)
   )
     add(
+      'transforms-unsupported',
       'Timeline transforms are not supported.',
       'Reset timeline transforms and use export crop controls.',
     );
   if (clip.transition && !['cut', 'dissolve', 'fade_black'].includes(clip.transition.type))
-    add('This transition is not supported.', 'Choose cut, dissolve or fade to black.');
+    add(
+      'transition-unsupported',
+      'This transition is not supported.',
+      'Choose cut, dissolve or fade to black.',
+    );
   return issues;
 }
 function checkClip(clip: TimelineClip) {
@@ -132,6 +176,8 @@ function checkClip(clip: TimelineClip) {
   if (first) throw new CreatorRenderError(first.message, clip.id);
 }
 export interface CreatorDeliveryDiagnostic {
+  code?: string;
+  target?: 'clip' | 'media';
   clipId?: string;
   message: string;
   action: string;
@@ -164,20 +210,30 @@ class CreatorDeliveryService {
     run?: ProductionRun | null,
   ): Promise<CreatorDeliveryDiagnostic[]> {
     const diagnostics: CreatorDeliveryDiagnostic[] = [];
-    const add = (message: string, action: string, clipId?: string) =>
-      diagnostics.push({ message, action, clipId });
+    const add = (code: string, message: string, action: string, clipId?: string) =>
+      diagnostics.push(deliveryDiagnostic(code, message, action, clipId));
     const timeline = project.storyboard.timeline;
     const media = timeline.clips.filter((clip) => clip.type !== 'text');
     const duration = Math.max(0, ...media.map((clip) => clip.startTime + clip.duration));
     if (run && run.projectId !== project.id)
-      add('Production run belongs to another project.', 'Select this project’s production run.');
-    if (!media.length) add('Timeline has no media.', 'Import media and add a clip.');
+      add(
+        'wrong-production-run',
+        'Production run belongs to another project.',
+        'Select this project’s production run.',
+      );
+    if (!media.length)
+      add('timeline-empty', 'Timeline has no media.', 'Import media and add a clip.');
     if (!Number.isFinite(duration) || duration <= 0 || duration > 180)
-      add('Video must be between 0 and 180 seconds.', 'Trim the timeline to three minutes.');
+      add(
+        'duration-invalid',
+        'Video must be between 0 and 180 seconds.',
+        'Trim the timeline to three minutes.',
+      );
     if (
       new Set(media.filter((clip) => clip.type !== 'audio').map((clip) => clip.trackId)).size !== 1
     )
       add(
+        'visual-track-count',
         'Local export requires one main video/image track.',
         'Move visual clips to one main track.',
       );
@@ -186,6 +242,7 @@ class CreatorDeliveryService {
     for (const clip of timeline.clips) {
       if (clipIds.has(clip.id))
         add(
+          'duplicate-clip',
           'Clip identity is duplicated.',
           'Duplicate this clip again to assign a fresh identity.',
           clip.id,
@@ -196,6 +253,7 @@ class CreatorDeliveryService {
         (!Number.isFinite(clip.volume) || clip.volume < 0 || clip.volume > 4)
       )
         add(
+          'volume-invalid',
           'Clip volume is outside the supported range.',
           'Set volume between zero and four.',
           clip.id,
@@ -206,7 +264,7 @@ class CreatorDeliveryService {
         (![crop.x, crop.y].every((value) => Number.isFinite(value) && value >= 0 && value <= 1) ||
           !['fit', 'fill'].includes(crop.mode))
       )
-        add('Export crop is invalid.', 'Reset the crop controls.', clip.id);
+        add('crop-invalid', 'Export crop is invalid.', 'Reset the crop controls.', clip.id);
       const fades = settings.audioFades?.[clip.id];
       if (
         fades &&
@@ -214,14 +272,26 @@ class CreatorDeliveryService {
           (value) => Number.isFinite(value) && value >= 0 && value <= clip.duration,
         )
       )
-        add('Audio fade exceeds clip duration.', 'Shorten or reset the audio fades.', clip.id);
+        add(
+          'audio-fade-invalid',
+          'Audio fade exceeds clip duration.',
+          'Shorten or reset the audio fades.',
+          clip.id,
+        );
       diagnostics.push(...clipDiagnostics(clip));
       if (!timeline.tracks.some((track) => track.id === clip.trackId))
-        add('Clip track is missing.', 'Move this clip to an existing track.', clip.id);
+        add(
+          'track-missing',
+          'Clip track is missing.',
+          'Move this clip to an existing track.',
+          clip.id,
+        );
       if (clip.type === 'text') {
-        if (!clip.caption) add('Text clip has no caption.', 'Add caption text.', clip.id);
+        if (!clip.caption)
+          add('caption-missing', 'Text clip has no caption.', 'Add caption text.', clip.id);
         if (clip.offset !== 0 || (clip.transition && clip.transition.type !== 'cut'))
           add(
+            'caption-transition-unsupported',
             'Text offsets and transitions are not supported.',
             'Reset text offset and transition.',
             clip.id,
@@ -240,6 +310,7 @@ class CreatorDeliveryService {
             );
           } catch (error) {
             add(
+              'caption-invalid',
               String(error instanceof Error ? error.message : error),
               'Correct caption text and timing.',
               clip.id,
@@ -266,7 +337,12 @@ class CreatorDeliveryService {
         (candidates.length === 1 ? candidates[0] : undefined);
       const key = asset?.storageKey ?? asset?.id ?? selection.take?.localMediaKey;
       if (!key || (selection.shot && !selection.take?.localMediaKey)) {
-        add('Local media is missing.', 'Relink this clip to a local file.', clip.id);
+        add(
+          'media-missing',
+          'Local media is missing.',
+          'Relink this clip to a local file.',
+          clip.id,
+        );
         continue;
       }
       try {
@@ -278,6 +354,7 @@ class CreatorDeliveryService {
             !(asset && (await resolveProjectAssetBlob(asset)))
           )
             add(
+              'media-missing',
               metadata.reason ?? 'Local media is missing.',
               'Relink or reimport this clip.',
               clip.id,
@@ -288,6 +365,7 @@ class CreatorDeliveryService {
             clip.offset + clip.duration > metadata.durationSeconds + 0.05
           )
             add(
+              'source-duration',
               'Clip exceeds source duration.',
               'Shorten the clip or reset its source offset.',
               clip.id,
@@ -297,9 +375,15 @@ class CreatorDeliveryService {
           !(asset && (await resolveProjectAssetBlob(asset))) &&
           !(await window.electron?.readDesktopMedia?.(key))
         )
-          add('Durable local media is missing.', 'Relink or reimport this clip.', clip.id);
+          add(
+            'media-missing',
+            'Durable local media is missing.',
+            'Relink or reimport this clip.',
+            clip.id,
+          );
       } catch (error) {
         add(
+          'media-inspection-failed',
           String(error instanceof Error ? error.message : error),
           'Verify or reimport the original media.',
           clip.id,
@@ -320,6 +404,7 @@ class CreatorDeliveryService {
           (!previous || overlap <= 0 || Math.abs(overlap - clip.transition.duration) > 0.001))
       )
         add(
+          'overlap-invalid',
           'Overlap requires a matching dissolve transition.',
           'Match overlap to dissolve duration or remove the overlap.',
           clip.id,
@@ -329,7 +414,7 @@ class CreatorDeliveryService {
       settings.style?.logoAssetId &&
       !assets.some((asset) => asset.id === settings.style?.logoAssetId && asset.type === 'image')
     )
-      add('Style logo is missing.', 'Relink the style logo.');
+      add('logo-missing', 'Style logo is missing.', 'Relink the style logo.');
     return diagnostics;
   }
   async buildPlan(

@@ -23,12 +23,12 @@ describe('routeModel', () => {
 
   it('uses Omni Flash only for conversational video revisions', () => {
     const decision = routeModel({ operation: 'video-edit', mode: 'smart', conversational: true });
-    expect(decision.model.id).toBe('gemini-omni-flash');
+    expect(decision.model.id).toBe('gemini-omni-1.1-flash');
   });
 
   it('prefers Omni Flash for ordinary unconstrained video generation', () => {
     const decision = routeModel({ operation: 'video', mode: 'smart', requestedResolution: '720p' });
-    expect(decision.model.id).toBe('gemini-omni-flash');
+    expect(decision.model.id).toBe('gemini-omni-1.1-flash');
     expect(decision.reason).toContain('recommended general video model');
   });
 

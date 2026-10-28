@@ -516,14 +516,27 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
         )
       )
         return state;
+      const captionTrack =
+        state.tracks.find((track) => track.type === 'text' && track.trackType === 'captions') ??
+        state.tracks.find((track) => track.type === 'text');
+      const newTrack = captionTrack
+        ? undefined
+        : {
+            ...DEFAULT_TRACKS[0],
+            id: state.tracks.some((track) => track.id === 'text_main')
+              ? crypto.randomUUID()
+              : 'text_main',
+          };
+      const trackId = captionTrack?.id ?? newTrack!.id;
       return {
+        ...(newTrack ? { tracks: [...state.tracks, newTrack] } : {}),
         clips: [
           ...state.clips.filter((clip) => mode !== 'replace' || !clip.caption),
           ...captions.map(
             (caption): TimelineClip => ({
               id: crypto.randomUUID(),
               resourceId: caption.id,
-              trackId: 'text_main',
+              trackId,
               type: 'text',
               label: caption.text,
               startTime: caption.startTime,

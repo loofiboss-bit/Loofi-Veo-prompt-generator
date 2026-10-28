@@ -133,6 +133,16 @@ test('IPC contract parity: validates inputs and rejects malformed payloads befor
 
   // Media IPC contract validation
   await assert.rejects(handlers.get('desktop-media-read')(null, ''), /Invalid media storage key/);
+  assert.equal(await handlers.get('desktop-media-read')(null, 'local-media:1234'), null);
+  assert.equal(await handlers.get('desktop-media-read')(null, 'external:1234'), null);
+  await assert.rejects(
+    handlers.get('desktop-media-read')(null, 'local-media:../secret'),
+    /Invalid media storage key/,
+  );
+  await assert.rejects(
+    handlers.get('desktop-media-read')(null, 'C:\\secret'),
+    /Invalid media storage key/,
+  );
   await assert.rejects(handlers.get('desktop-media-cache')(null, { url: '' }), /missing URL/);
   await assert.rejects(
     handlers.get('desktop-media-relink')(null, { key: 'valid-key', candidatePath: '' }),

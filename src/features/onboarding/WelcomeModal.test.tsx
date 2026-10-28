@@ -54,4 +54,25 @@ describe('local-first welcome', () => {
     expect(close).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('v8-onboarding-complete')).toBe('true');
   });
+  it.each(['close', 'escape', 'backdrop'])(
+    'dismisses with %s without changing the route',
+    async (way) => {
+      const close = vi.fn();
+      const { user } = render(
+        <>
+          <WelcomeModal isOpen onClose={close} />
+          <CurrentLocation />
+        </>,
+      );
+      expect(screen.getByRole('dialog', { name: 'Start with one idea' })).toBeInTheDocument();
+      if (way === 'escape') await user.keyboard('{Escape}');
+      else
+        await user.click(
+          screen.getAllByRole('button', { name: 'Close modal' })[way === 'backdrop' ? 0 : 1],
+        );
+      expect(close).toHaveBeenCalledOnce();
+      expect(shown).toHaveBeenCalledOnce();
+      expect(screen.getByTestId('current-location')).toHaveTextContent('/');
+    },
+  );
 });

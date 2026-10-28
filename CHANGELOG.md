@@ -7,6 +7,26 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Review optional local caption suggestions for overlaps, lines over 42 grapheme clusters and
+  reading speeds over 20 grapheme clusters per second. Suggestions focus the affected caption and
+  never change text or timing automatically.
+- Continue the active project from Start, including recovery for known save conflicts, Studio draft
+  errors and missing timeline media. Examples and recipes remain available in expandable sections.
+- Open delivery review from the timeline and locate supported delivery diagnostics in the editor.
+
+### Changed
+
+- Coordinate active-project saves before manual save, production handoff, project copy and export;
+  preserve conflicts and edits made during an in-flight save.
+- Distinguish current render completion from a confirmed file save. Previously saved jobs retain
+  their filename and are identified as previous results when their currentness cannot be established.
+- Localize delivery diagnostics and statuses in all six app languages. Correct welcome-dialog
+  naming, radio layout, close behavior and keyboard focus handling.
+
 ## [21.0.0] - 2026-10-25
 
 ### Added

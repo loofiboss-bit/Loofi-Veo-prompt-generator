@@ -158,7 +158,20 @@
     "create": "إنشاء مشروع",
     "import": "استيراد مشروع",
     "export": "تصدير المشروع",
-    "actions": "إجراءات المشروع"
+    "actions": "إجراءات المشروع",
+    "allChangesSaved": "حُفظت جميع التغييرات محليًا",
+    "checkingSave": "جارٍ التحقق من حالة الحفظ",
+    "saveStatusUnknown": "حالة الحفظ غير متاحة",
+    "saveUnsaved": "غير محفوظ",
+    "saveSaving": "جارٍ الحفظ",
+    "saveSaved": "محفوظ",
+    "saveError": "فشل الحفظ",
+    "saveConflict": "تغييرات متعارضة",
+    "saveNow": "حفظ المشروع",
+    "remoteChange": "غيّرت نافذة أخرى هذا المشروع.",
+    "loadLatest": "تحميل الأحدث",
+    "saveCopy": "حفظ نسخة",
+    "backupWarning": "حُفظ المشروع؛ فشل النسخ الاحتياطي التلقائي:"
   },
   "assets": {
     "continuityProfiles": "ملفات الاستمرارية",
@@ -177,11 +190,24 @@
     "magnetic": "مغناطيسي",
     "snap": "محاذاة",
     "snapToBeatTitle": "محاذاة اللقطات مع إيقاع {{bpm}} نبضة/دقيقة",
-    "snapCuts": "قطع متزامن ({{bpm}} نبضة/دقيقة)"
+    "snapCuts": "قطع متزامن ({{bpm}} نبضة/دقيقة)",
+    "splitPlayhead": "تقسيم عند موضع التشغيل",
+    "trimStart": "قص البداية حتى موضع التشغيل",
+    "trimEnd": "قص النهاية حتى موضع التشغيل",
+    "remove": "إزالة المقطع"
   },
   "focusMode": {
     "activeTitle": "وضع التركيز قيد التشغيل",
     "activeDescription": "تم إخفاء الاستوديوهات المتقدمة ومساحات التعاون.",
     "exit": "الخروج من وضع التركيز"
+  },
+  "media": {
+    "filterAll": "الكل",
+    "filterVideo": "فيديو",
+    "filterAudio": "صوت",
+    "filterImage": "صور",
+    "filterReference": "مراجع",
+    "filterGenerated": "مُنشأة",
+    "filters": "تصفية الوسائط"
   }
 }

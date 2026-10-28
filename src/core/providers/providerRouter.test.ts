@@ -36,7 +36,7 @@ describe('ProviderRouter', () => {
       ),
     ).resolves.toMatchObject({ text: 'ok' });
     expect(execute).toHaveBeenCalledWith(
-      expect.objectContaining({ model: expect.objectContaining({ id: 'gemini-3.6-flash' }) }),
+      expect.objectContaining({ model: expect.objectContaining({ id: 'gemini-3.8-flash' }) }),
     );
   });
 
@@ -129,7 +129,7 @@ describe('ProviderRouter', () => {
 
     await expect(
       router.execute({ operation: 'plan', mode: 'smart' }, request),
-    ).resolves.toMatchObject({ selectedModelId: 'gemini-3.6-flash' });
+    ).resolves.toMatchObject({ selectedModelId: 'gemini-3.8-flash' });
     expect(execute).toHaveBeenNthCalledWith(1, expect.objectContaining(request));
     expect(execute).toHaveBeenNthCalledWith(2, expect.objectContaining(request));
   });

@@ -711,7 +711,7 @@
   font-size: 13px;
   font-weight: 550;
 }
-.studio-workspace input:not([type='checkbox']),
+.studio-workspace input:not([type='checkbox']):not([type='radio']),
 .studio-workspace select,
 .studio-workspace textarea {
   color: var(--color-text-primary);

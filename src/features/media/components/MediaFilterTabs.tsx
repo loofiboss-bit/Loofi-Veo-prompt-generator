@@ -33,7 +33,7 @@ export function MediaFilterTabs({
     <div
       role="tablist"
       aria-label={t('media.filters', 'Filter media')}
-      className={`flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-900/60 border border-slate-800 text-xs ${className}`}
+      className={`flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] text-xs ${className}`}
     >
       {filterOptions.map((opt) => {
         const isSelected = activeKey === opt.key;
@@ -47,15 +47,17 @@ export function MediaFilterTabs({
             onClick={() => onChange(opt.key)}
             className={`px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer ${
               isSelected
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'bg-[var(--color-action-bg)] text-[var(--color-on-accent)]'
+                : 'text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
             }`}
           >
             {opt.label}
             {count !== undefined && count > 0 && (
               <span
                 className={`ml-1.5 text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isSelected ? 'bg-blue-700/80 text-white' : 'bg-slate-800 text-slate-400'
+                  isSelected
+                    ? 'bg-[var(--color-action-bg)] text-[var(--color-on-accent)]'
+                    : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)]'
                 }`}
               >
                 {count}
