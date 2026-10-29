@@ -431,11 +431,15 @@ describe('PromptStudioPage durable copy desk', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Start frame' }), 'img-1');
     await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
     expect(await screen.findByRole('button', { name: 'Generate in app' })).toBeInTheDocument();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Length' }), '10');
-    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
-    await screen.findByRole('textbox', { name: 'Primary prompt' });
-    expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
+    const length = screen.getByRole('combobox', { name: 'Length' });
+    expect(within(length).getByRole('option', { name: '10 seconds' })).toBeDisabled();
     expect(screen.getAllByText('Veo API supports 4, 6 or 8 seconds.').length).toBeGreaterThan(0);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'flow-veo');
+    expect(
+      within(screen.getByRole('combobox', { name: 'Length' })).getByRole('option', {
+        name: '10 seconds',
+      }),
+    ).toBeEnabled();
   });
 
   it('ignores a completed AI request after the user changes input', async () => {
@@ -1398,36 +1402,140 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(screen.getByRole('button', { name: 'Rewrite section' })).toBeDisabled();
   });
 
-  it('expands scene details with AI and updates the video draft', async () => {
+  it('reviews scene expansion before acceptance and rejects without changing the draft', async () => {
     const { user } = await openStudio();
-    await user.type(
-      await screen.findByRole('textbox', { name: 'Core idea' }),
-      'A programmer rejected for vibecoding',
+    await user.type(screen.getByRole('textbox', { name: 'Core idea' }), 'A rainy street');
+    await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
+    expect(await screen.findByText('Review expanded details')).toBeInTheDocument();
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).not.toBe(
+      'AI-generated subject',
     );
-    const expandBtn = screen.getByRole('button', { name: 'Expand scene details with AI' });
-    await user.click(expandBtn);
-
-    await waitFor(() => {
-      expect(mocks.expandScene).toHaveBeenCalled();
-    });
+    expect(screen.getByText(/Proposed: AI-generated subject/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reject expanded details' }));
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).not.toBe(
+      'AI-generated subject',
+    );
+    await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
+    await user.click(await screen.findByRole('button', { name: 'Accept expanded details' }));
     expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe('AI-generated subject');
     expect(usePromptStudioDraftStore.getState().draft!.video.action).toBe('AI-generated action');
   });
 
-  it('expands music details with AI and updates the music draft', async () => {
+  it('reviews music expansion and invalidates the proposal when the brief changes', async () => {
     const { user } = await openStudio();
     await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
-    await user.type(
-      await screen.findByRole('textbox', { name: 'Song idea / story' }),
-      'Rainy train',
-    );
-    const expandBtn = screen.getByRole('button', { name: 'Expand music details with AI' });
-    await user.click(expandBtn);
-
-    await waitFor(() => {
-      expect(mocks.expandMusic).toHaveBeenCalled();
-    });
+    const topic = await screen.findByRole('textbox', { name: 'Song idea / story' });
+    await user.type(topic, 'Rainy train');
+    await user.click(screen.getByRole('button', { name: 'Expand music details with AI' }));
+    expect(await screen.findByText('Review expanded details')).toBeInTheDocument();
+    expect(usePromptStudioDraftStore.getState().draft!.music.genre).not.toBe('AI-generated genre');
+    fireEvent.change(topic, { target: { value: 'A different idea' } });
+    expect(
+      screen.queryByRole('button', { name: 'Accept expanded details' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Expand music details with AI' }));
+    await user.click(await screen.findByRole('button', { name: 'Accept expanded details' }));
     expect(usePromptStudioDraftStore.getState().draft!.music.genre).toBe('AI-generated genre');
     expect(usePromptStudioDraftStore.getState().draft!.music.lyrics).toContain('AI lyrics');
+  });
+  it('opens the affected music variant and focuses its style from validation', async () => {
+    const { user } = await openStudio();
+    await buildMusicPack(user);
+    const draft = usePromptStudioDraftStore.getState().draft!;
+    const invalid = editStudioVariant(draft.artifact!, 1, { styleOfMusic: 'x'.repeat(201) });
+    act(() => usePromptStudioDraftStore.getState().applyDraft({ artifact: invalid }));
+    const issue = screen
+      .getAllByText('Variant 2')
+      .map((label) => label.closest('div')!.parentElement!)
+      .find((card) => within(card).queryByRole('button', { name: 'Open control' }))!;
+    await user.click(within(issue).getByRole('button', { name: 'Open control' }));
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: /Hook-forward.*style/i })).toHaveFocus(),
+    );
+    expect(usePromptStudioDraftStore.getState().draft!.selectedVariant).toBe(1);
+  });
+
+  it('discards an expansion proposal when the project changes', async () => {
+    const { user } = await openStudio();
+    await user.type(screen.getByRole('textbox', { name: 'Core idea' }), 'A rainy street');
+    await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
+    await screen.findByRole('button', { name: 'Accept expanded details' });
+    act(() => useProjectStore.setState({ currentProjectId: 'other-project' }));
+    await waitFor(() =>
+      expect(usePromptStudioDraftStore.getState().draft?.projectId).toBe('other-project'),
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Accept expanded details' }),
+    ).not.toBeInTheDocument();
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).not.toBe(
+      'AI-generated subject',
+    );
+  });
+
+  it('discards a late expansion after the user edits the brief', async () => {
+    let finish!: (value: VideoPromptArtifactInput) => void;
+    let requested!: VideoPromptArtifactInput;
+    mocks.expandScene.mockImplementation((input: VideoPromptArtifactInput) => {
+      requested = input;
+      return new Promise<VideoPromptArtifactInput>((resolve) => {
+        finish = resolve;
+      });
+    });
+    const { user } = await openStudio();
+    const idea = screen.getByRole('textbox', { name: 'Core idea' });
+    await user.type(idea, 'First idea');
+    await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
+    await waitFor(() => expect(mocks.expandScene).toHaveBeenCalled());
+    fireEvent.change(idea, { target: { value: 'New idea' } });
+    await act(async () => finish({ ...requested, subject: 'Late response' }));
+    expect(
+      screen.queryByRole('button', { name: 'Accept expanded details' }),
+    ).not.toBeInTheDocument();
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).not.toBe('Late response');
+  });
+
+  it('requires an explicit choice before copying an outdated video result', async () => {
+    const { user } = await openStudio();
+    installClipboard();
+    await buildPack(user);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'A different scene' },
+    });
+    expect(screen.getByRole('button', { name: 'Rebuild result' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(clipboard).not.toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Use previous result' }));
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(clipboard).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'Yet another scene' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(clipboard).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'Rebuild result' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Use previous result' })).not.toBeInTheDocument(),
+    );
+    expect(
+      (screen.getByRole('textbox', { name: 'Primary prompt' }) as HTMLTextAreaElement).value,
+    ).toContain('Yet another scene');
+  });
+
+  it('requires an explicit choice before opening an outdated music result in Suno', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const { user } = await openStudio();
+    installClipboard();
+    await buildMusicPack(user);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Song idea / story' }), {
+      target: { value: 'A changed song' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Copy & Open Suno' }));
+    expect(clipboard).not.toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Use previous result' }));
+    await user.click(screen.getByRole('button', { name: 'Copy & Open Suno' }));
+    expect(clipboard).toHaveBeenCalledTimes(1);
+    expect(open).toHaveBeenCalledTimes(1);
   });
 });

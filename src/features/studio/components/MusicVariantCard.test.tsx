@@ -32,7 +32,27 @@ describe('MusicVariantCard', () => {
     expect(screen.getByRole('button', { name: /Copy lyrics/i })).toBeInTheDocument();
     expect(screen.getByText('Copy options').closest('details')).not.toHaveAttribute('open');
     await user.click(screen.getByText('Copy options'));
-    expect(screen.getByRole('button', { name: /Copy all/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Copy full package/i })).toBeInTheDocument();
+  });
+
+  it('compares changed style, lyrics and production notes against the primary', async () => {
+    const { user } = render(
+      <MusicVariantCard
+        variant={{
+          ...MOCK_MUSIC_VARIANT,
+          styleOfMusic: 'Ambient',
+          lyrics: 'New lyrics',
+          productionNotes: ['New note'],
+        }}
+        compareBaseline={MOCK_MUSIC_VARIANT}
+        primary
+        onCopy={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByText('Compare with Primary'));
+    expect(screen.getByText('+ Ambient')).toBeVisible();
+    expect(screen.getByText('+ New lyrics')).toBeVisible();
+    expect(screen.getByText('+ New note')).toBeVisible();
   });
 
   it('triggers copy callback for style and lyrics', async () => {
@@ -46,7 +66,7 @@ describe('MusicVariantCard', () => {
     await user.click(screen.getByRole('button', { name: /Copy lyrics/i }));
     expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyLyrics, 'Copied.');
     await user.click(screen.getByText('Copy options'));
-    await user.click(screen.getByRole('button', { name: /Copy all/i }));
+    await user.click(screen.getByRole('button', { name: /Copy full package/i }));
     expect(onCopy).toHaveBeenCalledWith(MOCK_MUSIC_VARIANT.copyAll, 'Copied.');
   });
 });

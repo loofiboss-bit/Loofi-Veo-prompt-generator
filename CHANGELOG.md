@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Clarify when a Prompt Studio result no longer matches its brief, offer a rebuild, and require an
+  explicit choice before copying or opening the earlier result.
+- Show Veo API duration constraints alongside the input and review AI scene and music expansion
+  proposals before applying them. Organize the Studio workflow and clarify variant comparisons
+  and copy actions.
+
 ## [21.0.0] - 2026-10-28
 
 ### Added

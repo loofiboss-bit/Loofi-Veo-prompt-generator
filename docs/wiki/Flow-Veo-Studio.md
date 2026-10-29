@@ -11,7 +11,8 @@ limits and supported settings; broad target labels are not provider compatibilit
 
 **Veo API** is the internal production target. **Generate in app** prepares a plan with the selected
 variant and references. Production must validate it and receive explicit cost approval before submission.
-Unsupported combinations are blocked before submitting, rather than routed silently to a different model.
+The duration control identifies the supported 4, 6 and 8 second choices. Unsupported combinations
+are blocked before submitting, rather than routed silently to a different model.
 
 ## Choose a recipe
 
@@ -30,8 +31,9 @@ prompt; they do not guarantee that a destination will reproduce an exact optical
 ## Build and refine
 
 Select **Build copy-ready pack**, edit a variant and inspect **Readiness checks**. Use
-**Compare in Arena** to inspect packages for all eight Studio targets. AI enhancement remains an
-explicit provider action with proposal review before acceptance.
+**Compare in Arena** to inspect packages for all eight Studio targets. AI enhancement and scene detail expansion remain explicit provider actions with proposal review
+before acceptance. When the brief changes after a build, review the changed fields and rebuild the
+pack, or explicitly choose the earlier result for a manual copy.
 
 For durable versions and reusable inputs, see [Prompt Quality and Iteration](Prompt-Quality-and-Iteration.md).
 For a first scene, see [Quick Start](Quick-Start.md) and [Prompting Guide](Prompting-Guide.md).
