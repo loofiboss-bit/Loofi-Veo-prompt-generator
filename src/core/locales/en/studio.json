@@ -477,5 +477,25 @@
     "propose": "Propose prompt changes",
     "productionTake": "production take",
     "importedResult": "imported result"
+  },
+  "expandScene": "Expand scene details with AI",
+  "expandingScene": "Expanding details…",
+  "expandMusic": "Expand music details with AI",
+  "expandingMusic": "Expanding music…",
+  "expanded": "Scene details expanded with AI.",
+  "musicExpanded": "Music details and lyrics expanded with AI.",
+  "aiSettings": "Gemini AI settings",
+  "model": "Model",
+  "stylePreset": "Cinematic style preset",
+  "promptLanguage": "Prompt language",
+  "smartMerge": "Smart merge",
+  "smartMergeHint": "Preserve manual fields and fill missing",
+  "overwriteExisting": "Overwrite existing fields",
+  "presets": {
+    "cinematic": "Cinematic realism",
+    "documentary": "Documentary",
+    "commercial": "Commercial / Clean",
+    "stylized": "Stylized / Anime",
+    "scifi": "Sci-Fi / Moody"
   }
 }

@@ -477,5 +477,25 @@
     "propose": "Proponer cambios al prompt",
     "productionTake": "toma de producción",
     "importedResult": "resultado importado"
+  },
+  "expandScene": "Expandir detalles de escena con IA",
+  "expandingScene": "Expandiendo detalles…",
+  "expandMusic": "Expandir detalles musicales con IA",
+  "expandingMusic": "Expandiendo música…",
+  "expanded": "Detalles de escena expandidos con IA.",
+  "musicExpanded": "Detalles musicales y letra expandidos con IA.",
+  "aiSettings": "Ajustes de Gemini IA",
+  "model": "Modelo",
+  "stylePreset": "Ajuste de estilo cinematográfico",
+  "promptLanguage": "Idioma del prompt",
+  "smartMerge": "Fusión inteligente",
+  "smartMergeHint": "Conservar campos manuales y rellenar vacíos",
+  "overwriteExisting": "Sobrescribir campos existentes",
+  "presets": {
+    "cinematic": "Realismo cinematográfico",
+    "documentary": "Documental",
+    "commercial": "Comercial / Limpio",
+    "stylized": "Estilizado / Anime",
+    "scifi": "Ciencia ficción / Oscuro"
   }
 }

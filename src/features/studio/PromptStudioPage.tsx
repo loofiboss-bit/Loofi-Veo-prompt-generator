@@ -18,14 +18,18 @@ import type {
 import {
   compileMusicPromptArtifact,
   compileVideoPromptArtifact,
+  expandMusicDetails,
+  expandVideoSceneDetails,
   getLyricSections,
+  normalizeMusicPromptInput,
+  normalizeVideoPromptInput,
+  optimizeFullVideoPack,
   optimizeMusicPromptArtifact,
   optimizeVideoPromptArtifact,
   promptArtifactToProductionState,
   revalidatePromptArtifact,
-  normalizeVideoPromptInput,
-  normalizeMusicPromptInput,
 } from '@core/services/promptStudioService';
+import { StudioAiControlBar } from './components/StudioAiControlBar';
 import {
   isLyricSectionLocked,
   LyricSectionError,
@@ -208,6 +212,13 @@ export function PromptStudioPage() {
   const [section, setSection] = useState('[Chorus]');
   const [direction, setDirection] = useState('');
   const [isArenaOpen, setIsArenaOpen] = useState(false);
+  const [aiModel, setAiModel] = useState<string>('gemini-3.8-flash');
+  const [stylePreset, setStylePreset] = useState<string>('cinematic');
+  const [promptLanguage, setPromptLanguage] = useState<'en' | 'sv'>('en');
+  const [overwriteAll, setOverwriteAll] = useState<boolean>(false);
+  const [sceneDetailsOpen, setSceneDetailsOpen] = useState<boolean>(false);
+  const [musicDetailsOpen, setMusicDetailsOpen] = useState<boolean>(false);
+  const [expanding, setExpanding] = useState<boolean>(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const mounted = useRef(true);
   const operation = useRef(0);
@@ -607,6 +618,84 @@ export function PromptStudioPage() {
     }
     return true;
   };
+
+  const expandScene = () =>
+    void run(async () => {
+      if (!video.idea?.trim()) {
+        setError(t('brief'));
+        return;
+      }
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setBusy(true);
+      setExpanding(true);
+      setError('');
+      try {
+        if (!(await aiReady())) return;
+        const expanded = await expandVideoSceneDetails(video, {
+          model: aiModel,
+          stylePreset,
+          language: promptLanguage,
+          overwriteAll,
+          signal: controller.signal,
+        });
+        if (!mounted.current || operation.current !== token) return;
+        store.applyDraft({ video: expanded });
+        setSceneDetailsOpen(true);
+        setMessage(t('expanded'));
+      } catch (err) {
+        if (!mounted.current || operation.current !== token) return;
+        setError(err instanceof Error ? err.message : t('actionError'));
+      } finally {
+        if (mounted.current && operation.current === token) {
+          setBusy(false);
+          setExpanding(false);
+          activeAbort.current = null;
+        }
+      }
+    });
+
+  const expandMusic = () =>
+    void run(async () => {
+      if (!music.topic?.trim()) {
+        setError(t('topic'));
+        return;
+      }
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setBusy(true);
+      setExpanding(true);
+      setError('');
+      try {
+        if (!(await aiReady())) return;
+        const expanded = await expandMusicDetails(music, {
+          model: aiModel,
+          stylePreset,
+          language: music.language,
+          overwriteAll,
+          signal: controller.signal,
+        });
+        if (!mounted.current || operation.current !== token) return;
+        store.applyDraft({ music: expanded });
+        setMusicDetailsOpen(true);
+        setMessage(t('musicExpanded'));
+      } catch (err) {
+        if (!mounted.current || operation.current !== token) return;
+        setError(err instanceof Error ? err.message : t('actionError'));
+      } finally {
+        if (mounted.current && operation.current === token) {
+          setBusy(false);
+          setExpanding(false);
+          activeAbort.current = null;
+        }
+      }
+    });
   const proposeVariantEdit = (
     direction: string,
     fields: VideoVariantEditField[],
@@ -932,7 +1021,20 @@ export function PromptStudioPage() {
           return;
         let next =
           mode === 'video'
-            ? await optimizeVideoPromptArtifact(video, undefined, controller.signal)
+            ? await optimizeVideoPromptArtifact(
+                video,
+                {
+                  optimizeVideo: async (inp, sig) =>
+                    optimizeFullVideoPack(inp, {
+                      model: aiModel,
+                      stylePreset,
+                      language: promptLanguage,
+                      signal: sig,
+                    }),
+                  optimizeMusic: async () => ({}),
+                },
+                controller.signal,
+              )
             : await optimizeMusicPromptArtifact(music, undefined, controller.signal);
         const latest = usePromptStudioDraftStore.getState().draft;
         if (
@@ -1580,12 +1682,26 @@ export function PromptStudioPage() {
                       : null}
                   </div>
                 ) : null}
+                <StudioAiControlBar
+                  model={aiModel}
+                  onModelChange={setAiModel}
+                  stylePreset={stylePreset}
+                  onStylePresetChange={setStylePreset}
+                  language={promptLanguage}
+                  onLanguageChange={setPromptLanguage}
+                  overwriteAll={overwriteAll}
+                  onOverwriteAllChange={setOverwriteAll}
+                  disabled={busy || changing}
+                />
                 <div className="studio-actions">
                   <button className="studio-primary" disabled={changing} onClick={build}>
                     {t('build')}
                   </button>
+                  <button type="button" disabled={busy || changing} onClick={expandScene}>
+                    {expanding ? t('expandingScene') : t('expandScene')}
+                  </button>
                   <button disabled={busy || changing} onClick={optimize}>
-                    {busy ? t('enhancing') : t('enhanceAll')}
+                    {busy && !expanding ? t('enhancing') : t('enhanceAll')}
                   </button>
                   {busy ? (
                     <button type="button" onClick={cancelAIRequest}>
@@ -1594,7 +1710,11 @@ export function PromptStudioPage() {
                   ) : null}
                 </div>
                 <p className="studio-hint">{t('localFirst')}</p>
-                <details className="studio-details">
+                <details
+                  className="studio-details"
+                  open={sceneDetailsOpen}
+                  onToggle={(e) => setSceneDetailsOpen(e.currentTarget.open)}
+                >
                   <summary>{t('sceneDetails')}</summary>
                   <div className="studio-fields">
                     {VIDEO_FIELDS.map((key) =>
@@ -1658,12 +1778,26 @@ export function PromptStudioPage() {
                     </select>
                   </Field>
                 </div>
+                <StudioAiControlBar
+                  model={aiModel}
+                  onModelChange={setAiModel}
+                  stylePreset={stylePreset}
+                  onStylePresetChange={setStylePreset}
+                  language={promptLanguage}
+                  onLanguageChange={setPromptLanguage}
+                  overwriteAll={overwriteAll}
+                  onOverwriteAllChange={setOverwriteAll}
+                  disabled={busy || changing}
+                />
                 <div className="studio-actions">
                   <button className="studio-primary" disabled={changing} onClick={build}>
                     {t('build')}
                   </button>
+                  <button type="button" disabled={busy || changing} onClick={expandMusic}>
+                    {expanding ? t('expandingMusic') : t('expandMusic')}
+                  </button>
                   <button disabled={busy || changing} onClick={optimize}>
-                    {busy ? t('enhancing') : t('enhanceAll')}
+                    {busy && !expanding ? t('enhancing') : t('enhanceAll')}
                   </button>
                   {busy ? (
                     <button type="button" onClick={cancelAIRequest}>
@@ -1672,7 +1806,11 @@ export function PromptStudioPage() {
                   ) : null}
                 </div>
                 <p className="studio-hint">{t('localFirst')}</p>
-                <details className="studio-details">
+                <details
+                  className="studio-details"
+                  open={musicDetailsOpen}
+                  onToggle={(e) => setMusicDetailsOpen(e.currentTarget.open)}
+                >
                   <summary>{t('musicDetails')}</summary>
                   <div className="studio-fields">
                     {MUSIC_FIELDS.map((key) =>

@@ -477,5 +477,25 @@
     "propose": "Föreslå promptändringar",
     "productionTake": "produktionstagningen",
     "importedResult": "det importerade resultatet"
+  },
+  "expandScene": "Expandera scendetaljer med AI",
+  "expandingScene": "Expanderar detaljer…",
+  "expandMusic": "Expandera musikdetaljer med AI",
+  "expandingMusic": "Expanderar musik…",
+  "expanded": "Scendetaljer har expanderats med AI.",
+  "musicExpanded": "Musikdetaljer och låttext har expanderats med AI.",
+  "aiSettings": "Gemini AI-inställningar",
+  "model": "Modell",
+  "stylePreset": "Filmisk stilprofil",
+  "promptLanguage": "Prompt-språk",
+  "smartMerge": "Smart sammanfogning",
+  "smartMergeHint": "Bevara manuella fält och fyll i tomma",
+  "overwriteExisting": "Skriv över befintliga fält",
+  "presets": {
+    "cinematic": "Filmisk realism",
+    "documentary": "Dokumentär",
+    "commercial": "Kommersiell / Reklam",
+    "stylized": "Stiliserad / Anime",
+    "scifi": "Sci-Fi / Mörk"
   }
 }

@@ -33,6 +33,24 @@ test('recalculates provider token charges at the privileged boundary', () => {
   assert.equal(validateProviderCostApproval(request()), 0.036);
 });
 
+test('tolerates sub-microdollar rounding discrepancies from frontend roundUsd', () => {
+  // inputTokens: 27, outputTokens: 8192 on gemini-3.8-flash produces:
+  // exact: (27 * 1.5)/1e6 + (8192 * 7.5)/1e6 = 0.0000405 + 0.06144 = 0.0614805 USD
+  // frontend roundUsd rounds line items to 6 decimals: 0.000041 + 0.061440 = 0.061481 or 0.061480
+  const input = request({
+    providerModelId: 'gemini-3.8-flash',
+    prompt: 'Short idea prompt',
+  });
+  input.costApproval = {
+    ...input.costApproval,
+    providerModelId: 'gemini-3.8-flash',
+    verifiedDate: '2026-10-28',
+    calculationInputs: { estimatedInputTokens: 27, estimatedOutputTokens: 8192 },
+    maximumChargeUsd: 0.06148, // 0.5 microdollars below 0.0614805 due to rounding
+  };
+  assert.doesNotThrow(() => validateProviderCostApproval(input));
+});
+
 test('requires the refreshed pricing source and conservative ceiling for Argon', () => {
   const input = request({ providerModelId: 'gemini-4-argon' });
   input.costApproval = {

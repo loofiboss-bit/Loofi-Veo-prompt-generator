@@ -40,6 +40,8 @@ const mocks = vi.hoisted(() => ({
   variantEdit: vi.fn(),
   musicVariantEdit: vi.fn(),
   key: vi.fn(),
+  expandScene: vi.fn(),
+  expandMusic: vi.fn(),
 }));
 vi.mock('idb-keyval', () => ({
   createStore: (database: string, table: string) => `${database}:${table}`,
@@ -60,6 +62,8 @@ vi.mock('@core/services/promptStudioService', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@core/services/promptStudioService')>()),
   optimizeVideoPromptArtifact: mocks.optimize,
   optimizeMusicPromptArtifact: mocks.optimizeMusic,
+  expandVideoSceneDetails: mocks.expandScene,
+  expandMusicDetails: mocks.expandMusic,
 }));
 vi.mock('@core/services/apiKeyService', () => ({ hasApiKeyAsync: mocks.key }));
 vi.mock('@core/services/videoVariantEditService', async (importOriginal) => ({
@@ -161,6 +165,19 @@ describe('PromptStudioPage durable copy desk', () => {
     mocks.variantEdit.mockReset();
     mocks.musicVariantEdit.mockReset();
     mocks.key.mockReset().mockResolvedValue(true);
+    mocks.expandScene.mockReset().mockImplementation(async (video: VideoPromptArtifactInput) => ({
+      ...video,
+      subject: 'AI-generated subject',
+      action: 'AI-generated action',
+      environment: 'AI-generated environment',
+      camera: 'AI-generated camera',
+    }));
+    mocks.expandMusic.mockReset().mockImplementation(async (music: MusicPromptArtifactInput) => ({
+      ...music,
+      genre: 'AI-generated genre',
+      mood: 'AI-generated mood',
+      lyrics: '[Chorus]\nAI lyrics',
+    }));
     localStorage.clear();
     await i18n.changeLanguage('en');
     usePromptStudioDraftStore.setState({
@@ -1377,5 +1394,38 @@ describe('PromptStudioPage durable copy desk', () => {
     fireEvent.change(box, { target: { value: 'Unsectioned text' } });
     expect(screen.getByRole('checkbox', { name: 'Lock this section' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Rewrite section' })).toBeDisabled();
+  });
+
+  it('expands scene details with AI and updates the video draft', async () => {
+    const { user } = await openStudio();
+    await user.type(
+      await screen.findByRole('textbox', { name: 'Core idea' }),
+      'A programmer rejected for vibecoding',
+    );
+    const expandBtn = screen.getByRole('button', { name: 'Expand scene details with AI' });
+    await user.click(expandBtn);
+
+    await waitFor(() => {
+      expect(mocks.expandScene).toHaveBeenCalled();
+    });
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe('AI-generated subject');
+    expect(usePromptStudioDraftStore.getState().draft!.video.action).toBe('AI-generated action');
+  });
+
+  it('expands music details with AI and updates the music draft', async () => {
+    const { user } = await openStudio();
+    await user.click(screen.getByRole('button', { name: 'Music & Lyrics' }));
+    await user.type(
+      await screen.findByRole('textbox', { name: 'Song idea / story' }),
+      'Rainy train',
+    );
+    const expandBtn = screen.getByRole('button', { name: 'Expand music details with AI' });
+    await user.click(expandBtn);
+
+    await waitFor(() => {
+      expect(mocks.expandMusic).toHaveBeenCalled();
+    });
+    expect(usePromptStudioDraftStore.getState().draft!.music.genre).toBe('AI-generated genre');
+    expect(usePromptStudioDraftStore.getState().draft!.music.lyrics).toContain('AI lyrics');
   });
 });

@@ -477,5 +477,25 @@
     "propose": "プロンプトの変更を提案",
     "productionTake": "制作テイク",
     "importedResult": "インポート済みの結果"
+  },
+  "expandScene": "AIでシーン詳細を展開",
+  "expandingScene": "詳細を展開中…",
+  "expandMusic": "AIで音楽詳細を展開",
+  "expandingMusic": "音楽を展開中…",
+  "expanded": "AIでシーン詳細を展開しました。",
+  "musicExpanded": "AIで音楽詳細と歌詞を展開しました。",
+  "aiSettings": "Gemini AI設定",
+  "model": "モデル",
+  "stylePreset": "シネマティックスタイルプリセット",
+  "promptLanguage": "プロンプト言語",
+  "smartMerge": "スマートマージ",
+  "smartMergeHint": "入力済みフィールドを保持し空白を補完",
+  "overwriteExisting": "既存のフィールドを上書き",
+  "presets": {
+    "cinematic": "シネマティックリアリズム",
+    "documentary": "ドキュメンタリー",
+    "commercial": "コマーシャル / クリーン",
+    "stylized": "スタイライズド / アニメ",
+    "scifi": "SF / ムーディー"
   }
 }
