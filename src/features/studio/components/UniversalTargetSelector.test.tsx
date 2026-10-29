@@ -8,13 +8,14 @@ describe('UniversalTargetSelector', () => {
 
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Google Flow \/ Veo 3\.1/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Google Veo 3\.1 API/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Gemini Omni 1\.1 Flash/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Kling 1\.5 \/ 2\.0/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Runway Gen-3 \/ Gen-4/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /OpenAI Sora/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Luma Dream Machine Ray-2/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Wan 2.1' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Minimax / Hailuo Video 01' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Google Veo 3\.1 API/i })).toBeInTheDocument();
     expect(screen.getByText('Google DeepMind')).toBeInTheDocument();
   });
 
@@ -36,5 +37,11 @@ describe('UniversalTargetSelector', () => {
     render(<UniversalTargetSelector value="veo-api" onChange={vi.fn()} />);
     expect(screen.getByText('Google DeepMind')).toBeInTheDocument();
     expect(screen.getByText(/Native Veo Directives/i)).toBeInTheDocument();
+  });
+
+  it('displays vendor and syntax details for Gemini Omni 1.1 Flash target', () => {
+    render(<UniversalTargetSelector value="omni-flash" onChange={vi.fn()} />);
+    expect(screen.getByText('Google AI / DeepMind')).toBeInTheDocument();
+    expect(screen.getByText(/Single-Shot Continuity, Native Audio/i)).toBeInTheDocument();
   });
 });

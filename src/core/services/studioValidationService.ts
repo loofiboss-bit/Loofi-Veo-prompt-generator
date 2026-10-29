@@ -26,6 +26,10 @@ export const STUDIO_MODEL_RULE_SOURCES: Record<
   veo: { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-08' },
   'flow-veo': { sourceUrl: 'https://labs.google/flow', verifiedDate: '2026-10-20' },
   'veo-api': { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-08' },
+  'omni-flash': {
+    sourceUrl: 'https://ai.google.dev/gemini-api/docs/omni',
+    verifiedDate: '2026-10-25',
+  },
   kling: { sourceUrl: 'https://docs.klingai.com/', verifiedDate: '2026-10-20' },
   'runway-gen3': {
     sourceUrl: 'https://docs.dev.runwayml.com/guides/models/',

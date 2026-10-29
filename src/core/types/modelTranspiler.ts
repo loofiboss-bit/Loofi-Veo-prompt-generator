@@ -11,6 +11,7 @@ import type { VideoPromptMode } from './promptArtifact';
 export type UniversalVideoTarget =
   | 'flow-veo'
   | 'veo-api'
+  | 'omni-flash'
   | 'kling'
   | 'runway-gen3'
   | 'sora'

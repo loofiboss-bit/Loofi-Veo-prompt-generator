@@ -24,6 +24,7 @@ interface ModelArenaModalProps {
 
 export const ARENA_TARGETS: VideoPromptArtifactInput['target'][] = [
   'flow-veo',
+  'omni-flash',
   'wan-video',
   'kling',
   'runway-gen3',

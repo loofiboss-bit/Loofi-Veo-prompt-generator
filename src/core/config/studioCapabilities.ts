@@ -15,6 +15,7 @@ export interface StudioCapability {
 export const STUDIO_CAPABILITIES: Record<PromptArtifactTarget, StudioCapability> = {
   'flow-veo': { handoff: 'manual', label: 'Google Flow / Veo 3.1' },
   'veo-api': { handoff: 'approved-provider', label: 'Google Veo 3.1 API' },
+  'omni-flash': { handoff: 'manual', label: 'Gemini Omni 1.1 Flash' },
   kling: { handoff: 'manual', label: 'Kling 1.5 / 2.0' },
   'runway-gen3': { handoff: 'manual', label: 'Runway Gen-3 / Gen-4' },
   sora: { handoff: 'manual', label: 'OpenAI Sora' },

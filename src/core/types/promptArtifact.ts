@@ -11,6 +11,7 @@ export type PromptArtifactKind = 'video' | 'music';
 export type PromptArtifactTarget =
   | 'flow-veo'
   | 'veo-api'
+  | 'omni-flash'
   | 'kling'
   | 'runway-gen3'
   | 'sora'

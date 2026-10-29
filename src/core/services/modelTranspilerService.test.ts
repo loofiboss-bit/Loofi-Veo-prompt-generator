@@ -29,12 +29,29 @@ describe('modelTranspilerService', () => {
   it('exposes profiles for all supported target engines', () => {
     expect(TARGET_MODEL_PROFILES['flow-veo']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['veo-api']).toBeDefined();
+    expect(TARGET_MODEL_PROFILES['omni-flash']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['kling']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['runway-gen3']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['sora']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['luma-ray']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['wan-video']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['minimax-hailuo']).toBeDefined();
+  });
+
+  describe('Gemini Omni 1.1 Flash Target', () => {
+    it('generates single-shot continuity directives and audio-aware checklist notes', () => {
+      const result = transpilePrompt(BASE_INPUT, 'omni-flash');
+      expect(result.target).toBe('omni-flash');
+      expect(result.targetDisplayName).toBe('Gemini Omni 1.1 Flash');
+      expect(result.variants).toHaveLength(3);
+
+      const [primary] = result.variants;
+      expect(primary.prompt).toContain('In a single continuous, unbroken shot; no scene cuts');
+      expect(primary.negativePrompt).toContain('scene cuts');
+      expect(primary.negativePrompt).toContain('jump cuts');
+      expect(primary.settingsChecklist.some((s) => s.includes('gemini-omni-1.1-flash'))).toBe(true);
+      expect(primary.settingsChecklist.some((s) => s.includes('SynthID'))).toBe(true);
+    });
   });
 
   describe('Google Veo 3.1 API Target', () => {
