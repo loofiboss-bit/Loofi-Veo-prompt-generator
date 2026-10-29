@@ -9,6 +9,7 @@ import type {
   VideoPromptMode,
 } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
+import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 import type { PromptState, SunoPack, SunoSettings } from '@core/types';
 import {
   generatePromptWithCurrentProvider,
@@ -315,8 +316,9 @@ const buildVideoPrompt = (
 };
 
 const buildVideoChecklist = (input: VideoPromptArtifactInput): string[] => {
+  const targetLabel = STUDIO_CAPABILITIES[input.target]?.label ?? input.target;
   const list = [
-    `Target: ${input.target === 'flow-veo' ? 'Google Flow / Veo' : 'Veo API'}`,
+    `Target: ${targetLabel}`,
     `Mode: ${input.mode}`,
     `Aspect ratio: ${input.aspectRatio}`,
     `Duration: ${input.durationSeconds}s`,

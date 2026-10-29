@@ -18,9 +18,11 @@ import {
   compileVideoPromptArtifact,
 } from '@core/services/promptStudioService';
 import type {
+  MusicPromptArtifactInput,
   MusicPromptVariant,
   PromptArtifactV1,
   StudioFeedbackNavigationState,
+  VideoPromptArtifactInput,
   VideoPromptVariant,
 } from '@core/types';
 import type {

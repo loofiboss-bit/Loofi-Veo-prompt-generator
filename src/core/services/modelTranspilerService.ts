@@ -29,6 +29,15 @@ export const TARGET_MODEL_PROFILES: Record<UniversalVideoTarget, TargetModelProf
     supportedAspectRatios: ['16:9', '9:16'],
     cameraDirectiveStyle: 'natural',
   },
+  'veo-api': {
+    id: 'veo-api',
+    displayName: 'Google Veo 3.1 API',
+    vendor: 'Google DeepMind',
+    syntaxFlavor: 'Native Veo Directives & Fast Synthesis',
+    maxRecommendedDuration: 8,
+    supportedAspectRatios: ['16:9', '9:16'],
+    cameraDirectiveStyle: 'natural',
+  },
   kling: {
     id: 'kling',
     displayName: 'Kling 1.5 / 2.0',
@@ -146,6 +155,7 @@ const formatCameraForTarget = (
         : (userCam ?? 'fluid tracking shot');
       return `${move}, smooth cinematic action cadence and authentic spatial movement`;
     }
+    case 'veo-api':
     case 'flow-veo':
     default: {
       return rig?.promptFragment ?? userCam ?? 'Cinematic natural camera movement';
@@ -161,6 +171,14 @@ const formatNegativePromptForTarget = (
 
   const modelArtifactNegatives: Record<UniversalVideoTarget, string[]> = {
     'flow-veo': [
+      'unintended text',
+      'subtitles',
+      'logos',
+      'watermarks',
+      'extra limbs',
+      'visual glitches',
+    ],
+    'veo-api': [
       'unintended text',
       'subtitles',
       'logos',
@@ -268,6 +286,9 @@ const buildTargetSettingsChecklist = (
     list.push(
       'Focus on organic human action, facial dynamics, and cinematic lighting contrast in Hailuo Video 01.',
     );
+  } else if (target === 'veo-api') {
+    list.push('Fully qualified for internal DeepMind Veo 3.1 generation via Vertex/Gemini API.');
+    list.push('Supports 4s, 6s, and 8s durations at 720p/1080p in 16:9 or 9:16.');
   } else {
     list.push('Keep one primary scene and action for highest visual fidelity in Veo.');
   }

@@ -28,10 +28,29 @@ const BASE_INPUT: UniversalPromptInput = {
 describe('modelTranspilerService', () => {
   it('exposes profiles for all supported target engines', () => {
     expect(TARGET_MODEL_PROFILES['flow-veo']).toBeDefined();
+    expect(TARGET_MODEL_PROFILES['veo-api']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['kling']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['runway-gen3']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['sora']).toBeDefined();
     expect(TARGET_MODEL_PROFILES['luma-ray']).toBeDefined();
+    expect(TARGET_MODEL_PROFILES['wan-video']).toBeDefined();
+    expect(TARGET_MODEL_PROFILES['minimax-hailuo']).toBeDefined();
+  });
+
+  describe('Google Veo 3.1 API Target', () => {
+    it('generates native Veo directives with API checklist notes', () => {
+      const result = transpilePrompt(BASE_INPUT, 'veo-api');
+      expect(result.target).toBe('veo-api');
+      expect(result.targetDisplayName).toBe('Google Veo 3.1 API');
+      expect(result.variants).toHaveLength(3);
+
+      const [primary] = result.variants;
+      expect(primary.prompt).toContain('astronaut in a weather-beaten gold visor helmet');
+      expect(primary.negativePrompt).toContain('unintended text');
+      expect(primary.settingsChecklist.some((s) => s.includes('DeepMind Veo 3.1 generation'))).toBe(
+        true,
+      );
+    });
   });
 
   describe('Google Flow / Veo 3.1 Target', () => {

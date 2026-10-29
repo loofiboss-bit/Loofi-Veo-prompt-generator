@@ -15,7 +15,7 @@ export function UniversalTargetSelector({ value, onChange }: UniversalTargetSele
   const currentTarget = (
     value in TARGET_MODEL_PROFILES ? value : 'flow-veo'
   ) as UniversalVideoTarget;
-  const profile = value === 'veo-api' ? undefined : TARGET_MODEL_PROFILES[currentTarget];
+  const profile = TARGET_MODEL_PROFILES[currentTarget];
 
   return (
     <div className="space-y-1">
