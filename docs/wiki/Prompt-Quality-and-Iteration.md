@@ -30,8 +30,9 @@ requires both frames. Internal extension needs a real provider artifact.
 
 ## Review AI proposals before acceptance
 
-**Enhance with AI** and **Rewrite section** require a configured provider. They show proposed
-differences while leaving the current draft unchanged.
+**Enhance with AI**, scene and music detail expansion, and **Rewrite section** require a configured
+provider. They show proposed differences while leaving the current draft unchanged. Detail expansion
+shows the changed fields; accept the entire proposal to apply it, or reject it to keep the draft.
 
 1. Review all three variants and the affected text.
 2. Choose **Accept changes** to apply the proposal, or **Reject changes** to keep your draft.
@@ -52,7 +53,9 @@ being replaced as another version, so you can return to it.
 
 Only durable storage can report **Saved**. Storage failures block replacement boundaries; keep
 the window open and retry saving. A temporary memory fallback is not a durable checkpoint.
-Brief input edits keep the previous pack visible until you build a replacement.
+Brief input edits keep the previous pack visible until you build a replacement. Studio identifies
+changed brief fields and offers to rebuild. Copying an earlier pack or opening it in Suno requires an
+explicit choice to use the outdated result; internal video generation requires an up-to-date pack.
 
 ## Reuse complete templates
 

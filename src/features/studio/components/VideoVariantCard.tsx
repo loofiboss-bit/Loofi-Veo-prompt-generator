@@ -22,13 +22,28 @@ export function VideoVariantCard({
   const { t } = useTranslation('studio');
   const [open, setOpen] = useState(Boolean(primary));
   const tokenCount = useMemo(() => estimateTokenCount(variant.prompt), [variant.prompt]);
-  const baselineDiff = useMemo(
-    () =>
-      compareBaseline && compareBaseline.prompt !== variant.prompt
-        ? diffService.compareText(compareBaseline.prompt, variant.prompt)
-        : null,
-    [compareBaseline, variant.prompt],
-  );
+  const differences = useMemo(() => {
+    if (!compareBaseline) return [];
+    return [
+      {
+        label: t('promptLabel', { defaultValue: 'Prompt' }),
+        before: compareBaseline.prompt,
+        after: variant.prompt,
+      },
+      {
+        label: t('negativePrompt'),
+        before: compareBaseline.negativePrompt,
+        after: variant.negativePrompt,
+      },
+      {
+        label: t('checklist'),
+        before: compareBaseline.settingsChecklist.join('\n'),
+        after: variant.settingsChecklist.join('\n'),
+      },
+    ]
+      .filter(({ before, after }) => before !== after)
+      .map(({ label, before, after }) => ({ label, diff: diffService.compareText(before, after) }));
+  }, [compareBaseline, variant, t]);
   return (
     <article className="studio-variant">
       <header className="studio-result-heading">
@@ -52,35 +67,42 @@ export function VideoVariantCard({
         <div className="studio-variant-body">
           <textarea
             readOnly={!onEdit}
+            data-studio-field="prompt"
             value={variant.prompt}
             onChange={(e) => onEdit?.({ prompt: e.target.value })}
             aria-label={variant.label + ' prompt'}
             rows={8}
           />
-          {baselineDiff ? (
+          {differences.length ? (
             <details className="studio-details">
               <summary>
                 {t('variantEdit.compareWithPrimary', { defaultValue: 'Compare with Primary' })}
               </summary>
-              <div className="studio-diff">
-                {baselineDiff.changes.map((change, index) => (
-                  <div key={index} className={`studio-diff-${change.type}`}>
-                    {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
-                    {change.type === 'add' || change.type === 'modify'
-                      ? '+ '
-                      : change.type === 'remove'
-                        ? '− '
-                        : '  '}
-                    {change.content}
+              {differences.map(({ label, diff }) => (
+                <div key={label}>
+                  <h4>{label}</h4>
+                  <div className="studio-diff">
+                    {diff.changes.map((change, index) => (
+                      <div key={index} className={`studio-diff-${change.type}`}>
+                        {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
+                        {change.type === 'add' || change.type === 'modify'
+                          ? '+ '
+                          : change.type === 'remove'
+                            ? '− '
+                            : '  '}
+                        {change.content}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </details>
           ) : null}
           <details className="studio-details">
             <summary>{t('negativePrompt')}</summary>
             <textarea
               readOnly={!onEdit}
+              data-studio-field="negativePrompt"
               value={variant.negativePrompt}
               onChange={(e) => onEdit?.({ negativePrompt: e.target.value })}
               aria-label={t('negativePrompt')}
@@ -105,7 +127,9 @@ export function VideoVariantCard({
             <details className="studio-copy-menu">
               <summary>{t('copyOptions')}</summary>
               <button onClick={() => onCopy(variant.copyAll, t('copied'))}>
-                {t('copyHandoff')}
+                {t('copyFullHandoff', {
+                  defaultValue: 'Copy full handoff (prompt, negative prompt and settings)',
+                })}
               </button>
               <button onClick={() => onCopy(variant.copyNegativePrompt, t('copied'))}>
                 {t('copyNegative')}
