@@ -18,14 +18,18 @@ import type {
 import {
   compileMusicPromptArtifact,
   compileVideoPromptArtifact,
+  expandMusicDetails,
+  expandVideoSceneDetails,
   getLyricSections,
+  normalizeMusicPromptInput,
+  normalizeVideoPromptInput,
+  optimizeFullVideoPack,
   optimizeMusicPromptArtifact,
   optimizeVideoPromptArtifact,
   promptArtifactToProductionState,
   revalidatePromptArtifact,
-  normalizeVideoPromptInput,
-  normalizeMusicPromptInput,
 } from '@core/services/promptStudioService';
+import { StudioAiControlBar } from './components/StudioAiControlBar';
 import {
   isLyricSectionLocked,
   LyricSectionError,
@@ -59,7 +63,12 @@ import { promptStudioHandoffService } from '@core/services/promptStudioHandoffSe
 import { sanitizeStudioTemplate } from '@core/services/studioTemplateService';
 import { studioReferenceService } from '@core/services/studioReferenceService';
 import { hasApiKeyAsync } from '@core/services/apiKeyService';
-import { STUDIO_CAPABILITIES, studioGenerationBlocker } from '@core/config/studioCapabilities';
+import {
+  STUDIO_CAPABILITIES,
+  studioGenerationBlocker,
+  studioVideoRequestIssues,
+} from '@core/config/studioCapabilities';
+import { getModel } from '@core/models/catalog';
 import { openAssetLibrary } from '@shared/utils/assetLibraryEvents';
 import { ROUTES } from '@core/config/routes';
 import { assertProtectedPromptTextPreserved } from '@core/services/promptTextSegments';
@@ -195,6 +204,14 @@ export function PromptStudioPage() {
     revision: number;
     token: number;
   } | null>(null);
+  const [expansionProposal, setExpansionProposal] = useState<{
+    mode: 'video' | 'music';
+    before: VideoPromptArtifactInput | MusicPromptArtifactInput;
+    after: VideoPromptArtifactInput | MusicPromptArtifactInput;
+    projectId: string;
+    revision: number;
+  } | null>(null);
+  const [allowedPreviousResult, setAllowedPreviousResult] = useState('');
   const [variantProposal, setVariantProposal] = useState<VideoVariantEditProposal | null>(null);
   const [musicVariantProposal, setMusicVariantProposal] = useState<MusicVariantEditProposal | null>(
     null,
@@ -208,6 +225,13 @@ export function PromptStudioPage() {
   const [section, setSection] = useState('[Chorus]');
   const [direction, setDirection] = useState('');
   const [isArenaOpen, setIsArenaOpen] = useState(false);
+  const [aiModel, setAiModel] = useState<string>('gemini-3.8-flash');
+  const [stylePreset, setStylePreset] = useState<string>('cinematic');
+  const [promptLanguage, setPromptLanguage] = useState<'en' | 'sv'>('en');
+  const [overwriteAll, setOverwriteAll] = useState<boolean>(false);
+  const [sceneDetailsOpen, setSceneDetailsOpen] = useState<boolean>(false);
+  const [musicDetailsOpen, setMusicDetailsOpen] = useState<boolean>(false);
+  const [expanding, setExpanding] = useState<boolean>(false);
   const ideaRef = useRef<HTMLTextAreaElement>(null);
   const mounted = useRef(true);
   const operation = useRef(0);
@@ -240,9 +264,12 @@ export function PromptStudioPage() {
         if (active) setError(cause instanceof Error ? cause.message : t('actionError'));
       });
     setProposal(null);
+    setExpansionProposal(null);
+    setAllowedPreviousResult('');
     setVariantProposal(null);
     setMusicVariantProposal(null);
     setBusy(false);
+    setExpanding(false);
     aiRequest.current = 0;
     setIsArenaOpen(false);
     return () => {
@@ -263,7 +290,9 @@ export function PromptStudioPage() {
     operation.current += 1;
     aiRequest.current = operation.current;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
     setFeedbackSource(structuredClone(source));
@@ -303,6 +332,16 @@ export function PromptStudioPage() {
     )
       setProposal(null);
   }, [proposal, store.draft?.projectId, store.draft?.revision]);
+
+  useEffect(() => {
+    if (
+      expansionProposal &&
+      (expansionProposal.projectId !== store.draft?.projectId ||
+        expansionProposal.revision !== store.draft?.revision ||
+        expansionProposal.mode !== store.draft?.mode)
+    )
+      setExpansionProposal(null);
+  }, [expansionProposal, store.draft?.projectId, store.draft?.revision, store.draft?.mode]);
 
   useEffect(() => {
     if (
@@ -390,12 +429,57 @@ export function PromptStudioPage() {
         })
     : false;
 
+  const currentInput =
+    mode === 'video'
+      ? normalizeVideoPromptInput(video)
+      : { ...normalizeMusicPromptInput(music), lyrics: undefined };
+  const builtInput = currentArtifact
+    ? mode === 'video'
+      ? normalizeVideoPromptInput(currentArtifact.input as VideoPromptArtifactInput)
+      : {
+          ...normalizeMusicPromptInput(currentArtifact.input as MusicPromptArtifactInput),
+          lyrics: undefined,
+        }
+    : null;
+  const changedFields = builtInput
+    ? Object.keys(currentInput).filter(
+        (key) =>
+          JSON.stringify((currentInput as unknown as Record<string, unknown>)[key]) !==
+          JSON.stringify((builtInput as unknown as Record<string, unknown>)[key]),
+      )
+    : [];
+  const fieldLabel = (key: string) => {
+    const aliases: Record<string, string> = {
+      mode: 'recipe',
+      durationSeconds: 'length',
+      firstFrameAssetId: 'startFrame',
+      lastFrameAssetId: 'endFrame',
+      referenceAssetIds: 'references',
+      extensionSourceTakeId: 'previousClip',
+      extensionArtifact: 'previousClip',
+      spatialCamera: 'camera',
+      rightsChecklist: 'inputLabels.rights',
+    };
+    const label = aliases[key];
+    return label
+      ? t(label)
+      : t(`inputLabels.${key}`, { defaultValue: t(key, { defaultValue: key }) });
+  };
+  const previousResultKey = staleArtifact
+    ? JSON.stringify([projectId, mode, currentArtifact, currentInput])
+    : '';
+  const previousResultAllowed = staleArtifact && allowedPreviousResult === previousResultKey;
+  const veoDurations = getModel('veo-3.1-fast')?.capabilities.supportedDurationsSeconds ?? [
+    4, 6, 8,
+  ];
+
   const revealResult = () => {
     focusResultRequested.current = !splitLayout;
     setActiveView('result');
   };
 
   const updateVideo = (changes: Partial<VideoPromptArtifactInput>) => {
+    setAllowedPreviousResult('');
     store.applyDraft({
       video: { ...usePromptStudioDraftStore.getState().draft!.video, ...changes },
     });
@@ -405,11 +489,14 @@ export function PromptStudioPage() {
     activeAbort.current?.abort();
     activeAbort.current = null;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
   };
   const updateMusic = (changes: Partial<MusicPromptArtifactInput>) => {
+    setAllowedPreviousResult('');
     store.applyDraft({
       music: { ...usePromptStudioDraftStore.getState().draft!.music, ...changes },
     });
@@ -419,7 +506,9 @@ export function PromptStudioPage() {
     activeAbort.current?.abort();
     activeAbort.current = null;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
   };
@@ -472,7 +561,9 @@ export function PromptStudioPage() {
     operation.current += 1;
     aiRequest.current = operation.current;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
     setMessage(t('variantEdit.cancelled', { defaultValue: 'AI request cancelled.' }));
@@ -484,7 +575,9 @@ export function PromptStudioPage() {
     operation.current += 1;
     aiRequest.current = operation.current;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
     if (controller)
@@ -500,7 +593,9 @@ export function PromptStudioPage() {
     activeAbort.current?.abort();
     activeAbort.current = null;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
     try {
@@ -607,6 +702,106 @@ export function PromptStudioPage() {
     }
     return true;
   };
+
+  const expandScene = () =>
+    void run(async () => {
+      if (!video.idea?.trim()) {
+        setError(t('brief'));
+        return;
+      }
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setBusy(true);
+      setExpanding(true);
+      setError('');
+      try {
+        if (!(await aiReady())) return;
+        const expanded = await expandVideoSceneDetails(video, {
+          model: aiModel,
+          stylePreset,
+          language: promptLanguage,
+          overwriteAll,
+          signal: controller.signal,
+        });
+        if (
+          !mounted.current ||
+          operation.current !== token ||
+          usePromptStudioDraftStore.getState().draft?.projectId !== projectId ||
+          (useProjectStore.getState().currentProjectId ?? 'default') !== projectId ||
+          usePromptStudioDraftStore.getState().draft?.revision !== draft.revision
+        )
+          return;
+        setExpansionProposal({
+          mode: 'video',
+          before: video,
+          after: expanded,
+          projectId,
+          revision: draft.revision,
+        });
+      } catch (err) {
+        if (!mounted.current || operation.current !== token) return;
+        setError(err instanceof Error ? err.message : t('actionError'));
+      } finally {
+        if (mounted.current && operation.current === token) {
+          setBusy(false);
+          setExpanding(false);
+          activeAbort.current = null;
+        }
+      }
+    });
+
+  const expandMusic = () =>
+    void run(async () => {
+      if (!music.topic?.trim()) {
+        setError(t('topic'));
+        return;
+      }
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setBusy(true);
+      setExpanding(true);
+      setError('');
+      try {
+        if (!(await aiReady())) return;
+        const expanded = await expandMusicDetails(music, {
+          model: aiModel,
+          stylePreset,
+          language: music.language,
+          overwriteAll,
+          signal: controller.signal,
+        });
+        if (
+          !mounted.current ||
+          operation.current !== token ||
+          usePromptStudioDraftStore.getState().draft?.projectId !== projectId ||
+          (useProjectStore.getState().currentProjectId ?? 'default') !== projectId ||
+          usePromptStudioDraftStore.getState().draft?.revision !== draft.revision
+        )
+          return;
+        setExpansionProposal({
+          mode: 'music',
+          before: music,
+          after: expanded,
+          projectId,
+          revision: draft.revision,
+        });
+      } catch (err) {
+        if (!mounted.current || operation.current !== token) return;
+        setError(err instanceof Error ? err.message : t('actionError'));
+      } finally {
+        if (mounted.current && operation.current === token) {
+          setBusy(false);
+          setExpanding(false);
+          activeAbort.current = null;
+        }
+      }
+    });
   const proposeVariantEdit = (
     direction: string,
     fields: VideoVariantEditField[],
@@ -932,7 +1127,20 @@ export function PromptStudioPage() {
           return;
         let next =
           mode === 'video'
-            ? await optimizeVideoPromptArtifact(video, undefined, controller.signal)
+            ? await optimizeVideoPromptArtifact(
+                video,
+                {
+                  optimizeVideo: async (inp, sig) =>
+                    optimizeFullVideoPack(inp, {
+                      model: aiModel,
+                      stylePreset,
+                      language: promptLanguage,
+                      signal: sig,
+                    }),
+                  optimizeMusic: async () => ({}),
+                },
+                controller.signal,
+              )
             : await optimizeMusicPromptArtifact(music, undefined, controller.signal);
         const latest = usePromptStudioDraftStore.getState().draft;
         if (
@@ -1041,12 +1249,15 @@ export function PromptStudioPage() {
     if (action.variantIndex !== undefined) store.setSelectedVariant(action.variantIndex);
     requestAnimationFrame(() => {
       const workspace = document.querySelector<HTMLElement>('.studio-workspace');
+      const resultField = ['lyrics', 'styleOfMusic', 'negativePrompt'].includes(action.field)
+        ? action.field
+        : 'prompt';
       const field =
-        action.field === 'variant' || action.variantIndex !== undefined
+        action.field === 'variant' ||
+        action.field === 'styleOfMusic' ||
+        action.variantIndex !== undefined
           ? workspace?.querySelector<HTMLElement>(
-              action.field === 'lyrics'
-                ? '[data-studio-variant] textarea[data-studio-field="lyrics"]'
-                : '[data-studio-variant] textarea',
+              `[data-studio-variant] textarea[data-studio-field="${resultField}"]`,
             )
           : workspace?.querySelector<HTMLElement>(
               `[data-studio-field="${action.field === 'extensionArtifact' || action.field === 'extensionSourceTakeId' ? 'mode' : action.field}"]`,
@@ -1063,6 +1274,12 @@ export function PromptStudioPage() {
   };
   const copy = (value: string, label: string) =>
     void run(async () => {
+      if (staleArtifact && !previousResultAllowed)
+        throw new Error(
+          t('previousResultRequired', {
+            defaultValue: 'Choose Use previous result before copying an outdated result.',
+          }),
+        );
       if (!value.trim()) throw new Error(t('emptyCopy'));
       await navigator.clipboard.writeText(value);
       setMessage(label);
@@ -1082,7 +1299,9 @@ export function PromptStudioPage() {
     operation.current += 1;
     aiRequest.current = operation.current;
     setBusy(false);
+    setExpanding(false);
     setProposal(null);
+    setExpansionProposal(null);
     setVariantProposal(null);
     setMusicVariantProposal(null);
   };
@@ -1138,6 +1357,12 @@ export function PromptStudioPage() {
   const openSuno = () =>
     void run(async () => {
       if (!currentArtifact || currentArtifact.kind !== 'music') return;
+      if (staleArtifact && !previousResultAllowed)
+        throw new Error(
+          t('previousResultRequired', {
+            defaultValue: 'Choose Use previous result before copying an outdated result.',
+          }),
+        );
       const selected = [currentArtifact.primary, ...currentArtifact.alternatives][
         selectedVariant
       ] as MusicPromptVariant;
@@ -1222,6 +1447,8 @@ export function PromptStudioPage() {
         ? t('motionDescription', 'Describe the motion')
         : t('idea');
   const generationBlocker = mode === 'video' ? studioGenerationBlocker(video) : null;
+  const videoIssues =
+    mode === 'video' && video.target === 'veo-api' ? studioVideoRequestIssues(video) : [];
   const textField = (key: string, value: string, onChange: (value: string) => void) => (
     <Field key={key} label={t(key)}>
       <input
@@ -1512,13 +1739,29 @@ export function PromptStudioPage() {
                       }
                     >
                       {[4, 6, 8, 10].map((n) => (
-                        <option value={n} key={n}>
+                        <option
+                          value={n}
+                          key={n}
+                          disabled={video.target === 'veo-api' && !veoDurations.includes(n)}
+                        >
                           {t('seconds', { count: n })}
                         </option>
                       ))}
                     </select>
                   </Field>
                 </div>
+                {video.target === 'veo-api' ? (
+                  <p className="studio-hint">
+                    {t('veoDurationHint', { defaultValue: 'Veo API supports 4, 6 or 8 seconds.' })}
+                  </p>
+                ) : null}
+                {videoIssues.length ? (
+                  <ul className="studio-notice">
+                    {videoIssues.map((issue, index) => (
+                      <li key={`${issue.code}-${index}`}>{issue.message}</li>
+                    ))}
+                  </ul>
+                ) : null}
                 <p className="studio-hint">
                   {STUDIO_CAPABILITIES[video.target].handoff === 'manual'
                     ? t('manualHandoff')
@@ -1580,12 +1823,29 @@ export function PromptStudioPage() {
                       : null}
                   </div>
                 ) : null}
+                <details className="studio-details">
+                  <summary>{t('aiSettings')}</summary>
+                  <StudioAiControlBar
+                    model={aiModel}
+                    onModelChange={setAiModel}
+                    stylePreset={stylePreset}
+                    onStylePresetChange={setStylePreset}
+                    language={promptLanguage}
+                    onLanguageChange={setPromptLanguage}
+                    overwriteAll={overwriteAll}
+                    onOverwriteAllChange={setOverwriteAll}
+                    disabled={busy || changing}
+                  />
+                </details>
                 <div className="studio-actions">
                   <button className="studio-primary" disabled={changing} onClick={build}>
                     {t('build')}
                   </button>
+                  <button type="button" disabled={busy || changing} onClick={expandScene}>
+                    {expanding ? t('expandingScene') : t('expandScene')}
+                  </button>
                   <button disabled={busy || changing} onClick={optimize}>
-                    {busy ? t('enhancing') : t('enhanceAll')}
+                    {busy && !expanding ? t('enhancing') : t('enhanceAll')}
                   </button>
                   {busy ? (
                     <button type="button" onClick={cancelAIRequest}>
@@ -1594,7 +1854,11 @@ export function PromptStudioPage() {
                   ) : null}
                 </div>
                 <p className="studio-hint">{t('localFirst')}</p>
-                <details className="studio-details">
+                <details
+                  className="studio-details"
+                  open={sceneDetailsOpen}
+                  onToggle={(e) => setSceneDetailsOpen(e.currentTarget.open)}
+                >
                   <summary>{t('sceneDetails')}</summary>
                   <div className="studio-fields">
                     {VIDEO_FIELDS.map((key) =>
@@ -1658,12 +1922,29 @@ export function PromptStudioPage() {
                     </select>
                   </Field>
                 </div>
+                <details className="studio-details">
+                  <summary>{t('aiSettings')}</summary>
+                  <StudioAiControlBar
+                    model={aiModel}
+                    onModelChange={setAiModel}
+                    stylePreset={stylePreset}
+                    onStylePresetChange={setStylePreset}
+                    language={promptLanguage}
+                    onLanguageChange={setPromptLanguage}
+                    overwriteAll={overwriteAll}
+                    onOverwriteAllChange={setOverwriteAll}
+                    disabled={busy || changing}
+                  />
+                </details>
                 <div className="studio-actions">
                   <button className="studio-primary" disabled={changing} onClick={build}>
                     {t('build')}
                   </button>
+                  <button type="button" disabled={busy || changing} onClick={expandMusic}>
+                    {expanding ? t('expandingMusic') : t('expandMusic')}
+                  </button>
                   <button disabled={busy || changing} onClick={optimize}>
-                    {busy ? t('enhancing') : t('enhanceAll')}
+                    {busy && !expanding ? t('enhancing') : t('enhanceAll')}
                   </button>
                   {busy ? (
                     <button type="button" onClick={cancelAIRequest}>
@@ -1672,7 +1953,11 @@ export function PromptStudioPage() {
                   ) : null}
                 </div>
                 <p className="studio-hint">{t('localFirst')}</p>
-                <details className="studio-details">
+                <details
+                  className="studio-details"
+                  open={musicDetailsOpen}
+                  onToggle={(e) => setMusicDetailsOpen(e.currentTarget.open)}
+                >
                   <summary>{t('musicDetails')}</summary>
                   <div className="studio-fields">
                     {MUSIC_FIELDS.map((key) =>
@@ -1741,6 +2026,84 @@ export function PromptStudioPage() {
                 </details>
               </>
             )}
+            {expansionProposal ? (
+              <section
+                className="studio-proposal"
+                aria-label={t('expansionReview', { defaultValue: 'Review expanded details' })}
+              >
+                <h2>{t('expansionReview', { defaultValue: 'Review expanded details' })}</h2>
+                {Object.keys(expansionProposal.after)
+                  .filter(
+                    (key) =>
+                      JSON.stringify(
+                        (expansionProposal.before as unknown as Record<string, unknown>)[key],
+                      ) !==
+                      JSON.stringify(
+                        (expansionProposal.after as unknown as Record<string, unknown>)[key],
+                      ),
+                  )
+                  .map((key) => (
+                    <div key={key}>
+                      <h3>
+                        {t(`inputLabels.${key}`, { defaultValue: t(key, { defaultValue: key }) })}
+                      </h3>
+                      <p>
+                        {t('expansionBefore', { defaultValue: 'Before' })}:{' '}
+                        {String(
+                          (expansionProposal.before as unknown as Record<string, unknown>)[key] ??
+                            '',
+                        )}
+                      </p>
+                      <p>
+                        {t('expansionAfter', { defaultValue: 'Proposed' })}:{' '}
+                        {String(
+                          (expansionProposal.after as unknown as Record<string, unknown>)[key] ??
+                            '',
+                        )}
+                      </p>
+                    </div>
+                  ))}
+                <button
+                  type="button"
+                  disabled={changing}
+                  onClick={() => {
+                    const proposed = expansionProposal;
+                    void run(() =>
+                      change(async () => {
+                        if (
+                          usePromptStudioDraftStore.getState().draft?.revision !==
+                            proposed.revision ||
+                          usePromptStudioDraftStore.getState().draft?.projectId !==
+                            proposed.projectId
+                        )
+                          throw new Error(t('revision.stale'));
+                        await checkpoint('ai-expansion');
+                        store.applyDraft(
+                          proposed.mode === 'video'
+                            ? { video: proposed.after as VideoPromptArtifactInput }
+                            : { music: proposed.after as MusicPromptArtifactInput },
+                        );
+                        if (!(await store.flush(projectId))) throw new Error(t('saveError'));
+                        if (proposed.mode === 'video') setSceneDetailsOpen(true);
+                        else setMusicDetailsOpen(true);
+                        setMessage(
+                          t('expansionAccepted', { defaultValue: 'Expanded details applied.' }),
+                        );
+                      }),
+                    );
+                  }}
+                >
+                  {t('expansionAccept', { defaultValue: 'Accept expanded details' })}
+                </button>
+                <button
+                  type="button"
+                  disabled={changing}
+                  onClick={() => setExpansionProposal(null)}
+                >
+                  {t('expansionReject', { defaultValue: 'Reject expanded details' })}
+                </button>
+              </section>
+            ) : null}
             <details className="studio-details studio-library">
               <summary>{t('templatesHistory')}</summary>
               <div className="studio-library-tabs" role="group" aria-label={t('templatesHistory')}>
@@ -1875,7 +2238,35 @@ export function PromptStudioPage() {
             </div>
           ) : (
             <fieldset disabled={changing} className="studio-output-content">
-              {staleArtifact ? <p className="studio-notice">{t('revision.outdated')}</p> : null}
+              {staleArtifact ? (
+                <div className="studio-notice" role="status">
+                  <p>{t('revision.outdated')}</p>
+                  <p>
+                    {t('changedFields', { defaultValue: 'Changed fields' })}:{' '}
+                    {[...new Set(changedFields.map(fieldLabel))].join(', ')}
+                  </p>
+                  <button type="button" disabled={changing} onClick={build}>
+                    {t('rebuildResult', { defaultValue: 'Rebuild result' })}
+                  </button>
+                  {!previousResultAllowed ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAllowedPreviousResult(previousResultKey);
+                        setError('');
+                      }}
+                    >
+                      {t('usePreviousResult', { defaultValue: 'Use previous result' })}
+                    </button>
+                  ) : (
+                    <p>
+                      {t('usingPreviousResult', {
+                        defaultValue: 'You are using the previous result.',
+                      })}
+                    </p>
+                  )}
+                </div>
+              ) : null}
               <div className="studio-result-heading">
                 <h2>{STUDIO_CAPABILITIES[currentArtifact.target].label + ' ' + t('handoff')}</h2>
                 <span>

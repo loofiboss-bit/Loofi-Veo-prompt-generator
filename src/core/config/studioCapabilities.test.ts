@@ -18,6 +18,7 @@ const input: VideoPromptArtifactInput = {
 describe('Studio execution capabilities', () => {
   it.each([
     'flow-veo',
+    'omni-flash',
     'kling',
     'runway-gen3',
     'sora',

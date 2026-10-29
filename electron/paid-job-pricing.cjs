@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { createPaidSubmission, computePaidSubmissionHash } = require('./paid-job-submission.cjs');
 const PRICING_SOURCE_URL = 'https://ai.google.dev/gemini-api/docs/pricing';
 const PRICING_VERIFIED_DATE = '2026-08-01';
+const MICRODOLLAR_TOLERANCE = 1e-6;
 const PROVIDER_PRICING_VERIFIED_DATES = Object.freeze({
   'gemini-3.8-flash': '2026-10-28',
   'gemini-4-argon': '2026-10-28',
@@ -152,7 +153,7 @@ function validateCostApproval(task, options = {}) {
   if (
     !Number.isFinite(approval.maximumChargeUsd) ||
     approval.maximumChargeUsd <= 0 ||
-    approval.maximumChargeUsd + Number.EPSILON < calculatedMaximumChargeUsd
+    approval.maximumChargeUsd + MICRODOLLAR_TOLERANCE < calculatedMaximumChargeUsd
   ) {
     throw new Error('The approved maximum charge is below the trusted conservative estimate.');
   }
@@ -261,7 +262,7 @@ function validateProviderCostApproval(input, options = {}) {
   if (
     !Number.isFinite(approval.maximumChargeUsd) ||
     approval.maximumChargeUsd <= 0 ||
-    approval.maximumChargeUsd + Number.EPSILON < calculatedMaximumChargeUsd
+    approval.maximumChargeUsd + MICRODOLLAR_TOLERANCE < calculatedMaximumChargeUsd
   ) {
     throw new Error('The approved provider maximum is below the trusted conservative estimate.');
   }

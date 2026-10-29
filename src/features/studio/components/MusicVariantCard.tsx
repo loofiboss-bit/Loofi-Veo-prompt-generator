@@ -25,13 +25,20 @@ export function MusicVariantCard({
     () => (variant.lyrics.match(/\[[^\]]+\]/g) ?? []).length,
     [variant.lyrics],
   );
-  const lyricsDiff = useMemo(
-    () =>
-      compareBaseline && compareBaseline.lyrics !== variant.lyrics
-        ? diffService.compareText(compareBaseline.lyrics, variant.lyrics)
-        : null,
-    [compareBaseline, variant.lyrics],
-  );
+  const differences = useMemo(() => {
+    if (!compareBaseline) return [];
+    return [
+      { label: t('musicStyle'), before: compareBaseline.styleOfMusic, after: variant.styleOfMusic },
+      { label: t('lyrics'), before: compareBaseline.lyrics, after: variant.lyrics },
+      {
+        label: t('advancedNotes'),
+        before: compareBaseline.productionNotes.join('\n'),
+        after: variant.productionNotes.join('\n'),
+      },
+    ]
+      .filter(({ before, after }) => before !== after)
+      .map(({ label, before, after }) => ({ label, diff: diffService.compareText(before, after) }));
+  }, [compareBaseline, variant, t]);
   return (
     <article className="studio-variant">
       <header className="studio-result-heading">
@@ -86,24 +93,29 @@ export function MusicVariantCard({
               rows={12}
             />
           </label>
-          {lyricsDiff ? (
+          {differences.length ? (
             <details className="studio-details">
               <summary>
                 {t('variantEdit.compareWithPrimary', { defaultValue: 'Compare with Primary' })}
               </summary>
-              <div className="studio-diff">
-                {lyricsDiff.changes.map((change, index) => (
-                  <div key={index} className={`studio-diff-${change.type}`}>
-                    {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
-                    {change.type === 'add' || change.type === 'modify'
-                      ? '+ '
-                      : change.type === 'remove'
-                        ? '− '
-                        : '  '}
-                    {change.content}
+              {differences.map(({ label, diff }) => (
+                <div key={label}>
+                  <h4>{label}</h4>
+                  <div className="studio-diff">
+                    {diff.changes.map((change, index) => (
+                      <div key={index} className={`studio-diff-${change.type}`}>
+                        {change.type === 'modify' ? <div>− {change.originalContent}</div> : null}
+                        {change.type === 'add' || change.type === 'modify'
+                          ? '+ '
+                          : change.type === 'remove'
+                            ? '− '
+                            : '  '}
+                        {change.content}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </details>
           ) : null}
           <details className="studio-details">
@@ -126,7 +138,9 @@ export function MusicVariantCard({
             </button>
             <details className="studio-copy-menu">
               <summary>{t('copyOptions')}</summary>
-              <button onClick={() => onCopy(variant.copyAll, t('copied'))}>{t('copyAll')}</button>
+              <button onClick={() => onCopy(variant.copyAll, t('copied'))}>
+                {t('copyFullMusic', { defaultValue: 'Copy full pack (style, lyrics and notes)' })}
+              </button>
             </details>
           </div>
         </div>

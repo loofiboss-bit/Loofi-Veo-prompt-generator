@@ -192,6 +192,40 @@ describe('promptStudioService', () => {
     expect(validatePromptArtifact(artifact)).toEqual([]);
   });
 
+  it('updates all 3 variants when an optimizer returns a 3-variant cinematic pack', async () => {
+    const artifact = await optimizeVideoPromptArtifact(
+      {
+        idea: 'A programmer gets rejected for vibecoding',
+        mode: 'text-to-video',
+        target: 'flow-veo',
+        aspectRatio: '16:9',
+        durationSeconds: 8,
+      },
+      {
+        optimizeVideo: async () => ({
+          primary: 'Primary prompt with 5-pillar structure.',
+          cinematic: 'Cinematic texture with 35mm lens and soft lighting.',
+          controlFocused: 'Locked dolly movement on slider, continuous 8s action.',
+          negativePrompt: 'morphing, jitter, blurry',
+        }),
+        optimizeMusic: async () => ({}),
+      },
+    );
+    expect((artifact.primary as VideoPromptVariant).prompt).toBe(
+      'Primary prompt with 5-pillar structure.',
+    );
+    expect((artifact.alternatives[0] as VideoPromptVariant).prompt).toBe(
+      'Cinematic texture with 35mm lens and soft lighting.',
+    );
+    expect((artifact.alternatives[1] as VideoPromptVariant).prompt).toBe(
+      'Locked dolly movement on slider, continuous 8s action.',
+    );
+    expect((artifact.primary as VideoPromptVariant).negativePrompt).toBe(
+      'morphing, jitter, blurry',
+    );
+    expect(validatePromptArtifact(artifact)).toEqual([]);
+  });
+
   it('rejects full-package video optimization that changes supplied dialogue', async () => {
     await expect(
       optimizeVideoPromptArtifact(

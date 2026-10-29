@@ -36,7 +36,7 @@ test.describe('Copy-ready creator workflow', () => {
       );
       await page.getByText('Copy options', { exact: true }).click();
       await expect(
-        page.getByRole('button', { name: 'Copy handoff', exact: true }).first(),
+        page.getByRole('button', { name: /Copy full (?:package|handoff)/i }).first(),
       ).toBeVisible();
     });
   }

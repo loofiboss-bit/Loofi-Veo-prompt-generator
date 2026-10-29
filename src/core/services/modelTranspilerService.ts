@@ -29,6 +29,24 @@ export const TARGET_MODEL_PROFILES: Record<UniversalVideoTarget, TargetModelProf
     supportedAspectRatios: ['16:9', '9:16'],
     cameraDirectiveStyle: 'natural',
   },
+  'veo-api': {
+    id: 'veo-api',
+    displayName: 'Google Veo 3.1 API',
+    vendor: 'Google DeepMind',
+    syntaxFlavor: 'Native Veo Directives & Fast Synthesis',
+    maxRecommendedDuration: 8,
+    supportedAspectRatios: ['16:9', '9:16'],
+    cameraDirectiveStyle: 'natural',
+  },
+  'omni-flash': {
+    id: 'omni-flash',
+    displayName: 'Gemini Omni 1.1 Flash',
+    vendor: 'Google AI / DeepMind',
+    syntaxFlavor: 'Single-Shot Continuity, Native Audio & SynthID',
+    maxRecommendedDuration: 10,
+    supportedAspectRatios: ['16:9', '9:16'],
+    cameraDirectiveStyle: 'natural',
+  },
   kling: {
     id: 'kling',
     displayName: 'Kling 1.5 / 2.0',
@@ -146,6 +164,11 @@ const formatCameraForTarget = (
         : (userCam ?? 'fluid tracking shot');
       return `${move}, smooth cinematic action cadence and authentic spatial movement`;
     }
+    case 'omni-flash': {
+      const rigDesc = rig?.promptFragment ?? userCam ?? 'smooth dynamic tracking';
+      return `In a single continuous, unbroken shot; no scene cuts; ${rigDesc}`;
+    }
+    case 'veo-api':
     case 'flow-veo':
     default: {
       return rig?.promptFragment ?? userCam ?? 'Cinematic natural camera movement';
@@ -166,6 +189,22 @@ const formatNegativePromptForTarget = (
       'logos',
       'watermarks',
       'extra limbs',
+      'visual glitches',
+    ],
+    'veo-api': [
+      'unintended text',
+      'subtitles',
+      'logos',
+      'watermarks',
+      'extra limbs',
+      'visual glitches',
+    ],
+    'omni-flash': [
+      'scene cuts',
+      'jump cuts',
+      'unwanted dialogue',
+      'audio distortion',
+      'extra audio embellishments',
       'visual glitches',
     ],
     kling: [
@@ -267,6 +306,22 @@ const buildTargetSettingsChecklist = (
   } else if (target === 'minimax-hailuo') {
     list.push(
       'Focus on organic human action, facial dynamics, and cinematic lighting contrast in Hailuo Video 01.',
+    );
+  } else if (target === 'veo-api') {
+    list.push('Fully qualified for internal DeepMind Veo 3.1 generation via Vertex/Gemini API.');
+    list.push('Supports 4s, 6s, and 8s durations at 720p/1080p in 16:9 or 9:16.');
+  } else if (target === 'omni-flash') {
+    list.push(
+      'Target engine: Gemini Omni 1.1 Flash (gemini-omni-1.1-flash) via Google GenAI Interactions API.',
+    );
+    list.push(
+      'Natively generates matching synchronized environmental audio and Foley with SynthID watermarking.',
+    );
+    list.push(
+      'Enforces single-shot continuity to prevent unsolicited multi-shot cuts: "In a single continuous, unbroken shot; no scene cuts."',
+    );
+    list.push(
+      'Supports text-to-video, first-frame interpolation, and turn-by-turn video extension up to 40s.',
     );
   } else {
     list.push('Keep one primary scene and action for highest visual fidelity in Veo.');

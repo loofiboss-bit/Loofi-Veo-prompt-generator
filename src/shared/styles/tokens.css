@@ -809,6 +809,58 @@
 .studio-notice button {
   margin-inline-start: 12px;
 }
+.studio-ai-bar {
+  margin-block: 10px;
+  padding: 10px 14px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md, 8px);
+}
+.studio-ai-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.studio-ai-bar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.studio-ai-bar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.studio-ai-bar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.studio-ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 140px;
+}
+.studio-ai-field label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.studio-ai-field select {
+  font-size: 12px;
+  padding: 5px 8px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--color-text-primary);
+}
 .studio-check {
   display: flex;
   align-items: center;

@@ -18,11 +18,33 @@ const CINEMATIC_LABELS: Record<string, string> = {
   'temporal-conflict': 'Pacing direction',
 };
 
-/** Only the concrete internal API model is qualified; broad manual target labels are not versions. */
-export const STUDIO_MODEL_RULE_SOURCES = {
+/** Qualified provider and documented manual target specifications. */
+export const STUDIO_MODEL_RULE_SOURCES: Record<
+  string,
+  { sourceUrl: string; verifiedDate: string }
+> = {
   veo: { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-08' },
-  runway: { sourceUrl: 'https://docs.dev.runwayml.com/guides/models/', verifiedDate: '2026-10-08' },
-} as const;
+  'flow-veo': { sourceUrl: 'https://labs.google/flow', verifiedDate: '2026-10-20' },
+  'veo-api': { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-08' },
+  'omni-flash': {
+    sourceUrl: 'https://ai.google.dev/gemini-api/docs/omni',
+    verifiedDate: '2026-10-25',
+  },
+  kling: { sourceUrl: 'https://docs.klingai.com/', verifiedDate: '2026-10-20' },
+  'runway-gen3': {
+    sourceUrl: 'https://docs.dev.runwayml.com/guides/models/',
+    verifiedDate: '2026-10-08',
+  },
+  runway: {
+    sourceUrl: 'https://docs.dev.runwayml.com/guides/models/',
+    verifiedDate: '2026-10-08',
+  },
+  sora: { sourceUrl: 'https://openai.com/sora', verifiedDate: '2026-10-20' },
+  'luma-ray': { sourceUrl: 'https://lumalabs.ai/dream-machine', verifiedDate: '2026-10-20' },
+  'wan-video': { sourceUrl: 'https://github.com/Wan-Video/Wan2.1', verifiedDate: '2026-10-20' },
+  'minimax-hailuo': { sourceUrl: 'https://hailuoai.video/', verifiedDate: '2026-10-20' },
+  suno: { sourceUrl: 'https://suno.com/', verifiedDate: '2026-10-20' },
+};
 
 export function validateStudioVideo(
   input: VideoPromptArtifactInput,
@@ -50,11 +72,7 @@ export function validateStudioVideo(
         : 'Compatibility is unconfirmed. Select a concrete model version and verify its modes, duration and references in the destination.',
       evidence: api ? 'documented' : 'unknown',
       action: { field: 'target' },
-      ...(api
-        ? STUDIO_MODEL_RULE_SOURCES.veo
-        : input.target === 'runway-gen3'
-          ? STUDIO_MODEL_RULE_SOURCES.runway
-          : {}),
+      ...(api ? STUDIO_MODEL_RULE_SOURCES.veo : (STUDIO_MODEL_RULE_SOURCES[input.target] ?? {})),
     },
   ];
   for (const issue of issues) {

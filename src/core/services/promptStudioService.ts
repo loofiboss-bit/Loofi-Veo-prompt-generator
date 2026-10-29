@@ -9,6 +9,7 @@ import type {
   VideoPromptMode,
 } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
+import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 import type { PromptState, SunoPack, SunoSettings } from '@core/types';
 import {
   generatePromptWithCurrentProvider,
@@ -22,6 +23,13 @@ import { validateStudioVideo, validateStudioMusic } from './studioValidationServ
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { DEFAULT_PROMPT_MODEL } from './gemini/aiClient';
 import { assertProtectedPromptTextPreserved } from './promptTextSegments';
+import {
+  expandVideoSceneDetails,
+  expandMusicDetails,
+  optimizeFullVideoPack,
+} from './geminiSceneExpansionService';
+
+export { expandVideoSceneDetails, expandMusicDetails, optimizeFullVideoPack };
 
 import {
   isLyricSectionLocked,
@@ -206,7 +214,11 @@ const parseStructuredJson = <T>(value: unknown, label: string): T => {
 
 const defaultOptimizer: PromptArtifactOptimizer = {
   async optimizeVideo(input, signal) {
-    return generatePromptWithCurrentProvider(toVideoPromptState(input), undefined, signal);
+    try {
+      return await optimizeFullVideoPack(input, { signal });
+    } catch {
+      return generatePromptWithCurrentProvider(toVideoPromptState(input), undefined, signal);
+    }
   },
   async optimizeMusic(input, signal) {
     if (resolvePromptGenerationProvider() === 'ollama') {
@@ -304,8 +316,9 @@ const buildVideoPrompt = (
 };
 
 const buildVideoChecklist = (input: VideoPromptArtifactInput): string[] => {
+  const targetLabel = STUDIO_CAPABILITIES[input.target]?.label ?? input.target;
   const list = [
-    `Target: ${input.target === 'flow-veo' ? 'Google Flow / Veo' : 'Veo API'}`,
+    `Target: ${targetLabel}`,
     `Mode: ${input.mode}`,
     `Aspect ratio: ${input.aspectRatio}`,
     `Duration: ${input.durationSeconds}s`,
@@ -918,33 +931,101 @@ export const optimizeVideoPromptArtifact = async (
   const provider = resolvePromptGenerationProvider();
   const local = compileVideoPromptArtifact(input);
   if (provider === 'gemini' || provider === 'ollama') {
-    const result = parseStructuredJson<{ prompt?: unknown }>(
-      await optimizer.optimizeVideo(input, signal),
-      'video optimizer',
-    );
-    if (typeof result.prompt !== 'string') {
+    const rawResult = await optimizer.optimizeVideo(input, signal);
+    const result = parseStructuredJson<{
+      prompt?: unknown;
+      primary?: unknown;
+      cinematic?: unknown;
+      controlFocused?: unknown;
+      negativePrompt?: unknown;
+    }>(rawResult, 'video optimizer');
+
+    const primaryText =
+      typeof result.primary === 'string'
+        ? result.primary
+        : typeof result.prompt === 'string'
+          ? result.prompt
+          : null;
+
+    if (typeof primaryText !== 'string') {
       throw new Error('The video optimizer returned JSON without a prompt string.');
     }
-    if (!trim(result.prompt)) throw new Error('The video optimizer returned an empty prompt.');
+    if (!trim(primaryText)) throw new Error('The video optimizer returned an empty prompt.');
     const primary = local.primary as VideoPromptVariant;
     assertProtectedPromptTextPreserved(
       primary.prompt,
-      result.prompt,
+      primaryText,
       (local.input as VideoPromptArtifactInput).dialogue ?? '',
     );
+
+    const hasPackVariants =
+      typeof result.cinematic === 'string' &&
+      trim(result.cinematic) &&
+      typeof result.controlFocused === 'string' &&
+      trim(result.controlFocused);
+
+    const globalNegative =
+      typeof result.negativePrompt === 'string' && trim(result.negativePrompt)
+        ? trim(result.negativePrompt)
+        : primary.negativePrompt;
+
+    const alternatives = (
+      hasPackVariants
+        ? [
+            (() => {
+              const p = (result.cinematic as string).trim();
+              assertProtectedPromptTextPreserved(
+                primary.prompt,
+                p,
+                (local.input as VideoPromptArtifactInput).dialogue ?? '',
+              );
+              const alt = local.alternatives[0] as VideoPromptVariant;
+              return {
+                ...alt,
+                prompt: p,
+                negativePrompt: globalNegative,
+                copyPrompt: p,
+                copyNegativePrompt: globalNegative,
+                copyAll: composeVideoCopyAll(p, globalNegative, alt.copySettingsChecklist),
+              };
+            })(),
+            (() => {
+              const p = (result.controlFocused as string).trim();
+              assertProtectedPromptTextPreserved(
+                primary.prompt,
+                p,
+                (local.input as VideoPromptArtifactInput).dialogue ?? '',
+              );
+              const alt = local.alternatives[1] as VideoPromptVariant;
+              return {
+                ...alt,
+                prompt: p,
+                negativePrompt: globalNegative,
+                copyPrompt: p,
+                copyNegativePrompt: globalNegative,
+                copyAll: composeVideoCopyAll(p, globalNegative, alt.copySettingsChecklist),
+              };
+            })(),
+          ]
+        : local.alternatives
+    ) as [VideoPromptVariant, VideoPromptVariant];
+
     const optimized: PromptArtifactV1 = {
       ...local,
       primary: (() => {
-        const prompt = result.prompt.trim();
+        const prompt = primaryText.trim();
         const copySettingsChecklist = primary.copySettingsChecklist;
         return {
           ...primary,
           prompt,
           label: 'Primary',
+          negativePrompt: globalNegative,
           copyPrompt: prompt,
-          copyAll: composeVideoCopyAll(prompt, primary.negativePrompt, copySettingsChecklist),
+          copyNegativePrompt: globalNegative,
+          copyAll: composeVideoCopyAll(prompt, globalNegative, copySettingsChecklist),
         };
       })(),
+      alternatives,
       provenance: {
         ...local.provenance,
         provider,

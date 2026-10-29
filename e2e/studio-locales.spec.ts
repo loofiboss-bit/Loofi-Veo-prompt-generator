@@ -45,7 +45,7 @@ for (const [language, label, strings, common] of [
     const trigger = page.getByRole('button', { name: strings.arenaOpen, exact: true });
     await trigger.click();
     await expect(page.getByRole('dialog', { name: strings.arenaTitle, exact: true })).toBeVisible();
-    await expect(page.getByRole('dialog').getByRole('region')).toHaveCount(8);
+    await expect(page.getByRole('dialog').getByRole('region')).toHaveCount(9);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(trigger).toBeFocused();

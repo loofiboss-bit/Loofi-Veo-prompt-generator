@@ -13,14 +13,15 @@ export interface StudioCapability {
 }
 
 export const STUDIO_CAPABILITIES: Record<PromptArtifactTarget, StudioCapability> = {
-  'flow-veo': { handoff: 'manual', label: 'Google Flow / Veo' },
-  'veo-api': { handoff: 'approved-provider', label: 'Veo API' },
-  kling: { handoff: 'manual', label: 'Kling' },
-  'runway-gen3': { handoff: 'manual', label: 'Runway' },
+  'flow-veo': { handoff: 'manual', label: 'Google Flow / Veo 3.1' },
+  'veo-api': { handoff: 'approved-provider', label: 'Google Veo 3.1 API' },
+  'omni-flash': { handoff: 'manual', label: 'Gemini Omni 1.1 Flash' },
+  kling: { handoff: 'manual', label: 'Kling 1.5 / 2.0' },
+  'runway-gen3': { handoff: 'manual', label: 'Runway Gen-3 / Gen-4' },
   sora: { handoff: 'manual', label: 'OpenAI Sora' },
-  'luma-ray': { handoff: 'manual', label: 'Luma' },
+  'luma-ray': { handoff: 'manual', label: 'Luma Dream Machine Ray-2' },
   'wan-video': { handoff: 'manual', label: 'Wan 2.1' },
-  'minimax-hailuo': { handoff: 'manual', label: 'Minimax / Hailuo' },
+  'minimax-hailuo': { handoff: 'manual', label: 'Minimax / Hailuo Video 01' },
   suno: { handoff: 'manual', label: 'Suno' },
 };
 
