@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        21.0.0
+Version:        21.1.0
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT
@@ -79,6 +79,10 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Thu Oct 29 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 21.1.0-1
+- Package Prompt Studio Gemini AI enhancement, modernized target engines and review workflows.
+- Preserve matching release checksums and explicit Fedora runtime requirements.
+
 * Wed Oct 28 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 21.0.0-1
 - Package guided delivery, coordinated saves, media guards and recovery navigation.
 - Preserve matching release checksums and explicit Fedora runtime requirements.

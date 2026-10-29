@@ -205,19 +205,19 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v21.0.0
+## Install v21.1.0
 
-Download the [v21.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0)
+Download the [v21.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.1.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Windows
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-21.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-21.0.0-win-x64-portable.exe`) without installation.
+Use the NSIS installer (`Loofi-Flow-Veo-Studio-21.1.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-21.1.0-win-x64-portable.exe`) without installation.
 
 ### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-21.1.0-linux-x86_64.rpm
 ```
 
 ### Fedora COPR
@@ -235,8 +235,8 @@ if an older package is already installed.
 ### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-21.1.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-21.1.0-linux-x86_64.AppImage
 ```
 
 ## Offline Video & Publication Guides
