@@ -27,7 +27,7 @@ test('Studio and Arena share local cinematic guidance without blocking copy', as
   await expect(page.getByRole('button', { name: 'Copy prompt', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Compare in Arena', exact: true }).click();
   const arena = page.getByRole('dialog');
-  await expect(arena.getByText(guidance, { exact: true })).toHaveCount(8);
+  await expect(arena.getByText(guidance, { exact: true })).toHaveCount(9);
   await expect(arena.getByRole('button', { name: 'Copy prompt package' }).first()).toBeEnabled();
   await arena.getByRole('button', { name: 'Open control: Camera direction' }).click();
   await expect(arena).not.toBeVisible();
