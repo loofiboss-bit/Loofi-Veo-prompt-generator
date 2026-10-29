@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Integrate Gemini AI expansion in Prompt Studio for automatic scene breakdown (subject, action,
+  environment, camera, lighting, style, audio/foley, dialogue, negative prompt) and Suno music
+  idea expansion (genre, mood, tempo, instruments, vocals, structured lyrics).
+- Add StudioAiControlBar with model selection (Gemini 3.8 Flash vs Gemini 4 Argon), cinematic style
+  presets, and prompt language selector.
+- Add 3 cinematic video variants (Primary, Cinematic texture, Control-focused) generated via DeepMind's
+  5-pillar cinematic architecture.
+- Add Gemini Omni 1.1 Flash as an active modern target engine with single-shot continuity directives,
+  synchronized ambient audio/foley, and up to 4K SynthID output.
+- Modernize video target profiles for Google Flow / Veo 3.1, Google Veo 3.1 API, Kling 1.5 / 2.0,
+  Runway Gen-3 / Gen-4, OpenAI Sora, Luma Dream Machine Ray-2, Wan 2.1, and Minimax / Hailuo Video 01.
+
 ### Changed
 
 - Clarify when a Prompt Studio result no longer matches its brief, offer a rebuild, and require an
@@ -16,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show Veo API duration constraints alongside the input and review AI scene and music expansion
   proposals before applying them. Organize the Studio workflow and clarify variant comparisons
   and copy actions.
+
+### Fixed
+
+- Fix microdollar floating-point precision mismatch in desktop provider-cost-approve IPC handler.
 
 ## [21.0.0] - 2026-10-28
 
