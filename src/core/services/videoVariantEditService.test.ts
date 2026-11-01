@@ -107,11 +107,63 @@ describe('selected video variant proposals', () => {
     expect(mocks.ollama).not.toHaveBeenCalled();
   });
 
+  it('uses the source-backed target guidance for selected-variant AI edits', async () => {
+    await proposeVideoVariantEdit({
+      artifact: makeArtifact(),
+      variantIndex: 1,
+      fields: ['prompt'],
+      direction: 'Make motion clearer',
+    });
+    expect(mocks.generate.mock.calls[0][0].contents).toContain('Kling 4.0');
+    expect(mocks.generate.mock.calls[0][0].contents).toContain('Do not invent bracket-tag');
+  });
+
+  it.each(['runway-gen3', 'kling', 'luma-ray'] as const)(
+    'rejects unsupported or unverified %s negative editing before provider execution',
+    async (target) => {
+      const artifact = makeArtifact();
+      artifact.target = target;
+      (artifact.input as import('@core/types').VideoPromptArtifactInput).target = target;
+      await expect(
+        proposeVideoVariantEdit({
+          artifact,
+          variantIndex: 0,
+          fields: ['negativePrompt'],
+          direction: 'Improve exclusions',
+        }),
+      ).rejects.toThrow(/not supported or verified/);
+      expect(mocks.generate).not.toHaveBeenCalled();
+      const { applyLocalPromptTransform, hasVariantEditChanges } =
+        await import('./videoVariantEditService');
+      expect(hasVariantEditChanges(applyLocalPromptTransform(artifact, 0, 'harden-negative'))).toBe(
+        false,
+      );
+    },
+  );
+
+  it('refuses a retired target before an AI edit without changing the saved copy', async () => {
+    const artifact = makeArtifact();
+    artifact.target = 'sora';
+    (artifact.input as import('@core/types').VideoPromptArtifactInput).target = 'sora';
+    await expect(
+      proposeVideoVariantEdit({
+        artifact,
+        variantIndex: 0,
+        fields: ['prompt'],
+        direction: 'Refine',
+      }),
+    ).rejects.toThrow(/retired/);
+    expect(mocks.generate).not.toHaveBeenCalled();
+  });
+
   it('uses the configured local Ollama model and permits explicitly clearing the negative prompt', async () => {
     useSettingsStore.setState({ promptGenerationProvider: 'ollama' });
     mocks.ollama.mockResolvedValue('{"negativePrompt":""}');
+    const artifact = makeArtifact();
+    artifact.target = 'flow-veo';
+    (artifact.input as import('@core/types').VideoPromptArtifactInput).target = 'flow-veo';
     const result = await proposeVideoVariantEdit({
-      artifact: makeArtifact(),
+      artifact,
       variantIndex: 1,
       fields: ['negativePrompt'],
       direction: 'Clear the negative prompt',
@@ -369,13 +421,9 @@ describe('selected video variant proposals', () => {
     expect(mocks.generate).not.toHaveBeenCalled();
   });
 
-  it('rejects malformed, unrequested, or overlong music output', async () => {
+  it('rejects malformed or unrequested music output', async () => {
     const artifact = makeMusicArtifact();
-    for (const text of [
-      'not JSON',
-      JSON.stringify({ styleOfMusic: 'ok', lyrics: 'unexpected' }),
-      JSON.stringify({ styleOfMusic: 'x'.repeat(201) }),
-    ]) {
+    for (const text of ['not JSON', JSON.stringify({ styleOfMusic: 'ok', lyrics: 'unexpected' })]) {
       mocks.generate.mockResolvedValue({ text });
       await expect(
         proposeMusicVariantEdit({
@@ -428,16 +476,7 @@ describe('selected video variant proposals', () => {
     expect(result.patch.prompt).toBe('Rewritten dialogue.');
   });
 
-  it.each([
-    'flow-veo',
-    'veo-api',
-    'kling',
-    'runway-gen3',
-    'sora',
-    'luma-ray',
-    'wan-video',
-    'minimax-hailuo',
-  ] as const)(
+  it.each(['flow-veo', 'kling', 'runway-gen3', 'luma-ray', 'wan-video', 'minimax-hailuo'] as const)(
     'keeps quoted and supplied dialogue byte-exact for local %s grammar',
     async (target) => {
       const dialogue = 'The camera is moving. It says "Camera moves" and "slowly panning".';
@@ -492,7 +531,7 @@ describe('selected video variant proposals', () => {
       },
     );
 
-    it('adds one target fallback after the whole prompt without disturbing dialogue spaces', async () => {
+    it('does not invent target camera movements when no camera was requested', async () => {
       const { applyLocalPromptTransform } = await import('./videoVariantEditService');
       const artifact = makeArtifact();
       artifact.target = 'kling';
@@ -500,10 +539,7 @@ describe('selected video variant proposals', () => {
 
       const result = applyLocalPromptTransform(artifact, 0, 'sync-target-grammar');
 
-      expect(result.patch.prompt).toBe(
-        'A runner says "Hello" outside. [camera: smooth dynamic tracking]',
-      );
-      expect(result.patch.prompt!.match(/\[camera:/g)).toHaveLength(1);
+      expect(result.patch.prompt).toBe('A runner says "Hello" outside.');
     });
 
     it('applies clean-compact by removing filler words and cleaning commas', async () => {
@@ -516,22 +552,23 @@ describe('selected video variant proposals', () => {
       expect(res.provenance.provider).toBe('local');
     });
 
-    it('formats Kling camera bracket syntax in sync-target-grammar', async () => {
+    it('preserves natural Kling camera direction without inventing bracket syntax', async () => {
       const { applyLocalPromptTransform } = await import('./videoVariantEditService');
       const artifact = makeArtifact();
       artifact.target = 'kling';
       (artifact.primary as { prompt: string }).prompt =
         'A dancer on stage, camera: Slow Pan Left, golden light';
       const res = applyLocalPromptTransform(artifact, 0, 'sync-target-grammar');
-      expect(res.patch.prompt).toContain('[camera: Slow Pan Left]');
+      expect(res.patch.prompt).toContain('camera: Slow Pan Left');
+      expect(res.patch.prompt).not.toContain('[camera:');
     });
 
     it.each([
-      ['sora', 'Captured on 35mm motion picture camera'],
-      ['luma-ray', 'Smooth Orbit Right trajectory'],
-      ['wan-video', 'Deliberate Orbit Right cinematic move'],
-      ['minimax-hailuo', 'Dynamic Orbit Right framing'],
-      ['runway-gen3', 'Cinematic Orbit Right, fluid tracking'],
+      ['sora', 'Camera: Orbit Right'],
+      ['luma-ray', 'Camera: Orbit Right'],
+      ['wan-video', 'Camera: Orbit Right'],
+      ['minimax-hailuo', 'Camera: Orbit Right'],
+      ['runway-gen3', 'Camera: Orbit Right'],
       ['flow-veo', 'Camera: Orbit Right'],
     ] as const)('adapts camera syntax for %s in sync-target-grammar', async (target, expected) => {
       const { applyLocalPromptTransform, hasVariantEditChanges } =
@@ -567,14 +604,15 @@ describe('selected video variant proposals', () => {
       expect(hasVariantEditChanges(res)).toBe(false);
     });
 
-    it('hardens negative prompt without duplicating existing tokens', async () => {
+    it('deduplicates supported negative prompts without inventing unwanted restrictions', async () => {
       const { applyLocalPromptTransform } = await import('./videoVariantEditService');
       const artifact = makeArtifact();
-      (artifact.primary as { negativePrompt: string }).negativePrompt = 'blurry, watermark';
+      artifact.target = 'flow-veo';
+      (artifact.input as import('@core/types').VideoPromptArtifactInput).target = 'flow-veo';
+      (artifact.primary as { negativePrompt: string }).negativePrompt = 'blurry, watermark, blurry';
       const res = applyLocalPromptTransform(artifact, 0, 'harden-negative');
       expect(res.patch.negativePrompt).toContain('blurry');
-      expect(res.patch.negativePrompt).toContain('distorted anatomy');
-      expect(res.patch.negativePrompt).toContain('deformed hands');
+      expect(res.patch.negativePrompt).toBe('blurry, watermark');
       // Should not repeat watermark twice
       const count = (res.patch.negativePrompt?.match(/watermark/g) || []).length;
       expect(count).toBe(1);
@@ -615,7 +653,7 @@ describe('selected video variant proposals', () => {
       expect(primary.lyrics).toContain('[Chorus]\nLocked chorus line\nbridge -\nTurning back');
     });
 
-    it('cleans style tags, removes visual diffusion terms, and caps style length at 200 chars', async () => {
+    it('cleans style tags without truncating relevant production details', async () => {
       const { compileMusicPromptArtifact } = await import('./promptStudioService');
       const { editStudioVariant } = await import('./promptStudioEditingService');
       const { applyLocalMusicTransform } = await import('./videoVariantEditService');
@@ -630,7 +668,8 @@ describe('selected video variant proposals', () => {
       const res = applyLocalMusicTransform(edited, 0, 'clean-style');
       expect(res.changed).toBe(true);
       const primary = res.artifact.primary as { styleOfMusic: string };
-      expect(primary.styleOfMusic.length).toBeLessThanOrEqual(200);
+      expect(primary.styleOfMusic).toContain('deep sub bass');
+      expect(primary.styleOfMusic.length).toBeGreaterThan(200);
       expect(primary.styleOfMusic.toLowerCase()).not.toContain('4k resolution');
       expect(primary.styleOfMusic.toLowerCase()).not.toContain('photorealistic');
     });

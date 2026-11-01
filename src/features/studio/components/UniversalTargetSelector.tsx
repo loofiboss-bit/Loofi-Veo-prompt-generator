@@ -1,16 +1,29 @@
 import type { UniversalVideoTarget } from '@core/types/modelTranspiler';
-import { TARGET_MODEL_PROFILES } from '@core/services/modelTranspilerService';
+import {
+  TARGET_MODEL_PROFILES,
+  getTargetProfiles,
+  isActiveStudioTarget,
+} from '@core/services/modelTranspilerService';
 import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 import { useTranslation } from 'react-i18next';
 
 interface UniversalTargetSelectorProps {
   value: string;
+  profileId?: string;
+  onProfileChange?: (profileId: string) => void;
+  disabled?: boolean;
   onChange: (
     value: import('@core/types/promptArtifact').VideoPromptArtifactInput['target'],
   ) => void | Promise<void>;
 }
 
-export function UniversalTargetSelector({ value, onChange }: UniversalTargetSelectorProps) {
+export function UniversalTargetSelector({
+  value,
+  onChange,
+  profileId,
+  onProfileChange,
+  disabled,
+}: UniversalTargetSelectorProps) {
   const { t } = useTranslation('studio');
   const currentTarget = (
     value in TARGET_MODEL_PROFILES ? value : 'flow-veo'
@@ -22,6 +35,7 @@ export function UniversalTargetSelector({ value, onChange }: UniversalTargetSele
       <select
         aria-label={t('target')}
         value={value}
+        disabled={disabled}
         onChange={(event) =>
           void onChange(
             event.target
@@ -36,14 +50,38 @@ export function UniversalTargetSelector({ value, onChange }: UniversalTargetSele
           borderColor: 'var(--color-border-primary)',
         }}
       >
+        {!isActiveStudioTarget(currentTarget) ? (
+          <option value={value} disabled>
+            {t('modern.retiredTarget')}
+          </option>
+        ) : null}
         {Object.entries(STUDIO_CAPABILITIES)
-          .filter(([target]) => target !== 'suno')
+          .filter(
+            ([target]) => target !== 'suno' && isActiveStudioTarget(target as UniversalVideoTarget),
+          )
           .map(([target, capability]) => (
             <option key={target} value={target}>
               {capability.label}
             </option>
           ))}
       </select>
+      {onProfileChange && isActiveStudioTarget(currentTarget) ? (
+        <label className="studio-field">
+          <span>{t('modern.modelProfile')}</span>
+          <select
+            aria-label={t('modern.modelProfile')}
+            value={profileId ?? getTargetProfiles(currentTarget)[0]?.profileId}
+            disabled={disabled}
+            onChange={(event) => onProfileChange(event.target.value)}
+          >
+            {getTargetProfiles(currentTarget).map((item) => (
+              <option key={item.profileId} value={item.profileId}>
+                {item.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       {profile ? (
         <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
           <span>{profile.vendor}</span>

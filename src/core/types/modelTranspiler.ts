@@ -6,7 +6,11 @@
  */
 
 import type { SpatialCameraRig } from './spatialCamera';
-import type { VideoPromptMode } from './promptArtifact';
+import type {
+  VideoPromptMode,
+  VideoPromptArtifactInput,
+  StudioCreativeDetails,
+} from './promptArtifact';
 
 export type UniversalVideoTarget =
   | 'flow-veo'
@@ -23,7 +27,9 @@ export interface UniversalPromptInput {
   idea: string;
   mode: VideoPromptMode;
   target: UniversalVideoTarget;
-  aspectRatio: '16:9' | '9:16' | '1:1' | '2.39:1';
+  profileId?: string;
+  creativeDetails?: StudioCreativeDetails;
+  aspectRatio: VideoPromptArtifactInput['aspectRatio'];
   durationSeconds: number;
   subject?: string;
   action?: string;
@@ -62,11 +68,22 @@ export interface TranspiledPromptResult {
 
 export interface TargetModelProfile {
   id: UniversalVideoTarget;
+  profileId: string;
+  modelCode: string;
+  lifecycle: 'active' | 'retired' | 'legacy';
+  handoff: 'manual' | 'approved-provider' | 'experimental';
+  supportedModes: VideoPromptMode[];
+  durations: number[];
+  audioPolicy: 'native' | 'post-production' | 'unknown';
+  negativePolicy: 'supported' | 'unsupported' | 'unknown';
+  sourceUrl: string;
+  verifiedDate: string;
+  promptingGuidance: string;
   displayName: string;
   vendor: string;
   syntaxFlavor: string;
   maxRecommendedDuration: number;
-  supportedAspectRatios: string[];
+  supportedAspectRatios: VideoPromptArtifactInput['aspectRatio'][];
   cameraDirectiveStyle:
     | 'natural'
     | 'bracket-tags'

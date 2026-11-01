@@ -4,12 +4,16 @@ import { projectDocumentService } from './projectDocumentService';
 export function createPromptStudioDraft(projectId: string): PromptStudioDraftV1 {
   return {
     schemaVersion: 1,
+    aiSettings: { model: 'gemini-3.8-flash', stylePreset: 'auto', language: 'en' },
+    fieldOrigins: {},
+    lockedFields: [],
     projectId,
     mode: 'video',
     video: {
       idea: '',
       mode: 'text-to-video',
       target: 'flow-veo',
+      profileId: 'flow-veo-3.1-lite',
       aspectRatio: '16:9',
       durationSeconds: 8,
       subject: '',
@@ -38,7 +42,7 @@ export function createPromptStudioDraft(projectId: string): PromptStudioDraftV1 
       lyrics: '',
       instrumental: false,
       styleInfluence: null,
-      targetProfile: 'suno-v5.5',
+      targetProfile: 'suno-v6',
       key: '',
       timeSignature: '',
       energyCurve: '',

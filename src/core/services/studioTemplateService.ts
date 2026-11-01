@@ -4,6 +4,7 @@ import type { VideoPromptArtifactInput } from '@core/types/promptArtifact';
 import type { StudioTemplateV1 } from '@core/types/studioTemplate';
 import { getUserTemplatesStrict, type UserTemplate } from './templateManager';
 import { logger } from './loggerService';
+import { legacyCreativeDetails, legacySubjectDescription } from './studioLegacyAdapter';
 
 const LIBRARY_KEY = 'studio-templates-v1';
 
@@ -48,13 +49,17 @@ export function adaptLegacyStudioTemplate(template: UserTemplate): StudioTemplat
       target: params.targetModel === 'veo-api' ? 'veo-api' : 'flow-veo',
       aspectRatio: params.aspectRatio === '9:16' ? '9:16' : '16:9',
       durationSeconds: 8,
-      subject: params.characterArchetype,
-      action: params.characterActions,
+      subject: legacySubjectDescription(params),
+      action: [params.characterActions, params.characterObjectInteraction]
+        .filter(Boolean)
+        .join('. '),
+      creativeDetails: legacyCreativeDetails(params),
+      spatialCamera: params.spatialCamera,
       environment: params.environment,
       camera: params.cameraMovement,
       lighting: params.lightingStyle,
       style: params.customArtStyle || params.artStyle,
-      audio: [params.voiceOver, params.ambientSound].filter(Boolean).join(', '),
+      audio: params.ambientSound,
       dialogue: params.voiceOver,
       negativePrompt: params.negativePrompt,
     },

@@ -18,10 +18,9 @@ test.beforeEach(async ({ page }) => {
 
 for (const target of [
   'flow-veo',
-  'veo-api',
+  'omni-flash',
   'kling',
   'runway-gen3',
-  'sora',
   'luma-ray',
   'wan-video',
   'minimax-hailuo',

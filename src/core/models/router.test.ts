@@ -5,6 +5,7 @@ describe('routeModel', () => {
   it('uses Veo quality when a request requires first and last frames', () => {
     const decision = routeModel({
       operation: 'video',
+      provider: 'vertex-ai',
       mode: 'smart',
       requiresFirstLastFrame: true,
     });
@@ -15,6 +16,7 @@ describe('routeModel', () => {
   it('does not route reference-image requests to Veo Lite', () => {
     const decision = routeModel({
       operation: 'video',
+      provider: 'vertex-ai',
       mode: 'economy',
       requiresReferenceImages: true,
     });
@@ -26,11 +28,32 @@ describe('routeModel', () => {
     expect(decision.model.id).toBe('gemini-omni-1.1-flash');
   });
 
-  it('keeps ordinary video generation on the supported durable Veo adapter', () => {
-    const decision = routeModel({ operation: 'video', mode: 'smart', requestedResolution: '720p' });
+  it('preserves explicitly selected active Vertex Veo routing', () => {
+    const decision = routeModel({
+      operation: 'video',
+      provider: 'vertex-ai',
+      mode: 'smart',
+      requestedResolution: '720p',
+    });
     expect(decision.model.id).toBe('veo-3.1-fast');
     expect(decision.fallback?.id).toBe('veo-3.1-quality');
     expect(decision.reason).toContain('durable video generation');
+  });
+
+  it('treats the active Vertex GA binding independently from the retired Gemini preview', () => {
+    expect(
+      routeModel({ operation: 'video', provider: 'vertex-ai', mode: 'smart', allowPreview: false })
+        .model.id,
+    ).toBe('veo-3.1-fast');
+  });
+
+  it('rejects shut-down Gemini Veo routes without silently switching providers', () => {
+    expect(() => routeModel({ operation: 'video', mode: 'smart' })).toThrow(
+      'No priced general video model',
+    );
+    expect(() =>
+      routeModel({ operation: 'video', mode: 'manual', requestedModelId: 'veo-3.1-fast' }),
+    ).toThrow('unavailable');
   });
 
   it('uses the current stable Flash-Lite for economy planning', () => {

@@ -94,6 +94,7 @@ async function desktopFixture(job: NativeJob) {
     store,
     getApiKey: async () => 'synthetic-test-key',
     fetchImpl: post,
+    now: () => Date.UTC(2026, 7, 1),
     onUpdate: (value: NativeJob) => {
       for (const listener of listeners) listener(structuredClone(value));
     },

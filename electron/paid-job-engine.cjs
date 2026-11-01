@@ -10,6 +10,7 @@ const {
   buildSubmission,
   buildMusicSubmission,
   requireApprovedSubmission,
+  assertNewSubmissionAvailable,
 } = require('./paid-job-submission.cjs');
 const LYRIA_MODELS = new Set(['lyria-3-clip-preview', 'lyria-3-pro-preview']);
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -170,6 +171,7 @@ class PaidJobEngine {
     storeMedia,
     cacheVideo,
     onUpdate = () => {},
+    now = () => Date.now(),
   }) {
     this.store = store;
     this.getApiKey = getApiKey;
@@ -178,6 +180,7 @@ class PaidJobEngine {
     this.storeMedia = storeMedia;
     this.cacheVideo = cacheVideo;
     this.onUpdate = onUpdate;
+    this.now = typeof now === 'function' ? now : () => Date.now();
     this.active = new Map();
     this.submissions = new Map();
   }
@@ -207,6 +210,7 @@ class PaidJobEngine {
       return existing;
     }
     requireApprovedSubmission(task);
+    assertNewSubmissionAvailable(task, this.now());
     const job = { ...task, status: 'Queued', createdAt: task.createdAt || Date.now() };
     await this.persist(job);
     void this.run(job);
@@ -235,6 +239,7 @@ class PaidJobEngine {
       try {
         validatePaidTask(job);
         requireApprovedSubmission(job);
+        assertNewSubmissionAvailable(job, this.now());
       } catch (error) {
         return this.persist({ ...job, status: 'Error', error: String(error?.message || error) });
       }
@@ -256,6 +261,7 @@ class PaidJobEngine {
           signal.throwIfAborted();
           validatePaidTask(job);
           const submission = requireApprovedSubmission(job);
+          assertNewSubmissionAvailable(job, this.now());
           submissionStarted = true;
           response = await this.fetchImpl(submission.url, {
             method: 'POST',
@@ -527,6 +533,7 @@ class PaidJobEngine {
     if (!retryable.providerOperationName) {
       validatePaidTask(retryable);
       requireApprovedSubmission(retryable);
+      assertNewSubmissionAvailable(retryable, this.now());
     }
     await this.persist(retryable);
     void this.run(retryable);

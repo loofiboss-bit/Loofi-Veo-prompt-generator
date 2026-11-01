@@ -7,6 +7,7 @@ import type {
 } from '@core/types/promptArtifact';
 import { studioVideoRequestIssues } from '@core/config/studioCapabilities';
 import { promptAstLinterService } from './promptAstLinterService';
+import { TARGET_MODEL_PROFILES, getTargetProfile } from './modelTranspilerService';
 
 const CINEMATIC_LABELS: Record<string, string> = {
   'camera-conflict': 'Camera direction',
@@ -23,27 +24,14 @@ export const STUDIO_MODEL_RULE_SOURCES: Record<
   string,
   { sourceUrl: string; verifiedDate: string }
 > = {
-  veo: { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-08' },
-  'flow-veo': { sourceUrl: 'https://labs.google/flow', verifiedDate: '2026-10-20' },
-  'veo-api': { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-08' },
-  'omni-flash': {
-    sourceUrl: 'https://ai.google.dev/gemini-api/docs/omni',
-    verifiedDate: '2026-10-25',
-  },
-  kling: { sourceUrl: 'https://docs.klingai.com/', verifiedDate: '2026-10-20' },
-  'runway-gen3': {
-    sourceUrl: 'https://docs.dev.runwayml.com/guides/models/',
-    verifiedDate: '2026-10-08',
-  },
-  runway: {
-    sourceUrl: 'https://docs.dev.runwayml.com/guides/models/',
-    verifiedDate: '2026-10-08',
-  },
-  sora: { sourceUrl: 'https://openai.com/sora', verifiedDate: '2026-10-20' },
-  'luma-ray': { sourceUrl: 'https://lumalabs.ai/dream-machine', verifiedDate: '2026-10-20' },
-  'wan-video': { sourceUrl: 'https://github.com/Wan-Video/Wan2.1', verifiedDate: '2026-10-20' },
-  'minimax-hailuo': { sourceUrl: 'https://hailuoai.video/', verifiedDate: '2026-10-20' },
-  suno: { sourceUrl: 'https://suno.com/', verifiedDate: '2026-10-20' },
+  ...Object.fromEntries(
+    Object.entries(TARGET_MODEL_PROFILES).map(([target, item]) => [
+      target,
+      { sourceUrl: item.sourceUrl, verifiedDate: item.verifiedDate },
+    ]),
+  ),
+  veo: { sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo', verifiedDate: '2026-10-29' },
+  suno: { sourceUrl: 'https://help.suno.com/en/articles/13924737', verifiedDate: '2026-10-29' },
 };
 
 export function validateStudioVideo(
@@ -51,6 +39,12 @@ export function validateStudioVideo(
   variants: VideoPromptVariant[],
 ): PromptValidationCheck[] {
   const api = input.target === 'veo-api';
+  let selected;
+  try {
+    selected = getTargetProfile(input.target, input.profileId);
+  } catch {
+    /* The profile issue below explains unknown IDs. */
+  }
   const issues = studioVideoRequestIssues(input);
   const checks: PromptValidationCheck[] = [
     {
@@ -66,19 +60,21 @@ export function validateStudioVideo(
     {
       id: 'target-compatibility',
       label: 'Target compatibility',
-      status: api ? (issues.length ? 'blocked' : 'pass') : 'warning',
-      detail: api
-        ? 'The internal Veo request uses the canonical model capabilities and request validator.'
-        : 'Compatibility is unconfirmed. Select a concrete model version and verify its modes, duration and references in the destination.',
-      evidence: api ? 'documented' : 'unknown',
+      status: issues.length ? 'blocked' : 'warning',
+      detail: issues.length
+        ? issues.map((issue) => issue.message).join(' ')
+        : `Settings match the documented ${selected?.displayName ?? input.target} profile. This is a manual prompt handoff; destination account availability and generated quality are not qualified.`,
+      evidence: 'documented',
       action: { field: 'target' },
-      ...(api ? STUDIO_MODEL_RULE_SOURCES.veo : (STUDIO_MODEL_RULE_SOURCES[input.target] ?? {})),
+      ...(selected
+        ? { sourceUrl: selected.sourceUrl, verifiedDate: selected.verifiedDate }
+        : STUDIO_MODEL_RULE_SOURCES[input.target]),
     },
   ];
   for (const issue of issues) {
     checks.push({
       id: `provider-${issue.code}-${issue.field}`,
-      label: 'Internal generation requirement',
+      label: 'Target profile requirement',
       status: 'blocked',
       detail: issue.message,
       evidence: 'documented',
@@ -90,7 +86,9 @@ export function validateStudioVideo(
               ? 'target'
               : (issue.field as keyof VideoPromptArtifactInput),
       },
-      ...STUDIO_MODEL_RULE_SOURCES.veo,
+      ...(selected
+        ? { sourceUrl: selected.sourceUrl, verifiedDate: selected.verifiedDate }
+        : STUDIO_MODEL_RULE_SOURCES[input.target]),
     });
   }
   if (!api && input.mode !== 'text-to-video') {

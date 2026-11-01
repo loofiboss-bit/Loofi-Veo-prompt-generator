@@ -29,6 +29,9 @@ export type BillingMode =
   | 'flat-request';
 
 export interface ProviderModelBinding {
+  lifecycle?: ModelLifecycleStatus;
+  sunsetDate?: string;
+  sourceUrl?: string;
   provider: ModelProvider;
   apiSurface: ModelApiSurface;
   modelId: string;
@@ -133,12 +136,26 @@ const googleBindings = (
   vertexModelId: string = geminiModelId,
   apiSurface: ModelApiSurface = 'google-ai-v1beta',
 ): readonly ProviderModelBinding[] => [
-  { provider: 'gemini-api', apiSurface, modelId: geminiModelId },
+  {
+    provider: 'gemini-api',
+    apiSurface,
+    modelId: geminiModelId,
+    ...(geminiModelId.startsWith('veo-3.1-') && geminiModelId.endsWith('-preview')
+      ? {
+          lifecycle: 'shut-down' as const,
+          sunsetDate: '2026-10-22',
+          sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo',
+        }
+      : {}),
+  },
   {
     provider: 'vertex-ai',
     apiSurface: 'vertex-ai-v1',
     modelId: vertexModelId,
     regions: GOOGLE_REGIONS,
+    ...(vertexModelId.startsWith('veo-3.1-') && vertexModelId.endsWith('-001')
+      ? { lifecycle: 'stable' as const }
+      : {}),
   },
 ];
 
@@ -670,7 +687,7 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       'gemini-omni-1.1-flash',
       'google-ai-interactions-v1beta',
     ),
-    lifecycle: 'preview',
+    lifecycle: 'stable',
     minimumSdkVersion: '2.0.0',
     regionRestrictions: [],
     capabilities: {
@@ -726,7 +743,8 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       'gemini-omni-flash-preview',
       'google-ai-interactions-v1beta',
     ),
-    lifecycle: 'preview',
+    lifecycle: 'shut-down',
+    replacementModelId: 'gemini-omni-1.1-flash',
     minimumSdkVersion: '2.0.0',
     regionRestrictions: [],
     capabilities: {
@@ -874,10 +892,15 @@ export const resolveProviderModelId = (modelId: string, provider?: ModelProvider
   const canonicalId = LEGACY_MODEL_REPLACEMENTS[modelId] ?? modelId;
   const model = getModel(canonicalId);
   if (!model) return modelId;
-  return provider
-    ? (model.providerBindings.find((binding) => binding.provider === provider)?.modelId ??
-        model.providerModelId)
-    : model.providerModelId;
+  const binding = model.providerBindings.find(
+    (candidate) => candidate.provider === (provider ?? model.provider),
+  );
+  if (model.lifecycle === 'shut-down' || binding?.lifecycle === 'shut-down') {
+    throw new Error(
+      `${binding?.modelId ?? model.providerModelId} is shut down${binding?.sunsetDate ? ` on ${binding.sunsetDate}` : ''}. Choose an active model and provider explicitly.`,
+    );
+  }
+  return binding?.modelId ?? model.providerModelId;
 };
 
 export const getProviderBinding = (
@@ -888,8 +911,14 @@ export const getProviderBinding = (
     (binding) => binding.provider === provider,
   );
 
-export const isShutdownModel = (modelId: string): boolean =>
-  getModel(modelId)?.lifecycle === 'shut-down';
+export const isShutdownModel = (modelId: string, provider?: ModelProvider): boolean => {
+  const model = getModel(modelId);
+  if (!model) return false;
+  return (
+    model.lifecycle === 'shut-down' ||
+    getProviderBinding(modelId, provider ?? model.provider)?.lifecycle === 'shut-down'
+  );
+};
 
 export const LEGACY_MODEL_REPLACEMENTS: Readonly<Record<string, string>> = {
   'gemini-3-pro-preview': 'gemini-3.5-flash',

@@ -11,7 +11,9 @@ export function VideoVariantCard({
   onCopy,
   onHandoff,
   onEdit,
+  supportsNegative = true,
 }: {
+  supportsNegative?: boolean;
   variant: VideoPromptVariant;
   primary?: boolean;
   compareBaseline?: VideoPromptVariant;
@@ -98,17 +100,19 @@ export function VideoVariantCard({
               ))}
             </details>
           ) : null}
-          <details className="studio-details">
-            <summary>{t('negativePrompt')}</summary>
-            <textarea
-              readOnly={!onEdit}
-              data-studio-field="negativePrompt"
-              value={variant.negativePrompt}
-              onChange={(e) => onEdit?.({ negativePrompt: e.target.value })}
-              aria-label={t('negativePrompt')}
-              rows={3}
-            />
-          </details>
+          {supportsNegative || variant.negativePrompt ? (
+            <details className="studio-details">
+              <summary>{t('negativePrompt')}</summary>
+              <textarea
+                readOnly={!onEdit}
+                data-studio-field="negativePrompt"
+                value={variant.negativePrompt}
+                onChange={(e) => onEdit?.({ negativePrompt: e.target.value })}
+                aria-label={t('negativePrompt')}
+                rows={3}
+              />
+            </details>
+          ) : null}
           <details className="studio-details">
             <summary>{t('checklist')}</summary>
             <ul>
@@ -131,9 +135,11 @@ export function VideoVariantCard({
                   defaultValue: 'Copy full handoff (prompt, negative prompt and settings)',
                 })}
               </button>
-              <button onClick={() => onCopy(variant.copyNegativePrompt, t('copied'))}>
-                {t('copyNegative')}
-              </button>
+              {supportsNegative || variant.negativePrompt ? (
+                <button onClick={() => onCopy(variant.copyNegativePrompt, t('copied'))}>
+                  {t('copyNegative')}
+                </button>
+              ) : null}
               <button onClick={() => onCopy(variant.copySettingsChecklist, t('copied'))}>
                 {t('copyChecklist')}
               </button>

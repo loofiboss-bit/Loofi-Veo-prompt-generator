@@ -1,228 +1,214 @@
 import { describe, it, expect } from 'vitest';
-import { transpilePrompt, TARGET_MODEL_PROFILES } from './modelTranspilerService';
+import {
+  transpilePrompt,
+  TARGET_MODEL_PROFILES,
+  getTargetProfile,
+  getTargetProfiles,
+  getProfileModes,
+  getProfileDurations,
+  getProfileAspectRatios,
+  getTargetPromptGuidance,
+  isActiveStudioTarget,
+} from './modelTranspilerService';
 import type { UniversalPromptInput } from '@core/types/modelTranspiler';
 
-const BASE_INPUT: UniversalPromptInput = {
-  idea: 'A lonely astronaut walking across a neon-lit alien wasteland',
+const BASE: UniversalPromptInput = {
+  idea: 'An astronaut walks across an alien plain',
   mode: 'text-to-video',
   target: 'flow-veo',
   aspectRatio: '16:9',
   durationSeconds: 8,
-  subject: 'An astronaut in a weather-beaten gold visor helmet',
-  action: 'slowly trudges forward through glowing volcanic ash',
-  environment: 'a desolate extraterrestrial plain beneath twin moons',
-  lighting: 'dramatic volumetric cyan and magenta neon edge light',
-  style: 'cinematic 70mm sci-fi thriller',
-  spatialCamera: {
-    lens: '35mm-cinematic',
-    aperture: 'f/2.8',
-    shutterAngle: '180deg',
-    heightLevel: 'eye-level',
-    trajectory: 'push-in',
-    trajectorySpeed: 'smooth-cinematic',
-    rollAngleDegrees: 0,
-    spatialGrid: { focalDepthTarget: 'foreground' },
-  },
+  subject: 'An astronaut in a gold helmet',
+  action: 'walks slowly through ash',
+  environment: 'A plain beneath twin moons',
+  camera: 'Slow push-in',
 };
 
-describe('modelTranspilerService', () => {
-  it('exposes profiles for all supported target engines', () => {
-    expect(TARGET_MODEL_PROFILES['flow-veo']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['veo-api']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['omni-flash']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['kling']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['runway-gen3']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['sora']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['luma-ray']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['wan-video']).toBeDefined();
-    expect(TARGET_MODEL_PROFILES['minimax-hailuo']).toBeDefined();
+describe('shared Studio target profiles', () => {
+  it('keeps stable persisted target IDs while publishing explicit current versions', () => {
+    expect(TARGET_MODEL_PROFILES.kling).toMatchObject({
+      modelCode: 'Kling 4.0',
+      cameraDirectiveStyle: 'natural',
+    });
+    expect(getTargetProfile('runway-gen3').modelCode).toBe('gen4.5');
+    expect(getTargetProfile('luma-ray').modelCode).toBe('ray-3.2');
+    expect(getTargetProfile('minimax-hailuo').modelCode).toBe('MiniMax-H3');
+    expect(getTargetProfiles('wan-video').map((item) => item.profileId)).toEqual([
+      'wan-3.0-hosted',
+      'wan-2.1-open',
+    ]);
   });
 
-  describe('Gemini Omni 1.1 Flash Target', () => {
-    it('generates single-shot continuity directives and audio-aware checklist notes', () => {
-      const result = transpilePrompt(BASE_INPUT, 'omni-flash');
-      expect(result.target).toBe('omni-flash');
-      expect(result.targetDisplayName).toBe('Gemini Omni 1.1 Flash');
-      expect(result.variants).toHaveLength(3);
-
-      const [primary] = result.variants;
-      expect(primary.prompt).toContain('In a single continuous, unbroken shot; no scene cuts');
-      expect(primary.negativePrompt).toContain('scene cuts');
-      expect(primary.negativePrompt).toContain('jump cuts');
-      expect(primary.settingsChecklist.some((s) => s.includes('gemini-omni-1.1-flash'))).toBe(true);
-      expect(primary.settingsChecklist.some((s) => s.includes('SynthID'))).toBe(true);
-    });
+  it('sources every profile and distinguishes legacy from retired', () => {
+    for (const selected of Object.values(TARGET_MODEL_PROFILES)) {
+      expect(selected.sourceUrl).toMatch(/^https:/);
+      expect(selected.verifiedDate).toBe('2026-10-29');
+    }
+    expect(isActiveStudioTarget('sora')).toBe(false);
+    expect(isActiveStudioTarget('veo-api')).toBe(false);
+    expect(isActiveStudioTarget('flow-veo')).toBe(true);
+    expect(getTargetProfile('wan-video', 'wan-2.1-open').lifecycle).toBe('legacy');
+    expect(() => getTargetProfile('kling', 'runway-gen-4.5')).toThrow('Unknown profile');
   });
 
-  describe('Google Veo 3.1 API Target', () => {
-    it('generates native Veo directives with API checklist notes', () => {
-      const result = transpilePrompt(BASE_INPUT, 'veo-api');
-      expect(result.target).toBe('veo-api');
-      expect(result.targetDisplayName).toBe('Google Veo 3.1 API');
-      expect(result.variants).toHaveLength(3);
-
-      const [primary] = result.variants;
-      expect(primary.prompt).toContain('astronaut in a weather-beaten gold visor helmet');
-      expect(primary.negativePrompt).toContain('unintended text');
-      expect(primary.settingsChecklist.some((s) => s.includes('DeepMind Veo 3.1 generation'))).toBe(
-        true,
-      );
-    });
+  it('resolves Flow capabilities per concrete model and mode', () => {
+    expect(getTargetProfiles('flow-veo')).toHaveLength(3);
+    expect(getProfileModes({ ...BASE, profileId: 'flow-veo-3.1-quality' })).not.toContain(
+      'ingredients',
+    );
+    expect(getProfileModes({ ...BASE, profileId: 'flow-veo-3.1-fast' })).not.toContain('extend');
+    expect(getProfileModes(BASE)).toContain('extend');
+    expect(getProfileDurations({ ...BASE, mode: 'ingredients' })).toEqual([8]);
+    expect(getProfileDurations({ ...BASE, mode: 'text-to-video' })).toEqual([4, 6, 8]);
   });
 
-  describe('Google Flow / Veo 3.1 Target', () => {
-    it('generates natural photographic and spatial prompt directives', () => {
-      const result = transpilePrompt(BASE_INPUT, 'flow-veo');
-      expect(result.target).toBe('flow-veo');
-      expect(result.targetDisplayName).toBe('Google Flow / Veo 3.1');
-      expect(result.variants).toHaveLength(3);
-
-      const [primary, cinematic, control] = result.variants;
-      expect(primary.prompt).toContain('astronaut in a weather-beaten gold visor helmet');
-      expect(primary.prompt).toContain('push-in');
-      expect(cinematic.prompt).toContain('Rich cinematic staging');
-      expect(control.prompt).toContain('One continuous unbroken shot for 8s');
-      expect(primary.negativePrompt).toContain('unintended text');
-      expect(primary.copyAll).toContain('Negative prompt:');
-    });
+  it('supports Luma 5-second keyframes and current formats without rewriting input', () => {
+    const input = { ...BASE, target: 'luma-ray' as const, mode: 'first-last-frames' as const };
+    expect(getProfileDurations(input)).toEqual([5]);
+    expect(getProfileAspectRatios(input)).toContain('21:9');
+    expect(getProfileAspectRatios(input)).not.toContain('2.39:1');
+    expect(transpilePrompt(input).variants[0].settingsChecklist.join(' ')).toContain(
+      'Unsupported duration',
+    );
+    expect(input.durationSeconds).toBe(8);
   });
 
-  describe('Kling 1.5 / 2.0 Target', () => {
-    it('formats camera directives using structured bracket notation and Kling artifacts', () => {
-      const result = transpilePrompt(BASE_INPUT, 'kling');
-      expect(result.target).toBe('kling');
-      expect(result.targetDisplayName).toBe('Kling 1.5 / 2.0');
+  it.each(['sora', 'veo-api'] as const)(
+    'blocks new %s compilation without deleting its metadata',
+    (target) => {
+      expect(getTargetProfile(target).lifecycle).toBe('retired');
+      expect(() => transpilePrompt(BASE, target)).toThrow('retired');
+      expect(() => getTargetPromptGuidance({ ...BASE, target })).toThrow('retired');
+    },
+  );
+});
 
-      const primary = result.variants[0];
-      expect(primary.prompt).toContain('[camera: push in]');
-      expect(primary.negativePrompt).toContain('morphing');
-      expect(primary.negativePrompt).toContain('flickering');
-      expect(primary.negativePrompt).toContain('motion jitter');
-      expect(primary.settingsChecklist.some((item) => item.includes('motion intensity'))).toBe(
-        true,
-      );
-    });
+describe('target-specific local compilation', () => {
+  it('keeps supplied creative camera, identity and environment details', () => {
+    const [primary] = transpilePrompt({
+      ...BASE,
+      creativeDetails: {
+        cameraDistance: 'close-up',
+        lensType: '50mm',
+        compositionalGuide: 'rule of thirds',
+        characterVisualDNA: 'A narrow scar over the left eyebrow',
+        weather: 'thin snowfall',
+        environmentDynamicEvents: 'Dust swirls behind each step',
+        colorPalette: 'warm amber',
+      },
+    }).variants;
+    for (const fragment of [
+      'close-up',
+      '50mm',
+      'rule of thirds',
+      'narrow scar',
+      'thin snowfall',
+      'Dust swirls',
+      'warm amber',
+    ])
+      expect(primary.prompt).toContain(fragment);
+    expect(primary.negativePrompt).toBe('');
+    expect(primary.copyAll).not.toContain('Negative prompt:');
   });
 
-  describe('Runway Gen-3 / Gen-4 Target', () => {
-    it('formats camera directives as motion vectors and includes Runway-specific checks', () => {
-      const result = transpilePrompt(BASE_INPUT, 'runway-gen3');
-      expect(result.target).toBe('runway-gen3');
-      expect(result.targetDisplayName).toBe('Runway Gen-3 / Gen-4');
-
-      const primary = result.variants[0];
-      expect(primary.prompt).toContain('Cinematic push in motion');
-      expect(primary.prompt).toContain('fluid tracking');
-      expect(primary.negativePrompt).toContain('motion smearing');
-      expect(primary.settingsChecklist.some((item) => item.includes('Camera Move + Subject'))).toBe(
-        true,
-      );
-    });
+  it('does not inject unsupported Kling bracket tags or made-up settings', () => {
+    const [primary] = transpilePrompt(BASE, 'kling').variants;
+    expect(primary.prompt).toContain('Slow push-in');
+    expect(primary.copyAll).not.toMatch(
+      /\[camera:|\[mode:|motion intensity between|fully qualified/i,
+    );
+    expect(primary.negativePrompt).toBe('');
   });
 
-  describe('OpenAI Sora Target', () => {
-    it('formats camera directives with photochemical realism and authentic optical depth', () => {
-      const result = transpilePrompt(BASE_INPUT, 'sora');
-      expect(result.target).toBe('sora');
-      expect(result.targetDisplayName).toBe('OpenAI Sora');
-
-      const primary = result.variants[0];
-      expect(primary.prompt).toContain('Captured on 35mm motion picture camera');
-      expect(primary.prompt).toContain('realistic physical camera weight');
-      expect(primary.negativePrompt).toContain('temporal discontinuity');
-      expect(primary.negativePrompt).toContain('unnatural physics');
-    });
+  it('keeps Runway audio/dialogue outside the prompt and excludes its unsupported negative field', () => {
+    const [primary] = transpilePrompt({
+      ...BASE,
+      target: 'runway-gen3',
+      audio: 'Wind through reeds',
+      dialogue: 'Stay with me.',
+      negativePrompt: 'green tint',
+    }).variants;
+    expect(primary.prompt).not.toMatch(/Wind through reeds|Stay with me|green tint/);
+    expect(primary.settingsChecklist).toContain('Post-production audio: Wind through reeds');
+    expect(primary.settingsChecklist).toContain('Post-production dialogue: Stay with me.');
+    expect(primary.negativePrompt).toBe('');
+    expect(primary.copyAll).not.toContain('Negative prompt:');
+    expect(getTargetPromptGuidance({ ...BASE, target: 'runway-gen3' })).toContain('positive');
   });
 
-  describe('Luma Dream Machine Ray-2 Target', () => {
-    it('formats dynamic trajectory anchors and perspective continuity', () => {
-      const result = transpilePrompt(BASE_INPUT, 'luma-ray');
-      expect(result.target).toBe('luma-ray');
-      expect(result.targetDisplayName).toBe('Luma Dream Machine Ray-2');
-
-      const primary = result.variants[0];
-      expect(primary.prompt).toContain('Smooth push in trajectory');
-      expect(primary.prompt).toContain('consistent depth of field');
-      expect(primary.negativePrompt).toContain('frame warping');
-      expect(primary.negativePrompt).toContain('geometry distortion');
-    });
+  it('keeps explicitly requested native dialogue exact in every variant', () => {
+    const [primary, cinematic, control] = transpilePrompt({
+      ...BASE,
+      target: 'omni-flash',
+      audio: 'A distant radio',
+      dialogue: '“Keep walking. We are close.”',
+    }).variants;
+    for (const item of [primary, cinematic, control]) {
+      expect(item.prompt).toContain('A distant radio');
+      expect(item.prompt).toContain('the speaker says: “Keep walking. We are close.”');
+    }
   });
 
-  describe('Wan 2.1 Target', () => {
-    it('formats dense CLIP/T5 optical prompt directives with Prime lens indicators', () => {
-      const result = transpilePrompt(BASE_INPUT, 'wan-video');
-      expect(result.target).toBe('wan-video');
-      expect(result.targetDisplayName).toBe('Wan 2.1 (T2V & I2V 14B/1.3B)');
-
-      const primary = result.variants[0];
-      expect(primary.prompt).toContain('deliberate push in cinematic move');
-      expect(primary.prompt).toContain('35mm cinematic prime lens');
-      expect(primary.prompt).toContain('rich optical volumetric depth');
-      expect(primary.negativePrompt).toContain('deformed face');
-      expect(primary.negativePrompt).toContain('bad hands');
-      expect(primary.settingsChecklist.some((item) => item.includes('CLIP/T5'))).toBe(true);
-    });
+  it('uses image motion without restating static appearance', () => {
+    const [primary] = transpilePrompt({
+      ...BASE,
+      target: 'runway-gen3',
+      mode: 'image-to-video',
+      style: 'A red wool suit',
+      lighting: 'Orange studio light',
+    }).variants;
+    expect(primary.prompt).toContain('walks slowly through ash');
+    expect(primary.prompt).not.toMatch(/gold helmet|twin moons|red wool|Orange studio/);
+    expect(primary.prompt).toContain('Slow push-in');
   });
 
-  describe('Minimax / Hailuo Video 01 Target', () => {
-    it('formats action-focused framing with smooth dynamic cadence', () => {
-      const result = transpilePrompt(BASE_INPUT, 'minimax-hailuo');
-      expect(result.target).toBe('minimax-hailuo');
-      expect(result.targetDisplayName).toBe('Minimax / Hailuo Video 01');
-
-      const primary = result.variants[0];
-      expect(primary.prompt).toContain('dynamic push in framing');
-      expect(primary.prompt).toContain('smooth cinematic action cadence');
-      expect(primary.negativePrompt).toContain('jerky motion');
-      expect(primary.negativePrompt).toContain('morphing artifacts');
-      expect(primary.settingsChecklist.some((item) => item.includes('organic human action'))).toBe(
-        true,
-      );
-    });
+  it('preserves idea-only motion and avoids forced photographic style', () => {
+    const [primary] = transpilePrompt({
+      ...BASE,
+      subject: '',
+      action: '',
+      mode: 'image-to-video',
+      idea: 'A paper bird unfolds its wings',
+    }).variants;
+    expect(primary.prompt).toContain('A paper bird unfolds its wings');
+    expect(primary.prompt).not.toMatch(/film stock|photorealistic|35mm|cartoonish/);
   });
 
-  describe('Image-to-Video Mode', () => {
-    it('compiles motion-only directives without redescribing the static image', () => {
-      const imageInput: UniversalPromptInput = {
-        ...BASE_INPUT,
-        mode: 'image-to-video',
-      };
-
-      const result = transpilePrompt(imageInput, 'kling');
-      const primary = result.variants[0];
-
-      expect(primary.prompt).toContain('[mode: animate]');
-      expect(primary.prompt).toContain('Subject motion: slowly trudges forward');
-      expect(result.recommendations.some((r) => r.includes('motion directives'))).toBe(true);
-    });
-
-    it('carries motion from the core idea field when specific action is absent (F4)', () => {
-      const ideaOnlyInput: UniversalPromptInput = {
-        ...BASE_INPUT,
-        mode: 'image-to-video',
-        action: '',
-        idea: 'The red bird flaps its wings and flies out through the window',
-      };
-
-      const result = transpilePrompt(ideaOnlyInput, 'flow-veo');
-      const primary = result.variants[0];
-
-      expect(primary.prompt).toContain(
-        'Subject motion: The red bird flaps its wings and flies out through the window',
-      );
-    });
+  it('does not infer a Flow negative field from the separate Veo API contract', () => {
+    for (const selected of getTargetProfiles('flow-veo'))
+      expect(selected.negativePolicy).toBe('unknown');
+    const [primary] = transpilePrompt({ ...BASE, negativePrompt: 'unrequested logos' }).variants;
+    expect(primary.negativePrompt).toBe('');
+    expect(primary.copyAll).toContain('Creative exclusions for manual review: unrequested logos');
+    expect(primary.copyAll).toContain('unverified');
+    expect(primary.copyAll).not.toContain('Negative prompt:');
   });
 
-  describe('Custom Negative Prompts', () => {
-    it('appends user negative tokens to model-specific defaults', () => {
-      const customNegInput: UniversalPromptInput = {
-        ...BASE_INPUT,
-        negativePrompt: 'harsh strobing, green tint',
-      };
+  it('preserves exact manually supplied native dialogue and optics in all variants', () => {
+    const lensType = '50mm f/2.0 lens with a fixed focus plane';
+    const dialogue = '“We stay here. Keep the door open.”';
+    const audio = 'Footsteps on wooden boards, a distant bell';
+    const original = { ...BASE, dialogue, audio, creativeDetails: { lensType } };
+    const result = transpilePrompt(original);
+    for (const variant of result.variants) {
+      expect(variant.prompt).toContain(lensType);
+      expect(variant.prompt).toContain(dialogue);
+      expect(variant.prompt).toContain(audio);
+    }
+    expect(original.creativeDetails.lensType).toBe(lensType);
+    expect(original.dialogue).toBe(dialogue);
+  });
 
-      const result = transpilePrompt(customNegInput, 'sora');
-      expect(result.variants[0].negativePrompt).toContain('harsh strobing, green tint');
-      expect(result.variants[0].negativePrompt).toContain('temporal discontinuity');
-    });
+  it('copies only user-supplied negatives on a profile that supports them', () => {
+    const [primary] = transpilePrompt({
+      ...BASE,
+      target: 'wan-video',
+      profileId: 'wan-2.1-open',
+      durationSeconds: 5,
+      negativePrompt: 'harsh strobing, green tint',
+    }).variants;
+    expect(primary.negativePrompt).toBe('harsh strobing, green tint');
+    expect(primary.copyAll).toContain('Negative prompt: harsh strobing, green tint');
+    expect(primary.copyAll).not.toContain('extra limbs');
   });
 });

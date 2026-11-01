@@ -24,12 +24,13 @@ export function editStudioVariant(
     video.copyPrompt = video.prompt;
     video.copyNegativePrompt = video.negativePrompt;
     video.copySettingsChecklist = video.settingsChecklist.join('\n');
-    video.copyAll =
-      video.prompt +
-      '\n\nNegative prompt: ' +
-      video.negativePrompt +
-      '\n\n' +
-      video.copySettingsChecklist;
+    video.copyAll = [
+      video.prompt,
+      video.negativePrompt.trim() ? `Negative prompt: ${video.negativePrompt}` : '',
+      video.copySettingsChecklist,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
   } else {
     const music = variant as MusicPromptVariant;
     music.copyStyle = music.styleOfMusic;

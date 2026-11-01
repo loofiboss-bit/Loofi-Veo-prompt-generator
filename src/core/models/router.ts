@@ -1,5 +1,8 @@
 import {
   getModel,
+  getProviderBinding,
+  isShutdownModel,
+  type ModelProvider,
   type CostMode,
   type MediaModality,
   type ModelCatalogEntry,
@@ -8,6 +11,7 @@ import {
 } from './catalog';
 
 export interface RouteRequest {
+  provider?: ModelProvider;
   operation: ModelOperation;
   mode: CostMode;
   requiresReferenceImages?: boolean;
@@ -37,12 +41,14 @@ const resolve = (id: string): ModelCatalogEntry => {
 
 const supportsRequest = (model: ModelCatalogEntry, request: RouteRequest): boolean => {
   const capabilities = model.capabilities;
+  const lifecycle =
+    getProviderBinding(model.id, request.provider ?? model.provider)?.lifecycle ?? model.lifecycle;
   const requestedResolution = request.requires4k ? '4k' : request.requestedResolution;
   return (
     capabilities.operations.includes(request.operation) &&
-    model.lifecycle !== 'deprecated' &&
-    model.lifecycle !== 'shut-down' &&
-    (request.allowPreview !== false || model.lifecycle !== 'preview') &&
+    lifecycle !== 'deprecated' &&
+    !isShutdownModel(model.id, request.provider) &&
+    (request.allowPreview !== false || lifecycle !== 'preview') &&
     (!request.availableModelIds || request.availableModelIds.includes(model.id)) &&
     (!request.requiresReferenceImages || capabilities.supportsReferenceImages === true) &&
     (!request.requiresFirstLastFrame || capabilities.supportsFirstLastFrame === true) &&

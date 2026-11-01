@@ -104,6 +104,20 @@ function computePaidSubmissionHash(submission) {
     .digest('hex');
 }
 
+/** Do not block envelope readback, operation polling or media recovery for historical jobs. */
+function assertNewSubmissionAvailable(task, now = Date.now()) {
+  const modelId = task.request?.modelId;
+  if (
+    task.jobKind !== 'music' &&
+    (Object.hasOwn(PROVIDER_MODELS, modelId) || Object.values(PROVIDER_MODELS).includes(modelId)) &&
+    now >= Date.UTC(2026, 9, 22)
+  ) {
+    throw new Error(
+      'Veo 3.1 Preview in Gemini API shut down on 2026-10-22. Choose an active target; this job was not submitted.',
+    );
+  }
+}
+
 function requireApprovedSubmission(task) {
   if (task.costApproval?.hashVersion !== 2 || !task.costApproval.payloadHash) {
     throw new Error('A new native cost approval is required for this unsent job.');
@@ -133,4 +147,5 @@ module.exports = {
   createPaidSubmission,
   computePaidSubmissionHash,
   requireApprovedSubmission,
+  assertNewSubmissionAvailable,
 };

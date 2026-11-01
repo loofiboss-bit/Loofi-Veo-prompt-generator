@@ -8,7 +8,12 @@ export type SunoExportMode =
   | 'full-production-brief'
   | 'json';
 
-export type SunoTargetProfile = 'suno-v5.5' | 'future-compatible';
+export type SunoTargetProfile =
+  | 'suno-v5.5'
+  | 'future-compatible'
+  | 'suno-v6'
+  | 'suno-v6-wild'
+  | 'suno-v6-mini';
 
 export interface SunoRightsChecklist {
   ownsOrLicensedLyrics: boolean;

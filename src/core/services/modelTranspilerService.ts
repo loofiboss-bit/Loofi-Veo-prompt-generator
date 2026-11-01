@@ -1,15 +1,4 @@
-/**
- * Universal Model Transpiler Service (v13.0.0)
- *
- * Deterministically transpile high-level cinematic shot directions and 3D spatial
- * camera rigs into model-tailored prompt payloads for:
- * - Google Flow / Veo 3.1
- * - Kling 1.5 / 2.0
- * - Runway Gen-3 / Gen-4
- * - OpenAI Sora
- * - Luma Dream Machine (Ray-2)
- */
-
+/** Shared, source-backed profiles for local compilation, AI direction and Studio controls. */
 import type {
   UniversalPromptInput,
   UniversalVideoTarget,
@@ -17,386 +6,420 @@ import type {
   TranspiledPromptVariant,
   TargetModelProfile,
 } from '@core/types/modelTranspiler';
+import type { VideoPromptArtifactInput, VideoPromptMode } from '@core/types/promptArtifact';
 import { compileSpatialCameraRig } from './spatialCameraService';
 
-export const TARGET_MODEL_PROFILES: Record<UniversalVideoTarget, TargetModelProfile> = {
-  'flow-veo': {
+const VERIFIED_DATE = '2026-10-29';
+const ALL_MODES: VideoPromptMode[] = [
+  'text-to-video',
+  'image-to-video',
+  'first-last-frames',
+  'ingredients',
+  'extend',
+];
+const TEXT_IMAGE: VideoPromptMode[] = ['text-to-video', 'image-to-video'];
+const range = (min: number, max: number): number[] =>
+  Array.from({ length: max - min + 1 }, (_, index) => min + index);
+
+type ProfileDefinition = Pick<
+  TargetModelProfile,
+  | 'id'
+  | 'profileId'
+  | 'displayName'
+  | 'vendor'
+  | 'modelCode'
+  | 'supportedModes'
+  | 'durations'
+  | 'sourceUrl'
+  | 'promptingGuidance'
+> &
+  Partial<TargetModelProfile>;
+const profile = (value: ProfileDefinition): TargetModelProfile => ({
+  lifecycle: 'active',
+  handoff: 'manual',
+  audioPolicy: 'unknown',
+  negativePolicy: 'unknown',
+  syntaxFlavor: 'Natural scene and motion descriptions',
+  cameraDirectiveStyle: 'natural',
+  supportedAspectRatios: ['16:9', '9:16'],
+  verifiedDate: VERIFIED_DATE,
+  maxRecommendedDuration: Math.max(...value.durations),
+  ...value,
+});
+
+/** Persisted target IDs remain stable; explicit profile IDs distinguish real model capabilities. */
+export const STUDIO_TARGET_PROFILES: TargetModelProfile[] = [
+  profile({
     id: 'flow-veo',
-    displayName: 'Google Flow / Veo 3.1',
+    profileId: 'flow-veo-3.1-lite',
+    modelCode: 'Veo 3.1 Lite',
+    displayName: 'Google Flow / Veo 3.1 Lite',
     vendor: 'Google DeepMind',
-    syntaxFlavor: 'Natural Photographic & Spatial Directives',
-    maxRecommendedDuration: 8,
-    supportedAspectRatios: ['16:9', '9:16'],
-    cameraDirectiveStyle: 'natural',
-  },
-  'veo-api': {
-    id: 'veo-api',
-    displayName: 'Google Veo 3.1 API',
+    supportedModes: ALL_MODES,
+    durations: [4, 6, 8],
+    audioPolicy: 'native',
+    negativePolicy: 'supported',
+    sourceUrl: 'https://support.google.com/flow/answer/16352836?hl=en',
+    promptingGuidance:
+      'Describe a clear subject, one readable action, camera, composition and light. Include relevant ambient sound and exact requested dialogue. Ingredients and extension require 8-second clips; extension uses Veo 3.1 Lite.',
+  }),
+  profile({
+    id: 'flow-veo',
+    profileId: 'flow-veo-3.1-fast',
+    modelCode: 'Veo 3.1 Fast',
+    displayName: 'Google Flow / Veo 3.1 Fast',
     vendor: 'Google DeepMind',
-    syntaxFlavor: 'Native Veo Directives & Fast Synthesis',
-    maxRecommendedDuration: 8,
-    supportedAspectRatios: ['16:9', '9:16'],
-    cameraDirectiveStyle: 'natural',
-  },
-  'omni-flash': {
+    supportedModes: ALL_MODES.filter((mode) => mode !== 'extend'),
+    durations: [4, 6, 8],
+    audioPolicy: 'native',
+    negativePolicy: 'supported',
+    sourceUrl: 'https://support.google.com/flow/answer/16352836?hl=en',
+    promptingGuidance:
+      'Use a clear subject, concrete action and optional camera, composition, light and audio. Ingredients require an 8-second clip. Extension is unavailable for this profile.',
+  }),
+  profile({
+    id: 'flow-veo',
+    profileId: 'flow-veo-3.1-quality',
+    modelCode: 'Veo 3.1 Quality',
+    displayName: 'Google Flow / Veo 3.1 Quality',
+    vendor: 'Google DeepMind',
+    supportedModes: [...TEXT_IMAGE, 'first-last-frames'],
+    durations: [4, 6, 8],
+    audioPolicy: 'native',
+    negativePolicy: 'supported',
+    sourceUrl: 'https://support.google.com/flow/answer/16352836?hl=en',
+    promptingGuidance:
+      'Describe the scene, subject action, camera and light naturally, with relevant sound and exact requested dialogue. Ingredients and extension are unavailable for this profile.',
+  }),
+  profile({
     id: 'omni-flash',
+    profileId: 'gemini-omni-1.1-flash',
+    modelCode: 'gemini-omni-1.1-flash',
     displayName: 'Gemini Omni 1.1 Flash',
-    vendor: 'Google AI / DeepMind',
-    syntaxFlavor: 'Single-Shot Continuity, Native Audio & SynthID',
-    maxRecommendedDuration: 10,
-    supportedAspectRatios: ['16:9', '9:16'],
-    cameraDirectiveStyle: 'natural',
-  },
-  kling: {
+    vendor: 'Google DeepMind',
+    supportedModes: ALL_MODES,
+    durations: range(3, 10),
+    audioPolicy: 'native',
+    sourceUrl: 'https://ai.google.dev/gemini-api/docs/omni',
+    promptingGuidance:
+      'Use natural conversational video direction. State the visible action, camera behavior and relevant synchronized sound. For frames or extension preserve the supplied anchors. Keep a simple idea simple; do not impose an unrequested film style or extra shots.',
+  }),
+  profile({
     id: 'kling',
-    displayName: 'Kling 1.5 / 2.0',
+    profileId: 'kling-4.0',
+    modelCode: 'Kling 4.0',
+    displayName: 'Kling 4.0',
     vendor: 'Kuaishou',
-    syntaxFlavor: 'Structured Bracket Tags & Motion Intensity',
-    maxRecommendedDuration: 10,
+    supportedModes: ['text-to-video', 'image-to-video', 'first-last-frames', 'ingredients'],
+    durations: range(3, 30),
+    audioPolicy: 'native',
     supportedAspectRatios: ['16:9', '9:16', '1:1'],
-    cameraDirectiveStyle: 'bracket-tags',
-  },
-  'runway-gen3': {
+    sourceUrl: 'https://kling.ai/quickstart/kling-4-model-user-guide',
+    promptingGuidance:
+      'Describe subjects, concrete events, reference roles, camera and relevant synchronized sound in natural language. Prefer a few precise actions. Do not invent bracket-tag control syntax or numeric motion-strength settings.',
+  }),
+  profile({
     id: 'runway-gen3',
-    displayName: 'Runway Gen-3 / Gen-4',
-    vendor: 'RunwayML',
-    syntaxFlavor: 'Action-First Motion Vectors & Coherence Anchors',
-    maxRecommendedDuration: 10,
-    supportedAspectRatios: ['16:9', '9:16'],
-    cameraDirectiveStyle: 'motion-vector',
-  },
-  sora: {
-    id: 'sora',
-    displayName: 'OpenAI Sora',
-    vendor: 'OpenAI',
-    syntaxFlavor: 'High-Density Photochemical Physical Realism',
-    maxRecommendedDuration: 20,
-    supportedAspectRatios: ['16:9', '9:16', '1:1'],
-    cameraDirectiveStyle: 'photochemical',
-  },
-  'luma-ray': {
+    profileId: 'runway-gen-4.5',
+    modelCode: 'gen4.5',
+    displayName: 'Runway Gen-4.5',
+    vendor: 'Runway',
+    supportedModes: TEXT_IMAGE,
+    durations: range(2, 10),
+    audioPolicy: 'post-production',
+    negativePolicy: 'unsupported',
+    sourceUrl: 'https://help.runwayml.com/hc/en-us/articles/46974685288467-Creating-with-Gen-4-5',
+    syntaxFlavor: 'Concise positive physical motion',
+    promptingGuidance:
+      'Use direct positive descriptions of subject, camera and scene motion. Start simple. For image-to-video describe movement rather than repeating the image appearance. Use “locked camera” instead of negative instructions. Do not place dialogue or audio-generation instructions in the video prompt; keep them as post-production notes.',
+  }),
+  profile({
     id: 'luma-ray',
-    displayName: 'Luma Dream Machine Ray-2',
+    profileId: 'luma-ray-3.2',
+    modelCode: 'ray-3.2',
+    displayName: 'Luma Ray3.2',
     vendor: 'Luma AI',
-    syntaxFlavor: 'Dynamic Trajectory Anchors & Keyframe Transitions',
-    maxRecommendedDuration: 9,
-    supportedAspectRatios: ['16:9', '9:16', '1:1', '2.39:1'],
-    cameraDirectiveStyle: 'anchor-trajectory',
-  },
-  'wan-video': {
+    supportedModes: ['text-to-video', 'image-to-video', 'first-last-frames', 'extend'],
+    durations: [5, 10],
+    audioPolicy: 'post-production',
+    supportedAspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+    sourceUrl: 'https://docs.agents.lumalabs.ai/guides/videos/generation/',
+    promptingGuidance:
+      'Use concrete subject, movement, camera, light and pacing. Describe start/end anchors clearly when supplied. First/last anchor interpolation uses 5 seconds. Keep audio and dialogue as separate post-production notes. Do not claim a negative-prompt parameter.',
+  }),
+  profile({
     id: 'wan-video',
-    displayName: 'Wan 2.1 (T2V & I2V 14B/1.3B)',
-    vendor: 'Wan-Video Open-Weights',
-    syntaxFlavor: 'Dense CLIP/T5 Tokens & Photorealistic Texture',
-    maxRecommendedDuration: 10,
-    supportedAspectRatios: ['16:9', '9:16', '1:1', '2.39:1'],
-    cameraDirectiveStyle: 'clip-t5-dense',
-  },
-  'minimax-hailuo': {
+    profileId: 'wan-3.0-hosted',
+    modelCode: 'Wan 3.0',
+    displayName: 'Wan 3.0',
+    vendor: 'Alibaba Cloud',
+    supportedModes: ['text-to-video', 'image-to-video', 'ingredients'],
+    durations: [30],
+    audioPolicy: 'native',
+    sourceUrl: 'https://github.com/AlibabaCloud-Official/Wan3.0',
+    promptingGuidance:
+      'Describe the scene, motion, reference roles, camera and native audio naturally. This is the hosted Wan 3.0 profile; do not describe it as a local CLIP/T5 or FP8/GGUF workflow. Negative-prompt support is unconfirmed.',
+  }),
+  profile({
+    id: 'wan-video',
+    profileId: 'wan-2.1-open',
+    modelCode: 'Wan 2.1',
+    displayName: 'Wan 2.1 (open weights)',
+    vendor: 'Wan-Video',
+    lifecycle: 'legacy',
+    supportedModes: TEXT_IMAGE,
+    durations: [5],
+    audioPolicy: 'post-production',
+    negativePolicy: 'supported',
+    sourceUrl: 'https://github.com/Wan-Video/Wan2.1',
+    promptingGuidance:
+      'Describe the subject, environment, physical movement, camera and style. This legacy open-weights workflow depends on the locally selected checkpoint and host configuration; verify actual output settings in that host.',
+  }),
+  profile({
     id: 'minimax-hailuo',
-    displayName: 'Minimax / Hailuo Video 01',
-    vendor: 'Minimax AI',
-    syntaxFlavor: 'Cinematic Action Cadence & Dynamic Fluidity',
-    maxRecommendedDuration: 6,
-    supportedAspectRatios: ['16:9', '9:16', '1:1'],
-    cameraDirectiveStyle: 'dynamic-cinematic',
-  },
-};
+    profileId: 'minimax-h3',
+    modelCode: 'MiniMax-H3',
+    displayName: 'MiniMax-H3',
+    vendor: 'MiniMax',
+    supportedModes: ['text-to-video', 'image-to-video', 'first-last-frames', 'ingredients'],
+    durations: range(4, 15),
+    audioPolicy: 'native',
+    sourceUrl: 'https://platform.minimax.io/docs/api-reference/video-generation-v2-create',
+    promptingGuidance:
+      'Describe visible actions and reference roles clearly, with relevant synchronized dialogue and stereo sound. Do not invent a negative-prompt API field or legacy camera-command syntax.',
+  }),
+  profile({
+    id: 'veo-api',
+    profileId: 'veo-3.1-preview-retired',
+    modelCode: 'veo-3.1-fast-generate-preview',
+    displayName: 'Veo 3.1 Gemini API (retired)',
+    vendor: 'Google DeepMind',
+    lifecycle: 'retired',
+    handoff: 'approved-provider',
+    supportedModes: [],
+    durations: [4, 6, 8],
+    sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo',
+    promptingGuidance:
+      'The Gemini API Veo 3.1 Preview endpoints shut down on 2026-10-22. Preserve existing artifacts, but require an explicit active target before new generation. This does not describe Flow or Vertex GA availability.',
+  }),
+  profile({
+    id: 'sora',
+    profileId: 'sora-retired',
+    modelCode: 'Sora',
+    displayName: 'OpenAI Sora (retired)',
+    vendor: 'OpenAI',
+    lifecycle: 'retired',
+    supportedModes: [],
+    durations: [4, 8, 12, 20],
+    sourceUrl:
+      'https://help.openai.com/en/articles/20001152-what-to-know-about-the-sora-discontinuation',
+    promptingGuidance:
+      'Sora web/app ended on 2026-04-26 and its API ended on 2026-09-24. Preserve existing artifacts and require an explicit active target for new generation.',
+  }),
+];
 
-const cleanSentence = (value?: string): string => {
-  const trimmed = (value ?? '').trim();
-  if (!trimmed) return '';
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-};
+export const TARGET_MODEL_PROFILES = Object.fromEntries(
+  STUDIO_TARGET_PROFILES.map((item) => [
+    item.id,
+    STUDIO_TARGET_PROFILES.find((candidate) => candidate.id === item.id)!,
+  ]),
+) as Record<UniversalVideoTarget, TargetModelProfile>;
 
-const formatCameraForTarget = (
-  input: UniversalPromptInput,
+type ProfileInput = Pick<VideoPromptArtifactInput, 'target' | 'profileId' | 'mode'>;
+export const getTargetProfiles = (target: UniversalVideoTarget): TargetModelProfile[] =>
+  STUDIO_TARGET_PROFILES.filter((item) => item.id === target);
+export const getTargetProfile = (
   target: UniversalVideoTarget,
-): string => {
-  const rig = input.spatialCamera ? compileSpatialCameraRig(input.spatialCamera) : null;
-  const userCam = input.camera?.trim();
-
-  switch (target) {
-    case 'kling': {
-      const trajectoryTag = input.spatialCamera?.trajectory
-        ? `[camera: ${input.spatialCamera.trajectory.replace(/-/g, ' ')}]`
-        : userCam
-          ? `[camera: ${userCam}]`
-          : '[camera: smooth dynamic tracking]';
-      const lensNote = input.spatialCamera?.lens
-        ? `with ${input.spatialCamera.lens.replace(/-/g, ' ')} view`
-        : '';
-      return `${trajectoryTag} ${lensNote}`.trim();
-    }
-    case 'runway-gen3': {
-      const move = input.spatialCamera?.trajectory
-        ? `Cinematic ${input.spatialCamera.trajectory.replace(/-/g, ' ')} motion`
-        : userCam
-          ? `Cinematic ${userCam}`
-          : 'Smooth steady camera motion';
-      const lens = input.spatialCamera?.lens
-        ? `, ${input.spatialCamera.lens.replace(/-/g, ' ')} lens`
-        : '';
-      return `${move}${lens}, fluid tracking`;
-    }
-    case 'sora': {
-      const rigDesc = rig?.promptFragment ?? userCam ?? 'smooth fluid camera movement';
-      return `Captured on 35mm motion picture camera with ${rigDesc}, realistic physical camera weight, authentic optical depth`;
-    }
-    case 'luma-ray': {
-      const trajectory = input.spatialCamera?.trajectory
-        ? `Smooth ${input.spatialCamera.trajectory.replace(/-/g, ' ')} trajectory`
-        : (userCam ?? 'steady camera progression');
-      return `${trajectory}, consistent depth of field and fluid perspective shifts`;
-    }
-    case 'wan-video': {
-      const move = input.spatialCamera?.trajectory
-        ? `deliberate ${input.spatialCamera.trajectory.replace(/-/g, ' ')} cinematic move`
-        : (userCam ?? 'stable cinematic tracking');
-      const lens = input.spatialCamera?.lens
-        ? `, shot on sharp ${input.spatialCamera.lens.replace(/-/g, ' ')} prime lens`
-        : '';
-      return `${move}${lens}, rich optical volumetric depth, zero jitter`;
-    }
-    case 'minimax-hailuo': {
-      const move = input.spatialCamera?.trajectory
-        ? `dynamic ${input.spatialCamera.trajectory.replace(/-/g, ' ')} framing`
-        : (userCam ?? 'fluid tracking shot');
-      return `${move}, smooth cinematic action cadence and authentic spatial movement`;
-    }
-    case 'omni-flash': {
-      const rigDesc = rig?.promptFragment ?? userCam ?? 'smooth dynamic tracking';
-      return `In a single continuous, unbroken shot; no scene cuts; ${rigDesc}`;
-    }
-    case 'veo-api':
-    case 'flow-veo':
-    default: {
-      return rig?.promptFragment ?? userCam ?? 'Cinematic natural camera movement';
-    }
-  }
+  profileId?: string,
+): TargetModelProfile => {
+  const selected = profileId
+    ? STUDIO_TARGET_PROFILES.find((item) => item.id === target && item.profileId === profileId)
+    : Object.hasOwn(TARGET_MODEL_PROFILES, target)
+      ? TARGET_MODEL_PROFILES[target]
+      : undefined;
+  if (!selected)
+    throw new Error(
+      `Unknown profile ${profileId ?? target} for ${target}. Choose a supported target profile.`,
+    );
+  return selected;
+};
+export const isActiveStudioTarget = (target: string): boolean =>
+  Object.hasOwn(TARGET_MODEL_PROFILES, target) &&
+  TARGET_MODEL_PROFILES[target as UniversalVideoTarget].lifecycle === 'active';
+export const getProfileModes = (input: ProfileInput): VideoPromptMode[] => [
+  ...getTargetProfile(input.target, input.profileId).supportedModes,
+];
+export const getProfileAspectRatios = (
+  input: ProfileInput,
+): VideoPromptArtifactInput['aspectRatio'][] => [
+  ...getTargetProfile(input.target, input.profileId).supportedAspectRatios,
+];
+export const getProfileDurations = (input: ProfileInput): number[] => {
+  const selected = getTargetProfile(input.target, input.profileId);
+  if (input.target === 'flow-veo' && (input.mode === 'ingredients' || input.mode === 'extend'))
+    return selected.supportedModes.includes(input.mode) ? [8] : [];
+  if (input.target === 'luma-ray' && input.mode === 'first-last-frames') return [5];
+  return [...selected.durations];
+};
+export const getTargetPromptGuidance = (input: ProfileInput): string => {
+  const selected = getTargetProfile(input.target, input.profileId);
+  if (selected.lifecycle === 'retired')
+    throw new Error(
+      `${selected.displayName} is retired. Choose an active target before generating.`,
+    );
+  return [
+    `Target: ${selected.displayName} (${selected.modelCode}); mode: ${input.mode}.`,
+    selected.promptingGuidance,
+    input.mode === 'image-to-video'
+      ? 'The source image establishes appearance and identity. Describe motion rather than repeating static appearance.'
+      : '',
+    selected.audioPolicy === 'native'
+      ? 'Include sound or dialogue only when relevant to the user idea; do not invent spoken lines.'
+      : 'Audio and dialogue belong in separate post-production notes, not the video-generation prompt.',
+    selected.negativePolicy === 'supported'
+      ? 'Use only relevant user exclusions, not a generic negative list.'
+      : 'Do not emit a separate negative prompt: support is absent or unverified. Express positive visual intent instead.',
+  ]
+    .filter(Boolean)
+    .join('\n');
 };
 
-const formatNegativePromptForTarget = (
-  input: UniversalPromptInput,
-  target: UniversalVideoTarget,
-): string => {
-  const baseUserNeg = input.negativePrompt?.trim();
-
-  const modelArtifactNegatives: Record<UniversalVideoTarget, string[]> = {
-    'flow-veo': [
-      'unintended text',
-      'subtitles',
-      'logos',
-      'watermarks',
-      'extra limbs',
-      'visual glitches',
-    ],
-    'veo-api': [
-      'unintended text',
-      'subtitles',
-      'logos',
-      'watermarks',
-      'extra limbs',
-      'visual glitches',
-    ],
-    'omni-flash': [
-      'scene cuts',
-      'jump cuts',
-      'unwanted dialogue',
-      'audio distortion',
-      'extra audio embellishments',
-      'visual glitches',
-    ],
-    kling: [
-      'morphing',
-      'flickering',
-      'floating objects',
-      'watermark',
-      'distorted anatomy',
-      'low quality',
-      'motion jitter',
-    ],
-    'runway-gen3': [
-      'blurry',
-      'motion smearing',
-      'stutter',
-      'distorted limbs',
-      'oversaturated',
-      'watermark',
-      'text',
-    ],
-    sora: [
-      'unnatural physics',
-      'temporal discontinuity',
-      'cartoonish',
-      'low resolution',
-      'clipping artifacts',
-      'jitter',
-    ],
-    'luma-ray': [
-      'frame warping',
-      'sudden camera jumps',
-      'geometry distortion',
-      'flickering',
-      'extra limbs',
-    ],
-    'wan-video': [
-      'low resolution',
-      'ugly',
-      'distorted',
-      'noisy',
-      'oversaturated',
-      'deformed face',
-      'bad hands',
-      'cartoonish',
-      'jitter',
-    ],
-    'minimax-hailuo': [
-      'blur',
-      'jerky motion',
-      'morphing artifacts',
-      'missing limbs',
-      'plastic skin',
-      'distorted background',
-      'stutter',
-    ],
-  };
-
-  const defaults = modelArtifactNegatives[target] ?? modelArtifactNegatives['flow-veo'];
-  if (!baseUserNeg) return defaults.join(', ');
-  return `${baseUserNeg}, ${defaults.join(', ')}`;
-};
-
-const buildTargetSettingsChecklist = (
-  input: UniversalPromptInput,
-  target: UniversalVideoTarget,
-): string[] => {
-  const profile = TARGET_MODEL_PROFILES[target];
-  const list = [
-    `Target Engine: ${profile.displayName} (${profile.vendor})`,
-    `Syntax Flavor: ${profile.syntaxFlavor}`,
-    `Aspect Ratio: ${input.aspectRatio}`,
-    `Duration: ${input.durationSeconds}s ${input.durationSeconds > profile.maxRecommendedDuration ? `(Note: Recommended max is ${profile.maxRecommendedDuration}s)` : ''}`,
-    `Generation Mode: ${input.mode}`,
-  ];
-
-  if (target === 'kling') {
-    list.push(
-      'Use structured bracket notation [camera: ...] for deterministic camera movement control.',
-    );
-    list.push('Set motion intensity between 4-6 for standard realism, or 7-9 for dynamic action.');
-  } else if (target === 'runway-gen3') {
-    list.push(
-      'Structure prompt as: Camera Move + Subject + Continuous Action + Environmental Setting.',
-    );
-    list.push('Keep motion descriptions continuous rather than episodic.');
-  } else if (target === 'sora') {
-    list.push(
-      'Describe physical realism, lighting material interaction, and continuous temporal pacing.',
-    );
-  } else if (target === 'luma-ray') {
-    list.push(
-      'Anchor the start and end trajectory clearly for smooth Dream Machine interpolation.',
-    );
-  } else if (target === 'wan-video') {
-    list.push(
-      'Use dense descriptive nouns and explicit lighting angles for Wan 2.1 CLIP/T5 text encoders.',
-    );
-    list.push('Fully compatible with local ComfyUI FP8/GGUF workflows.');
-  } else if (target === 'minimax-hailuo') {
-    list.push(
-      'Focus on organic human action, facial dynamics, and cinematic lighting contrast in Hailuo Video 01.',
-    );
-  } else if (target === 'veo-api') {
-    list.push('Fully qualified for internal DeepMind Veo 3.1 generation via Vertex/Gemini API.');
-    list.push('Supports 4s, 6s, and 8s durations at 720p/1080p in 16:9 or 9:16.');
-  } else if (target === 'omni-flash') {
-    list.push(
-      'Target engine: Gemini Omni 1.1 Flash (gemini-omni-1.1-flash) via Google GenAI Interactions API.',
-    );
-    list.push(
-      'Natively generates matching synchronized environmental audio and Foley with SynthID watermarking.',
-    );
-    list.push(
-      'Enforces single-shot continuity to prevent unsolicited multi-shot cuts: "In a single continuous, unbroken shot; no scene cuts."',
-    );
-    list.push(
-      'Supports text-to-video, first-frame interpolation, and turn-by-turn video extension up to 40s.',
-    );
-  } else {
-    list.push('Keep one primary scene and action for highest visual fidelity in Veo.');
-  }
-
-  return list;
+const sentence = (value?: string): string => {
+  const text = value?.trim() ?? '';
+  return text && !/[.!?]$/.test(text) ? `${text}.` : text;
 };
 
 const compileVariant = (
   input: UniversalPromptInput,
-  target: UniversalVideoTarget,
+  selected: TargetModelProfile,
   label: TranspiledPromptVariant['label'],
 ): TranspiledPromptVariant => {
-  const subject = cleanSentence(input.subject || input.idea);
-  const action = cleanSentence(input.action);
-  const environment = cleanSentence(input.environment);
-  const camera = cleanSentence(formatCameraForTarget(input, target));
-  const lighting = cleanSentence(input.lighting);
-  const style = cleanSentence(input.style);
-  const negativePrompt = formatNegativePromptForTarget(input, target);
-  const checklist = buildTargetSettingsChecklist(input, target);
-
-  let prompt = '';
-
-  if (input.mode === 'image-to-video') {
-    const subjectMotion = action || cleanSentence(input.idea);
-    const motionOnly = [
-      subjectMotion ? `Subject motion: ${subjectMotion}` : '',
-      camera ? `Camera motion: ${camera}` : '',
-      environment ? `Atmosphere motion: ${environment}` : '',
-    ]
+  const details = input.creativeDetails ?? {};
+  const rig = input.spatialCamera ? compileSpatialCameraRig(input.spatialCamera) : null;
+  const camera = [
+    input.camera || rig?.promptFragment,
+    details.cameraDistance,
+    details.lensType,
+    details.compositionalGuide,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const subject = [
+    input.subject || input.idea,
+    details.characterVisualDNA,
+    details.characterClothing,
+    details.characterNuances,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const environment = [
+    input.environment,
+    details.timeOfDay,
+    details.weather,
+    details.architecturalStyle,
+    details.environmentSensoryDetails,
+    details.environmentDynamicEvents,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const promptParts =
+    input.mode === 'image-to-video'
+      ? [
+          sentence(input.action || input.idea),
+          sentence(camera),
+          sentence(details.environmentDynamicEvents),
+          sentence(details.motionIntensity),
+        ]
+      : [
+          sentence(subject),
+          sentence(input.action),
+          sentence(environment),
+          sentence(camera),
+          sentence(input.lighting),
+          sentence(input.style),
+          sentence(details.colorPalette),
+          sentence(details.motionIntensity),
+        ];
+  if (input.mode === 'first-last-frames')
+    promptParts.push(
+      `Transition from ${input.startFrame || 'the supplied first frame'} to ${input.endFrame || 'the supplied last frame'}.`,
+    );
+  if (input.mode === 'ingredients' && input.referenceRoles)
+    promptParts.push(`Reference roles: ${sentence(input.referenceRoles)}`);
+  if (input.mode === 'extend')
+    promptParts.push(
+      `Continue the supplied clip with consistent identity and motion. ${sentence(input.previousClip)}`,
+    );
+  if (selected.audioPolicy === 'native') {
+    const sound = [input.audio, details.ambientSound, details.soundEffectsIntensity]
       .filter(Boolean)
-      .join(' ');
-
-    prompt = [
-      target === 'kling' ? '[mode: animate]' : 'Animate the provided image.',
-      motionOnly || 'Animate with subtle, organic movement and stable visual fidelity.',
-      label === 'Cinematic'
-        ? 'Preserve natural motion cadence, authentic optical depth, and photographic texture.'
-        : label === 'Control-focused'
-          ? `Strictly maintain subject geometry and identity without introducing new objects for ${input.durationSeconds}s.`
-          : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-  } else {
-    const coreBlocks = [subject, action, environment, camera, lighting, style].filter(Boolean);
-
+      .join(', ');
+    if (sound) promptParts.push(`Sound: ${sentence(sound)}`);
     if (input.dialogue) {
-      coreBlocks.push(
-        `Dialogue: the speaker says: ${input.dialogue.replace(/["“”]/g, '').trim()}.`,
-      );
+      promptParts.push(`Dialogue: the speaker says: ${input.dialogue}`);
+      if (details.voiceStyle) promptParts.push(`Voice delivery: ${sentence(details.voiceStyle)}`);
     }
-
-    if (label === 'Cinematic') {
-      coreBlocks.push(
-        target === 'sora'
-          ? 'Captured on large-format film, authentic tactile textures, cinematic color grade with balanced highlights.'
-          : 'Rich cinematic staging, purposeful composition, high visual fidelity and atmospheric depth.',
-      );
-    } else if (label === 'Control-focused') {
-      coreBlocks.push(
-        `One continuous unbroken shot for ${input.durationSeconds}s in ${input.aspectRatio}. No jump cuts, morphing, or unrequested transitions.`,
-      );
-    }
-
-    prompt = coreBlocks.join(' ');
   }
-
+  // Alternatives vary emphasis without inventing a lens, look, character or action.
+  if (label === 'Cinematic')
+    promptParts.push('Use deliberate composition and a readable visual rhythm.');
+  if (label === 'Control-focused')
+    promptParts.push(
+      `Keep the described action continuous across ${input.durationSeconds} seconds.`,
+    );
+  const prompt = promptParts.filter(Boolean).join(' ');
+  const negativePrompt =
+    selected.negativePolicy === 'unsupported' ? '' : (input.negativePrompt?.trim() ?? '');
+  const checklist = [
+    `Target: ${selected.displayName} (${selected.modelCode})`,
+    `Mode: ${input.mode}`,
+    `Aspect ratio: ${input.aspectRatio}`,
+    `Duration: ${input.durationSeconds}s`,
+    'Manual handoff: select these settings and references in the destination.',
+  ];
+  if (!getProfileModes(input).includes(input.mode))
+    checklist.push('Unsupported mode for this profile. Choose a supported mode before handoff.');
+  if (!getProfileDurations(input).includes(input.durationSeconds))
+    checklist.push(
+      'Unsupported duration for this profile. Choose a supported duration before handoff.',
+    );
+  if (!getProfileAspectRatios(input).includes(input.aspectRatio))
+    checklist.push(
+      'Unsupported aspect ratio for this profile. Choose a supported format before handoff.',
+    );
+  if (selected.audioPolicy !== 'native') {
+    const audioNotes = [
+      input.audio,
+      details.ambientSound,
+      details.soundEffectsIntensity,
+      details.voiceStyle,
+    ]
+      .filter(Boolean)
+      .join(', ');
+    if (audioNotes) checklist.push(`Post-production audio: ${audioNotes}`);
+    if (input.dialogue) checklist.push(`Post-production dialogue: ${input.dialogue}`);
+  }
+  if (input.negativePrompt && selected.negativePolicy === 'unsupported')
+    checklist.push(
+      `Creative exclusions for manual review: ${input.negativePrompt}. A negative-prompt field is unsupported for this profile; express these exclusions as positive visual direction in the destination.`,
+    );
+  if (rig) checklist.push(...rig.settingsNotes);
   const copySettingsChecklist = checklist.join('\n');
-  const copyAll = `${prompt}\n\nNegative prompt: ${negativePrompt}\n\n${copySettingsChecklist}`;
-
+  const copyAll = [
+    prompt,
+    negativePrompt ? `Negative prompt: ${negativePrompt}` : '',
+    copySettingsChecklist,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
   return {
     label,
-    title: `${TARGET_MODEL_PROFILES[target].displayName} — ${label}`,
+    title:
+      label === 'Primary'
+        ? 'Recommended handoff'
+        : label === 'Cinematic'
+          ? 'Cinematic emphasis'
+          : 'Control-focused',
     prompt,
     negativePrompt,
     settingsChecklist: checklist,
@@ -407,31 +430,29 @@ const compileVariant = (
   };
 };
 
-/**
- * Deterministically transpile an idea or shot rig into target-specific prompt payloads.
- */
 export const transpilePrompt = (
   input: UniversalPromptInput,
   overrideTarget?: UniversalVideoTarget,
 ): TranspiledPromptResult => {
   const target = overrideTarget ?? input.target;
-  const profile = TARGET_MODEL_PROFILES[target] ?? TARGET_MODEL_PROFILES['flow-veo'];
-
-  const primary = compileVariant(input, target, 'Primary');
-  const cinematic = compileVariant(input, target, 'Cinematic');
-  const control = compileVariant(input, target, 'Control-focused');
-
-  const recommendations: string[] = [
-    `Optimized for ${profile.displayName} syntax.`,
-    input.mode === 'image-to-video'
-      ? 'Focus prompt strictly on motion directives; identity is anchored in the reference image.'
-      : 'Maintain clear subject-action separation for highest generation coherence.',
-  ];
-
+  const scoped = {
+    ...input,
+    target,
+    profileId: target === input.target ? input.profileId : undefined,
+  };
+  const selected = getTargetProfile(target, scoped.profileId);
+  getTargetPromptGuidance(scoped); // Fail closed for retired targets; stored artifacts remain readable.
   return {
     target,
-    targetDisplayName: profile.displayName,
-    variants: [primary, cinematic, control],
-    recommendations,
+    targetDisplayName: selected.displayName,
+    variants: ['Primary', 'Cinematic', 'Control-focused'].map((label) =>
+      compileVariant(scoped, selected, label as TranspiledPromptVariant['label']),
+    ) as TranspiledPromptResult['variants'],
+    recommendations: [
+      selected.promptingGuidance,
+      input.mode === 'image-to-video'
+        ? 'Focus on motion directives; the reference image establishes appearance.'
+        : 'Keep the visible subject and action clear.',
+    ],
   };
 };

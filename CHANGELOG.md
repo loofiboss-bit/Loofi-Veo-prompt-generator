@@ -7,7 +7,38 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [22.0.0] - 2026-11-01
+
+### Added
+
+- **AI Video Iteration & Creative Loop**: Natural language, multi-turn conversational video modifications powered by Gemini Omni 1.1 Flash via the stateful Interactions API (`previous_interaction_id`). Enforces model constraints (3–10s, 360p–4K, 16:9/9:16) with SHA-256 idempotency request protection.
+- **Smart Version Control & Lineage**: Automatically archives video iterations as version lineage trees (`v1`, `v2`, `v3`, ...), preserving full instruction records and source media. Integrates A/B comparison playback (`VideoResultCompare`) and non-destructive timeline take insertion.
+- **Intelligent Creative Assistant**: Context-aware advisory engine providing voluntary, reviewable suggestions for camera movement, lighting & atmosphere continuity, goal alignment/deviation detection, and contextual iteration instructions. Includes an offline heuristic fallback when network or cloud provider is unavailable.
+- **Unified Creative Workflow**: Connects Prompt Studio, External Results, Video Iteration, and Timeline into a cohesive loop without manual asset re-import or loss of creative context.
+- **Timeline Version Badges**: Subtly indicates active iteration version tag (`[v2]`, `[v3]`) on timeline clips and storyboard takes.
+- **Fedora KDE / Wayland Performance Optimization**: Streamlined object URL management, CSS GPU acceleration, and low CPU/memory footprint preparing for native Qt 6/QML and Rust desktop runtime.
+- One-request Prompt Studio scene development and three target-specific variants, applied directly
+  with durable checkpoints and undo; explicit per-field AI protection and regeneration.
+- Progressive camera/optics/composition, character-bank Visual DNA, environment, sound and style
+  controls reusing the original generator's options and presets.
+- Current Flow Lite/Fast/Quality, Omni 1.1, Kling 4.0, Runway Gen-4.5, Ray3.2, Wan 3.0, MiniMax-H3
+  and Suno v6 family profiles with dated official sources.
+
+### Changed
+
+- Share model profiles between AI instructions, offline compilation, Arena, controls and validation.
+  Preserve non-native sound as post-production notes and omit unsupported negative fields.
+- Preserve creative details through legacy history/template adapters, revisions and project reloads;
+  save AI settings and source/protection metadata with the project.
+- Remove retired Sora and Gemini API Veo Preview bindings from new generation; preserve stored
+  text and existing operation recovery without silently migrating providers.
+
+### Fixed
+
+- Validate structured AI responses at runtime; preserve manual strings, dialogue and locked lyrics,
+  including music expansion. Ignore cancelled or stale responses without hidden fallback requests.
+- Persist AI input and output atomically before display; retain prior content on checkpoint/write
+  failure. Replace obsolete target-tag transforms and undocumented Suno style truncation.
 
 ## [21.1.0] - 2026-10-29
 

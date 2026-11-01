@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        21.1.0
+Version:        22.0.0
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT

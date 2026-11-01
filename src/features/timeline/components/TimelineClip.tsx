@@ -54,6 +54,15 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
 
   const [isDragging, setIsDragging] = useState(false);
 
+  // Version indicator (e.g. from video iteration: v1, v2, v3)
+  const activeTakeUrl = shot?.takes?.[shot.selectedTakeIndex ?? 0] || shot?.videoUrl;
+  const versionMatch = activeTakeUrl?.match(/\b(v\d+)\b/i) || clip.label?.match(/\b(v\d+)\b/i);
+  const versionTag = versionMatch
+    ? versionMatch[1].toLowerCase().startsWith('v')
+      ? versionMatch[1].toLowerCase()
+      : `v${versionMatch[1]}`
+    : null;
+
   // Styles based on type
   let baseStyle =
     clip.type === 'video'
@@ -381,6 +390,14 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
             >
               {clip.label}
             </span>
+            {versionTag && (
+              <span
+                data-testid="timeline-clip-version-badge"
+                className="shrink-0 rounded bg-cyan-950/80 px-1 py-0.5 text-[9px] font-mono font-bold text-cyan-300 border border-cyan-400/40"
+              >
+                {versionTag}
+              </span>
+            )}
           </div>
           {(shot?.motionConfig || clip.transform) && !clip.isLoading && (
             <span className="text-[8px] text-fuchsia-200 uppercase tracking-tighter">★ Motion</span>

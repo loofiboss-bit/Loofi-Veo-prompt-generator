@@ -221,6 +221,28 @@ describe('geminiAudioService — integration', () => {
       expect(result.explanation).toContain('instrumental arrangement');
     });
 
+    it('keeps complete long style details and uses the current profile unless a saved one is selected', async () => {
+      const longStyle = Array.from({ length: 35 }, (_, index) => `creative-layer-${index}`).join(
+        ', ',
+      );
+      const response = {
+        title: 'Layers',
+        style: longStyle,
+        lyrics: '[Verse]\nOriginal words',
+        explanation: 'Distinct layers.',
+      };
+      mockGenerateContent.mockResolvedValue({ text: JSON.stringify(response) });
+      const current = await generateSunoPack({ ...defaultSunoSettings });
+      expect(current.style.length).toBeGreaterThan(200);
+      expect(current.style).toContain('creative-layer-34');
+      expect(mockGenerateContent.mock.calls[0][0].contents).toContain('Target Profile: suno-v6');
+      expect(mockGenerateContent.mock.calls[0][0].config.systemInstruction).not.toContain(
+        'at or below 200',
+      );
+      await generateSunoPack({ ...defaultSunoSettings, targetProfile: 'suno-v5.5' });
+      expect(mockGenerateContent.mock.calls[1][0].contents).toContain('Target Profile: suno-v5.5');
+    });
+
     it('should propagate API errors', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('rate limit'));
       await expect(generateSunoPack({ ...defaultSunoSettings })).rejects.toThrow('rate limit');

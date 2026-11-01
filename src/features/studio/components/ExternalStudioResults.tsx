@@ -10,6 +10,9 @@ import {
   VideoResultCompare,
   type VideoComparisonResult,
 } from '@shared/components/VideoResultCompare';
+import { videoIterationService } from '@core/services/videoIterationService';
+import type { VideoIterationSession } from '@core/types/videoIteration';
+import { VideoIterationPanel } from './VideoIterationPanel';
 
 interface ExternalStudioResultsProps {
   projectId: string;
@@ -40,7 +43,34 @@ function ExternalResultCard({
   const [notes, setNotes] = useState(result.manualReview?.notes ?? '');
   const notesId = useId();
   const [shot, setShot] = useState('');
+  const [isIterating, setIsIterating] = useState(false);
+  const [iterationSession, setIterationSession] = useState<VideoIterationSession | null>(null);
   const reviewed = result.manualReview?.assetId === result.assetId;
+
+  const handleToggleIteration = () => {
+    if (!iterationSession && asset) {
+      const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
+      const duration = Math.min(10, Math.max(3, Math.round(result.durationSeconds || 5)));
+      const session = videoIterationService.createInitialSession({
+        projectId: result.projectId,
+        artifactId: result.artifactId,
+        variantIndex: result.variantIndex,
+        baseAsset: {
+          id: result.assetId,
+          url: asset.url,
+          name: result.assetName,
+          durationSeconds: duration,
+        },
+        initialPrompt: result.variantSnapshot.prompt,
+        settings: {
+          aspectRatio: (input?.aspectRatio as '16:9' | '9:16') ?? '16:9',
+          durationSeconds: duration,
+        },
+      });
+      setIterationSession(session);
+    }
+    setIsIterating((prev) => !prev);
+  };
   return (
     <article className="space-y-3 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-4">
       <h3 className="font-semibold text-[var(--color-text-primary)]">
@@ -193,6 +223,30 @@ function ExternalResultCard({
       >
         {t('externalResults.useTimeline')}
       </button>
+      {asset && (
+        <button
+          type="button"
+          disabled={disabled || pending}
+          onClick={handleToggleIteration}
+          data-testid="toggle-video-iteration-btn"
+          className="rounded border border-fuchsia-500/50 bg-fuchsia-950/30 px-3 py-2 text-fuchsia-200 hover:bg-fuchsia-900/40 disabled:opacity-50 transition-colors font-medium ml-2"
+        >
+          {isIterating ? t('videoIteration.hideCompare') : t('videoIteration.iterateButton')}
+        </button>
+      )}
+      {isIterating && iterationSession && (
+        <div
+          className="mt-4 border-t border-[var(--color-border-primary)] pt-4"
+          data-testid="video-iteration-wrapper"
+        >
+          <VideoIterationPanel
+            initialSession={iterationSession}
+            idea={result.variantSnapshot.prompt}
+            onSessionUpdated={setIterationSession}
+            disabled={disabled || pending}
+          />
+        </div>
+      )}
     </article>
   );
 }

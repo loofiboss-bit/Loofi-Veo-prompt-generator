@@ -52,6 +52,7 @@ export interface PromptValidationCheck {
 }
 
 export interface PromptArtifactProvenance {
+  modelId?: string;
   provider: PromptArtifactProvider;
   source: 'compiler' | 'optimizer' | 'editor';
   generatedAt: string;
@@ -82,13 +83,50 @@ export interface MusicPromptVariant {
 }
 
 import type { SpatialCameraRig } from './spatialCamera';
+import type { PromptState } from './projectPrompt';
+
+/** Optional controls shared with the original generator, rather than a second scene model. */
+export type StudioCreativeDetails = Partial<
+  Pick<
+    PromptState,
+    | 'cameraDistance'
+    | 'lensType'
+    | 'compositionalGuide'
+    | 'characterVisualDNA'
+    | 'characterNuances'
+    | 'characterClothing'
+    | 'timeOfDay'
+    | 'weather'
+    | 'environmentSensoryDetails'
+    | 'environmentDynamicEvents'
+    | 'architecturalStyle'
+    | 'ambientSound'
+    | 'soundEffectsIntensity'
+    | 'voiceStyle'
+    | 'motionIntensity'
+    | 'colorPalette'
+  >
+>;
+
+export type StudioSceneField =
+  | 'subject'
+  | 'action'
+  | 'environment'
+  | 'camera'
+  | 'lighting'
+  | 'style'
+  | 'audio'
+  | 'dialogue'
+  | 'negativePrompt';
 
 export interface VideoPromptArtifactInput {
   idea: string;
   mode: VideoPromptMode;
   target: Exclude<PromptArtifactTarget, 'suno'>;
-  aspectRatio: '16:9' | '9:16';
-  durationSeconds: 4 | 6 | 8 | 10;
+  profileId?: string;
+  creativeDetails?: StudioCreativeDetails;
+  aspectRatio: '16:9' | '9:16' | '1:1' | '4:3' | '3:4' | '21:9' | '9:21' | '2.39:1';
+  durationSeconds: number;
   subject?: string;
   action?: string;
   environment?: string;
@@ -122,7 +160,7 @@ export interface MusicPromptArtifactInput {
   lyrics?: string;
   instrumental?: boolean;
   styleInfluence?: number | null;
-  targetProfile?: 'suno-v5.5' | 'future-compatible';
+  targetProfile?: 'suno-v5.5' | 'future-compatible' | 'suno-v6' | 'suno-v6-wild' | 'suno-v6-mini';
   key?: string;
   timeSignature?: string;
   energyCurve?: string;

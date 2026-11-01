@@ -9,6 +9,12 @@ import type {
   VideoPromptVariant,
 } from '@core/types/promptArtifact';
 import { compileVideoPromptArtifact } from '@core/services/promptStudioService';
+import {
+  getTargetProfile,
+  getProfileDurations,
+  getProfileModes,
+  getProfileAspectRatios,
+} from '@core/services/modelTranspilerService';
 import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 
 interface ModelArenaModalProps {
@@ -28,10 +34,8 @@ export const ARENA_TARGETS: VideoPromptArtifactInput['target'][] = [
   'wan-video',
   'kling',
   'runway-gen3',
-  'sora',
   'minimax-hailuo',
   'luma-ray',
-  'veo-api',
 ];
 
 export function ModelArenaModal({
@@ -54,7 +58,16 @@ export function ModelArenaModal({
     () =>
       isOpen
         ? ARENA_TARGETS.map((target) => {
-            const artifact = compileVideoPromptArtifact({ ...input, target });
+            const candidate = { ...input, target, profileId: getTargetProfile(target).profileId };
+            const modes = getProfileModes(candidate);
+            if (!modes.includes(candidate.mode)) candidate.mode = modes[0];
+            const durations = getProfileDurations(candidate);
+            if (!durations.includes(candidate.durationSeconds))
+              candidate.durationSeconds = durations[0];
+            const aspects = getProfileAspectRatios(candidate);
+            if (!aspects.includes(candidate.aspectRatio))
+              candidate.aspectRatio = aspects[0] as VideoPromptArtifactInput['aspectRatio'];
+            const artifact = compileVideoPromptArtifact(candidate);
             return { target, artifact, primary: artifact.primary as VideoPromptVariant };
           })
         : [],

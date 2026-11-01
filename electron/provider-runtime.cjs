@@ -242,9 +242,25 @@ async function executeInteraction(input, client) {
       },
       input.signal ? { abortSignal: input.signal } : undefined,
     );
-    const media = [interaction.output_image, interaction.output_audio]
+    const media = [interaction.output_image, interaction.output_audio, interaction.output_video]
       .filter(Boolean)
-      .map((item) => ({ mimeType: item.mime_type || item.mimeType, data: item.data }));
+      .map((item) => ({
+        mimeType:
+          item.mime_type ||
+          item.mimeType ||
+          (item === interaction.output_video ? 'video/mp4' : 'application/octet-stream'),
+        data: item.data || item.bytesBase64Encoded,
+      }));
+    if (Array.isArray(interaction.outputs)) {
+      for (const out of interaction.outputs) {
+        if (out && (out.data || out.bytesBase64Encoded)) {
+          media.push({
+            mimeType: out.mime_type || out.mimeType || 'video/mp4',
+            data: out.data || out.bytesBase64Encoded,
+          });
+        }
+      }
+    }
     return {
       text: interaction.output_text || '',
       media,

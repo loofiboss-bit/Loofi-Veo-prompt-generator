@@ -10,6 +10,19 @@ import type { StudioRevisionV1 } from '@core/types/studioRevision';
 import { studioRevisionService } from '@core/services/studioRevisionService';
 import { promptStudioDraftService } from '@core/services/promptStudioDraftService';
 
+export type StudioDraftUpdates = Partial<
+  Pick<
+    PromptStudioDraftV1,
+    | 'video'
+    | 'music'
+    | 'aiSettings'
+    | 'fieldOrigins'
+    | 'lockedFields'
+    | 'selectedVariant'
+    | 'artifact'
+  >
+>;
+
 interface PromptStudioDraftStore {
   draft: PromptStudioDraftV1 | null;
   status: 'loading' | 'saving' | 'saved' | 'error';
@@ -28,6 +41,9 @@ interface PromptStudioDraftStore {
         | 'selectedVariant'
         | 'selectedVariants'
         | 'lockedSections'
+        | 'aiSettings'
+        | 'fieldOrigins'
+        | 'lockedFields'
       >
     >,
   ) => void;
@@ -37,7 +53,12 @@ interface PromptStudioDraftStore {
     artifact: PromptArtifactV1,
     expected: PromptStudioDraftV1,
     isCurrent: () => boolean,
-    updates?: Pick<PromptStudioDraftV1, 'music'>,
+    updates?: StudioDraftUpdates,
+  ) => Promise<boolean>;
+  acceptDraftUpdates: (
+    expected: PromptStudioDraftV1,
+    isCurrent: () => boolean,
+    updates: StudioDraftUpdates,
   ) => Promise<boolean>;
   updateVideo: (updates: Partial<VideoPromptArtifactInput>) => void;
   updateMusic: (updates: Partial<MusicPromptArtifactInput>) => void;
@@ -71,6 +92,56 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
     timer = setTimeout(() => {
       void get().flush();
     }, 500);
+  };
+
+  const acceptDraftUpdates = async (
+    expected: PromptStudioDraftV1,
+    isCurrent: () => boolean,
+    updates: StudioDraftUpdates,
+  ): Promise<boolean> => {
+    // A checkpoint must have durably saved the exact source first. Persist the
+    // replacement before exposing it so a failed write preserves manual edits.
+    if (get().draft !== expected || get().status !== 'saved' || dirty || saving || !isCurrent())
+      return false;
+    const next: PromptStudioDraftV1 = {
+      ...expected,
+      ...updates,
+      artifacts:
+        'artifact' in updates
+          ? { ...expected.artifacts, [expected.mode]: updates.artifact ?? null }
+          : expected.artifacts,
+      selectedVariants: {
+        ...expected.selectedVariants,
+        [expected.mode]: updates.selectedVariant ?? expected.selectedVariant,
+      },
+      revision: expected.revision + 1,
+      updatedAt: new Date().toISOString(),
+    };
+    set({ status: 'saving', error: null });
+    saving = (async () => {
+      try {
+        const snapshot = useEditorSessionStore.getState().projectSnapshot;
+        await promptStudioDraftService.save(
+          next,
+          snapshot?.id === expected.projectId ? (snapshot.documentRevision ?? 0) : undefined,
+        );
+        if (get().draft !== expected || !isCurrent()) return false;
+        set({ draft: next, status: 'saved', error: null });
+        return true;
+      } catch (error) {
+        if (get().draft === expected)
+          set({ status: 'error', error: error instanceof Error ? error.message : String(error) });
+        return false;
+      }
+    })();
+    const result = await saving;
+    saving = null;
+    if (dirty) await get().flush();
+    // Project switching waits for the in-flight write before hydration; a
+    // discarded result must not leave that old draft reporting a pending save.
+    else if (!result && get().draft === expected && get().status === 'saving')
+      set({ status: 'saved' });
+    return result;
   };
 
   return {
@@ -163,45 +234,9 @@ export const usePromptStudioDraftStore = create<PromptStudioDraftStore>((set, ge
       if (result && dirty) return get().flush(projectId);
       return result;
     },
-    acceptArtifact: async (artifact, expected, isCurrent, updates) => {
-      // A checkpoint must have durably saved the exact source first. Persist the
-      // replacement before exposing it so a failed write preserves manual edits.
-      if (get().draft !== expected || get().status !== 'saved' || dirty || saving || !isCurrent())
-        return false;
-      const next: PromptStudioDraftV1 = {
-        ...expected,
-        ...updates,
-        artifact,
-        artifacts: { ...expected.artifacts, [expected.mode]: artifact },
-        revision: expected.revision + 1,
-        updatedAt: new Date().toISOString(),
-      };
-      set({ status: 'saving', error: null });
-      saving = (async () => {
-        try {
-          const snapshot = useEditorSessionStore.getState().projectSnapshot;
-          await promptStudioDraftService.save(
-            next,
-            snapshot?.id === expected.projectId ? (snapshot.documentRevision ?? 0) : undefined,
-          );
-          if (get().draft !== expected || !isCurrent()) return false;
-          set({ draft: next, status: 'saved', error: null });
-          return true;
-        } catch (error) {
-          if (get().draft === expected)
-            set({ status: 'error', error: error instanceof Error ? error.message : String(error) });
-          return false;
-        }
-      })();
-      const result = await saving;
-      saving = null;
-      if (dirty) await get().flush();
-      // Project switching waits for the in-flight write before hydration; a
-      // discarded result must not leave that old draft reporting a pending save.
-      else if (!result && get().draft === expected && get().status === 'saving')
-        set({ status: 'saved' });
-      return result;
-    },
+    acceptDraftUpdates,
+    acceptArtifact: (artifact, expected, isCurrent, updates) =>
+      acceptDraftUpdates(expected, isCurrent, { ...updates, artifact }),
     updateVideo: (updates) => {
       if (get().draft) update({ video: { ...get().draft!.video, ...updates } });
     },
