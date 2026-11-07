@@ -16,14 +16,14 @@ export CXXFLAGS='-O2 -fPIC'
 fetch_source() {
   local name=$1 url=$2 digest=$3
   if [[ ! -f "$build_root/sources/$name" ]]; then
-    curl --fail --location --retry 3 --silent --show-error "$url" -o "$build_root/sources/$name"
+    curl --fail --location --retry 5 --retry-delay 3 --retry-connrefused --silent --show-error "$url" -o "$build_root/sources/$name"
   fi
   printf '%s  %s\n' "$digest" "$build_root/sources/$name" | sha256sum --check --status
 }
 fetch_source ffmpeg-9.0.2.tar.xz https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
 if [[ ! -f "$build_root/sources/ffmpeg-9.0.2.tar.xz.asc" ]]; then
-  curl --fail --location --silent --show-error https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc -o "$build_root/sources/ffmpeg-9.0.2.tar.xz.asc"
-  curl --fail --location --silent --show-error https://ffmpeg.org/ffmpeg-devel.asc -o "$build_root/sources/ffmpeg-devel.asc"
+  curl --fail --location --retry 5 --retry-delay 3 --retry-connrefused --silent --show-error https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc -o "$build_root/sources/ffmpeg-9.0.2.tar.xz.asc"
+  curl --fail --location --retry 5 --retry-delay 3 --retry-connrefused --silent --show-error https://ffmpeg.org/ffmpeg-devel.asc -o "$build_root/sources/ffmpeg-devel.asc"
 fi
 mkdir -p "$build_root/gpg"
 chmod 700 "$build_root/gpg"
