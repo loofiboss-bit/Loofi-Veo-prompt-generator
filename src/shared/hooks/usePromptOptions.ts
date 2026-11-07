@@ -41,40 +41,44 @@ import {
 } from '@core/constants';
 import type { Language } from '@core/types';
 
+const SUPPORTED_DICTIONARY_LANGUAGES: readonly Language[] = ['en', 'sv', 'es', 'fr', 'de'] as const;
+
 export function usePromptOptions(language: Language) {
+  const safeLang: Language = SUPPORTED_DICTIONARY_LANGUAGES.includes(language) ? language : 'en';
+
   return useMemo(
     () => ({
       modelOptions: getModelOptions(language),
-      artStyleOptions: getArtStyles(language),
-      cameraMovementOptions: getCameraMovements(language),
-      cameraDistanceOptions: getCameraDistances(language),
-      lensTypeOptions: getLensTypes(language),
-      visualEffectOptions: getVisualEffects(language),
-      colorPaletteOptions: getColorPalettes(language),
-      aspectRatioOptions: getAspectRatios(language),
-      resolutionOptions: getResolutionOptions(language),
-      animationPresetOptions: getAnimationPresets(language),
-      voiceStyleOptions: getVoiceStyles(language),
-      timeOfDayOptions: getTimeOfDayOptions(language),
-      weatherOptions: getWeatherOptions(language),
-      motionIntensityOptions: getMotionIntensityOptions(language),
-      creativityLevelOptions: getCreativityLevelOptions(language),
-      characterGenderOptions: getCharacterGenders(language),
-      characterEthnicityOptions: getCharacterEthnicityOptions(language),
-      characterClothingOptions: getCharacterClothings(language),
-      characterArchetypeOptions: getCharacterArchetypes(language),
-      characterAgeOptions: getCharacterAges(language),
-      characterMoodOptions: getCharacterMoods(language),
-      characterPoseOptions: getCharacterPoses(language),
-      characterSkinToneOptions: getCharacterSkinTones(language),
-      ambientSoundOptions: getAmbientSounds(language),
-      soundEffectsIntensityOptions: getSoundEffectsIntensity(language),
-      architecturalStyleOptions: getArchitecturalStyles(language),
-      lightingStyleOptions: getLightingStyles(language),
-      compositionalGuideOptions: getCompositionalGuides(language),
-      examplePrompts: getStaticInspirationPrompts(language),
+      artStyleOptions: getArtStyles(safeLang),
+      cameraMovementOptions: getCameraMovements(safeLang),
+      cameraDistanceOptions: getCameraDistances(safeLang),
+      lensTypeOptions: getLensTypes(safeLang),
+      visualEffectOptions: getVisualEffects(safeLang),
+      colorPaletteOptions: getColorPalettes(safeLang),
+      aspectRatioOptions: getAspectRatios(safeLang),
+      resolutionOptions: getResolutionOptions(safeLang),
+      animationPresetOptions: getAnimationPresets(safeLang),
+      voiceStyleOptions: getVoiceStyles(safeLang),
+      timeOfDayOptions: getTimeOfDayOptions(safeLang),
+      weatherOptions: getWeatherOptions(safeLang),
+      motionIntensityOptions: getMotionIntensityOptions(safeLang),
+      creativityLevelOptions: getCreativityLevelOptions(safeLang),
+      characterGenderOptions: getCharacterGenders(safeLang),
+      characterEthnicityOptions: getCharacterEthnicityOptions(safeLang),
+      characterClothingOptions: getCharacterClothings(safeLang),
+      characterArchetypeOptions: getCharacterArchetypes(safeLang),
+      characterAgeOptions: getCharacterAges(safeLang),
+      characterMoodOptions: getCharacterMoods(safeLang),
+      characterPoseOptions: getCharacterPoses(safeLang),
+      characterSkinToneOptions: getCharacterSkinTones(safeLang),
+      ambientSoundOptions: getAmbientSounds(safeLang),
+      soundEffectsIntensityOptions: getSoundEffectsIntensity(safeLang),
+      architecturalStyleOptions: getArchitecturalStyles(safeLang),
+      lightingStyleOptions: getLightingStyles(safeLang),
+      compositionalGuideOptions: getCompositionalGuides(safeLang),
+      examplePrompts: getStaticInspirationPrompts(safeLang),
     }),
-    [language],
+    [language, safeLang],
   );
 }
 
