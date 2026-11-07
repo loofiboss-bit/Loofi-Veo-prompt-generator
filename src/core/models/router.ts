@@ -1,5 +1,8 @@
 import {
   getModel,
+  getProviderBinding,
+  isShutdownModel,
+  type ModelProvider,
   type CostMode,
   type MediaModality,
   type ModelCatalogEntry,
@@ -8,6 +11,7 @@ import {
 } from './catalog';
 
 export interface RouteRequest {
+  provider?: ModelProvider;
   operation: ModelOperation;
   mode: CostMode;
   requiresReferenceImages?: boolean;
@@ -37,12 +41,14 @@ const resolve = (id: string): ModelCatalogEntry => {
 
 const supportsRequest = (model: ModelCatalogEntry, request: RouteRequest): boolean => {
   const capabilities = model.capabilities;
+  const lifecycle =
+    getProviderBinding(model.id, request.provider ?? model.provider)?.lifecycle ?? model.lifecycle;
   const requestedResolution = request.requires4k ? '4k' : request.requestedResolution;
   return (
     capabilities.operations.includes(request.operation) &&
-    model.lifecycle !== 'deprecated' &&
-    model.lifecycle !== 'shut-down' &&
-    (request.allowPreview !== false || model.lifecycle !== 'preview') &&
+    lifecycle !== 'deprecated' &&
+    !isShutdownModel(model.id, request.provider) &&
+    (request.allowPreview !== false || lifecycle !== 'preview') &&
     (!request.availableModelIds || request.availableModelIds.includes(model.id)) &&
     (!request.requiresReferenceImages || capabilities.supportsReferenceImages === true) &&
     (!request.requiresFirstLastFrame || capabilities.supportsFirstLastFrame === true) &&
@@ -85,11 +91,12 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
 
   if (request.operation === 'video' || request.operation === 'video-edit') {
     const requiresVeo =
-      request.requiresFirstLastFrame ||
-      request.requiresExtension ||
-      request.requires4k ||
-      request.requiresReferenceImages ||
-      (request.requestedResolution !== undefined && request.requestedResolution !== '720p');
+      request.operation === 'video' &&
+      (request.requiresFirstLastFrame ||
+        request.requiresExtension ||
+        request.requires4k ||
+        request.requiresReferenceImages ||
+        (request.requestedResolution !== undefined && request.requestedResolution !== '720p'));
 
     if (requiresVeo) {
       const requiresAdvancedVeo =
@@ -122,7 +129,7 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
     // Veo because the durable desktop job engine submits predictLongRunning jobs.
     const candidates =
       request.operation === 'video-edit'
-        ? ['gemini-omni-1.1-flash', 'gemini-omni-flash']
+        ? ['gemini-omni-1.2-flash', 'gemini-omni-1.1-flash', 'gemini-omni-flash']
         : request.mode === 'economy'
           ? ['veo-3.1-lite', 'veo-3.1-fast', 'veo-3.1-quality']
           : request.mode === 'quality'

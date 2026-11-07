@@ -6,30 +6,32 @@ import type {
   PromptArtifactV1,
   VideoPromptArtifactInput,
   VideoPromptVariant,
-  VideoPromptMode,
 } from '@core/types';
 import { INITIAL_STATE } from '@core/constants';
-import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 import type { PromptState, SunoPack, SunoSettings } from '@core/types';
-import {
-  generatePromptWithCurrentProvider,
-  resolvePromptGenerationProvider,
-} from './promptGenerationService';
+import { resolvePromptGenerationProvider } from './promptGenerationService';
 import { generateSunoPack } from './gemini/geminiAudioService';
 import { generatePromptWithOllama } from './ollamaProvider';
-import { compileSpatialCameraRig } from './spatialCameraService';
-import { transpilePrompt } from './modelTranspilerService';
+import { getTargetProfile, transpilePrompt } from './modelTranspilerService';
 import { validateStudioVideo, validateStudioMusic } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { DEFAULT_PROMPT_MODEL } from './gemini/aiClient';
+import { legacyCreativeDetails, legacySubjectDescription } from './studioLegacyAdapter';
 import { assertProtectedPromptTextPreserved } from './promptTextSegments';
 import {
   expandVideoSceneDetails,
   expandMusicDetails,
   optimizeFullVideoPack,
+  generateVideoSceneAndPack,
+  type VideoPackOptimizationResult,
 } from './geminiSceneExpansionService';
 
-export { expandVideoSceneDetails, expandMusicDetails, optimizeFullVideoPack };
+export {
+  expandVideoSceneDetails,
+  expandMusicDetails,
+  optimizeFullVideoPack,
+  generateVideoSceneAndPack,
+};
 
 import {
   isLyricSectionLocked,
@@ -40,9 +42,6 @@ import {
   transformLyricSections,
 } from './lyricSectionService';
 
-const DEFAULT_NEGATIVE =
-  'unintended text, subtitles, logos, watermarks, extra limbs, visual glitches';
-
 const trim = (value: string | undefined): string => value?.trim() ?? '';
 
 const optionalTrim = (value: string | undefined): string | undefined => {
@@ -50,33 +49,38 @@ const optionalTrim = (value: string | undefined): string | undefined => {
   return normalized || undefined;
 };
 
-/** Normalize legacy/editor input once so every artifact is reproducible. */
+const optionalSourceText = (value: string | undefined): string | undefined =>
+  value?.trim() ? value : undefined;
+
+/** Preserve authored text; formatting belongs to the target compiler. */
 export const normalizeVideoPromptInput = (
   input: VideoPromptArtifactInput,
 ): VideoPromptArtifactInput => ({
-  idea: trim(input.idea),
+  idea: input.idea,
   mode: input.mode,
   target: input.target,
+  profileId: input.profileId,
+  creativeDetails: input.creativeDetails ? structuredClone(input.creativeDetails) : undefined,
   aspectRatio: input.aspectRatio,
   durationSeconds: input.durationSeconds,
-  subject: optionalTrim(input.subject),
-  action: optionalTrim(input.action),
-  environment: optionalTrim(input.environment),
-  camera: optionalTrim(input.camera),
+  subject: optionalSourceText(input.subject),
+  action: optionalSourceText(input.action),
+  environment: optionalSourceText(input.environment),
+  camera: optionalSourceText(input.camera),
   spatialCamera: input.spatialCamera,
-  lighting: optionalTrim(input.lighting),
-  style: optionalTrim(input.style),
-  audio: optionalTrim(input.audio),
-  dialogue: optionalTrim(input.dialogue),
-  negativePrompt: optionalTrim(input.negativePrompt),
-  startFrame: optionalTrim(input.startFrame),
-  endFrame: optionalTrim(input.endFrame),
-  previousClip: optionalTrim(input.previousClip),
-  referenceRoles: optionalTrim(input.referenceRoles),
-  firstFrameAssetId: optionalTrim(input.firstFrameAssetId),
-  lastFrameAssetId: optionalTrim(input.lastFrameAssetId),
+  lighting: optionalSourceText(input.lighting),
+  style: optionalSourceText(input.style),
+  audio: optionalSourceText(input.audio),
+  dialogue: optionalSourceText(input.dialogue),
+  negativePrompt: optionalSourceText(input.negativePrompt),
+  startFrame: optionalSourceText(input.startFrame),
+  endFrame: optionalSourceText(input.endFrame),
+  previousClip: optionalSourceText(input.previousClip),
+  referenceRoles: optionalSourceText(input.referenceRoles),
+  firstFrameAssetId: optionalSourceText(input.firstFrameAssetId),
+  lastFrameAssetId: optionalSourceText(input.lastFrameAssetId),
   referenceAssetIds: input.referenceAssetIds ? [...input.referenceAssetIds] : undefined,
-  extensionSourceTakeId: optionalTrim(input.extensionSourceTakeId),
+  extensionSourceTakeId: optionalSourceText(input.extensionSourceTakeId),
   extensionArtifact: input.extensionArtifact ? structuredClone(input.extensionArtifact) : undefined,
 });
 
@@ -95,7 +99,7 @@ export const normalizeMusicPromptInput = (
   lyrics: optionalTrim(input.lyrics),
   instrumental: Boolean(input.instrumental),
   styleInfluence: input.styleInfluence ?? null,
-  targetProfile: input.targetProfile ?? 'suno-v5.5',
+  targetProfile: input.targetProfile ?? 'suno-v6',
   key: optionalTrim(input.key),
   timeSignature: optionalTrim(input.timeSignature),
   energyCurve: optionalTrim(input.energyCurve),
@@ -113,24 +117,29 @@ export const normalizeMusicPromptInput = (
   },
 });
 
-/** Compatibility adapter for the compact history entries used by v5-v10. */
+/** Compatibility adapter for compact history entries used by v5-v10. */
 export const adaptVideoHistoryEntry = (entry: HistoryEntry): VideoPromptArtifactInput => {
   const params = entry.params;
   return normalizeVideoPromptInput({
-    idea: params.idea || entry.prompt,
-    mode: params.flowVeoOutputMode === 'single-prompt' ? 'text-to-video' : 'text-to-video',
+    idea: trim(params.idea || entry.prompt),
+    mode: 'text-to-video',
     target: params.targetModel === 'veo-api' ? 'veo-api' : 'flow-veo',
     aspectRatio: params.aspectRatio === '9:16' ? '9:16' : '16:9',
     durationSeconds: 8,
-    subject: params.characterArchetype || params.characterObjectInteraction,
-    action: params.characterActions,
-    environment: params.environment,
-    camera: params.cameraMovement,
-    lighting: params.lightingStyle,
-    style: params.artStyle || params.customArtStyle,
-    audio: [params.voiceOver, params.ambientSound].filter(Boolean).join(', '),
-    dialogue: params.voiceOver,
-    negativePrompt: params.negativePrompt,
+    subject: optionalTrim(legacySubjectDescription(params)),
+    action: [params.characterActions, params.characterObjectInteraction]
+      .map(trim)
+      .filter(Boolean)
+      .join('. '),
+    environment: optionalTrim(params.environment),
+    camera: optionalTrim(params.cameraMovement),
+    spatialCamera: params.spatialCamera,
+    lighting: optionalTrim(params.lightingStyle),
+    style: optionalTrim(params.customArtStyle || params.artStyle),
+    audio: optionalTrim(params.ambientSound),
+    dialogue: optionalTrim(params.voiceOver),
+    negativePrompt: optionalTrim(params.negativePrompt),
+    creativeDetails: legacyCreativeDetails(params),
   });
 };
 
@@ -164,19 +173,48 @@ export const adaptSunoPackToMusicInput = (
     rightsChecklist: overrides.rightsChecklist,
   });
 
-export const compileVideoHistoryArtifact = (entry: HistoryEntry): PromptArtifactV1 =>
-  compileVideoPromptArtifact(adaptVideoHistoryEntry(entry));
+export const compileVideoHistoryArtifact = (entry: HistoryEntry): PromptArtifactV1 => {
+  const input = adaptVideoHistoryEntry(entry);
+  // History is an existing saved result, including targets that can no longer generate.
+  // Reopening it must not rewrite authored output through a newer target compiler.
+  const prompt = entry.prompt;
+  const negativePrompt = input.negativePrompt ?? '';
+  const settingsChecklist = [
+    `Archived target: ${getTargetProfile(input.target, input.profileId).displayName}`,
+  ];
+  const copySettingsChecklist = settingsChecklist.join('\n');
+  const variant = (label: VideoPromptVariant['label']): VideoPromptVariant => ({
+    label,
+    title: 'Saved history result',
+    prompt,
+    negativePrompt,
+    settingsChecklist,
+    copyPrompt: prompt,
+    copyNegativePrompt: negativePrompt,
+    copySettingsChecklist,
+    copyAll: composeVideoCopyAll(prompt, negativePrompt, copySettingsChecklist),
+  });
+  const primary = variant('Primary');
+  const alternatives: [VideoPromptVariant, VideoPromptVariant] = [
+    variant('Cinematic'),
+    variant('Control-focused'),
+  ];
+  return {
+    schemaVersion: 1,
+    kind: 'video',
+    target: input.target,
+    input,
+    primary,
+    alternatives,
+    validation: videoValidation(input, [primary, ...alternatives]),
+    ...createProvenance('video', input, 'local', 'compiler'),
+  };
+};
 
 export const compileSunoPackArtifact = (
   pack: SunoPack,
   overrides?: Partial<MusicPromptArtifactInput>,
 ): PromptArtifactV1 => compileMusicPromptArtifact(adaptSunoPackToMusicInput(pack, overrides));
-
-const sentence = (value: string | undefined): string => {
-  const normalized = trim(value);
-  if (!normalized) return '';
-  return /[.!?]$/.test(normalized) ? normalized : `${normalized}.`;
-};
 
 const slugHash = (value: string): string => {
   let hash = 2166136261;
@@ -214,11 +252,7 @@ const parseStructuredJson = <T>(value: unknown, label: string): T => {
 
 const defaultOptimizer: PromptArtifactOptimizer = {
   async optimizeVideo(input, signal) {
-    try {
-      return await optimizeFullVideoPack(input, { signal });
-    } catch {
-      return generatePromptWithCurrentProvider(toVideoPromptState(input), undefined, signal);
-    }
+    return optimizeFullVideoPack(input, { signal });
   },
   async optimizeMusic(input, signal) {
     if (resolvePromptGenerationProvider() === 'ollama') {
@@ -227,7 +261,7 @@ const defaultOptimizer: PromptArtifactOptimizer = {
         [
           'You are a senior Suno Custom Mode producer and lyricist.',
           'Return ONLY valid JSON with non-empty string keys title, style, lyrics, explanation.',
-          'Style must be concise comma-separated English tags under 200 characters.',
+          'Style should be concise, relevant comma-separated English tags.',
           'Lyrics must use explicit section tags and follow the requested language.',
           input.instrumental ? 'For instrumental mode return [Instrumental] only.' : '',
           `Input JSON: ${JSON.stringify(normalizeMusicPromptInput(input))}`,
@@ -245,171 +279,12 @@ const defaultOptimizer: PromptArtifactOptimizer = {
   },
 };
 
-const normalizeMode = (mode: VideoPromptMode): VideoPromptMode => mode;
-
-const formatModeInstruction = (input: VideoPromptArtifactInput): string => {
-  switch (normalizeMode(input.mode)) {
-    case 'image-to-video':
-      return 'Use the supplied image as the source. Describe motion only; do not re-describe the subject, scene, or lighting already visible in the image.';
-    case 'first-last-frames':
-      return `Create a controlled transition from the start frame (${trim(input.startFrame) || 'provided start frame'}) to the end frame (${trim(input.endFrame) || 'provided end frame'}).`;
-    case 'ingredients':
-      return `Use the supplied ingredients as named references. Reference roles: ${trim(input.referenceRoles) || 'keep each supplied reference distinct and consistent'}.`;
-    case 'extend':
-      return `Continue seamlessly from the previous clip (${trim(input.previousClip) || 'the supplied previous clip'}), preserving subject identity, camera direction, lighting, and motion continuity.`;
-    case 'text-to-video':
-    default:
-      return 'Keep this as one focused, continuous scene with one primary action.';
-  }
-};
-
-const buildVideoPrompt = (
-  input: VideoPromptArtifactInput,
-  variant: VideoPromptVariant['label'],
-): string => {
-  const subject = sentence(input.subject || input.idea);
-  const action = sentence(input.action);
-  const environment = sentence(input.environment);
-  const compiledRig = input.spatialCamera ? compileSpatialCameraRig(input.spatialCamera) : null;
-  const camera = sentence(input.camera || compiledRig?.promptFragment);
-  const lighting = sentence(input.lighting);
-  const style = sentence(input.style);
-  const audio = sentence(input.audio);
-  const dialogue = trim(input.dialogue);
-  const instruction = formatModeInstruction(input);
-
-  if (input.mode === 'image-to-video') {
-    const subjectMotion = action || sentence(input.idea);
-    const motion = [
-      subjectMotion ? `Subject motion: ${subjectMotion}` : '',
-      camera ? `Camera motion: ${camera}` : '',
-      environment ? `Environment motion: ${environment}` : '',
-      audio ? `Audio: ${audio}` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-    return [
-      instruction,
-      motion || 'Animate the subject with subtle, natural movement and a steady camera.',
-      variant === 'Cinematic'
-        ? 'Use a restrained cinematic pace, natural motion blur, and a deliberate visual rhythm.'
-        : variant === 'Control-focused'
-          ? `Keep the motion physically coherent for ${input.durationSeconds} seconds in ${input.aspectRatio}.`
-          : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-  }
-
-  const parts = [instruction, subject, action, environment, camera, lighting, style];
-  if (dialogue) parts.push(`Dialogue: the speaker says: ${dialogue}.`);
-  if (audio) parts.push(`Audio: ${audio}`);
-  if (variant === 'Cinematic') {
-    parts.push('Use purposeful composition, tactile detail, and a natural cinematic progression.');
-  }
-  if (variant === 'Control-focused') {
-    parts.push(
-      `Keep the clip to one readable action, ${input.durationSeconds} seconds, ${input.aspectRatio}, with no unrequested cuts.`,
-    );
-  }
-  return parts.filter(Boolean).join(' ');
-};
-
-const buildVideoChecklist = (input: VideoPromptArtifactInput): string[] => {
-  const targetLabel = STUDIO_CAPABILITIES[input.target]?.label ?? input.target;
-  const list = [
-    `Target: ${targetLabel}`,
-    `Mode: ${input.mode}`,
-    `Aspect ratio: ${input.aspectRatio}`,
-    `Duration: ${input.durationSeconds}s`,
-    input.mode === 'image-to-video'
-      ? 'Prompt motion only; rely on the source image for identity and look.'
-      : 'Keep one primary scene and action.',
-    input.mode === 'ingredients'
-      ? `Reference roles: ${trim(input.referenceRoles) || 'assign each ingredient a clear role'}`
-      : 'Use references only when they add a stable visual anchor.',
-  ];
-  if (input.spatialCamera) {
-    const compiledRig = compileSpatialCameraRig(input.spatialCamera);
-    list.push(...compiledRig.settingsNotes);
-  }
-  return list;
-};
-
 const composeVideoCopyAll = (prompt: string, negativePrompt: string, settings: string): string =>
-  `${prompt}\n\nNegative prompt: ${negativePrompt}\n\n${settings}`;
+  [prompt, negativePrompt ? `Negative prompt: ${negativePrompt}` : '', settings]
+    .filter(Boolean)
+    .join('\n\n');
 
 const videoValidation = validateStudioVideo;
-
-const createVideoVariant = (
-  input: VideoPromptArtifactInput,
-  label: VideoPromptVariant['label'],
-): VideoPromptVariant => {
-  if (input.target !== 'flow-veo' && input.target !== 'veo-api') {
-    const transpiled = transpilePrompt(
-      {
-        idea: input.idea,
-        mode: input.mode,
-        target: input.target,
-        aspectRatio: input.aspectRatio,
-        durationSeconds: input.durationSeconds,
-        subject: input.subject,
-        action: input.action,
-        environment: input.environment,
-        camera: input.camera,
-        spatialCamera: input.spatialCamera,
-        lighting: input.lighting,
-        style: input.style,
-        audio: input.audio,
-        dialogue: input.dialogue,
-        negativePrompt: input.negativePrompt,
-        startFrame: input.startFrame,
-        endFrame: input.endFrame,
-        previousClip: input.previousClip,
-        referenceRoles: input.referenceRoles,
-      },
-      input.target,
-    );
-    const match = transpiled.variants.find((v) => v.label === label) ?? transpiled.variants[0];
-    return {
-      label,
-      title:
-        label === 'Primary'
-          ? 'Recommended handoff'
-          : label === 'Cinematic'
-            ? 'Cinematic texture'
-            : 'Control-focused',
-      prompt: match.prompt,
-      negativePrompt: match.negativePrompt,
-      settingsChecklist: match.settingsChecklist,
-      copyPrompt: match.copyPrompt,
-      copyNegativePrompt: match.copyNegativePrompt,
-      copySettingsChecklist: match.copySettingsChecklist,
-      copyAll: composeVideoCopyAll(match.prompt, match.negativePrompt, match.copySettingsChecklist),
-    };
-  }
-
-  const prompt = buildVideoPrompt(input, label);
-  const negativePrompt = [trim(input.negativePrompt), DEFAULT_NEGATIVE].filter(Boolean).join(', ');
-  const settingsChecklist = buildVideoChecklist(input);
-  const copySettingsChecklist = settingsChecklist.join('\n');
-  return {
-    label,
-    title:
-      label === 'Primary'
-        ? 'Recommended handoff'
-        : label === 'Cinematic'
-          ? 'Cinematic texture'
-          : 'Control-focused',
-    prompt,
-    negativePrompt,
-    settingsChecklist,
-    copyPrompt: prompt,
-    copyNegativePrompt: negativePrompt,
-    copySettingsChecklist,
-    copyAll: composeVideoCopyAll(prompt, negativePrompt, copySettingsChecklist),
-  };
-};
 
 const FALLBACK_LYRICS: Record<
   string,
@@ -506,7 +381,7 @@ const normalizeStyle = (input: MusicPromptArtifactInput, moodOverride?: string):
     'clear mix',
     'dynamic arrangement',
   ].filter(Boolean);
-  return tags.join(', ').slice(0, 200);
+  return tags.join(', ');
 };
 
 const musicNotes = (
@@ -516,7 +391,7 @@ const musicNotes = (
   [
     `Lyrics language: ${input.language}`,
     `Structure: ${input.structure ?? 'Auto'}`,
-    `Target profile: ${input.targetProfile ?? 'suno-v5.5'}`,
+    `Target profile: ${input.targetProfile ?? 'suno-v6'}`,
     input.styleInfluence === null || input.styleInfluence === undefined
       ? 'Style influence: Auto'
       : `Style influence: ${input.styleInfluence}%`,
@@ -626,12 +501,8 @@ export const validatePromptArtifact = (artifact: PromptArtifactV1): string[] => 
     );
     if (variants.some((variant) => typeof variant.prompt !== 'string' || !trim(variant.prompt)))
       errors.push('Every video variant needs prompt text.');
-    if (
-      variants.some(
-        (variant) => typeof variant.negativePrompt !== 'string' || !trim(variant.negativePrompt),
-      )
-    )
-      errors.push('Every video variant needs a negative prompt.');
+    if (variants.some((variant) => typeof variant.negativePrompt !== 'string'))
+      errors.push('Every video variant needs a negative prompt string, which may be empty.');
     if (
       variants.some(
         (variant) =>
@@ -673,13 +544,6 @@ export const validatePromptArtifact = (artifact: PromptArtifactV1): string[] => 
       errors.push('Every music variant needs Style of Music and Lyrics.');
     if (
       variants.some(
-        (variant) => typeof variant.styleOfMusic === 'string' && variant.styleOfMusic.length > 200,
-      )
-    ) {
-      errors.push('Style of Music must stay at or below 200 characters.');
-    }
-    if (
-      variants.some(
         (variant) =>
           typeof variant.lyrics !== 'string' ||
           (!/\[[^\]]+\]/.test(variant.lyrics) &&
@@ -713,11 +577,9 @@ export const compileVideoPromptArtifact = (
   source: 'compiler' | 'optimizer' = 'compiler',
 ): PromptArtifactV1 => {
   const normalizedInput = normalizeVideoPromptInput(input);
-  const primary = createVideoVariant(normalizedInput, 'Primary');
-  const alternatives = [
-    createVideoVariant(normalizedInput, 'Cinematic'),
-    createVideoVariant(normalizedInput, 'Control-focused'),
-  ] as [VideoPromptVariant, VideoPromptVariant];
+  const variants = transpilePrompt(normalizedInput, normalizedInput.target).variants;
+  const primary = variants[0];
+  const alternatives: [VideoPromptVariant, VideoPromptVariant] = [variants[1], variants[2]];
   const { id, provenance, createdAt } = createProvenance(
     'video',
     normalizedInput,
@@ -838,17 +700,19 @@ export const regenerateLyrics = (
   });
 };
 
-const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState => ({
+export const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState => ({
   ...INITIAL_STATE,
+  ...input.creativeDetails,
   model: DEFAULT_PROMPT_MODEL,
   idea: input.idea,
   environment: input.environment ?? '',
+  characterArchetype: input.subject ?? '',
   characterActions: input.action ?? '',
   cameraMovement: input.camera ?? '',
   lightingStyle: input.lighting ?? '',
   artStyle: input.style ?? '',
   voiceOver: input.dialogue ?? '',
-  ambientSound: input.audio ?? '',
+  ambientSound: input.audio ?? input.creativeDetails?.ambientSound ?? '',
   negativePrompt: input.negativePrompt ?? '',
   aspectRatio: input.aspectRatio,
   targetModel: input.target === 'veo-api' ? 'veo-api' : 'flow-veo',
@@ -874,7 +738,7 @@ const toSunoSettings = (input: MusicPromptArtifactInput): SunoSettings => ({
   instruments: input.instruments ?? '',
   isInstrumental: Boolean(input.instrumental),
   styleInfluence: input.styleInfluence ?? null,
-  targetProfile: input.targetProfile ?? 'suno-v5.5',
+  targetProfile: input.targetProfile ?? 'suno-v6',
   key: input.key,
   timeSignature: input.timeSignature,
   energyCurve: input.energyCurve,
@@ -955,7 +819,9 @@ export const optimizeVideoPromptArtifact = async (
     assertProtectedPromptTextPreserved(
       primary.prompt,
       primaryText,
-      (local.input as VideoPromptArtifactInput).dialogue ?? '',
+      getTargetProfile(input.target, input.profileId).audioPolicy === 'native'
+        ? ((local.input as VideoPromptArtifactInput).dialogue ?? '')
+        : '',
     );
 
     const hasPackVariants =
@@ -965,9 +831,11 @@ export const optimizeVideoPromptArtifact = async (
       trim(result.controlFocused);
 
     const globalNegative =
-      typeof result.negativePrompt === 'string' && trim(result.negativePrompt)
-        ? trim(result.negativePrompt)
-        : primary.negativePrompt;
+      getTargetProfile(input.target, input.profileId).negativePolicy !== 'unsupported'
+        ? typeof result.negativePrompt === 'string'
+          ? trim(result.negativePrompt)
+          : primary.negativePrompt
+        : '';
 
     const alternatives = (
       hasPackVariants
@@ -977,7 +845,9 @@ export const optimizeVideoPromptArtifact = async (
               assertProtectedPromptTextPreserved(
                 primary.prompt,
                 p,
-                (local.input as VideoPromptArtifactInput).dialogue ?? '',
+                getTargetProfile(input.target, input.profileId).audioPolicy === 'native'
+                  ? ((local.input as VideoPromptArtifactInput).dialogue ?? '')
+                  : '',
               );
               const alt = local.alternatives[0] as VideoPromptVariant;
               return {
@@ -994,7 +864,9 @@ export const optimizeVideoPromptArtifact = async (
               assertProtectedPromptTextPreserved(
                 primary.prompt,
                 p,
-                (local.input as VideoPromptArtifactInput).dialogue ?? '',
+                getTargetProfile(input.target, input.profileId).audioPolicy === 'native'
+                  ? ((local.input as VideoPromptArtifactInput).dialogue ?? '')
+                  : '',
               );
               const alt = local.alternatives[1] as VideoPromptVariant;
               return {
@@ -1046,6 +918,45 @@ export const optimizeVideoPromptArtifact = async (
     return revalidatePromptArtifact(optimized);
   }
   return local;
+};
+
+/** Build a generated pack through the existing artifact validation without another AI request. */
+export const createGeneratedVideoArtifact = async (
+  input: VideoPromptArtifactInput,
+  pack: VideoPackOptimizationResult,
+  modelId: string,
+  recommendations: string[] = [],
+): Promise<PromptArtifactV1> => {
+  if (!Array.isArray(recommendations) || recommendations.some((value) => typeof value !== 'string'))
+    throw new Error('AI recommendations must be an array of strings.');
+  const artifact = await optimizeVideoPromptArtifact(input, {
+    optimizeVideo: async () => pack,
+    optimizeMusic: async () => {
+      throw new Error('A video pack cannot generate music.');
+    },
+  });
+  const suggestions = [
+    ...new Set(recommendations.map((value) => value.trim()).filter(Boolean)),
+  ].map((value) => `AI suggestion: ${value}`);
+  const withSuggestions = (value: VideoPromptVariant): VideoPromptVariant => {
+    const settingsChecklist = [...value.settingsChecklist, ...suggestions];
+    const copySettingsChecklist = settingsChecklist.join('\n');
+    return {
+      ...value,
+      settingsChecklist,
+      copySettingsChecklist,
+      copyAll: composeVideoCopyAll(value.prompt, value.negativePrompt, copySettingsChecklist),
+    };
+  };
+  return revalidatePromptArtifact({
+    ...artifact,
+    input: structuredClone(input),
+    primary: withSuggestions(artifact.primary as VideoPromptVariant),
+    alternatives: artifact.alternatives.map((value) =>
+      withSuggestions(value as VideoPromptVariant),
+    ) as [VideoPromptVariant, VideoPromptVariant],
+    provenance: { ...artifact.provenance, modelId },
+  });
 };
 
 export const optimizeMusicPromptArtifact = async (

@@ -3,45 +3,44 @@ import { render, screen } from '@/test-utils';
 import { UniversalTargetSelector } from './UniversalTargetSelector';
 
 describe('UniversalTargetSelector', () => {
-  it('renders all universal engines and shows syntax profile', () => {
+  it('offers current targets and excludes retired Sora and Veo API', () => {
     render(<UniversalTargetSelector value="flow-veo" onChange={vi.fn()} />);
-
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Google Flow \/ Veo 3\.1/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Google Veo 3\.1 API/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Gemini Omni 1\.1 Flash/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Kling 1\.5 \/ 2\.0/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Runway Gen-3 \/ Gen-4/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /OpenAI Sora/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Luma Dream Machine Ray-2/i })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Wan 2.1' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Minimax / Hailuo Video 01' })).toBeInTheDocument();
-    expect(screen.getByText('Google DeepMind')).toBeInTheDocument();
+    for (const name of [
+      /Google Flow/,
+      /Gemini Omni 1\.2/,
+      /Kling 4.0/,
+      /Runway Gen-4.5/,
+      /Ray3.2/,
+      /Wan 3.0/,
+      /MiniMax-H3/,
+    ])
+      expect(screen.getByRole('option', { name })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Sora|Veo 3.1 API/ })).not.toBeInTheDocument();
   });
-
-  it('triggers onChange when selecting a different target', async () => {
+  it('selects a target without changing it silently', async () => {
     const onChange = vi.fn();
     const { user } = render(<UniversalTargetSelector value="flow-veo" onChange={onChange} />);
-
     await user.selectOptions(screen.getByRole('combobox'), 'kling');
     expect(onChange).toHaveBeenCalledWith('kling');
   });
-
-  it('displays model vendor and syntax flavor details for selected engine', () => {
-    render(<UniversalTargetSelector value="kling" onChange={vi.fn()} />);
-    expect(screen.getByText('Kuaishou')).toBeInTheDocument();
-    expect(screen.getByText(/Structured Bracket Tags/i)).toBeInTheDocument();
+  it('exposes distinct Flow profiles through an explicit choice', async () => {
+    const onProfileChange = vi.fn();
+    const { user } = render(
+      <UniversalTargetSelector
+        value="flow-veo"
+        onChange={vi.fn()}
+        onProfileChange={onProfileChange}
+      />,
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Model profile' }),
+      'flow-veo-3.1-quality',
+    );
+    expect(onProfileChange).toHaveBeenCalledWith('flow-veo-3.1-quality');
   });
-
-  it('displays vendor and syntax details for Veo API target', () => {
-    render(<UniversalTargetSelector value="veo-api" onChange={vi.fn()} />);
-    expect(screen.getByText('Google DeepMind')).toBeInTheDocument();
-    expect(screen.getByText(/Native Veo Directives/i)).toBeInTheDocument();
-  });
-
-  it('displays vendor and syntax details for Gemini Omni 1.1 Flash target', () => {
-    render(<UniversalTargetSelector value="omni-flash" onChange={vi.fn()} />);
-    expect(screen.getByText('Google AI / DeepMind')).toBeInTheDocument();
-    expect(screen.getByText(/Single-Shot Continuity, Native Audio/i)).toBeInTheDocument();
+  it('keeps a retired saved value visible but disabled', () => {
+    render(<UniversalTargetSelector value="sora" onChange={vi.fn()} />);
+    expect(screen.getByRole('combobox')).toHaveValue('sora');
+    expect(screen.getByRole('option', { name: /retired/ })).toBeDisabled();
   });
 });

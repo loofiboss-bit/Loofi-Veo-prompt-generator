@@ -46,7 +46,7 @@ describe('modelFallbackService', () => {
       const chain = modelFallbackService.getChain('video-generation-quality');
       expect(chain).toBeDefined();
       expect(chain?.label).toBe('Video Generation (Quality)');
-      expect(chain?.models.length).toBeGreaterThan(0);
+      expect(chain?.models).toEqual([]);
     });
 
     it('should include video-generation-fast chain', () => {
@@ -370,7 +370,7 @@ describe('modelFallbackService', () => {
     });
 
     it('should try models in order', () => {
-      const chain = modelFallbackService.getChain('video-generation-quality');
+      const chain = modelFallbackService.getChain('prompt-generation');
       const models = chain?.models ?? [];
 
       expect(models.length).toBeGreaterThan(0);
@@ -383,7 +383,7 @@ describe('modelFallbackService', () => {
 
   describe('endpoint mapping', () => {
     it('should map all models to endpoints', () => {
-      const chain = modelFallbackService.getChain('video-generation-quality');
+      const chain = modelFallbackService.getChain('vision-analysis');
       const endpointMap = chain?.endpointMap ?? {};
 
       for (const model of chain?.models ?? []) {
@@ -395,7 +395,7 @@ describe('modelFallbackService', () => {
       vi.mocked(circuitBreakerService.canExecute).mockReturnValue(true);
       vi.clearAllMocks();
 
-      modelFallbackService.selectModel('video-generation-quality');
+      modelFallbackService.selectModel('vision-analysis');
 
       // Should have called canExecute with an endpoint ID
       if (vi.mocked(circuitBreakerService.canExecute).mock.calls.length > 0) {
@@ -405,14 +405,24 @@ describe('modelFallbackService', () => {
   });
 
   describe('video chains', () => {
-    it('routes ordinary quality video through the supported Veo adapter', () => {
-      const chain = modelFallbackService.getChain('video-generation-quality');
-      expect(chain?.models).toEqual(['veo-3.1-quality', 'veo-3.1-fast']);
-    });
+    it.each(['video-generation-quality', 'video-generation-fast'])(
+      'leaves %s unavailable without preventing module initialization',
+      (chainId) => {
+        expect(modelFallbackService.getChain(chainId)?.models).toEqual([]);
+        expect(modelFallbackService.selectModel(chainId)).toBeNull();
+      },
+    );
 
-    it('keeps the current Veo Lite fallback in the fast chain', () => {
-      const chain = modelFallbackService.getChain('video-generation-fast');
-      expect(chain?.models).toEqual(['veo-3.1-fast', 'veo-3.1-quality', 'veo-3.1-lite']);
+    it('rejects an explicit retired Gemini binding without choosing another provider', () => {
+      expect(() => modelFallbackService.selectModelForId('veo-3.1-fast')).toThrow('shut down');
+      expect(() =>
+        modelFallbackService.registerChain({
+          id: 'retired',
+          label: 'Retired',
+          models: ['veo-3.1-fast'],
+          endpointMap: {},
+        }),
+      ).toThrow('shut-down');
     });
   });
 

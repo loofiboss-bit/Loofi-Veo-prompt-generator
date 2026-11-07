@@ -113,6 +113,14 @@ if (isSmokeTest && process.platform === 'linux') {
   app.commandLine.appendSwitch('no-sandbox');
 }
 
+if (process.platform === 'linux' && !process.argv.includes('--safe-mode')) {
+  app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
+  app.commandLine.appendSwitch(
+    'enable-features',
+    'WaylandWindowDecorations,VaapiVideoDecodeLinuxGL',
+  );
+}
+
 const safeMode = createSafeModeController({
   app,
   fs,

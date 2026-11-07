@@ -5,6 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
+// Existing transport cases exercise the adapter before its documented retirement.
+// The current-date cases below independently enforce the shutdown boundary.
+test.beforeEach((context) => context.mock.method(Date, 'now', () => Date.UTC(2026, 9, 21)));
+
 const require = createRequire(import.meta.url);
 const {
   PaidJobEngine,
@@ -795,4 +799,70 @@ test('legacy operations retain GET recovery without a v2 approval', async (t) =>
   await engine.active.get(legacy.id);
   assert.equal(posts, 0);
   assert.equal((await store.get(legacy.id)).status, 'Complete');
+});
+
+test('blocks a new Gemini Veo submission after retirement before credentials or network use', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 9, 29));
+  const store = await fixture(t);
+  let keyReads = 0;
+  let fetches = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => {
+      keyReads += 1;
+      return 'mock-key';
+    },
+    fetchImpl: async () => {
+      fetches += 1;
+      throw new Error('Unexpected network');
+    },
+  });
+  await assert.rejects(engine.submit(task()), /shut down on 2026-10-22/);
+  assert.equal(keyReads, 0);
+  assert.equal(fetches, 0);
+  assert.equal(await store.get('job-1'), undefined);
+});
+
+test('blocks a previously queued unsent Gemini Veo job after retirement', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 9, 29));
+  const store = await fixture(t);
+  let fetches = 0;
+  const job = task();
+  await store.put(job);
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'mock-key',
+    fetchImpl: async () => {
+      fetches += 1;
+      throw new Error('Unexpected network');
+    },
+  });
+  const result = await engine.run(job);
+  assert.equal(result.status, 'Error');
+  assert.match(result.error, /shut down on 2026-10-22/);
+  assert.equal(fetches, 0);
+});
+
+test('can recover an acknowledged operation after retirement without submitting again', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 9, 29));
+  const store = await fixture(t);
+  const calls = [];
+  const job = task({ status: 'Polling', providerOperationName: 'operations/historical' });
+  await store.put(job);
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'mock-key',
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method });
+      return new Response(
+        JSON.stringify({ done: true, error: { message: 'Historical provider result' } }),
+      );
+    },
+  });
+  const result = await engine.run(job);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].method, undefined);
+  assert.match(calls[0].url, /operations\/historical$/);
+  assert.match(result.error, /Historical provider result/);
 });

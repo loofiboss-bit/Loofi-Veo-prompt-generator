@@ -1,4 +1,5 @@
 import React from 'react';
+import { MODEL_CATALOG } from '@core/models/catalog';
 import { useTranslation } from 'react-i18next';
 
 export interface StudioAiControlBarProps {
@@ -52,8 +53,16 @@ export const StudioAiControlBar: React.FC<StudioAiControlBarProps> = ({
             onChange={(e) => onModelChange(e.target.value)}
             disabled={disabled}
           >
-            <option value="gemini-3.8-flash">Gemini 3.8 Flash (Snabb & Skarp)</option>
-            <option value="gemini-4-argon">Gemini 4 Argon (Djup Resonering)</option>
+            {MODEL_CATALOG.filter(
+              (entry) =>
+                entry.lifecycle === 'stable' &&
+                entry.capabilities.operations.includes('plan') &&
+                entry.provider === 'gemini-api',
+            ).map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.displayName}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -66,6 +75,7 @@ export const StudioAiControlBar: React.FC<StudioAiControlBarProps> = ({
             onChange={(e) => onStylePresetChange(e.target.value)}
             disabled={disabled}
           >
+            <option value="auto">{t('modern.autoStyle')}</option>
             <option value="cinematic">{t('presets.cinematic')}</option>
             <option value="documentary">{t('presets.documentary')}</option>
             <option value="commercial">{t('presets.commercial')}</option>

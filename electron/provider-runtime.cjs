@@ -232,6 +232,22 @@ async function executeInteraction(input, client) {
         mime_type: item.mimeType,
       })),
     ];
+    const cfg = input.config && typeof input.config === 'object' ? input.config : null;
+    const aspectRatio = cfg ? cfg.aspectRatio || cfg.aspect_ratio : undefined;
+    const responseFormat =
+      cfg && (cfg.duration || cfg.resolution || aspectRatio)
+        ? {
+            type: 'video',
+            ...(cfg.duration
+              ? {
+                  duration:
+                    typeof cfg.duration === 'number' ? `${cfg.duration}s` : String(cfg.duration),
+                }
+              : {}),
+            ...(cfg.resolution ? { resolution: cfg.resolution } : {}),
+            ...(aspectRatio && cfg.mode !== 'extend' ? { aspect_ratio: aspectRatio } : {}),
+          }
+        : undefined;
     const interaction = await client.interactions.create(
       {
         model: input.providerModelId,
@@ -239,12 +255,29 @@ async function executeInteraction(input, client) {
         store: true,
         background: false,
         previous_interaction_id: input.interactionId || undefined,
+        ...(responseFormat ? { response_format: responseFormat } : {}),
       },
       input.signal ? { abortSignal: input.signal } : undefined,
     );
-    const media = [interaction.output_image, interaction.output_audio]
+    const media = [interaction.output_image, interaction.output_audio, interaction.output_video]
       .filter(Boolean)
-      .map((item) => ({ mimeType: item.mime_type || item.mimeType, data: item.data }));
+      .map((item) => ({
+        mimeType:
+          item.mime_type ||
+          item.mimeType ||
+          (item === interaction.output_video ? 'video/mp4' : 'application/octet-stream'),
+        data: item.data || item.bytesBase64Encoded,
+      }));
+    if (Array.isArray(interaction.outputs)) {
+      for (const out of interaction.outputs) {
+        if (out && (out.data || out.bytesBase64Encoded)) {
+          media.push({
+            mimeType: out.mime_type || out.mimeType || 'video/mp4',
+            data: out.data || out.bytesBase64Encoded,
+          });
+        }
+      }
+    }
     return {
       text: interaction.output_text || '',
       media,

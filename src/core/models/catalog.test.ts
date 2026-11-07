@@ -46,8 +46,9 @@ describe('MODEL_CATALOG', () => {
     });
   });
 
-  it('does not permit shut-down models in the executable catalog', () => {
-    expect(MODEL_CATALOG.filter((model) => model.lifecycle === 'shut-down')).toEqual([]);
+  it('retains shut-down aliases for persisted metadata but rejects execution', () => {
+    expect(getModel('gemini-omni-flash')?.lifecycle).toBe('shut-down');
+    expect(() => resolveProviderModelId('gemini-omni-flash')).toThrow('shut down');
   });
 
   it('assigns every executable model a unique lifecycle entry', () => {
@@ -105,7 +106,7 @@ describe('MODEL_CATALOG', () => {
       'stable',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-omni-1.1-flash')?.lifecycle).toBe(
-      'preview',
+      'stable',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'nano-banana-pro')?.lifecycle).toBe('stable');
   });
@@ -145,6 +146,18 @@ describe('MODEL_CATALOG', () => {
   it('maps retired persisted IDs to actionable current replacements', () => {
     expect(resolveCanonicalModelId('gemini-2.0-flash')).toBe('gemini-3.5-flash-lite');
     expect(resolveCanonicalModelId('veo-3.1-lite-generate-preview')).toBe('veo-3.1-lite');
+  });
+
+  it('retains preview identities for saved projects but blocks their Gemini execution only', () => {
+    expect(getProviderBinding('veo-3.1-fast', 'gemini-api')).toMatchObject({
+      lifecycle: 'shut-down',
+      sunsetDate: '2026-10-22',
+    });
+    expect(() => resolveProviderModelId('veo-3.1-fast')).toThrow('shut down');
+    expect(() => resolveProviderModelId('veo-3.1-fast-generate-preview', 'gemini-api')).toThrow(
+      'shut down',
+    );
+    expect(resolveProviderModelId('veo-3.1-fast', 'vertex-ai')).toBe('veo-3.1-fast-generate-001');
   });
 
   it('preserves unknown IDs for project migration diagnostics', () => {

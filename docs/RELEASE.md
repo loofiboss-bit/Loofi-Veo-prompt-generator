@@ -18,22 +18,20 @@ Historical v17 publication evidence remains in [release verification](V17_0_0_RE
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v21.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0)
-only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
+[v22.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.0.0)
+after Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
-Expected desktop assets:
+Expected official release assets:
 
-| Target                | Asset                                                |
-| --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-21.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-21.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-21.0.0-linux-x86_64.AppImage` |
+| Target         | Asset                                                | Status                       |
+| -------------- | ---------------------------------------------------- | ---------------------------- |
+| Fedora RPM     | `Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.rpm`      | Primary (CI Built & Tested)  |
+| Linux AppImage | `Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.AppImage` | Primary (CI Built & Tested)  |
+| Windows x64    | `Loofi-Flow-Veo-Studio-22.0.0-win-x64-setup.exe`     | Optional (Manual Build Only) |
 
-The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
-`release-manifest.json` and Windows update metadata. Verify published checksums before installation.
-Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
+Windows packages are not built in CI; users or contributors build them manually if needed (`npm run build && npx electron-builder --win`).
+The release includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`, and `release-manifest.json`.
 
 The source gate runs unit/integration tests with coverage, native desktop checks and performance
 benchmarks. The final PR checks and canonical tag workflow qualify the exact release commit and packages.
@@ -86,7 +84,7 @@ sha256sum -c SHA256SUMS.txt
 
 ## Fedora COPR publication
 
-The COPR package is a Fedora 44 x86_64 custom-source build. The checked-in
+The COPR package is a Fedora 44 and Fedora 45 x86_64 custom-source build. The checked-in
 [`packaging/copr/fetch-release.sh`](../packaging/copr/fetch-release.sh) downloads the exact GitHub
 RPM, downloads `SHA256SUMS.txt`, fails if the artifact entry is missing or mismatched, and fetches
 the spec from the matching release tag. The spec repackages the qualified Electron payload as `veo-prompt-generator`.
@@ -103,7 +101,7 @@ copr-cli edit-package-custom loofitheboss/loofi-creator-studio \
   --script-chroot fedora-44-x86_64 \
   --script-builddeps "curl ca-certificates"
 copr-cli build-package loofitheboss/loofi-creator-studio \
-  --name veo-prompt-generator -r fedora-44-x86_64
+  --name veo-prompt-generator -r fedora-44-x86_64 -r fedora-45-x86_64
 ```
 
 Verify a completed build before telling users to install it:

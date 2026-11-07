@@ -208,7 +208,8 @@ export const estimateMaximumModelCost = (
   let confidence: Exclude<CostEstimateConfidence, 'unavailable'> = 'exact';
 
   const isOmniVideo =
-    model.id === 'gemini-omni-flash' && model.capabilities.operations.includes('video');
+    Boolean(model.pricing.videoOutputTokensPerSecondByResolution) &&
+    model.capabilities.operations.includes('video');
   const needsTokenCalculation =
     model.pricing.billingModes.some((mode) =>
       ['input-tokens', 'output-tokens', 'cached-tokens', 'audio-output-tokens'].includes(mode),

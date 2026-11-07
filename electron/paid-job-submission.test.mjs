@@ -7,6 +7,7 @@ const {
   createPaidSubmission,
   computePaidSubmissionHash,
   requireApprovedSubmission,
+  assertNewSubmissionAvailable,
 } = require('./paid-job-submission.cjs');
 const { validateCostApproval } = require('./paid-job-pricing.cjs');
 
@@ -256,4 +257,12 @@ test('requires v2 native approval and verifies stored bytes, operation and endpo
   const missing = structuredClone(original);
   delete missing.approvedSubmission;
   assert.throws(() => requireApprovedSubmission(missing), /hash mismatch/);
+});
+
+test('retired preview bindings remain hashable for saved jobs but cannot be newly sent', () => {
+  const historical = approve(videoTask());
+  assert.doesNotThrow(() => requireApprovedSubmission(historical));
+  assert.doesNotThrow(() => assertNewSubmissionAvailable(historical, Date.UTC(2026, 9, 21)));
+  assert.throws(() => assertNewSubmissionAvailable(historical, Date.UTC(2026, 9, 22)), /shut down/);
+  assert.doesNotThrow(() => assertNewSubmissionAvailable(musicTask(), Date.UTC(2026, 9, 29)));
 });

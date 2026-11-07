@@ -5,9 +5,12 @@ import {
   LyricSectionError,
   isLyricSectionLocked,
   parseLyricSections,
+  preserveLockedLyricSections,
   replaceLyricSectionContent,
   resolveLyricSection,
 } from './lyricSectionService';
+
+export { preserveLockedLyricSections };
 
 export type StudioVariantEdits = Partial<Pick<VideoPromptVariant, 'prompt' | 'negativePrompt'>> &
   Partial<Pick<MusicPromptVariant, 'lyrics' | 'styleOfMusic'>>;
@@ -24,12 +27,13 @@ export function editStudioVariant(
     video.copyPrompt = video.prompt;
     video.copyNegativePrompt = video.negativePrompt;
     video.copySettingsChecklist = video.settingsChecklist.join('\n');
-    video.copyAll =
-      video.prompt +
-      '\n\nNegative prompt: ' +
-      video.negativePrompt +
-      '\n\n' +
-      video.copySettingsChecklist;
+    video.copyAll = [
+      video.prompt,
+      video.negativePrompt.trim() ? `Negative prompt: ${video.negativePrompt}` : '',
+      video.copySettingsChecklist,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
   } else {
     const music = variant as MusicPromptVariant;
     music.copyStyle = music.styleOfMusic;
@@ -51,28 +55,6 @@ export function editStudioVariant(
     alternatives: [variants[1], variants[2]],
     provenance: { ...artifact.provenance, source: 'editor' },
   });
-}
-
-/** Ambiguous AI structures are rejected; locked blocks never move or get appended. */
-export function preserveLockedLyricSections(
-  original: string,
-  proposed: string,
-  locks: string[],
-): string {
-  const source = parseLyricSections(original);
-  if (!source.some((section) => isLyricSectionLocked(section, locks))) return proposed;
-  const candidate = parseLyricSections(proposed);
-  if (!haveMatchingLyricStructure(source, candidate)) {
-    throw new LyricSectionError('structure');
-  }
-  return (
-    proposed.slice(0, candidate[0].start) +
-    source
-      .map((section, index) =>
-        isLyricSectionLocked(section, locks) ? section.raw : candidate[index].raw,
-      )
-      .join('')
-  );
 }
 
 /** Keep every non-selected section byte-identical, including repeated locked sections. */

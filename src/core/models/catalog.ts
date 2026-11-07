@@ -29,6 +29,9 @@ export type BillingMode =
   | 'flat-request';
 
 export interface ProviderModelBinding {
+  lifecycle?: ModelLifecycleStatus;
+  sunsetDate?: string;
+  sourceUrl?: string;
   provider: ModelProvider;
   apiSurface: ModelApiSurface;
   modelId: string;
@@ -133,12 +136,26 @@ const googleBindings = (
   vertexModelId: string = geminiModelId,
   apiSurface: ModelApiSurface = 'google-ai-v1beta',
 ): readonly ProviderModelBinding[] => [
-  { provider: 'gemini-api', apiSurface, modelId: geminiModelId },
+  {
+    provider: 'gemini-api',
+    apiSurface,
+    modelId: geminiModelId,
+    ...(geminiModelId.startsWith('veo-3.1-') && geminiModelId.endsWith('-preview')
+      ? {
+          lifecycle: 'shut-down' as const,
+          sunsetDate: '2026-10-22',
+          sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo',
+        }
+      : {}),
+  },
   {
     provider: 'vertex-ai',
     apiSurface: 'vertex-ai-v1',
     modelId: vertexModelId,
     regions: GOOGLE_REGIONS,
+    ...(vertexModelId.startsWith('veo-3.1-') && vertexModelId.endsWith('-001')
+      ? { lifecycle: 'stable' as const }
+      : {}),
   },
 ];
 
@@ -660,6 +677,58 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
     },
   },
   {
+    id: 'gemini-omni-1.2-flash',
+    displayName: 'Gemini Omni 1.2 Flash',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-omni-1.2-flash',
+    apiSurface: 'google-ai-interactions-v1beta',
+    providerBindings: googleBindings(
+      'gemini-omni-1.2-flash',
+      'gemini-omni-1.2-flash',
+      'google-ai-interactions-v1beta',
+    ),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['video', 'video-edit'],
+      inputModalities: ['text', 'image', 'audio', 'video'],
+      outputModalities: ['text', 'video'],
+      supportsInteraction: true,
+      supportsVideoEditing: true,
+      supportsReferenceImages: true,
+      supportsFirstLastFrame: true,
+      supportsExtension: true,
+      supportsSeed: true,
+      supportedDurationsSeconds: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      supportedAspectRatios: VIDEO_ASPECTS,
+      supportedResolutions: ['360p', '720p', '1080p', '4k'],
+      maximumReferenceImages: 6,
+      supportsAudioOutput: true,
+    },
+    pricing: {
+      status: 'priced',
+      source: priceSource(),
+      billingModes: ['input-tokens', 'output-tokens', 'video-seconds'],
+      tokenTiers: [
+        {
+          inputPerMillionUsd: { text: 1.5, image: 1.5, audio: 1.5, video: 1.5 },
+          outputPerMillionUsd: { text: 9, video: 17.5 },
+        },
+      ],
+      videoOutputTokensPerSecondByResolution: {
+        '360p': 2_896,
+        '720p': 5_792,
+        '1080p': 13_032,
+        '4k': 52_128,
+      },
+      assumptions: [
+        'Billed per generated video token across 360p, 720p, 1080p, and 4k with native audio synthesis.',
+        'The resulting maximum is an upper bound because billing follows actual output tokens.',
+      ],
+    },
+  },
+  {
     id: 'gemini-omni-1.1-flash',
     displayName: 'Gemini Omni 1.1 Flash',
     provider: 'gemini-api',
@@ -670,7 +739,8 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       'gemini-omni-1.1-flash',
       'google-ai-interactions-v1beta',
     ),
-    lifecycle: 'preview',
+    lifecycle: 'stable',
+    replacementModelId: 'gemini-omni-1.2-flash',
     minimumSdkVersion: '2.0.0',
     regionRestrictions: [],
     capabilities: {
@@ -705,11 +775,6 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
         '1080p': 13_032,
         '4k': 52_128,
       },
-      videoPerSecondByResolutionUsd: {
-        '720p': 0.1,
-        '1080p': 0.23,
-        '4k': 0.91,
-      },
       assumptions: [
         'Billed per generated video token across 360p, 720p, 1080p, and 4k with native audio synthesis.',
       ],
@@ -726,7 +791,8 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       'gemini-omni-flash-preview',
       'google-ai-interactions-v1beta',
     ),
-    lifecycle: 'preview',
+    lifecycle: 'shut-down',
+    replacementModelId: 'gemini-omni-1.2-flash',
     minimumSdkVersion: '2.0.0',
     regionRestrictions: [],
     capabilities: {
@@ -874,10 +940,15 @@ export const resolveProviderModelId = (modelId: string, provider?: ModelProvider
   const canonicalId = LEGACY_MODEL_REPLACEMENTS[modelId] ?? modelId;
   const model = getModel(canonicalId);
   if (!model) return modelId;
-  return provider
-    ? (model.providerBindings.find((binding) => binding.provider === provider)?.modelId ??
-        model.providerModelId)
-    : model.providerModelId;
+  const binding = model.providerBindings.find(
+    (candidate) => candidate.provider === (provider ?? model.provider),
+  );
+  if (model.lifecycle === 'shut-down' || binding?.lifecycle === 'shut-down') {
+    throw new Error(
+      `${binding?.modelId ?? model.providerModelId} is shut down${binding?.sunsetDate ? ` on ${binding.sunsetDate}` : ''}. Choose an active model and provider explicitly.`,
+    );
+  }
+  return binding?.modelId ?? model.providerModelId;
 };
 
 export const getProviderBinding = (
@@ -888,8 +959,14 @@ export const getProviderBinding = (
     (binding) => binding.provider === provider,
   );
 
-export const isShutdownModel = (modelId: string): boolean =>
-  getModel(modelId)?.lifecycle === 'shut-down';
+export const isShutdownModel = (modelId: string, provider?: ModelProvider): boolean => {
+  const model = getModel(modelId);
+  if (!model) return false;
+  return (
+    model.lifecycle === 'shut-down' ||
+    getProviderBinding(modelId, provider ?? model.provider)?.lifecycle === 'shut-down'
+  );
+};
 
 export const LEGACY_MODEL_REPLACEMENTS: Readonly<Record<string, string>> = {
   'gemini-3-pro-preview': 'gemini-3.5-flash',

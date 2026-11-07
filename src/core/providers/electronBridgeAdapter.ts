@@ -1,5 +1,6 @@
 import {
   getProviderBinding,
+  isShutdownModel,
   type ModelCatalogEntry,
   type ModelProvider,
 } from '@core/models/catalog';
@@ -80,7 +81,8 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
   ) {}
 
   supports(model: ModelCatalogEntry): boolean {
-    if (!getProviderBinding(model.id, this.provider)) return false;
+    if (isShutdownModel(model.id, this.provider) || !getProviderBinding(model.id, this.provider))
+      return false;
     return (
       model.capabilities.operations.some((operation) =>
         ['plan', 'review', 'image', 'tts'].includes(operation),
@@ -102,6 +104,11 @@ export class ElectronBridgeAdapter implements GenerativeProviderAdapter {
   }
 
   async execute(request: ProviderRequest): Promise<ProviderResponse> {
+    if (isShutdownModel(request.model.id, this.provider)) {
+      throw new Error(
+        `${request.model.displayName} is shut down for ${this.provider}. Choose an active model explicitly.`,
+      );
+    }
     const providerModelId =
       getProviderBinding(request.model.id, this.provider)?.modelId ?? request.model.providerModelId;
     const isInteraction =

@@ -8,7 +8,7 @@
     "name": "loofiboss-bit",
     "email": "loofiboss-bit@users.noreply.github.com"
   },
-  "version": "21.1.0",
+  "version": "22.0.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -42,8 +42,8 @@
     "models:check": "node scripts/check-executable-models.mjs",
     "i18n:create:check": "node scripts/check-create-translations.mjs",
     "validate:release": "npm run media-runtime:check && npm run package:rpm:check && npm run theme:check && npm run models:check && npm run i18n:create:check && npm run i18n:studio:check && npm run i18n:creator:check && npm run pre-release:check",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write --cache .",
+    "format:check": "prettier --check --cache .",
     "test:watch": "node node_modules/vitest/vitest.mjs --environment jsdom",
     "test:coverage": "node node_modules/vitest/vitest.mjs run --environment jsdom --coverage",
     "coverage:check": "node scripts/check-coverage.mjs",

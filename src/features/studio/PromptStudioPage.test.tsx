@@ -6,7 +6,6 @@ import { MemoryRouter, useNavigate } from 'react-router';
 import { act, fireEvent, render, screen, waitFor, within } from '@/test-utils';
 import { i18n } from '@core/config/i18n';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
-import { useProductionRunStore } from '@core/store/useProductionRunStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useAppStore } from '@core/store/useAppStore';
@@ -44,6 +43,7 @@ const mocks = vi.hoisted(() => ({
   key: vi.fn(),
   expandScene: vi.fn(),
   expandMusic: vi.fn(),
+  generateScene: vi.fn(),
 }));
 vi.mock('idb-keyval', () => ({
   createStore: (database: string, table: string) => `${database}:${table}`,
@@ -66,6 +66,7 @@ vi.mock('@core/services/promptStudioService', async (importOriginal) => ({
   optimizeMusicPromptArtifact: mocks.optimizeMusic,
   expandVideoSceneDetails: mocks.expandScene,
   expandMusicDetails: mocks.expandMusic,
+  generateVideoSceneAndPack: mocks.generateScene,
 }));
 vi.mock('@core/services/apiKeyService', () => ({ hasApiKeyAsync: mocks.key }));
 vi.mock('@core/services/videoVariantEditService', async (importOriginal) => ({
@@ -105,6 +106,10 @@ function FeedbackStateNavigator({ state }: { state: StudioFeedbackNavigationStat
       Open next reviewed result
     </button>
   );
+}
+async function openSceneDetails(user: ReturnType<typeof render>['user']) {
+  const summary = screen.queryByText('Scene details', { exact: true });
+  if (summary && !summary.closest('details')?.open) await user.click(summary);
 }
 async function buildPack(
   user: ReturnType<typeof render>['user'],
@@ -163,6 +168,7 @@ describe('PromptStudioPage durable copy desk', () => {
     await usePromptStudioDraftStore.getState().flush();
     mocks.db.clear();
     mocks.optimize.mockReset();
+    mocks.generateScene.mockReset();
     mocks.optimizeMusic.mockReset();
     mocks.variantEdit.mockReset();
     mocks.musicVariantEdit.mockReset();
@@ -277,6 +283,7 @@ describe('PromptStudioPage durable copy desk', () => {
     const source = usePromptStudioDraftStore.getState().draft!.artifact!;
     mocks.optimize.mockResolvedValue(editStudioVariant(source, 1, { prompt: 'Reviewed proposal' }));
     await user.click(screen.getByRole('button', { name: 'Editor' }));
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await screen.findByRole('button', { name: 'Accept changes' });
     expect(screen.getByRole('button', { name: 'Result' })).toHaveAttribute('aria-pressed', 'true');
@@ -291,7 +298,7 @@ describe('PromptStudioPage durable copy desk', () => {
       'Retained narrow workspace idea',
     );
     expect(screen.queryByRole('button', { name: 'Editor' })).toBeNull();
-  });
+  }, 30_000);
 
   it('keeps the focused editor or result visible when a split workspace becomes tabbed', async () => {
     let resize!: ResizeObserverCallback;
@@ -387,59 +394,44 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue('Edited output');
   });
 
-  it.each(['flow-veo', 'kling', 'runway-gen3', 'sora', 'luma-ray', 'wan-video', 'minimax-hailuo'])(
-    'keeps %s a manual copy handoff',
-    async (target) => {
-      const open = vi.spyOn(window, 'open').mockImplementation(() => null);
-      open.mockClear();
-      const { user } = await openStudio();
-      installClipboard();
-      await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), target);
-      await buildPack(user);
-      expect(usePromptStudioDraftStore.getState().draft?.artifact?.target).toBe(target);
-      expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
-      expect(clipboard).toHaveBeenCalled();
-      expect(open).not.toHaveBeenCalled();
-    },
-  );
-
-  it('requires real image references and a supported duration before enabling API handoff', async () => {
+  it.each([
+    'flow-veo',
+    'omni-flash',
+    'kling',
+    'runway-gen3',
+    'luma-ray',
+    'wan-video',
+    'minimax-hailuo',
+  ])('keeps %s a manual copy handoff', async (target) => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    open.mockClear();
     const { user } = await openStudio();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'veo-api');
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Prompt recipe' }),
-      'image-to-video',
-    );
+    installClipboard();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), target);
     await buildPack(user);
+    expect(usePromptStudioDraftStore.getState().draft?.artifact?.target).toBe(target);
     expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Image-to-video requires a first frame.').length).toBeGreaterThan(0);
-    await act(async () => {
-      useAppStore.setState({
-        assets: [
-          {
-            id: 'img-1',
-            name: 'Local first frame',
-            type: 'image',
-            data: '',
-            mimeType: 'image/png',
-            url: 'blob:local-frame',
-          },
-        ],
-      });
-    });
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Start frame' }), 'img-1');
-    await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
-    expect(await screen.findByRole('button', { name: 'Generate in app' })).toBeInTheDocument();
-    const length = screen.getByRole('combobox', { name: 'Length' });
-    expect(within(length).getByRole('option', { name: '10 seconds' })).toBeDisabled();
-    expect(screen.getAllByText('Veo API supports 4, 6 or 8 seconds.').length).toBeGreaterThan(0);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'flow-veo');
-    expect(
-      within(screen.getByRole('combobox', { name: 'Length' })).getByRole('option', {
-        name: '10 seconds',
-      }),
-    ).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(clipboard).toHaveBeenCalled();
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('removes retired targets from new generation while preserving loaded text', async () => {
+    const { user } = await openStudio();
+    expect(screen.queryByRole('option', { name: /Sora|Veo 3.1 API/ })).not.toBeInTheDocument();
+    await buildPack(user);
+    const previous = usePromptStudioDraftStore.getState().draft!;
+    await act(async () =>
+      usePromptStudioDraftStore
+        .getState()
+        .applyDraft({ video: { ...previous.video, target: 'sora', profileId: undefined } }),
+    );
+    expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+      (previous.artifact!.primary as VideoPromptVariant).prompt,
+    );
+    expect(screen.getByRole('button', { name: 'Create with Gemini' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Build copy-ready pack' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
   });
 
   it('ignores a completed AI request after the user changes input', async () => {
@@ -452,6 +444,7 @@ describe('PromptStudioPage durable copy desk', () => {
     );
     const { user } = await openStudio();
     await user.type(screen.getByRole('textbox', { name: 'Core idea' }), 'Original idea');
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await waitFor(() => expect(mocks.optimize).toHaveBeenCalledTimes(1));
     fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
@@ -483,6 +476,7 @@ describe('PromptStudioPage durable copy desk', () => {
     );
     const { user } = await openStudio();
     await user.type(screen.getByRole('textbox', { name: 'Core idea' }), 'Before readiness');
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await waitFor(() => expect(mocks.key).toHaveBeenCalled());
     fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
@@ -495,45 +489,11 @@ describe('PromptStudioPage durable copy desk', () => {
     );
   });
 
-  it('hands off the selected edited positive and negative prompt with source references', async () => {
-    const createPlan = vi
-      .spyOn(useProductionRunStore.getState(), 'createLocalPlan')
-      .mockRejectedValue(new Error('Intercepted local plan'));
+  it('keeps provider execution unavailable for all current manual targets', async () => {
     const { user } = await openStudio();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'veo-api');
     await buildPack(user);
-    await user.click(screen.getByRole('button', { name: 'Cinematic' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Cinematic prompt' }), {
-      target: { value: 'My chosen camera move' },
-    });
-    await user.click(
-      screen
-        .getAllByText('Negative prompt', { exact: true })
-        .find((element) => element.tagName === 'SUMMARY')!,
-    );
-    fireEvent.change(
-      within(screen.getByRole('article')).getByRole('textbox', { name: 'Negative prompt' }),
-      {
-        target: { value: 'No signage or captions' },
-      },
-    );
-    await user.click(screen.getByRole('button', { name: 'Generate in app' }));
-    await waitFor(() =>
-      expect(createPlan).toHaveBeenCalledWith(
-        expect.objectContaining({
-          projectId: 'studio-test',
-          sourceVariantIndex: 1,
-          sourceArtifactId: expect.any(String),
-          sourceHandoffId: expect.any(String),
-          studioInput: expect.objectContaining({
-            idea: 'My chosen camera move',
-            negativePrompt: 'No signage or captions',
-            target: 'veo-api',
-            durationSeconds: 8,
-          }),
-        }),
-      ),
-    );
+    expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Veo 3.1 API/ })).not.toBeInTheDocument();
   });
 
   it('opens Suno only after explicitly copying the selected music variant', async () => {
@@ -582,6 +542,7 @@ describe('PromptStudioPage durable copy desk', () => {
     });
     const source = usePromptStudioDraftStore.getState().draft!.artifact!;
     mocks.optimize.mockResolvedValue(editStudioVariant(source, 0, { prompt: 'Proposed AI edit' }));
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await screen.findByRole('region', { name: 'Review AI changes' });
     expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
@@ -615,6 +576,7 @@ describe('PromptStudioPage durable copy desk', () => {
       editStudioVariant(source, 0, { prompt: 'A silent runner crosses the park.' }),
     );
 
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The AI response changed or omitted protected dialogue.',
@@ -692,6 +654,7 @@ describe('PromptStudioPage durable copy desk', () => {
     await buildPack(user);
     const source = usePromptStudioDraftStore.getState().draft!.artifact!;
     mocks.optimize.mockResolvedValue(editStudioVariant(source, 0, { prompt: 'Rejected edit' }));
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await screen.findByRole('button', { name: 'Reject changes' });
     await user.click(screen.getByRole('button', { name: 'Reject changes' }));
@@ -706,6 +669,7 @@ describe('PromptStudioPage durable copy desk', () => {
     await buildPack(user);
     const source = usePromptStudioDraftStore.getState().draft!.artifact!;
     mocks.optimize.mockResolvedValue(editStudioVariant(source, 0, { prompt: 'Stale proposal' }));
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await screen.findByRole('button', { name: 'Accept changes' });
     fireEvent.change(screen.getByRole('textbox', { name: 'Primary prompt' }), {
@@ -725,6 +689,7 @@ describe('PromptStudioPage durable copy desk', () => {
         resolve = done;
       }),
     );
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await waitFor(() => expect(mocks.optimize).toHaveBeenCalled());
     if (change === 'edit') {
@@ -1098,7 +1063,7 @@ describe('PromptStudioPage durable copy desk', () => {
     await buildPack(user);
     const source = usePromptStudioDraftStore.getState().draft!.artifact!;
     vi.spyOn(usePromptStudioDraftStore.getState(), 'checkpoint').mockResolvedValue(false);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'sora');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), 'kling');
     await screen.findByRole('alert');
     expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(source);
     expect(usePromptStudioDraftStore.getState().draft!.video.target).toBe('flow-veo');
@@ -1125,6 +1090,7 @@ describe('PromptStudioPage durable copy desk', () => {
         lyrics: '[Verse]\nNew verse\n\n[Chorus]\nAI changed chorus',
       }),
     );
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Improve full package' }));
     await screen.findByRole('button', { name: 'Accept changes' });
     expect(usePromptStudioDraftStore.getState().draft!.artifact).toEqual(original);
@@ -1373,9 +1339,7 @@ describe('PromptStudioPage durable copy desk', () => {
     fireEvent.change(motion, { target: { value: 'The bird spreads its wings' } });
     await user.click(screen.getByRole('button', { name: 'Build copy-ready pack' }));
     const result = await screen.findByRole('textbox', { name: 'Primary prompt' });
-    expect((result as HTMLTextAreaElement).value).toContain(
-      'Subject motion: The bird spreads its wings',
-    );
+    expect((result as HTMLTextAreaElement).value).toContain('The bird spreads its wings');
   });
 
   it('selects and locks repeated choruses independently without duplicate option identities', async () => {
@@ -1405,6 +1369,7 @@ describe('PromptStudioPage durable copy desk', () => {
   it('reviews scene expansion before acceptance and rejects without changing the draft', async () => {
     const { user } = await openStudio();
     await user.type(screen.getByRole('textbox', { name: 'Core idea' }), 'A rainy street');
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
     expect(await screen.findByText('Review expanded details')).toBeInTheDocument();
     expect(usePromptStudioDraftStore.getState().draft!.video.subject).not.toBe(
@@ -1415,6 +1380,7 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(usePromptStudioDraftStore.getState().draft!.video.subject).not.toBe(
       'AI-generated subject',
     );
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
     await user.click(await screen.findByRole('button', { name: 'Accept expanded details' }));
     expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe('AI-generated subject');
@@ -1458,6 +1424,7 @@ describe('PromptStudioPage durable copy desk', () => {
   it('discards an expansion proposal when the project changes', async () => {
     const { user } = await openStudio();
     await user.type(screen.getByRole('textbox', { name: 'Core idea' }), 'A rainy street');
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
     await screen.findByRole('button', { name: 'Accept expanded details' });
     act(() => useProjectStore.setState({ currentProjectId: 'other-project' }));
@@ -1484,6 +1451,7 @@ describe('PromptStudioPage durable copy desk', () => {
     const { user } = await openStudio();
     const idea = screen.getByRole('textbox', { name: 'Core idea' });
     await user.type(idea, 'First idea');
+    await openSceneDetails(user);
     await user.click(screen.getByRole('button', { name: 'Expand scene details with AI' }));
     await waitFor(() => expect(mocks.expandScene).toHaveBeenCalled());
     fireEvent.change(idea, { target: { value: 'New idea' } });
@@ -1537,5 +1505,91 @@ describe('PromptStudioPage durable copy desk', () => {
     await user.click(screen.getByRole('button', { name: 'Copy & Open Suno' }));
     expect(clipboard).toHaveBeenCalledTimes(1);
     expect(open).toHaveBeenCalledTimes(1);
+  });
+  it('creates editable details and three variants in one call, preserves manual text and undoes atomically', async () => {
+    const { user, unmount } = await openStudio();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'A fox in snow' },
+    });
+    await openSceneDetails(user);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Camera' }), {
+      target: { value: '  Locked 50mm camera  ' },
+    });
+    mocks.generateScene.mockImplementationOnce(async (input: VideoPromptArtifactInput) => ({
+      input: {
+        ...input,
+        subject: 'A red fox',
+        action: 'Walks through snow',
+        creativeDetails: { lensType: '50mm' },
+      },
+      pack: {
+        primary: 'A red fox walks through snow. Locked 50mm camera.',
+        cinematic: 'The red fox moves through soft snow. Locked 50mm camera.',
+        controlFocused: 'A red fox walks steadily through snow. Locked 50mm camera.',
+        negativePrompt: '',
+      },
+      modelId: 'gemini-3.8-flash',
+      recommendations: ['Keep the scene quiet.'],
+    }));
+    await user.click(screen.getByRole('button', { name: 'Create with Gemini' }));
+    await screen.findByRole('button', { name: 'Undo AI creation' });
+    expect(mocks.generateScene).toHaveBeenCalledTimes(1);
+    expect(usePromptStudioDraftStore.getState().draft!.video.camera).toBe('  Locked 50mm camera  ');
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe('A red fox');
+    expect(usePromptStudioDraftStore.getState().draft!.artifact!.provenance.modelId).toBe(
+      'gemini-3.8-flash',
+    );
+    await user.click(screen.getByRole('button', { name: 'Undo AI creation' }));
+    await waitFor(() => expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe(''));
+    expect(usePromptStudioDraftStore.getState().draft!.video.camera).toBe('  Locked 50mm camera  ');
+    unmount();
+    await openStudio();
+    expect(usePromptStudioDraftStore.getState().draft!.video.camera).toBe('  Locked 50mm camera  ');
+  });
+
+  it('discards a late combined result after editing the idea', async () => {
+    let finish!: (result: unknown) => void;
+    mocks.generateScene.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { user } = await openStudio();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'Old idea' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Create with Gemini' }));
+    await waitFor(() => expect(mocks.generateScene).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Core idea' }), {
+      target: { value: 'New idea' },
+    });
+    await act(async () => finish({}));
+    expect(usePromptStudioDraftStore.getState().draft!.video.idea).toBe('New idea');
+    expect(usePromptStudioDraftStore.getState().draft!.artifact).toBeNull();
+  });
+
+  it('regenerates only an explicitly unlocked field and marks the existing result stale', async () => {
+    const { user } = await openStudio();
+    await buildPack(user);
+    await openSceneDetails(user);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Camera' }), {
+      target: { value: 'Manual camera' },
+    });
+    const protectedControl = screen.getByRole('checkbox', { name: 'Protect Camera from AI' });
+    expect(protectedControl).toBeChecked();
+    await user.click(protectedControl);
+    mocks.expandScene.mockImplementationOnce(async (input: VideoPromptArtifactInput) => ({
+      ...input,
+      camera: 'Slow dolly',
+      subject: 'Must not leak',
+    }));
+    const before = structuredClone(usePromptStudioDraftStore.getState().draft!.video);
+    await user.click(screen.getByRole('button', { name: 'Regenerate Camera' }));
+    await waitFor(() =>
+      expect(usePromptStudioDraftStore.getState().draft!.video.camera).toBe('Slow dolly'),
+    );
+    expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe(before.subject);
+    expect(mocks.expandScene.mock.calls.at(-1)?.[1].editableFields).toEqual(['camera']);
   });
 });

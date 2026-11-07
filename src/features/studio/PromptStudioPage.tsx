@@ -8,6 +8,7 @@ import type {
   VideoPromptVariant,
   MusicPromptVariant,
   MusicPromptArtifactInput,
+  StudioSceneField,
   VideoPromptMode,
   PromptStudioDraftV1,
   StudioRevisionV1,
@@ -24,6 +25,8 @@ import {
   normalizeMusicPromptInput,
   normalizeVideoPromptInput,
   optimizeFullVideoPack,
+  generateVideoSceneAndPack,
+  createGeneratedVideoArtifact,
   optimizeMusicPromptArtifact,
   optimizeVideoPromptArtifact,
   promptArtifactToProductionState,
@@ -68,7 +71,15 @@ import {
   studioGenerationBlocker,
   studioVideoRequestIssues,
 } from '@core/config/studioCapabilities';
-import { getModel } from '@core/models/catalog';
+import {
+  getTargetProfile,
+  getProfileModes,
+  getProfileDurations,
+  getProfileAspectRatios,
+  isActiveStudioTarget,
+} from '@core/services/modelTranspilerService';
+import { studioRevisionService } from '@core/services/studioRevisionService';
+import { StudioCreativeControls } from './components/StudioCreativeControls';
 import { openAssetLibrary } from '@shared/utils/assetLibraryEvents';
 import { ROUTES } from '@core/config/routes';
 import { assertProtectedPromptTextPreserved } from '@core/services/promptTextSegments';
@@ -95,13 +106,6 @@ const SpatialCameraDirector = lazy(() =>
     default: m.SpatialCameraDirector,
   })),
 );
-const MODES: VideoPromptMode[] = [
-  'text-to-video',
-  'image-to-video',
-  'first-last-frames',
-  'ingredients',
-  'extend',
-];
 const VIDEO_FIELDS = [
   'subject',
   'action',
@@ -225,9 +229,11 @@ export function PromptStudioPage() {
   const [section, setSection] = useState('[Chorus]');
   const [direction, setDirection] = useState('');
   const [isArenaOpen, setIsArenaOpen] = useState(false);
-  const [aiModel, setAiModel] = useState<string>('gemini-3.8-flash');
-  const [stylePreset, setStylePreset] = useState<string>('cinematic');
-  const [promptLanguage, setPromptLanguage] = useState<'en' | 'sv'>('en');
+  const [undoGeneration, setUndoGeneration] = useState<{
+    revision: StudioRevisionV1;
+    appliedRevision: number;
+    projectId: string;
+  } | null>(null);
   const [overwriteAll, setOverwriteAll] = useState<boolean>(false);
   const [sceneDetailsOpen, setSceneDetailsOpen] = useState<boolean>(false);
   const [musicDetailsOpen, setMusicDetailsOpen] = useState<boolean>(false);
@@ -272,6 +278,7 @@ export function PromptStudioPage() {
     setExpanding(false);
     aiRequest.current = 0;
     setIsArenaOpen(false);
+    setUndoGeneration(null);
     return () => {
       active = false;
       mounted.current = false;
@@ -411,6 +418,22 @@ export function PromptStudioPage() {
       </div>
     );
   const { video, music, mode, artifact, selectedVariant, lockedSections } = draft;
+  const aiSettings = draft.aiSettings ?? {
+    model: 'gemini-3.8-flash',
+    stylePreset: 'auto',
+    language: 'en' as const,
+  };
+  const { model: aiModel, stylePreset, language: promptLanguage } = aiSettings;
+  const targetActive = isActiveStudioTarget(video.target);
+  const targetProfile = getTargetProfile(video.target, video.profileId);
+  const profileModes = targetActive ? getProfileModes(video) : [video.mode];
+  const profileDurations = targetActive ? getProfileDurations(video) : [video.durationSeconds];
+  const profileAspects = targetActive ? getProfileAspectRatios(video) : [video.aspectRatio];
+  const profileCompatible =
+    targetActive &&
+    profileModes.includes(video.mode) &&
+    profileDurations.includes(video.durationSeconds) &&
+    profileAspects.includes(video.aspectRatio);
   const currentArtifact = artifact?.kind === mode ? revalidatePromptArtifact(artifact) : null;
   const feedbackCompatible =
     Boolean(feedbackSource) &&
@@ -469,9 +492,6 @@ export function PromptStudioPage() {
     ? JSON.stringify([projectId, mode, currentArtifact, currentInput])
     : '';
   const previousResultAllowed = staleArtifact && allowedPreviousResult === previousResultKey;
-  const veoDurations = getModel('veo-3.1-fast')?.capabilities.supportedDurationsSeconds ?? [
-    4, 6, 8,
-  ];
 
   const revealResult = () => {
     focusResultRequested.current = !splitLayout;
@@ -482,6 +502,10 @@ export function PromptStudioPage() {
     setAllowedPreviousResult('');
     store.applyDraft({
       video: { ...usePromptStudioDraftStore.getState().draft!.video, ...changes },
+      fieldOrigins: {
+        ...usePromptStudioDraftStore.getState().draft!.fieldOrigins,
+        ...Object.fromEntries(Object.keys(changes).map((key) => [key, 'manual' as const])),
+      },
     });
     setError('');
     operation.current += 1;
@@ -568,6 +592,137 @@ export function PromptStudioPage() {
     setMusicVariantProposal(null);
     setMessage(t('variantEdit.cancelled', { defaultValue: 'AI request cancelled.' }));
   };
+  const updateAiSettings = (updates: Partial<NonNullable<PromptStudioDraftV1['aiSettings']>>) => {
+    invalidateFeedbackProposal();
+    store.applyDraft({ aiSettings: { ...aiSettings, ...updates } });
+  };
+
+  const editableSceneFields = VIDEO_FIELDS.filter(
+    (field) =>
+      !(draft.lockedFields ?? []).includes(field) &&
+      (overwriteAll || draft.fieldOrigins?.[field] === 'ai' || !video[field]?.trim()),
+  );
+
+  const generateSceneAndPack = () =>
+    void run(async () => {
+      if (!video.idea.trim() || !profileCompatible || changeInFlight.current) return;
+      const baseline = usePromptStudioDraftStore.getState().draft!;
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setBusy(true);
+      let committing = false;
+      const isCurrent = () =>
+        mounted.current &&
+        operation.current === token &&
+        !controller.signal.aborted &&
+        usePromptStudioDraftStore.getState().draft === baseline &&
+        (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+      try {
+        if (!(await aiReady()) || !isCurrent()) return;
+        const generated = await generateVideoSceneAndPack(video, {
+          model: aiModel,
+          stylePreset,
+          language: promptLanguage,
+          editableFields: editableSceneFields,
+          signal: controller.signal,
+        });
+        if (!isCurrent()) return;
+        const next = scopeArtifact(
+          await createGeneratedVideoArtifact(
+            generated.input,
+            generated.pack,
+            generated.modelId,
+            generated.recommendations,
+          ),
+        );
+        if (!isCurrent()) return;
+        committing = true;
+        changeInFlight.current = true;
+        setChanging(true);
+        if (!(await store.checkpoint('ai-create')) || !isCurrent())
+          throw new Error(store.error ?? t('revision.stale'));
+        const revisions = await studioRevisionService.list(projectId);
+        if (!isCurrent()) return;
+        const origins = { ...baseline.fieldOrigins };
+        for (const field of editableSceneFields)
+          if (generated.input[field] !== baseline.video[field]) origins[field] = 'ai';
+        if (
+          !(await store.acceptArtifact(next, baseline, isCurrent, {
+            video: generated.input,
+            fieldOrigins: origins,
+            selectedVariant: 0,
+          }))
+        )
+          throw new Error(usePromptStudioDraftStore.getState().error ?? t('saveError'));
+        const revision = revisions.at(-1);
+        if (revision)
+          setUndoGeneration({
+            revision,
+            appliedRevision: usePromptStudioDraftStore.getState().draft!.revision,
+            projectId,
+          });
+        setRevisionRefresh((value) => value + 1);
+        revealResult();
+        setMessage(t('modern.created'));
+        await promptStudioHandoffService.saveArtifact(next);
+      } finally {
+        if (committing) {
+          changeInFlight.current = false;
+          if (mounted.current) setChanging(false);
+        }
+        if (activeAbort.current === controller) activeAbort.current = null;
+        if (mounted.current && aiRequest.current === token) {
+          setBusy(false);
+          setChanging(false);
+        }
+      }
+    });
+
+  const regenerateSceneField = (field: StudioSceneField) =>
+    void run(async () => {
+      if (!video.idea.trim() || !targetActive || (draft.lockedFields ?? []).includes(field)) return;
+      const baseline = usePromptStudioDraftStore.getState().draft!;
+      const token = ++operation.current;
+      aiRequest.current = token;
+      const controller = new AbortController();
+      activeAbort.current?.abort();
+      activeAbort.current = controller;
+      setBusy(true);
+      const isCurrent = () =>
+        mounted.current &&
+        operation.current === token &&
+        !controller.signal.aborted &&
+        usePromptStudioDraftStore.getState().draft === baseline &&
+        (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+      try {
+        if (!(await aiReady()) || !isCurrent()) return;
+        const expanded = await expandVideoSceneDetails(video, {
+          model: aiModel,
+          stylePreset,
+          language: promptLanguage,
+          editableFields: [field],
+          signal: controller.signal,
+        });
+        if (!isCurrent()) return;
+        if (!(await store.checkpoint('ai-field')) || !isCurrent())
+          throw new Error(t('revision.stale'));
+        if (
+          !(await store.acceptDraftUpdates(baseline, isCurrent, {
+            video: { ...baseline.video, [field]: expanded[field] },
+            fieldOrigins: { ...baseline.fieldOrigins, [field]: 'ai' },
+          }))
+        )
+          throw new Error(usePromptStudioDraftStore.getState().error ?? t('saveError'));
+        setRevisionRefresh((value) => value + 1);
+        setMessage(t('modern.fieldUpdated'));
+      } finally {
+        if (activeAbort.current === controller) activeAbort.current = null;
+        if (mounted.current && aiRequest.current === token) setBusy(false);
+      }
+    });
   const invalidateFeedbackProposal = () => {
     const controller = activeAbort.current;
     activeAbort.current = null;
@@ -623,6 +778,21 @@ export function PromptStudioPage() {
       throw new Error(t('revision.stale'));
     setRevisionRefresh((n) => n + 1);
   };
+  const applyProfileDefaults = (candidate: VideoPromptArtifactInput): VideoPromptArtifactInput => {
+    const next = { ...candidate };
+    const modes = getProfileModes(next);
+    if (!modes.includes(next.mode) && draft.fieldOrigins?.mode !== 'manual') next.mode = modes[0];
+    const durations = getProfileDurations(next);
+    if (
+      !durations.includes(next.durationSeconds) &&
+      draft.fieldOrigins?.durationSeconds !== 'manual'
+    )
+      next.durationSeconds = durations.includes(8) ? 8 : durations[0];
+    const aspects = getProfileAspectRatios(next);
+    if (!aspects.includes(next.aspectRatio) && draft.fieldOrigins?.aspectRatio !== 'manual')
+      next.aspectRatio = aspects[0] as VideoPromptArtifactInput['aspectRatio'];
+    return next;
+  };
   const selectTarget = (
     target: VideoPromptArtifactInput['target'],
     compiledArtifact?: PromptArtifactV1,
@@ -632,7 +802,14 @@ export function PromptStudioPage() {
       await checkpoint('target');
       const active = usePromptStudioDraftStore.getState().draft!;
       store.applyDraft({
-        video: { ...active.video, target },
+        video:
+          compiledArtifact?.kind === 'video'
+            ? { ...(compiledArtifact.input as VideoPromptArtifactInput) }
+            : applyProfileDefaults({
+                ...active.video,
+                target,
+                profileId: getTargetProfile(target).profileId,
+              }),
         artifact: compiledArtifact ?? null,
         artifacts: { ...active.artifacts, video: compiledArtifact ?? null },
       });
@@ -720,6 +897,7 @@ export function PromptStudioPage() {
       try {
         if (!(await aiReady())) return;
         const expanded = await expandVideoSceneDetails(video, {
+          editableFields: editableSceneFields,
           model: aiModel,
           stylePreset,
           language: promptLanguage,
@@ -770,6 +948,7 @@ export function PromptStudioPage() {
       try {
         if (!(await aiReady())) return;
         const expanded = await expandMusicDetails(music, {
+          lockedSections,
           model: aiModel,
           stylePreset,
           language: music.language,
@@ -1229,12 +1408,20 @@ export function PromptStudioPage() {
                 ).lyrics,
               }
             : music;
-        usePromptStudioDraftStore.getState().applyDraft({
-          music: nextMusic,
-          artifact: accepted,
-          artifacts: { ...latest.artifacts, [mode]: accepted },
-        });
-        await saveArtifact(accepted);
+        const baseline = usePromptStudioDraftStore.getState().draft!;
+        if (
+          !(await store.acceptArtifact(
+            accepted,
+            baseline,
+            () =>
+              mounted.current &&
+              usePromptStudioDraftStore.getState().draft === baseline &&
+              (useProjectStore.getState().currentProjectId ?? 'default') === projectId,
+            { music: nextMusic },
+          ))
+        )
+          throw new Error(usePromptStudioDraftStore.getState().error ?? t('saveError'));
+        await promptStudioHandoffService.saveArtifact(accepted);
         setMessage(t('enhanced'));
       });
     });
@@ -1681,6 +1868,11 @@ export function PromptStudioPage() {
                     <div>
                       <UniversalTargetSelector
                         value={video.target}
+                        profileId={video.profileId}
+                        disabled={busy || changing}
+                        onProfileChange={(profileId) =>
+                          updateVideo(applyProfileDefaults({ ...video, profileId }))
+                        }
                         onChange={(target) => void run(() => selectTarget(target))}
                       />
                     </div>
@@ -1696,8 +1888,16 @@ export function PromptStudioPage() {
                         })
                       }
                     >
-                      <option value="16:9">16:9</option>
-                      <option value="9:16">9:16</option>
+                      {!profileAspects.includes(video.aspectRatio) ? (
+                        <option value={video.aspectRatio} disabled>
+                          {video.aspectRatio}
+                        </option>
+                      ) : null}
+                      {profileAspects.map((ratio) => (
+                        <option key={ratio} value={ratio}>
+                          {ratio}
+                        </option>
+                      ))}
                     </select>
                   </Field>
                 </div>
@@ -1718,7 +1918,12 @@ export function PromptStudioPage() {
                         })
                       }
                     >
-                      {MODES.map((item) => (
+                      {!profileModes.includes(video.mode) ? (
+                        <option value={video.mode} disabled>
+                          {t('modes.' + video.mode)}
+                        </option>
+                      ) : null}
+                      {profileModes.map((item) => (
                         <option value={item} key={item}>
                           {t('modes.' + item)}
                         </option>
@@ -1738,12 +1943,13 @@ export function PromptStudioPage() {
                         })
                       }
                     >
-                      {[4, 6, 8, 10].map((n) => (
-                        <option
-                          value={n}
-                          key={n}
-                          disabled={video.target === 'veo-api' && !veoDurations.includes(n)}
-                        >
+                      {!profileDurations.includes(video.durationSeconds) ? (
+                        <option value={video.durationSeconds} disabled>
+                          {t('seconds', { count: video.durationSeconds })}
+                        </option>
+                      ) : null}
+                      {profileDurations.map((n) => (
+                        <option value={n} key={n}>
                           {t('seconds', { count: n })}
                         </option>
                       ))}
@@ -1827,29 +2033,55 @@ export function PromptStudioPage() {
                   <summary>{t('aiSettings')}</summary>
                   <StudioAiControlBar
                     model={aiModel}
-                    onModelChange={setAiModel}
+                    onModelChange={(model) => updateAiSettings({ model })}
                     stylePreset={stylePreset}
-                    onStylePresetChange={setStylePreset}
+                    onStylePresetChange={(stylePreset) => updateAiSettings({ stylePreset })}
                     language={promptLanguage}
-                    onLanguageChange={setPromptLanguage}
+                    onLanguageChange={(language) => updateAiSettings({ language })}
                     overwriteAll={overwriteAll}
                     onOverwriteAllChange={setOverwriteAll}
                     disabled={busy || changing}
                   />
                 </details>
+                {targetActive && !profileCompatible ? (
+                  <p role="status" className="studio-notice">
+                    {t('modern.unsupportedSettings')}
+                  </p>
+                ) : null}
+                {!targetActive ? (
+                  <p role="status" className="studio-notice">
+                    {t('modern.retiredTarget')}
+                  </p>
+                ) : null}
                 <div className="studio-actions">
-                  <button className="studio-primary" disabled={changing} onClick={build}>
+                  <button
+                    type="button"
+                    className="studio-primary"
+                    disabled={busy || changing || !profileCompatible || !video.idea.trim()}
+                    onClick={generateSceneAndPack}
+                  >
+                    {busy ? t('enhancing') : t('modern.createWithGemini')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || changing || !targetActive}
+                    onClick={build}
+                  >
                     {t('build')}
-                  </button>
-                  <button type="button" disabled={busy || changing} onClick={expandScene}>
-                    {expanding ? t('expandingScene') : t('expandScene')}
-                  </button>
-                  <button disabled={busy || changing} onClick={optimize}>
-                    {busy && !expanding ? t('enhancing') : t('enhanceAll')}
                   </button>
                   {busy ? (
                     <button type="button" onClick={cancelAIRequest}>
                       {t('variantEdit.cancel')}
+                    </button>
+                  ) : null}
+                  {undoGeneration?.projectId === projectId &&
+                  undoGeneration.appliedRevision === draft.revision ? (
+                    <button
+                      type="button"
+                      disabled={busy || changing}
+                      onClick={() => void run(() => restoreRevision(undoGeneration.revision))}
+                    >
+                      {t('modern.undo')}
                     </button>
                   ) : null}
                 </div>
@@ -1860,11 +2092,39 @@ export function PromptStudioPage() {
                   onToggle={(e) => setSceneDetailsOpen(e.currentTarget.open)}
                 >
                   <summary>{t('sceneDetails')}</summary>
-                  <div className="studio-fields">
-                    {VIDEO_FIELDS.map((key) =>
-                      textField(key, video[key] ?? '', (value) => updateVideo({ [key]: value })),
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    disabled={busy || changing || !targetActive}
+                    onClick={optimize}
+                  >
+                    {t('enhanceAll')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy || changing || !targetActive}
+                    onClick={expandScene}
+                  >
+                    {expanding ? t('expandingScene') : t('expandScene')}
+                  </button>
+                  <StudioCreativeControls
+                    input={video}
+                    onChange={updateVideo}
+                    onRegenerate={regenerateSceneField}
+                    lockedFields={draft.lockedFields ?? []}
+                    fieldOrigins={draft.fieldOrigins ?? {}}
+                    onProtectionChange={(field, protect) => {
+                      invalidateFeedbackProposal();
+                      store.applyDraft({
+                        lockedFields: protect
+                          ? [...new Set([...(draft.lockedFields ?? []), field])]
+                          : (draft.lockedFields ?? []).filter((key) => key !== field),
+                        fieldOrigins: { ...draft.fieldOrigins, [field]: protect ? 'manual' : 'ai' },
+                      });
+                    }}
+                    disabled={busy || changing || !targetActive}
+                    nativeAudio={targetProfile.audioPolicy === 'native'}
+                    supportsNegative={targetProfile.negativePolicy === 'supported'}
+                  />
                 </details>
                 {labs ? (
                   <details className="studio-details">
@@ -1926,11 +2186,11 @@ export function PromptStudioPage() {
                   <summary>{t('aiSettings')}</summary>
                   <StudioAiControlBar
                     model={aiModel}
-                    onModelChange={setAiModel}
+                    onModelChange={(model) => updateAiSettings({ model })}
                     stylePreset={stylePreset}
-                    onStylePresetChange={setStylePreset}
+                    onStylePresetChange={(stylePreset) => updateAiSettings({ stylePreset })}
                     language={promptLanguage}
-                    onLanguageChange={setPromptLanguage}
+                    onLanguageChange={(language) => updateAiSettings({ language })}
                     overwriteAll={overwriteAll}
                     onOverwriteAllChange={setOverwriteAll}
                     disabled={busy || changing}
@@ -1984,6 +2244,25 @@ export function PromptStudioPage() {
                   </Field>
                   <p className="studio-hint">{t('localLyricsSuggestion')}</p>
                 </details>
+                <label className="studio-field">
+                  <span>{t('modern.modelProfile')}</span>
+                  <select
+                    aria-label={t('modern.modelProfile')}
+                    value={music.targetProfile ?? 'suno-v5.5'}
+                    onChange={(event) =>
+                      updateMusic({
+                        targetProfile: event.target
+                          .value as MusicPromptArtifactInput['targetProfile'],
+                      })
+                    }
+                  >
+                    <option value="suno-v6">Suno v6 (Pro / Premier)</option>
+                    <option value="suno-v6-wild">Suno v6-wild (Pro / Premier)</option>
+                    <option value="suno-v6-mini">Suno v6-mini</option>
+                    <option value="suno-v5.5">Suno v5.5</option>
+                    <option value="future-compatible">{t('modern.futureCompatible')}</option>
+                  </select>
+                </label>
                 <details className="studio-details">
                   <summary>{t('advancedNotes')}</summary>
                   <div className="studio-fields">
@@ -2078,12 +2357,23 @@ export function PromptStudioPage() {
                         )
                           throw new Error(t('revision.stale'));
                         await checkpoint('ai-expansion');
-                        store.applyDraft(
-                          proposed.mode === 'video'
-                            ? { video: proposed.after as VideoPromptArtifactInput }
-                            : { music: proposed.after as MusicPromptArtifactInput },
-                        );
-                        if (!(await store.flush(projectId))) throw new Error(t('saveError'));
+                        const baseline = usePromptStudioDraftStore.getState().draft!;
+                        const isCurrent = () =>
+                          mounted.current &&
+                          usePromptStudioDraftStore.getState().draft === baseline &&
+                          (useProjectStore.getState().currentProjectId ?? 'default') === projectId;
+                        if (
+                          !(await store.acceptDraftUpdates(
+                            baseline,
+                            isCurrent,
+                            proposed.mode === 'video'
+                              ? { video: proposed.after as VideoPromptArtifactInput }
+                              : { music: proposed.after as MusicPromptArtifactInput },
+                          ))
+                        )
+                          throw new Error(
+                            usePromptStudioDraftStore.getState().error ?? t('saveError'),
+                          );
                         if (proposed.mode === 'video') setSceneDetailsOpen(true);
                         else setMusicDetailsOpen(true);
                         setMessage(
@@ -2315,6 +2605,12 @@ export function PromptStudioPage() {
               {currentArtifact.kind === 'video' ? (
                 <div data-studio-variant>
                   <VideoVariantCard
+                    supportsNegative={
+                      getTargetProfile(
+                        currentArtifact.target as VideoPromptArtifactInput['target'],
+                        (currentArtifact.input as VideoPromptArtifactInput).profileId,
+                      ).negativePolicy === 'supported'
+                    }
                     key={selectedVariant}
                     variant={
                       [currentArtifact.primary, ...currentArtifact.alternatives][
@@ -2343,8 +2639,9 @@ export function PromptStudioPage() {
                     }
                   />
                   <VideoVariantEditPanel
+                    supportsNegative={targetProfile.negativePolicy === 'supported'}
                     busy={busy}
-                    disabled={changing}
+                    disabled={changing || !targetActive}
                     proposal={
                       variantProposal?.variantIndex === selectedVariant ? variantProposal : null
                     }

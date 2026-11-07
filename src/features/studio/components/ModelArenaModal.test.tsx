@@ -48,7 +48,12 @@ describe('ModelArenaModal', () => {
         { name: 'Copy prompt package' },
       ),
     );
-    const artifact = compileVideoPromptArtifact({ ...input, target });
+    const artifact = compileVideoPromptArtifact({
+      ...input,
+      target,
+      durationSeconds:
+        target === 'wan-video' ? 30 : target === 'luma-ray' ? 5 : input.durationSeconds,
+    });
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith((artifact.primary as VideoPromptVariant).copyAll),
     );
@@ -89,7 +94,7 @@ describe('ModelArenaModal', () => {
     const onSelectTarget = vi.fn().mockRejectedValue(new Error('Disk full'));
     renderArena({ onClose, onSelectTarget });
     fireEvent.click(
-      within(screen.getByRole('region', { name: 'Wan 2.1' })).getByRole('button', {
+      within(screen.getByRole('region', { name: 'Wan 3.0' })).getByRole('button', {
         name: 'Use Target',
       }),
     );
@@ -99,7 +104,7 @@ describe('ModelArenaModal', () => {
     expect(onClose).not.toHaveBeenCalled();
     onSelectTarget.mockResolvedValue(undefined);
     fireEvent.click(
-      within(screen.getByRole('region', { name: 'Wan 2.1' })).getByRole('button', {
+      within(screen.getByRole('region', { name: 'Wan 3.0' })).getByRole('button', {
         name: 'Use Target',
       }),
     );
@@ -148,15 +153,18 @@ describe('ModelArenaModal', () => {
         screen.getByRole('region', { name: STUDIO_CAPABILITIES[target].label }),
       );
       fireEvent.click(region.getByRole('button', { name: 'Copy prompt package' }));
-      const artifact = compileVideoPromptArtifact({ ...motionInput, target });
+      const artifact = compileVideoPromptArtifact({
+        ...motionInput,
+        target,
+        durationSeconds:
+          target === 'wan-video' ? 30 : target === 'luma-ray' ? 5 : motionInput.durationSeconds,
+      });
       await waitFor(() =>
         expect(writeText).toHaveBeenLastCalledWith(
           (artifact.primary as VideoPromptVariant).copyAll,
         ),
       );
-      expect((artifact.primary as VideoPromptVariant).prompt).toContain(
-        'Subject motion: ' + motionInput.idea,
-      );
+      expect((artifact.primary as VideoPromptVariant).prompt).toContain(motionInput.idea);
     }
   });
 });

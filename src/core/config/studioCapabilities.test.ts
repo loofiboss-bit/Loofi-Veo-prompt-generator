@@ -5,11 +5,12 @@ import {
   STUDIO_CAPABILITIES,
   studioGenerationBlocker,
   studioVideoRequest,
+  studioVideoRequestIssues,
 } from './studioCapabilities';
 
 const input: VideoPromptArtifactInput = {
   idea: 'A courier walks down a street',
-  target: 'veo-api',
+  target: 'flow-veo',
   mode: 'text-to-video',
   durationSeconds: 8,
   aspectRatio: '16:9',
@@ -31,59 +32,51 @@ describe('Studio execution capabilities', () => {
     if (target !== 'suno')
       expect(() => studioVideoRequest({ ...input, target })).toThrow(/manual copy/);
   });
+
   it.each([4, 6, 8] as const)(
-    'preserves supported duration %s and request settings',
+    'validates supported duration %s and request settings for active profiles',
     (durationSeconds) => {
       expect(
-        studioVideoRequest({
+        studioVideoRequestIssues({
           ...input,
           durationSeconds,
           aspectRatio: '9:16',
           negativePrompt: 'no captions',
         }),
-      ).toMatchObject({
-        durationSeconds,
-        aspectRatio: '9:16',
-        negativePrompt: 'no captions',
-        mode: 'text-to-video',
-      });
+      ).toEqual([]);
     },
   );
-  it('rejects ten seconds and missing image references before generation', () => {
-    expect(studioGenerationBlocker({ ...input, durationSeconds: 10 })).toMatch(/4, 6 or 8/);
-    expect(studioGenerationBlocker({ ...input, mode: 'image-to-video' })).toMatch(/first frame/);
-    expect(
-      studioGenerationBlocker({ ...input, mode: 'first-last-frames', firstFrameAssetId: 'first' }),
-    ).toMatch(/both first and last/);
+
+  it('rejects unsupported durations and retired targets before generation', () => {
+    expect(studioVideoRequestIssues({ ...input, durationSeconds: 10 })[0]?.message).toMatch(
+      /4, 6, 8/,
+    );
+    expect(studioVideoRequestIssues({ ...input, target: 'veo-api' })[0]?.message).toMatch(
+      /retired/i,
+    );
+    expect(studioGenerationBlocker({ ...input, target: 'veo-api' })).toMatch(/shut down/i);
+    expect(() => studioVideoRequest({ ...input, target: 'veo-api' })).toThrow(/shut down/i);
   });
-  it('retains real first/last frame IDs in interpolation requests', () => {
+
+  it('validates mode-specific durations for Gemini Omni 1.2 Flash', () => {
     expect(
-      studioVideoRequest({
+      studioVideoRequestIssues({
         ...input,
-        mode: 'first-last-frames',
-        firstFrameAssetId: 'first',
-        lastFrameAssetId: 'last',
+        target: 'omni-flash',
+        mode: 'text-to-video',
+        durationSeconds: 15,
       }),
-    ).toMatchObject({
-      mode: 'interpolation',
-      firstFrameAssetId: 'first',
-      lastFrameAssetId: 'last',
-      durationSeconds: 8,
-    });
-  });
-  it('retains ingredient references and requires their eight-second duration', () => {
+    ).toEqual([]);
     expect(
-      studioVideoRequest({ ...input, mode: 'ingredients', referenceAssetIds: ['ref-1', 'ref-2'] }),
-    ).toMatchObject({ mode: 'reference-images', referenceAssetIds: ['ref-1', 'ref-2'] });
-    expect(
-      studioGenerationBlocker({
+      studioVideoRequestIssues({
         ...input,
-        mode: 'ingredients',
-        referenceAssetIds: ['ref-1'],
-        durationSeconds: 4,
-      }),
-    ).toMatch(/eight-second/);
+        target: 'omni-flash',
+        mode: 'extend',
+        durationSeconds: 12,
+      })[0]?.message,
+    ).toMatch(/3, 4, 5, 6, 7, 8, 9, 10/);
   });
+
   it('does not expose unqualified generation, Live, LAN, Foley or FCPXML as runnable', () => {
     for (const id of ['comfy', 'live', 'lan', 'foley', 'fcpxml']) {
       expect(LAB_CAPABILITIES.find((item) => item.id === id)?.runnable).toBe(false);

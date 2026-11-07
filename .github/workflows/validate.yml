@@ -93,6 +93,32 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+      - name: Format check
+        run: npm run format:check
+
+      - name: Build check
+        run: npm run build
+
+  test:
+    name: Test Suite & Desktop Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run tests with coverage and native desktop gates
         run: npm run test:ci
 
@@ -104,19 +130,13 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: Format check
-        run: npm run format:check
-
-      - name: Build check
-        run: npm run build
-
   e2e:
     name: E2E Smoke (Dev Server)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     # Match the reviewed Ubuntu visual baselines, including system fonts and browser libraries.
     container: mcr.microsoft.com/playwright:v1.61.1-noble
-    needs: validate
+    needs: [validate, test]
 
     steps:
       - name: Checkout code
@@ -150,7 +170,7 @@ jobs:
     name: E2E Staging (Smoke + Stability)
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: validate
+    needs: [validate, test]
 
     steps:
       - name: Checkout code

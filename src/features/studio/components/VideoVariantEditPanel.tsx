@@ -8,6 +8,7 @@ import type {
 import { StudioVariantEditReview } from './StudioVariantEditReview';
 
 interface VideoVariantEditPanelProps {
+  supportsNegative?: boolean;
   busy: boolean;
   disabled: boolean;
   proposal: VideoVariantEditProposal | null;
@@ -29,12 +30,20 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
   const [fields, setFields] = useState('prompt');
   const [allowDialogueRewrite, setAllowDialogueRewrite] = useState(false);
   const [applyToAllVariants, setApplyToAllVariants] = useState(false);
+  const directions: Record<string, string> = {
+    cinematic: 'Make this more cinematic without changing the scene, identity or dialogue.',
+    realistic:
+      'Make physical behavior and lighting more realistic without changing the story or dialogue.',
+    dynamic: 'Make the motion more dynamic while preserving a coherent single scene and dialogue.',
+    detailed: 'Add only useful concrete detail while preserving the scene, style and dialogue.',
+  };
   const requestedDirection =
-    goal === 'custom'
+    directions[goal] ??
+    (goal === 'custom'
       ? direction.trim()
       : goal === 'camera'
         ? 'Clarify the camera movement while preserving the scene, action, and dialogue.'
-        : 'Shorten the text while preserving the scene, action, camera direction, and dialogue.';
+        : 'Shorten the text while preserving the scene, action, camera direction, and dialogue.');
   return (
     <div className="space-y-3">
       <details className="studio-details">
@@ -53,6 +62,11 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
               <option value="camera">
                 {t('variantEdit.camera', { defaultValue: 'Clearer camera movement' })}
               </option>
+              {['cinematic', 'realistic', 'dynamic', 'detailed'].map((item) => (
+                <option key={item} value={item}>
+                  {t(`modern.refine.${item}`)}
+                </option>
+              ))}
               <option value="custom">
                 {t('variantEdit.custom', { defaultValue: 'Custom instruction' })}
               </option>
@@ -77,10 +91,14 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
               onChange={(event) => setFields(event.target.value)}
             >
               <option value="prompt">{t('variantEdit.prompt', { defaultValue: 'Prompt' })}</option>
-              <option value="negativePrompt">{t('negativePrompt')}</option>
-              <option value="both">
-                {t('variantEdit.both', { defaultValue: 'Prompt and negative prompt' })}
-              </option>
+              {props.supportsNegative !== false ? (
+                <>
+                  <option value="negativePrompt">{t('negativePrompt')}</option>
+                  <option value="both">
+                    {t('variantEdit.both', { defaultValue: 'Prompt and negative prompt' })}
+                  </option>
+                </>
+              ) : null}
             </select>
           </label>
           <label className="studio-check">
@@ -141,13 +159,15 @@ export function VideoVariantEditPanel(props: VideoVariantEditPanelProps) {
               >
                 {t('variantEdit.syncGrammar', { defaultValue: 'Sync Target Grammar' })}
               </button>
-              <button
-                type="button"
-                className="text-xs"
-                onClick={() => props.onLocalTransform?.('harden-negative', applyToAllVariants)}
-              >
-                {t('variantEdit.hardenNegative', { defaultValue: 'Harden Negative' })}
-              </button>
+              {props.supportsNegative !== false ? (
+                <button
+                  type="button"
+                  className="text-xs"
+                  onClick={() => props.onLocalTransform?.('harden-negative', applyToAllVariants)}
+                >
+                  {t('variantEdit.hardenNegative', { defaultValue: 'Harden Negative' })}
+                </button>
+              ) : null}
             </div>
           )}
         </fieldset>

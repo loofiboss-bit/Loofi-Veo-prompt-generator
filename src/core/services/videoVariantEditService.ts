@@ -4,11 +4,13 @@ import type {
   PromptArtifactProvenance,
   PromptArtifactV1,
   VideoPromptVariant,
+  VideoPromptArtifactInput,
 } from '@core/types/promptArtifact';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { cleanJson, getAiClientAsync, getPromptModel, resilientCall } from './gemini/aiClient';
 import { generatePromptWithOllama } from './ollamaProvider';
 import { resolvePromptGenerationProvider } from './promptGenerationService';
+import { getTargetProfile, getTargetPromptGuidance } from './modelTranspilerService';
 import { editStudioVariant, preserveLockedLyricSections } from './promptStudioEditingService';
 
 import { assertProtectedPromptTextPreserved, segmentPromptText } from './promptTextSegments';
@@ -99,6 +101,14 @@ export async function proposeVideoVariantEdit({
   if (!direction.trim()) throw new Error('Describe the requested improvement.');
   if (signal?.aborted) throw new DOMException('AI request cancelled.', 'AbortError');
 
+  const input = artifact.input as VideoPromptArtifactInput;
+  const guidance = getTargetPromptGuidance(input);
+  if (
+    fields.includes('negativePrompt') &&
+    getTargetProfile(input.target, input.profileId).negativePolicy !== 'supported'
+  )
+    throw new Error('A negative-prompt field is not supported or verified for this target.');
+
   fields = [...fields];
   const snapshot = structuredClone(artifact);
   const selected = [snapshot.primary, ...snapshot.alternatives][variantIndex] as VideoPromptVariant;
@@ -107,6 +117,7 @@ export async function proposeVideoVariantEdit({
   const settings = useSettingsStore.getState();
   const instruction = [
     'Edit only the requested fields of the supplied current video prompt variant.',
+    guidance,
     'The current variant contains deliberate manual edits. Use it as the source; the brief is context only.',
     allowDialogueRewrite
       ? 'Dialogue may be rewritten only when requested in the direction.'
@@ -124,7 +135,9 @@ export async function proposeVideoVariantEdit({
   ].join('\n');
 
   let raw: unknown;
+  let modelId: string;
   if (provider === 'ollama') {
+    modelId = settings.localLlmModel;
     raw = await generatePromptWithOllama(instruction, {
       baseUrl: settings.localLlmEndpoint,
       model: settings.localLlmModel,
@@ -134,6 +147,7 @@ export async function proposeVideoVariantEdit({
   } else {
     const ai = await getAiClientAsync();
     const model = getPromptModel();
+    modelId = model;
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
@@ -183,6 +197,7 @@ export async function proposeVideoVariantEdit({
     provenance: {
       ...snapshot.provenance,
       provider,
+      modelId,
       source: 'optimizer',
       generatedAt: new Date().toISOString(),
     },
@@ -238,7 +253,7 @@ export async function proposeMusicVariantEdit({
       ? 'Keep locked lyric sections byte-identical, including repeated occurrences.'
       : '',
     input.instrumental ? 'Keep instrumental mode and its [Instrumental] lyrics unchanged.' : '',
-    'Keep styleOfMusic to 200 characters or fewer.',
+    'Keep styleOfMusic concise and relevant to the requested music.',
     `Return ONLY a JSON object with exactly these string keys: ${fields.join(', ')}.`,
     'Do not return a title, other variants, commentary, or unrequested fields.',
     `Input JSON: ${JSON.stringify({
@@ -256,7 +271,9 @@ export async function proposeMusicVariantEdit({
   const provider = resolvePromptGenerationProvider();
   const settings = useSettingsStore.getState();
   let raw: unknown;
+  let modelId: string;
   if (provider === 'ollama') {
+    modelId = settings.localLlmModel;
     raw = await generatePromptWithOllama(instruction, {
       baseUrl: settings.localLlmEndpoint,
       model: settings.localLlmModel,
@@ -266,6 +283,7 @@ export async function proposeMusicVariantEdit({
   } else {
     const ai = await getAiClientAsync();
     const model = getPromptModel();
+    modelId = model;
     const response = await resilientCall(
       () =>
         ai.models.generateContent({
@@ -303,8 +321,6 @@ export async function proposeMusicVariantEdit({
     const value = values[field];
     if (typeof value !== 'string' || !value.trim())
       throw new Error('The AI response contains a missing or invalid music field.');
-    if (field === 'styleOfMusic' && value.length > 200)
-      throw new Error('The AI response returned a music style longer than 200 characters.');
     if (field === 'lyrics' && input.instrumental && value.trim() !== '[Instrumental]')
       throw new Error('The AI response changed the instrumental lyrics contract.');
     if (field === 'lyrics' && lockedSections.length) {
@@ -322,6 +338,7 @@ export async function proposeMusicVariantEdit({
     provenance: {
       ...snapshot.provenance,
       provider,
+      modelId,
       source: 'optimizer',
       generatedAt: new Date().toISOString(),
     },
@@ -346,13 +363,14 @@ export const LOCAL_TRANSFORMS: LocalTransformDefinition[] = [
   },
   {
     id: 'sync-target-grammar',
-    label: 'Sync Target Grammar',
-    description: 'Adapts camera and motion syntax to the selected target model convention.',
+    label: 'Use Natural Camera Direction',
+    description:
+      'Converts legacy camera tags to plain language without adding camera movement or optics.',
   },
   {
     id: 'harden-negative',
-    label: 'Harden Negative Prompt',
-    description: 'Applies recommended artifact and distortion filters for the target engine.',
+    label: 'Clean Negative Prompt',
+    description: 'Removes duplicate exclusions where the target supports a negative-prompt field.',
   },
 ];
 
@@ -363,80 +381,11 @@ export function hasVariantEditChanges(result: VideoVariantEditResult): boolean {
   });
 }
 
-const TARGET_NEGATIVE_SUPPLEMENTS: Partial<Record<PromptArtifactV1['target'], string[]>> = {
-  'flow-veo': ['unintended text', 'subtitles', 'logos', 'visual glitches'],
-  'veo-api': ['unintended text', 'subtitles', 'logos', 'visual glitches'],
-  kling: ['morphing', 'motion jitter', 'low quality'],
-  'runway-gen3': ['motion smearing', 'stutter', 'oversaturated'],
-  sora: ['unnatural physics', 'temporal discontinuity', 'clipping artifacts'],
-  'luma-ray': ['frame warping', 'sudden camera jumps', 'geometry distortion'],
-  'wan-video': ['deformed face', 'noisy', 'oversaturated'],
-  'minimax-hailuo': ['jerky motion', 'morphing artifacts', 'distorted background'],
-};
-
-function formatTargetCameraGrammar(source: string, target: PromptArtifactV1['target']): string {
-  let formatted = source;
-  const cameraDirectiveRx = /\b(?:camera:?\s*|shot:?\s*)([a-zA-Z0-9\s-]+?)(?=[,.]|$)/i;
-  const bracketCameraRx = /\[camera:\s*([^\]]+)\]/i;
-  if (target === 'kling') {
-    if (cameraDirectiveRx.test(formatted) && !bracketCameraRx.test(formatted)) {
-      formatted = formatted.replace(
-        cameraDirectiveRx,
-        (_match, move: string) => `[camera: ${move.trim()}]`,
-      );
-    }
-  } else {
-    formatted = formatted.replace(
-      bracketCameraRx,
-      (_match, move: string) => `Camera: ${move.trim()}`,
-    );
-    if (target === 'runway-gen3') {
-      formatted = formatted.replace(
-        /\b(?:the camera is moving|camera moves|slowly panning)\b/gi,
-        'Pan',
-      );
-      if (cameraDirectiveRx.test(formatted)) {
-        formatted = formatted.replace(
-          cameraDirectiveRx,
-          (_match, move: string) => `Cinematic ${move.trim()}, fluid tracking`,
-        );
-      }
-    } else if (target === 'sora') {
-      if (cameraDirectiveRx.test(formatted)) {
-        formatted = formatted.replace(
-          cameraDirectiveRx,
-          (_match, move: string) =>
-            `Captured on 35mm motion picture camera with ${move.trim()}, realistic physical camera weight`,
-        );
-      }
-    } else if (target === 'luma-ray') {
-      if (cameraDirectiveRx.test(formatted)) {
-        formatted = formatted.replace(
-          cameraDirectiveRx,
-          (_match, move: string) => `Smooth ${move.trim()} trajectory, consistent depth of field`,
-        );
-      }
-    } else if (target === 'wan-video') {
-      if (cameraDirectiveRx.test(formatted)) {
-        formatted = formatted.replace(
-          cameraDirectiveRx,
-          (_match, move: string) =>
-            `Deliberate ${move.trim()} cinematic move, rich optical volumetric depth, zero jitter`,
-        );
-      }
-    } else if (target === 'minimax-hailuo') {
-      if (cameraDirectiveRx.test(formatted)) {
-        formatted = formatted.replace(
-          cameraDirectiveRx,
-          (_match, move: string) =>
-            `Dynamic ${move.trim()} framing, smooth cinematic action cadence`,
-        );
-      }
-    } else if (target === 'flow-veo' || target === 'veo-api') {
-      formatted = formatted.replace(/\s{2,}/g, ' ').trim();
-    }
-  }
-  return formatted;
+function formatTargetCameraGrammar(source: string): string {
+  return source
+    .replace(/\[camera:\s*([^\]]+)\]/gi, (_match, move: string) => `Camera: ${move.trim()}`)
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 function preserveSegmentBoundaryWhitespace(
@@ -449,41 +398,6 @@ function preserveSegmentBoundaryWhitespace(
   const content = text.slice(leading.length, contentEnd);
   if (!content) return text;
   return `${leading}${transform(content)}${trailing}`;
-}
-
-function appendTargetCameraFallback(
-  prompt: string,
-  target: PromptArtifactV1['target'],
-  editableText: string,
-): string {
-  const cameraDirectiveRx = /\b(?:camera:?\s*|shot:?\s*)\S+/i;
-  const bracketCameraRx = /\[camera:\s*[^\]]+\]/i;
-  if (cameraDirectiveRx.test(editableText) || bracketCameraRx.test(editableText)) return prompt;
-
-  let addition = '';
-  if (target === 'kling') {
-    addition = '[camera: smooth dynamic tracking]';
-  } else if (
-    target === 'sora' &&
-    !/35mm motion picture camera|physical camera weight/i.test(editableText)
-  ) {
-    addition = 'Captured on 35mm motion picture camera with realistic physical camera weight.';
-  } else if (target === 'luma-ray' && !/trajectory|depth of field/i.test(editableText)) {
-    addition = 'Consistent depth of field and fluid perspective shifts.';
-  } else if (target === 'wan-video' && !/volumetric depth|zero jitter/i.test(editableText)) {
-    addition = 'Rich optical volumetric depth, zero jitter.';
-  } else if (
-    target === 'minimax-hailuo' &&
-    !/action cadence|spatial movement/i.test(editableText)
-  ) {
-    addition = 'Smooth cinematic action cadence and authentic spatial movement.';
-  }
-  if (!addition) return prompt;
-
-  const trailing = prompt.match(/\s*$/)?.[0] ?? '';
-  const content = prompt.slice(0, prompt.length - trailing.length);
-  const separator = /[.!?]$/.test(content) ? ' ' : '. ';
-  return `${content}${separator}${addition}${trailing}`;
 }
 
 export function applyLocalPromptTransform(
@@ -524,46 +438,31 @@ export function applyLocalPromptTransform(
     const sourceDialogue = (snapshot.input as import('@core/types').VideoPromptArtifactInput)
       .dialogue;
     const segments = segmentPromptText(before.prompt, sourceDialogue);
-    const editableText = segments
-      .filter((segment) => !segment.protected)
-      .map((segment) => segment.text)
-      .join('');
     const formatted = segments
       .map((segment) =>
         segment.protected
           ? segment.text
           : preserveSegmentBoundaryWhitespace(segment.text, (content) =>
-              formatTargetCameraGrammar(content, snapshot.target),
+              formatTargetCameraGrammar(content),
             ),
       )
       .join('');
-    patch.prompt = appendTargetCameraFallback(formatted, snapshot.target, editableText);
+    patch.prompt = formatted;
   } else if (transformId === 'harden-negative') {
-    const baseNegatives = [
-      'distorted anatomy',
-      'deformed hands',
-      'bad proportions',
-      'floating elements',
-      'jitter',
-      'flickering',
-      'plastic skin texture',
-      'watermark',
-      'text overlay',
-    ];
-    const targetSupplement = TARGET_NEGATIVE_SUPPLEMENTS[snapshot.target] ?? [];
-    const recommendedNegatives = Array.from(new Set([...baseNegatives, ...targetSupplement]));
-    const existing = new Set(
-      before.negativePrompt
+    const input = snapshot.input as VideoPromptArtifactInput;
+    if (getTargetProfile(input.target, input.profileId).negativePolicy === 'supported') {
+      const seen = new Set<string>();
+      patch.negativePrompt = before.negativePrompt
         .split(',')
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean),
-    );
-    const added = recommendedNegatives.filter((neg) => !existing.has(neg));
-    patch.negativePrompt = before.negativePrompt
-      ? added.length
-        ? `${before.negativePrompt}, ${added.join(', ')}`
-        : before.negativePrompt
-      : added.join(', ');
+        .map((value) => value.trim())
+        .filter((value) => {
+          const key = value.toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .join(', ');
+    }
   }
 
   return {
@@ -671,13 +570,8 @@ export function applyLocalMusicTransform(
         seen.add(key);
         return true;
       });
-    let compact = tags.join(', ');
-    if (compact.length > 200) {
-      const slice = compact.slice(0, 200);
-      const lastComma = slice.lastIndexOf(',');
-      compact = (lastComma > 80 ? slice.slice(0, lastComma) : slice).trim();
-    }
-    nextStyle = compact || selected.styleOfMusic.slice(0, 200).trim();
+    const compact = tags.join(', ');
+    nextStyle = compact || selected.styleOfMusic.trim();
   } else if (transformId === 'strip-visual-terms') {
     nextStyle = selected.styleOfMusic
       .replace(VISUAL_DIFFUSION_TERMS_RX, '')

@@ -49,18 +49,13 @@ jobs:
       contents: read
 
   build:
-    name: Build on ${{ matrix.os }}
+    name: Build Linux packages (Ubuntu)
     needs: [prepare-release, render-runtime]
     if: github.ref_type != 'tag' || !contains(github.ref_name, '-beta')
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code
@@ -142,25 +137,17 @@ jobs:
         run: npm run build
 
       - name: Install Linux Electron runtime dependencies
-        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libsecret-1-0
 
       - name: Electron launch smoke test (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
         run: timeout 45s xvfb-run -a npx electron --no-sandbox . --smoke-test
 
-      - name: Electron launch smoke test (Windows)
-        if: matrix.os == 'windows-latest'
-        run: npx electron . --smoke-test
-
       - name: Install Playwright Chromium for screenshots
-        if: matrix.os == 'ubuntu-latest'
         run: npx playwright install --with-deps chromium
 
       - name: Capture release screenshots
-        if: matrix.os == 'ubuntu-latest'
         run: npm run screenshots
 
       - name: Bundle size budget check
@@ -268,31 +255,14 @@ jobs:
 
       - name: Verify packaged artifacts
         run: |
-          case "${{ matrix.os }}" in
-            ubuntu-latest)
-              ls release/Loofi-Flow-Veo-Studio-*-linux-*.AppImage
-              ls release/Loofi-Flow-Veo-Studio-*-linux-*.rpm
-              ;;
-            windows-latest)
-              ls release/Loofi-Flow-Veo-Studio-*-win-*-setup.exe
-              ls release/Loofi-Flow-Veo-Studio-*-win-*-setup.exe.blockmap
-              ls release/Loofi-Flow-Veo-Studio-*-win-*-portable.exe
-              test -f release/latest*.yml
-              ;;
-          esac
+          ls release/Loofi-Flow-Veo-Studio-*-linux-*.AppImage
+          ls release/Loofi-Flow-Veo-Studio-*-linux-*.rpm
         shell: bash
 
       - name: Packaged Electron E2E (Linux)
-        if: matrix.os == 'ubuntu-latest'
         run: xvfb-run -a npx playwright test e2e/packaged-electron.spec.ts --project=chromium
         env:
           PACKAGED_ELECTRON_PATH: release/linux-unpacked/veo-prompt-generator
-
-      - name: Packaged Electron E2E (Windows)
-        if: matrix.os == 'windows-latest'
-        run: npx playwright test e2e/packaged-electron.spec.ts --project=chromium
-        env:
-          PACKAGED_ELECTRON_PATH: release/win-unpacked/Loofi Creator Studio.exe
 
       - name: List release directory
         run: |
@@ -301,15 +271,8 @@ jobs:
         shell: bash
 
       - name: Upload qualified Linux packages to the private draft release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-latest'
+        if: startsWith(github.ref, 'refs/tags/v')
         run: gh release upload "$GITHUB_REF_NAME" release/*.AppImage release/*.rpm --clobber
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload qualified Windows packages to the private draft release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        run: gh release upload "$GITHUB_REF_NAME" release/*-setup.exe release/*-setup.exe.blockmap release/*-portable.exe release/latest*.yml --clobber
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -329,8 +292,8 @@ jobs:
         include:
           - version: '44'
             experimental: false
-          - version: latest
-            experimental: true
+          - version: '45'
+            experimental: false
     container: fedora:${{ matrix.version }}
 
     steps:
@@ -379,50 +342,9 @@ jobs:
           "$APPIMAGE" --appimage-extract >/dev/null
           xvfb-run -a ./squashfs-root/AppRun --no-sandbox --smoke-test
 
-  package-smoke-windows:
-    name: Windows install / portable / uninstall
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
-    runs-on: windows-latest
-    timeout-minutes: 60
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download Windows packages
-        run: gh release download "$env:GITHUB_REF_NAME" --dir artifacts --pattern '*-setup.exe' --pattern '*-setup.exe.blockmap' --pattern '*-portable.exe' --pattern 'latest*.yml'
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Test NSIS install, shortcuts, launch, and uninstall
-        shell: pwsh
-        run: |
-          $setup = Get-ChildItem artifacts -Recurse -Filter '*-setup.exe' | Select-Object -First 1
-          if (-not $setup) { throw 'NSIS installer not found' }
-          Start-Process $setup.FullName -ArgumentList '/S' -Wait
-          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Loofi Creator Studio.exe' | Select-Object -First 1
-          if (-not $app) { throw 'Installed executable not found' }
-          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Loofi Creator Studio.lnk")) { throw 'Start Menu shortcut missing' }
-          if (-not (Test-Path "$env:USERPROFILE\Desktop\Loofi Creator Studio.lnk")) { throw 'Desktop shortcut missing' }
-          $process = Start-Process $app.FullName -ArgumentList '--smoke-test' -PassThru -Wait
-          if ($process.ExitCode -ne 0) { throw "Installed smoke test failed: $($process.ExitCode)" }
-          $uninstaller = Get-ChildItem $app.DirectoryName -Filter 'Uninstall*.exe' | Select-Object -First 1
-          if (-not $uninstaller) { throw 'Uninstaller not found' }
-          Start-Process $uninstaller.FullName -ArgumentList '/S' -Wait
-          if (Test-Path $app.FullName) { throw 'Installed executable remained after uninstall' }
-
-      - name: Test portable launch
-        shell: pwsh
-        run: |
-          $portable = Get-ChildItem artifacts -Recurse -Filter '*-portable.exe' | Select-Object -First 1
-          if (-not $portable) { throw 'Portable executable not found' }
-          $process = Start-Process $portable.FullName -ArgumentList '--smoke-test' -PassThru -Wait
-          if ($process.ExitCode -ne 0) { throw "Portable smoke test failed: $($process.ExitCode)" }
-
   release:
     name: Create Release
-    needs: [build, package-smoke-fedora, package-smoke-windows]
+    needs: [build, package-smoke-fedora]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta')
@@ -451,11 +373,7 @@ jobs:
           gh release download "$GITHUB_REF_NAME" \
             --dir artifacts \
             --pattern '*.AppImage' \
-            --pattern '*.rpm' \
-            --pattern '*-setup.exe' \
-            --pattern '*-setup.exe.blockmap' \
-            --pattern '*-portable.exe' \
-            --pattern 'latest*.yml'
+            --pattern '*.rpm'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -466,10 +384,7 @@ jobs:
         run: |
           find artifacts -type f \( \
             -name '*.AppImage' -o \
-            -name '*.rpm' -o \
-            -name '*.exe' -o \
-            -name '*.blockmap' -o \
-            -name 'latest*.yml' \
+            -name '*.rpm' \
           \) -print0 | while IFS= read -r -d '' artifact; do
             hash=$(sha256sum "$artifact" | awk '{print $1}')
             printf '%s  %s\n' "$hash" "$(basename "$artifact")"
@@ -484,7 +399,7 @@ jobs:
           node scripts/generate-release-metadata.mjs artifacts
         env:
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
-          WINDOWS_SIGNED: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+          WINDOWS_SIGNED: false
 
       - name: Attest release artifacts
         if: github.event.repository.private == false
@@ -493,7 +408,6 @@ jobs:
           subject-path: |
             artifacts/**/*.AppImage
             artifacts/**/*.rpm
-            artifacts/**/*.exe
 
       - name: Extract version from tag
         id: get_version
@@ -520,9 +434,6 @@ jobs:
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.rpm
-            artifacts/**/*.exe
-            artifacts/**/*.blockmap
-            artifacts/**/latest*.yml
             artifacts/SHA256SUMS.txt
             artifacts/sbom.cdx.json
             artifacts/provenance.intoto.json

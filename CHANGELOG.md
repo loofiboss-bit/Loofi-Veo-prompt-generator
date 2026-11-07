@@ -7,7 +7,38 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [22.0.0] - 2026-11-07
+
+### Added
+
+- **AI Video Iteration & Creative Loop**: Natural language, multi-turn conversational video modifications and clip extensions powered by Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`, with `gemini-omni-1.1-flash` backwards compatibility) via the stateful Interactions API (`previous_interaction_id` and `response_format`). Supports 3–15s iterative edits, +3–10s clip extensions, up to 6 reference images, audio preservation/regeneration toggles, Turn-1 source video byte forwarding, and SHA-256 idempotency request protection.
+- **Smart Version Control & Lineage**: Automatically archives video iterations as strictly sequential version lineage trees (`v1`, `v2`, `v3 ← v1`) persisted in `DesktopMediaStore` (`loofi-media://`) and IndexedDB with automatic `Blob` ObjectURL hydration. Integrates arbitrary A/B version comparison (`VideoResultCompare`) with instruction diff summaries and self-healing, non-destructive Storyboard & Timeline synchronization.
+- **Intelligent Creative Assistant (Local-First + On-Demand AI)**: Zero-latency local heuristic advisor providing immediate camera, lighting, Storyboard continuity, and goal deviation suggestions with zero automatic API calls, paired with an explicit **Deep AI Analysis** button for voluntary Gemini/Ollama analysis.
+- **Unified Creative Workflow**: Connects Prompt Studio, External Results, Video Iteration, Storyboard, and Timeline into a cohesive loop—including automatic Storyboard scene creation when empty, global `Asset` catalog registration (`storageKey` for OTIO export), and direct navigation to Timeline.
+- **Timeline Version Badges**: Displays active iteration version badges (`v2`, `v3`) on timeline clips and storyboard takes.
+- **Fedora KDE / Wayland Performance Optimization**: Native Wayland/Ozone initialization (`--ozone-platform-hint=auto`, `WaylandWindowDecorations`, `VaapiVideoDecodeLinuxGL`), asynchronous off-main-thread Base64-to-Blob decoding, and strict `<video>` hardware decoder buffer cleanup on unmount.
+- One-request Prompt Studio scene development and three target-specific variants, applied directly
+  with durable checkpoints and undo; explicit per-field AI protection and regeneration.
+- Progressive camera/optics/composition, character-bank Visual DNA, environment, sound and style
+  controls reusing the original generator's options and presets.
+- Current Flow Lite/Fast/Quality, Omni 1.2 / 1.1, Kling 4.0, Runway Gen-4.5, Ray3.2, Wan 3.0, MiniMax-H3
+  and Suno v6 family profiles with dated official sources.
+
+### Changed
+
+- Share model profiles between AI instructions, offline compilation, Arena, controls and validation.
+  Preserve non-native sound as post-production notes and omit unsupported negative fields.
+- Preserve creative details through legacy history/template adapters, revisions and project reloads;
+  save AI settings and source/protection metadata with the project.
+- Remove retired Sora and Gemini API Veo Preview bindings from new generation; preserve stored
+  text and existing operation recovery without silently migrating providers.
+
+### Fixed
+
+- Validate structured AI responses at runtime; preserve manual strings, dialogue and locked lyrics,
+  including music expansion. Ignore cancelled or stale responses without hidden fallback requests.
+- Persist AI input and output atomically before display; retain prior content on checkpoint/write
+  failure. Replace obsolete target-tag transforms and undocumented Suno style truncation.
 
 ## [21.1.0] - 2026-10-29
 

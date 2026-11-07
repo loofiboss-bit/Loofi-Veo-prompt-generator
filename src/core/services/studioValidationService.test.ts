@@ -7,11 +7,12 @@ import {
   optimizeVideoPromptArtifact,
 } from './promptStudioService';
 import { editStudioVariant } from './promptStudioEditingService';
+import { validateStudioVideo } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 const input: VideoPromptArtifactInput = {
   idea: 'A courier walks',
-  target: 'veo-api',
+  target: 'flow-veo',
   mode: 'text-to-video',
   durationSeconds: 8,
   aspectRatio: '16:9',
@@ -69,15 +70,15 @@ describe('Studio validation', () => {
     expect(artifact.validation.some((entry) => entry.status === 'blocked')).toBe(false);
   });
 
-  it('marks broad manual model labels unconfirmed instead of claiming compatibility', () => {
+  it('documents concrete manual profiles without claiming live qualification', () => {
     const check = compileVideoPromptArtifact({ ...input, target: 'runway-gen3' }).validation.find(
       (entry) => entry.id === 'target-compatibility',
     );
     expect(check).toMatchObject({
       status: 'warning',
-      evidence: 'unknown',
+      evidence: 'documented',
       action: { field: 'target' },
-      verifiedDate: '2026-10-08',
+      verifiedDate: '2026-10-29',
     });
   });
   it('uses provider request validation with field actions and documented sources', () => {
@@ -93,7 +94,7 @@ describe('Studio validation', () => {
           status: 'blocked',
           evidence: 'documented',
           action: { field: 'durationSeconds' },
-          sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo',
+          sourceUrl: 'https://support.google.com/flow/answer/16352836?hl=en',
         }),
       ]),
     );
@@ -112,7 +113,7 @@ describe('Studio validation', () => {
     expect(artifact.input).toMatchObject({ mode: 'first-last-frames', durationSeconds: 10 });
     expect(
       artifact.validation.some(
-        (entry) => entry.action?.field === 'firstFrameAssetId' && entry.status === 'blocked',
+        (entry) => entry.action?.field === 'firstFrameAssetId' && entry.status === 'warning',
       ),
     ).toBe(true);
   });
@@ -173,6 +174,13 @@ describe('Studio validation', () => {
     expect(artifact.validation.find((entry) => entry.id === 'variant-0-lyrics')?.status).toBe(
       'pass',
     );
+  });
+  it('marks retired saved targets as blocked without altering their text', () => {
+    const checks = validateStudioVideo({ ...input, target: 'sora' }, []);
+    expect(checks.find((check) => check.id === 'target-compatibility')).toMatchObject({
+      status: 'blocked',
+      action: { field: 'target' },
+    });
   });
   it('preserves quoted optimizer output and revalidates the proposal', async () => {
     const original = useSettingsStore.getState().promptGenerationProvider;

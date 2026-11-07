@@ -213,6 +213,62 @@ describe('project-owned Studio drafts', () => {
     expect(mocks.save.mock.lastCall?.[0].artifact.id).toBe('accepted');
   });
 
+  it('saves generated input, metadata and all variants together before exposing them', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    store.getState().setSelectedVariant(2);
+    await store.getState().flush();
+    const baseline = store.getState().draft!;
+    const video = {
+      ...baseline.video,
+      subject: 'Generated subject',
+      creativeDetails: { lensType: '35mm' },
+    };
+    const aiSettings = { model: 'gemini-4-argon', stylePreset: 'auto', language: 'sv' as const };
+    let finish!: () => void;
+    mocks.save.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const accepting = store.getState().acceptArtifact(artifact('generated'), baseline, () => true, {
+      video,
+      aiSettings,
+      selectedVariant: 0,
+      fieldOrigins: { subject: 'ai' },
+      lockedFields: ['camera'],
+    });
+    expect(store.getState().draft).toBe(baseline);
+    expect(mocks.save.mock.lastCall?.[0]).toMatchObject({
+      video,
+      aiSettings,
+      selectedVariant: 0,
+      selectedVariants: { video: 0 },
+      fieldOrigins: { subject: 'ai' },
+      lockedFields: ['camera'],
+      artifact: { id: 'generated' },
+    });
+    finish();
+    expect(await accepting).toBe(true);
+    expect(store.getState().draft).toMatchObject({ video, aiSettings, selectedVariant: 0 });
+  });
+
+  it('keeps the original input and metadata when an input-only AI replacement cannot be saved', async () => {
+    const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
+    await store.getState().hydrate('a');
+    const baseline = store.getState().draft!;
+    mocks.save.mockRejectedValueOnce(new Error('Disk full'));
+    expect(
+      await store.getState().acceptDraftUpdates(baseline, () => true, {
+        video: { ...baseline.video, camera: 'AI camera' },
+        fieldOrigins: { camera: 'ai' },
+      }),
+    ).toBe(false);
+    expect(store.getState().draft).toBe(baseline);
+    expect(store.getState().error).toBe('Disk full');
+  });
+
   it('retains the original artifact and reports a failed acceptance save', async () => {
     const { usePromptStudioDraftStore: store } = await import('./usePromptStudioDraftStore');
     await store.getState().hydrate('a');
