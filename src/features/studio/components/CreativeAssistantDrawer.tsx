@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   creativeAssistantService,
@@ -17,30 +17,87 @@ export const CreativeAssistantDrawer: React.FC<CreativeAssistantDrawerProps> = (
   onApplyInstruction,
   disabled = false,
 }) => {
-  const { t } = useTranslation('studio');
-  const [suggestions, setSuggestions] = useState<CreativeSuggestion[]>([]);
+  const { t, i18n } = useTranslation('studio');
+  const {
+    idea,
+    currentPrompt,
+    notes,
+    target,
+    currentVersion,
+    cameraDirection,
+    lightingStyle,
+    neighboringShotSummary,
+    language,
+  } = analysisInput;
+  const heuristicSuggestions = useMemo(
+    () =>
+      creativeAssistantService.generateHeuristicSuggestions({
+        idea,
+        currentPrompt,
+        notes,
+        target,
+        currentVersion,
+        cameraDirection,
+        lightingStyle,
+        neighboringShotSummary,
+        language: language ?? i18n.language,
+      }),
+    [
+      idea,
+      currentPrompt,
+      notes,
+      target,
+      currentVersion,
+      cameraDirection,
+      lightingStyle,
+      neighboringShotSummary,
+      language,
+      i18n.language,
+    ],
+  );
+  const [aiSuggestions, setAiSuggestions] = useState<CreativeSuggestion[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    creativeAssistantService
-      .generateSuggestions(analysisInput)
-      .then((res) => {
-        if (active) {
-          setSuggestions(res);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (active) setLoading(false);
-      });
-
+    setAiSuggestions(null);
     return () => {
-      active = false;
+      abortControllerRef.current?.abort();
     };
-  }, [analysisInput.idea, analysisInput.currentPrompt, analysisInput.currentVersion]);
+  }, [
+    analysisInput.idea,
+    analysisInput.currentPrompt,
+    analysisInput.currentVersion,
+    analysisInput.neighboringShotSummary,
+  ]);
+
+  const handleAnalyzeWithAi = async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setLoading(true);
+    try {
+      const res = await creativeAssistantService.generateSuggestions(
+        {
+          ...analysisInput,
+          language: analysisInput.language ?? i18n.language,
+        },
+        controller.signal,
+      );
+      if (!controller.signal.aborted) {
+        setAiSuggestions(res);
+      }
+    } catch {
+      // Keep heuristic suggestions on error
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const suggestions = aiSuggestions ?? heuristicSuggestions;
 
   const categoryIcons: Record<string, string> = {
     camera: '📹',
@@ -51,7 +108,7 @@ export const CreativeAssistantDrawer: React.FC<CreativeAssistantDrawerProps> = (
 
   return (
     <div className="rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-4 shadow-sm">
-      <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border-primary)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[var(--color-border-primary)]">
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
@@ -60,17 +117,34 @@ export const CreativeAssistantDrawer: React.FC<CreativeAssistantDrawerProps> = (
         >
           <span>💡</span>
           <span>
-            {t('creativeAssistant.title', { defaultValue: 'Intelligent Creative Assistant' })}
+            {t('creativeAssistant.title', {
+              defaultValue: 'Intelligent Creative Assistant',
+            })}
           </span>
           <span className="text-xs text-[var(--color-text-secondary)]">
             ({suggestions.length} {isOpen ? '▲' : '▼'})
           </span>
         </button>
-        {loading && (
-          <span className="text-xs text-blue-400 animate-pulse">
-            {t('creativeAssistant.analyzing', { defaultValue: 'Analyzing scene…' })}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {loading ? (
+            <span className="text-xs text-blue-400 animate-pulse">
+              {t('creativeAssistant.analyzing', { defaultValue: 'Analyzing scene…' })}
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleAnalyzeWithAi}
+              data-testid="creative-assistant-ai-analyze"
+              className="rounded border border-blue-500/40 bg-blue-600/15 px-2.5 py-1 text-xs font-medium text-blue-300 hover:bg-blue-600/25 disabled:opacity-50"
+            >
+              ✨{' '}
+              {t('creativeAssistant.analyzeWithAi', {
+                defaultValue: 'Deep AI Analysis',
+              })}
+            </button>
+          )}
+        </div>
       </div>
 
       {isOpen && (
@@ -103,7 +177,7 @@ export const CreativeAssistantDrawer: React.FC<CreativeAssistantDrawerProps> = (
               {suggestion.suggestedInstruction && (
                 <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--color-border-primary)] pt-2">
                   <span className="truncate font-mono text-[11px] text-blue-400">
-                    "{suggestion.suggestedInstruction}"
+                    &ldquo;{suggestion.suggestedInstruction}&rdquo;
                   </span>
                   <button
                     type="button"
@@ -111,7 +185,7 @@ export const CreativeAssistantDrawer: React.FC<CreativeAssistantDrawerProps> = (
                     onClick={() => onApplyInstruction(suggestion.suggestedInstruction!)}
                     className="shrink-0 rounded bg-blue-600/20 px-2.5 py-1 text-xs font-medium text-blue-300 hover:bg-blue-600/30 disabled:opacity-50"
                   >
-                    {t('creativeAssistant.applyInstruction', {
+                    {t('creativeAssistant.useSuggestion', {
                       defaultValue: 'Use as instruction',
                     })}
                   </button>

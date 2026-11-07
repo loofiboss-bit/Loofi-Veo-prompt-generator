@@ -125,3 +125,25 @@ export function haveMatchingLyricStructure(
     original.every((section, index) => section.name === proposed[index].name)
   );
 }
+
+/** Ambiguous AI structures are rejected; locked blocks never move or get appended. */
+export function preserveLockedLyricSections(
+  original: string,
+  proposed: string,
+  locks: string[],
+): string {
+  const source = parseLyricSections(original);
+  if (!source.some((section) => isLyricSectionLocked(section, locks))) return proposed;
+  const candidate = parseLyricSections(proposed);
+  if (!haveMatchingLyricStructure(source, candidate)) {
+    throw new LyricSectionError('structure');
+  }
+  return (
+    proposed.slice(0, candidate[0].start) +
+    source
+      .map((section, index) =>
+        isLyricSectionLocked(section, locks) ? section.raw : candidate[index].raw,
+      )
+      .join('')
+  );
+}

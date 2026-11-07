@@ -55,6 +55,39 @@ test('Interactions API persists IDs and threads follow-up edits', async () => {
   assert.equal(result.text, 'Revision complete.');
 });
 
+test('Interactions API forwards video response_format from input.config for gemini-omni-1.2-flash', async () => {
+  let request;
+  await executeInteraction(
+    {
+      providerModelId: 'gemini-omni-1.2-flash',
+      prompt: 'Extend the sunset tracking shot.',
+      config: {
+        duration: 12,
+        resolution: '1080p',
+        aspect_ratio: '16:9',
+      },
+    },
+    {
+      interactions: {
+        create: async (input) => {
+          request = input;
+          return {
+            id: 'interaction-v2',
+            model: 'gemini-omni-1.2-flash',
+            outputs: [{ type: 'video', mime_type: 'video/mp4', data: 'dmlkZW8y' }],
+          };
+        },
+      },
+    },
+  );
+  assert.deepEqual(request.response_format, {
+    type: 'video',
+    duration: '12s',
+    resolution: '1080p',
+    aspect_ratio: '16:9',
+  });
+});
+
 test('Interactions API receives cancellation as an SDK request option', async () => {
   const controller = new AbortController();
   let started;

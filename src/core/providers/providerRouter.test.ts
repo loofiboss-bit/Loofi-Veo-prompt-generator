@@ -49,7 +49,7 @@ describe('ProviderRouter', () => {
 
     await expect(
       router.execute(
-        { operation: 'video', mode: 'fast' },
+        { operation: 'video', provider: 'vertex-ai', mode: 'fast' },
         {
           operation: 'video',
           prompt: 'Generate a shot.',
@@ -76,7 +76,12 @@ describe('ProviderRouter', () => {
 
     await expect(
       router.execute(
-        { operation: 'video', mode: 'fast', requestedResolution: '1080p' },
+        {
+          operation: 'video',
+          provider: 'vertex-ai',
+          mode: 'fast',
+          requestedResolution: '1080p',
+        },
         {
           operation: 'video',
           prompt: 'Generate a shot.',

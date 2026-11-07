@@ -93,10 +93,24 @@ export const STUDIO_TARGET_PROFILES: TargetModelProfile[] = [
   }),
   profile({
     id: 'omni-flash',
+    profileId: 'gemini-omni-1.2-flash',
+    modelCode: 'gemini-omni-1.2-flash',
+    displayName: 'Gemini Omni 1.2 Flash',
+    vendor: 'Google DeepMind',
+    supportedModes: ALL_MODES,
+    durations: range(3, 15),
+    audioPolicy: 'native',
+    sourceUrl: 'https://ai.google.dev/gemini-api/docs/omni',
+    promptingGuidance:
+      'Use natural conversational video direction. State the visible action, camera behavior and relevant synchronized sound. Supports 3–15s generation/editing (3–10s for first/last frame transitions and extensions) and up to 6 reference images.',
+  }),
+  profile({
+    id: 'omni-flash',
     profileId: 'gemini-omni-1.1-flash',
     modelCode: 'gemini-omni-1.1-flash',
     displayName: 'Gemini Omni 1.1 Flash',
     vendor: 'Google DeepMind',
+    lifecycle: 'legacy',
     supportedModes: ALL_MODES,
     durations: range(3, 10),
     audioPolicy: 'native',
@@ -258,6 +272,12 @@ export const getProfileDurations = (input: ProfileInput): number[] => {
   const selected = getTargetProfile(input.target, input.profileId);
   if (input.target === 'flow-veo' && (input.mode === 'ingredients' || input.mode === 'extend'))
     return selected.supportedModes.includes(input.mode) ? [8] : [];
+  if (
+    input.target === 'omni-flash' &&
+    selected.profileId === 'gemini-omni-1.2-flash' &&
+    (input.mode === 'first-last-frames' || input.mode === 'extend')
+  )
+    return range(3, 10);
   if (input.target === 'luma-ray' && input.mode === 'first-last-frames') return [5];
   return [...selected.durations];
 };

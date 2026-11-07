@@ -80,6 +80,16 @@ const PROVIDER_PRICING = Object.freeze({
     videoOutput: 17.5,
     videoTokensPerSecond: Object.freeze({ '720p': 5792 }),
   }),
+  'gemini-omni-1.2-flash': Object.freeze({
+    input: 1.5,
+    videoOutput: 17.5,
+    videoTokensPerSecond: Object.freeze({
+      '360p': 2896,
+      '720p': 5792,
+      '1080p': 13032,
+      '4k': 52128,
+    }),
+  }),
   'gemini-omni-1.1-flash': Object.freeze({
     input: 1.5,
     videoOutput: 17.5,

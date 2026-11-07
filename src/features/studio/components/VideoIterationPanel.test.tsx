@@ -255,4 +255,47 @@ describe('VideoIterationPanel', () => {
     expect(shots[0].videoUrl).toBe('blob:video-v1');
     expect(screen.getByText(/sent to storyboard scene 1/i)).toBeInTheDocument();
   });
+
+  it('supports extend mode (+3–10s), audio regeneration toggle, and empty Storyboard auto-creation', async () => {
+    useAppStore.setState({ sbShots: [] });
+    const iterateSpy = vi.spyOn(videoIterationService, 'iterateVideo').mockResolvedValue({
+      session: mockSession,
+      turn: mockSession.turns[0],
+    });
+
+    render(<VideoIterationPanel initialSession={mockSession} idea="Sunset scene" />);
+
+    const extendBtn = screen.getByRole('button', { name: /Extend clip/i });
+    fireEvent.click(extendBtn);
+    expect(extendBtn).toHaveAttribute('aria-pressed', 'true');
+
+    const audioCheckbox = screen.getByRole('checkbox');
+    fireEvent.click(audioCheckbox);
+    expect(audioCheckbox).not.toBeChecked();
+
+    const input = screen.getByPlaceholderText(/Change lighting to golden hour/i);
+    fireEvent.change(input, { target: { value: 'Continue camera pan across the horizon' } });
+
+    const submitBtn = screen.getByRole('button', { name: /\(v2\)/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(iterateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          settings: expect.objectContaining({
+            mode: 'extend',
+            keepAudio: false,
+            modelId: 'gemini-omni-1.2-flash',
+          }),
+        }),
+      );
+    });
+
+    const applyBtn = screen.getByRole('button', { name: /Send to Timeline/i });
+    fireEvent.click(applyBtn);
+
+    const state = useAppStore.getState();
+    expect(state.sbShots).toHaveLength(1);
+    expect(state.sbShots[0].videoUrl).toBe('blob:video-v1');
+  });
 });

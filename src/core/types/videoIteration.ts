@@ -1,19 +1,21 @@
-import type { VideoResolution } from '@core/models/catalog';
-
 export type VideoIterationResolution = '360p' | '720p' | '1080p' | '4k';
 export type VideoIterationAspectRatio = '16:9' | '9:16';
+export type VideoIterationMode = 'edit' | 'extend';
 
 export interface VideoIterationSettings {
-  durationSeconds: number; // 3..10s
+  durationSeconds: number; // 3..15s for edit, 3..10s for extend
   resolution: VideoIterationResolution;
   aspectRatio: VideoIterationAspectRatio;
   modelId: string;
+  mode?: VideoIterationMode;
+  keepAudio?: boolean;
 }
 
 export interface VideoIterationTurn {
   id: string;
-  version: number; // 1 = original base video, 2, 3...
+  version: number; // 1 = original base video, 2, 3... (strictly sequential across session)
   parentId: string | null;
+  parentVersion?: number; // Version of the parent turn this turn branched from
   interactionId?: string; // Gemini Interactions API ID for stateful turn-by-turn editing
   instruction: string; // Natural language edit instruction (e.g. "Change lighting to golden hour")
   effectivePrompt: string; // The effective prompt sent for generation

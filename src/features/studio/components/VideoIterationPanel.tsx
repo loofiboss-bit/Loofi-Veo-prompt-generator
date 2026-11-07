@@ -1,11 +1,13 @@
-import React, { useEffect, useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type {
+  VideoIterationMode,
   VideoIterationResolution,
   VideoIterationSession,
   VideoIterationSettings,
-  VideoIterationTurn,
 } from '@core/types/videoIteration';
+import { ROUTES } from '@core/config/routes';
 import { videoIterationService } from '@core/services/videoIterationService';
 import { videoVersionService } from '@core/services/videoVersionService';
 import { CreativeAssistantDrawer } from './CreativeAssistantDrawer';
@@ -15,6 +17,8 @@ import { useAppStore } from '@core/store/useAppStore';
 export interface VideoIterationPanelProps {
   initialSession: VideoIterationSession;
   idea: string;
+  cameraDirection?: string;
+  lightingStyle?: string;
   onSessionUpdated?: (session: VideoIterationSession) => void;
   disabled?: boolean;
 }
@@ -22,34 +26,109 @@ export interface VideoIterationPanelProps {
 export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
   initialSession,
   idea,
+  cameraDirection,
+  lightingStyle,
   onSessionUpdated,
   disabled = false,
 }) => {
   const { t } = useTranslation('studio');
+  const navigate = useNavigate();
   const [session, setSession] = useState<VideoIterationSession>(initialSession);
   const [instruction, setInstruction] = useState('');
+  const [mode, setMode] = useState<VideoIterationMode>('edit');
+  const [keepAudio, setKeepAudio] = useState<boolean>(true);
   const [durationSeconds, setDurationSeconds] = useState<number>(8);
   const [resolution, setResolution] = useState<VideoIterationResolution>('720p');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [hasSentToTimeline, setHasSentToTimeline] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
-  const [selectedShotId, setSelectedShotId] = useState<number>(1);
+  const [compareTurnAId, setCompareTurnAId] = useState<string>('');
+  const [compareTurnBId, setCompareTurnBId] = useState<string>('');
 
   const instructionId = useId();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const shots = useAppStore((s) => s.sbShots ?? []);
+  const [selectedShotId, setSelectedShotId] = useState<number>(() =>
+    shots.length > 0 ? shots[0].id : -1,
+  );
 
   useEffect(() => {
     setSession(initialSession);
   }, [initialSession]);
 
+  useEffect(() => {
+    if (shots.length === 0 && selectedShotId > 0) {
+      setSelectedShotId(-1);
+    } else if (
+      shots.length > 0 &&
+      selectedShotId !== -1 &&
+      !shots.some((s) => s.id === selectedShotId)
+    ) {
+      setSelectedShotId(shots[0].id);
+    }
+  }, [shots, selectedShotId]);
+
+  // Release hardware video decoder buffers on unmount (Wayland/VAAPI hygiene)
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    return () => {
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute('src');
+        if (typeof navigator === 'undefined' || !/jsdom/i.test(navigator.userAgent)) {
+          videoEl.load();
+        }
+      }
+    };
+  }, []);
+
   const activeTurn = useMemo(() => {
     return session.turns.find((t) => t.id === session.activeTurnId) ?? session.turns[0];
   }, [session]);
 
+  const nextVersionNumber = useMemo(() => {
+    return Math.max(0, ...session.turns.map((turn) => turn.version)) + 1;
+  }, [session.turns]);
+
+  useEffect(() => {
+    if (!activeTurn) return;
+    const defaultParent =
+      session.turns.find((t) => t.id === activeTurn.parentId) ?? session.turns[0];
+    setCompareTurnAId(defaultParent?.id ?? '');
+    setCompareTurnBId(activeTurn.id);
+  }, [activeTurn, session.turns]);
+
+  const availableDurations = useMemo(
+    () =>
+      mode === 'extend' ? [3, 4, 5, 6, 7, 8, 9, 10] : [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    [mode],
+  );
+
+  const handleModeChange = (nextMode: VideoIterationMode) => {
+    setMode(nextMode);
+    if (nextMode === 'extend' && durationSeconds > 10) {
+      setDurationSeconds(10);
+    }
+  };
+
   const costEstimate = useMemo(() => {
-    return videoIterationService.estimateIterationCost({ durationSeconds, resolution });
-  }, [durationSeconds, resolution]);
+    return videoIterationService.estimateIterationCost({
+      durationSeconds,
+      resolution,
+      mode,
+      keepAudio,
+      modelId: 'gemini-omni-1.2-flash',
+    });
+  }, [durationSeconds, resolution, mode, keepAudio]);
+
+  const neighboringShotSummary = useMemo(() => {
+    if (shots.length === 0) return undefined;
+    const targetShot = shots.find((s) => s.id === selectedShotId) ?? shots[0];
+    if (!targetShot?.action?.trim()) return undefined;
+    return `Scene ${targetShot.id}: ${targetShot.action}`;
+  }, [shots, selectedShotId]);
 
   const handleSwitchVersion = async (turnId: string) => {
     try {
@@ -65,7 +144,9 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
     e.preventDefault();
     if (!instruction.trim()) {
       setError(
-        t('videoIteration.instructionPlaceholder', { defaultValue: 'Describe desired changes.' }),
+        t('videoIteration.instructionPlaceholder', {
+          defaultValue: 'Describe desired changes.',
+        }),
       );
       return;
     }
@@ -79,7 +160,9 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
         durationSeconds,
         resolution,
         aspectRatio: activeTurn.settings.aspectRatio,
-        modelId: 'gemini-omni-1.1-flash',
+        modelId: 'gemini-omni-1.2-flash',
+        mode,
+        keepAudio,
       };
 
       const result = await videoIterationService.iterateVideo({
@@ -96,7 +179,7 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
       setInstruction('');
       onSessionUpdated?.(result.session);
       setStatusMessage(
-        t('videoIteration.version', {
+        t('videoIteration.versionGenerated', {
           version: result.turn.version,
           defaultValue: `Version ${result.turn.version} generated successfully.`,
         }),
@@ -110,14 +193,21 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
 
   const handleSendToTimeline = () => {
     if (!activeTurn) return;
-    const success = videoVersionService.applyVersionToStoryboardShot(selectedShotId, activeTurn);
+    const targetId = shots.length === 0 ? -1 : selectedShotId;
+    const success = videoVersionService.applyVersionToStoryboardShot(targetId, activeTurn);
     if (success) {
+      setHasSentToTimeline(true);
       setStatusMessage(
-        t('videoIteration.appliedToTimeline', {
-          version: activeTurn.version,
-          scene: selectedShotId,
-          defaultValue: `Version ${activeTurn.version} sent to storyboard scene ${selectedShotId}.`,
-        }),
+        targetId <= 0
+          ? t('videoIteration.appliedToNewScene', {
+              version: activeTurn.version,
+              defaultValue: `Version ${activeTurn.version} added as a new storyboard scene and synced to Timeline.`,
+            })
+          : t('videoIteration.appliedToTimeline', {
+              version: activeTurn.version,
+              scene: targetId,
+              defaultValue: `Version ${activeTurn.version} sent to storyboard scene ${targetId}.`,
+            }),
       );
     }
   };
@@ -125,8 +215,18 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
   const comparisonResults = useMemo(() => {
     if (!isComparing) return [];
     const parentTurn = session.turns.find((t) => t.id === activeTurn.parentId) ?? session.turns[0];
-    return videoVersionService.prepareComparison(session, parentTurn.id, activeTurn.id);
-  }, [isComparing, session, activeTurn]);
+    return videoVersionService.prepareComparison(
+      session,
+      compareTurnAId || parentTurn.id,
+      compareTurnBId || activeTurn.id,
+    );
+  }, [isComparing, session, activeTurn, compareTurnAId, compareTurnBId]);
+
+  const comparedTurns = useMemo(() => {
+    const turnA = session.turns.find((t) => t.id === compareTurnAId) ?? session.turns[0];
+    const turnB = session.turns.find((t) => t.id === compareTurnBId) ?? activeTurn;
+    return { turnA, turnB };
+  }, [session.turns, compareTurnAId, compareTurnBId, activeTurn]);
 
   return (
     <div className="space-y-4 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-4 shadow-md">
@@ -137,8 +237,10 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
             🎬 {t('videoIteration.title', { defaultValue: 'AI Video Iteration' })}
           </h3>
           <p className="text-xs text-[var(--color-text-secondary)]">
-            {t('videoIteration.history', { defaultValue: 'Iteration history' })}:{' '}
-            {session.turns.length} {session.turns.length === 1 ? 'version' : 'versioner'}
+            {t('videoIteration.historyCount', {
+              count: session.turns.length,
+              defaultValue: `Iteration history: ${session.turns.length} versions`,
+            })}
           </p>
         </div>
 
@@ -146,10 +248,14 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
         <div
           className="flex flex-wrap items-center gap-1.5"
           role="tablist"
-          aria-label="Version history"
+          aria-label={t('videoIteration.history', { defaultValue: 'Version history' })}
         >
           {session.turns.map((turn) => {
             const isActive = turn.id === activeTurn.id;
+            const showLineage =
+              turn.version > 1 &&
+              typeof turn.parentVersion === 'number' &&
+              turn.parentVersion !== turn.version - 1;
             return (
               <button
                 key={turn.id}
@@ -164,10 +270,12 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
                 }`}
                 title={turn.instruction}
               >
-                v{turn.version}{' '}
+                v{turn.version}
                 {turn.version === 1
-                  ? `(${t('videoIteration.original', { defaultValue: 'Original' })})`
-                  : ''}
+                  ? ` (${t('videoIteration.original', { defaultValue: 'Original' })})`
+                  : showLineage
+                    ? ` (← v${turn.parentVersion})`
+                    : ''}
               </button>
             );
           })}
@@ -179,6 +287,7 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
         <div className="space-y-2">
           {activeTurn.assetUrl ? (
             <video
+              ref={videoRef}
               controls
               src={activeTurn.assetUrl}
               className="w-full rounded-lg bg-black aspect-video object-contain"
@@ -188,7 +297,7 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
             </video>
           ) : (
             <div className="flex h-48 w-full items-center justify-center rounded-lg bg-slate-900 text-slate-500">
-              No media available
+              {t('videoIteration.noMedia', { defaultValue: 'No media available' })}
             </div>
           )}
 
@@ -213,21 +322,26 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
               </button>
             )}
 
-            <div className="flex items-center gap-1.5 ml-auto">
-              {shots.length > 0 && (
-                <select
-                  value={selectedShotId}
-                  onChange={(e) => setSelectedShotId(Number(e.target.value))}
-                  aria-label="Scene"
-                  className="rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
-                >
-                  {shots.map((shot) => (
-                    <option key={shot.id} value={shot.id}>
-                      Scen {shot.id} ({shot.action.slice(0, 20)}...)
-                    </option>
-                  ))}
-                </select>
-              )}
+            <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+              <select
+                value={selectedShotId}
+                onChange={(e) => setSelectedShotId(Number(e.target.value))}
+                aria-label={t('externalResults.scene', { defaultValue: 'Scene' })}
+                className="rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+              >
+                <option value={-1}>
+                  + {t('externalResults.newScene', { defaultValue: 'Create a new scene' })}
+                </option>
+                {shots.map((shot) => (
+                  <option key={shot.id} value={shot.id}>
+                    {t('videoIteration.sceneOption', {
+                      id: shot.id,
+                      action: shot.action.slice(0, 20),
+                      defaultValue: `Scene ${shot.id} (${shot.action.slice(0, 20)}...)`,
+                    })}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={handleSendToTimeline}
@@ -235,21 +349,61 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
               >
                 🎬 {t('videoIteration.sendToTimeline', { defaultValue: 'Send to Timeline' })}
               </button>
+              {hasSentToTimeline && (
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.TIMELINE)}
+                  className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 px-2.5 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-900/40"
+                >
+                  ↗ {t('videoIteration.openTimeline', { defaultValue: 'Open Timeline' })}
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Iteration Prompt Form */}
         <form onSubmit={handleGenerateIteration} className="space-y-3">
-          <label
-            htmlFor={instructionId}
-            className="block text-xs font-semibold text-[var(--color-text-primary)]"
-          >
-            {t('videoIteration.instructionLabel', {
-              defaultValue: 'Describe what to change with AI',
-            })}
-            :
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label
+              htmlFor={instructionId}
+              className="block text-xs font-semibold text-[var(--color-text-primary)]"
+            >
+              {t('videoIteration.instructionLabel', {
+                defaultValue: 'Describe what to change with AI',
+              })}
+              :
+            </label>
+            <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-0.5 text-[11px]">
+              <button
+                type="button"
+                disabled={disabled || isGenerating}
+                onClick={() => handleModeChange('edit')}
+                aria-pressed={mode === 'edit'}
+                className={`rounded px-2 py-0.5 font-medium transition-colors ${
+                  mode === 'edit'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-[var(--color-text-secondary)] hover:text-white'
+                }`}
+              >
+                {t('videoIteration.modeEdit', { defaultValue: 'Edit clip (3–15s)' })}
+              </button>
+              <button
+                type="button"
+                disabled={disabled || isGenerating}
+                onClick={() => handleModeChange('extend')}
+                aria-pressed={mode === 'extend'}
+                className={`rounded px-2 py-0.5 font-medium transition-colors ${
+                  mode === 'extend'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-[var(--color-text-secondary)] hover:text-white'
+                }`}
+              >
+                {t('videoIteration.modeExtend', { defaultValue: 'Extend clip (+3–10s)' })}
+              </button>
+            </div>
+          </div>
+
           <textarea
             id={instructionId}
             value={instruction}
@@ -274,9 +428,11 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
                 disabled={disabled || isGenerating}
                 className="mt-1 w-full rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-1.5 text-xs text-[var(--color-text-primary)]"
               >
-                {[3, 4, 5, 6, 7, 8, 9, 10].map((s) => (
+                {availableDurations.map((s) => (
                   <option key={s} value={s}>
-                    {s} sekunder
+                    {mode === 'extend'
+                      ? `+${t('videoIteration.durationSeconds', { seconds: s, defaultValue: `${s}s` })}`
+                      : t('videoIteration.durationSeconds', { seconds: s, defaultValue: `${s}s` })}
                   </option>
                 ))}
               </select>
@@ -299,6 +455,21 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
               </select>
             </div>
           </div>
+
+          <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={keepAudio}
+              onChange={(e) => setKeepAudio(e.target.checked)}
+              disabled={disabled || isGenerating}
+              className="rounded border-[var(--color-border-primary)]"
+            />
+            <span>
+              {t('videoIteration.keepAudio', {
+                defaultValue: 'Preserve original audio track (uncheck to regenerate sound)',
+              })}
+            </span>
+          </label>
 
           <div className="flex items-center justify-between pt-1">
             <span className="text-xs text-emerald-400 font-mono">
@@ -325,7 +496,7 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
                   <span>✨</span>
                   <span>
                     {t('videoIteration.iterateButton', { defaultValue: 'Generate iteration' })} (v
-                    {activeTurn.version + 1})
+                    {nextVersionNumber})
                   </span>
                 </>
               )}
@@ -351,7 +522,9 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
           idea,
           currentPrompt: activeTurn.effectivePrompt,
           currentVersion: activeTurn.version,
-          cameraDirection: activeTurn.settings.resolution,
+          cameraDirection: cameraDirection || 'Standard',
+          lightingStyle: lightingStyle || 'Natural',
+          neighboringShotSummary,
         }}
         onApplyInstruction={(text) => {
           setInstruction(text);
@@ -360,20 +533,62 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
       />
 
       {/* A/B Comparison Modal */}
-      {isComparing && comparisonResults.length >= 2 && (
+      {isComparing && comparisonResults.length >= 1 && (
         <div className="mt-4 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-4">
-          <div className="flex items-center justify-between pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
             <h4 className="font-semibold text-sm text-[var(--color-text-primary)]">
-              ⚖️ A/B Comparison: {comparisonResults[0].label} vs {comparisonResults[1].label}
+              ⚖️ {t('videoIteration.compare', { defaultValue: 'Compare A/B' })}
             </h4>
-            <button
-              type="button"
-              onClick={() => setIsComparing(false)}
-              className="text-xs underline text-slate-400 hover:text-white"
-            >
-              Stäng jämförelse
-            </button>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <label className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+                <span>A:</span>
+                <select
+                  value={compareTurnAId}
+                  onChange={(e) => setCompareTurnAId(e.target.value)}
+                  aria-label="Version A"
+                  className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+                >
+                  {session.turns.map((turn) => (
+                    <option key={turn.id} value={turn.id}>
+                      v{turn.version}: {turn.instruction.slice(0, 24)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+                <span>B:</span>
+                <select
+                  value={compareTurnBId}
+                  onChange={(e) => setCompareTurnBId(e.target.value)}
+                  aria-label="Version B"
+                  className="rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+                >
+                  {session.turns.map((turn) => (
+                    <option key={turn.id} value={turn.id}>
+                      v{turn.version}: {turn.instruction.slice(0, 24)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsComparing(false)}
+                className="text-xs underline text-slate-400 hover:text-white ml-2"
+              >
+                {t('videoIteration.hideCompare', { defaultValue: 'Hide compare' })}
+              </button>
+            </div>
           </div>
+
+          {comparedTurns.turnA && comparedTurns.turnB && (
+            <div className="mb-3 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-2.5 text-xs text-[var(--color-text-secondary)]">
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                Δ v{comparedTurns.turnA.version} → v{comparedTurns.turnB.version}:
+              </span>{' '}
+              <span className="text-blue-300 font-mono">{comparedTurns.turnB.instruction}</span>
+            </div>
+          )}
+
           <VideoResultCompare
             contextId={`compare-${session.id}`}
             results={comparisonResults}

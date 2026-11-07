@@ -91,11 +91,12 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
 
   if (request.operation === 'video' || request.operation === 'video-edit') {
     const requiresVeo =
-      request.requiresFirstLastFrame ||
-      request.requiresExtension ||
-      request.requires4k ||
-      request.requiresReferenceImages ||
-      (request.requestedResolution !== undefined && request.requestedResolution !== '720p');
+      request.operation === 'video' &&
+      (request.requiresFirstLastFrame ||
+        request.requiresExtension ||
+        request.requires4k ||
+        request.requiresReferenceImages ||
+        (request.requestedResolution !== undefined && request.requestedResolution !== '720p'));
 
     if (requiresVeo) {
       const requiresAdvancedVeo =
@@ -128,7 +129,7 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
     // Veo because the durable desktop job engine submits predictLongRunning jobs.
     const candidates =
       request.operation === 'video-edit'
-        ? ['gemini-omni-1.1-flash', 'gemini-omni-flash']
+        ? ['gemini-omni-1.2-flash', 'gemini-omni-1.1-flash', 'gemini-omni-flash']
         : request.mode === 'economy'
           ? ['veo-3.1-lite', 'veo-3.1-fast', 'veo-3.1-quality']
           : request.mode === 'quality'

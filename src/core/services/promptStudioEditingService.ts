@@ -5,9 +5,12 @@ import {
   LyricSectionError,
   isLyricSectionLocked,
   parseLyricSections,
+  preserveLockedLyricSections,
   replaceLyricSectionContent,
   resolveLyricSection,
 } from './lyricSectionService';
+
+export { preserveLockedLyricSections };
 
 export type StudioVariantEdits = Partial<Pick<VideoPromptVariant, 'prompt' | 'negativePrompt'>> &
   Partial<Pick<MusicPromptVariant, 'lyrics' | 'styleOfMusic'>>;
@@ -52,28 +55,6 @@ export function editStudioVariant(
     alternatives: [variants[1], variants[2]],
     provenance: { ...artifact.provenance, source: 'editor' },
   });
-}
-
-/** Ambiguous AI structures are rejected; locked blocks never move or get appended. */
-export function preserveLockedLyricSections(
-  original: string,
-  proposed: string,
-  locks: string[],
-): string {
-  const source = parseLyricSections(original);
-  if (!source.some((section) => isLyricSectionLocked(section, locks))) return proposed;
-  const candidate = parseLyricSections(proposed);
-  if (!haveMatchingLyricStructure(source, candidate)) {
-    throw new LyricSectionError('structure');
-  }
-  return (
-    proposed.slice(0, candidate[0].start) +
-    source
-      .map((section, index) =>
-        isLyricSectionLocked(section, locks) ? section.raw : candidate[index].raw,
-      )
-      .join('')
-  );
 }
 
 /** Keep every non-selected section byte-identical, including repeated locked sections. */

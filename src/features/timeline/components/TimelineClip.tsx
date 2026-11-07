@@ -56,12 +56,18 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
 
   // Version indicator (e.g. from video iteration: v1, v2, v3)
   const activeTakeUrl = shot?.takes?.[shot.selectedTakeIndex ?? 0] || shot?.videoUrl;
-  const versionMatch = activeTakeUrl?.match(/\b(v\d+)\b/i) || clip.label?.match(/\b(v\d+)\b/i);
-  const versionTag = versionMatch
-    ? versionMatch[1].toLowerCase().startsWith('v')
-      ? versionMatch[1].toLowerCase()
-      : `v${versionMatch[1]}`
-    : null;
+  const versionMatch =
+    activeTakeUrl?.match(/\b(v\d+)\b/i) ||
+    clip.label?.match(/\b(v\d+)\b/i) ||
+    shot?.action?.match(/\b(v\d+)\b/i);
+  const versionTag =
+    asset?.version && asset.version >= 1
+      ? `v${asset.version}`
+      : versionMatch
+        ? versionMatch[1].toLowerCase().startsWith('v')
+          ? versionMatch[1].toLowerCase()
+          : `v${versionMatch[1]}`
+        : null;
 
   // Styles based on type
   let baseStyle =
@@ -254,6 +260,15 @@ const TimelineClipView: React.FC<TimelineClipProps> = ({
     return () => {
       if (rafRef.current !== null) {
         window.cancelAnimationFrame(rafRef.current);
+      }
+
+      if (videoElementRef.current) {
+        videoElementRef.current.pause();
+        videoElementRef.current.removeAttribute('src');
+        if (typeof navigator === 'undefined' || !/jsdom/i.test(navigator.userAgent)) {
+          videoElementRef.current.load();
+        }
+        videoElementRef.current = null;
       }
 
       window.removeEventListener('mousemove', handleGlobalMouseMove);

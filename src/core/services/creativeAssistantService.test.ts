@@ -54,4 +54,17 @@ describe('creativeAssistantService', () => {
     expect(cam).toBeDefined();
     expect(cam?.title).toContain('skärpedjup');
   });
+
+  it('supports English heuristic suggestions and Storyboard continuity checks', () => {
+    const suggestions = creativeAssistantService.generateHeuristicSuggestions({
+      idea: 'Night rain chase',
+      currentPrompt: 'A runner sprinting through a sunny street.',
+      neighboringShotSummary: 'Shot 1: Neon rooftop overview at dusk',
+      language: 'en',
+    });
+
+    expect(suggestions.some((s) => s.title.includes('Add dynamic camera movement'))).toBe(true);
+    expect(suggestions.some((s) => s.title.includes('Storyboard continuity alignment'))).toBe(true);
+    expect(suggestions.some((s) => s.category === 'deviation')).toBe(true);
+  });
 });

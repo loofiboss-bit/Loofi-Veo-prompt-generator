@@ -174,14 +174,19 @@ describe('target-specific local compilation', () => {
     expect(primary.prompt).not.toMatch(/film stock|photorealistic|35mm|cartoonish/);
   });
 
-  it('does not infer a Flow negative field from the separate Veo API contract', () => {
+  it('supports Flow negative prompts while keeping Omni Flash 1.2 durations mode-aware', () => {
     for (const selected of getTargetProfiles('flow-veo'))
-      expect(selected.negativePolicy).toBe('unknown');
+      expect(selected.negativePolicy).toBe('supported');
     const [primary] = transpilePrompt({ ...BASE, negativePrompt: 'unrequested logos' }).variants;
-    expect(primary.negativePrompt).toBe('');
-    expect(primary.copyAll).toContain('Creative exclusions for manual review: unrequested logos');
-    expect(primary.copyAll).toContain('unverified');
-    expect(primary.copyAll).not.toContain('Negative prompt:');
+    expect(primary.negativePrompt).toBe('unrequested logos');
+    expect(primary.copyAll).toContain('Negative prompt: unrequested logos');
+    expect(getTargetProfile('omni-flash').modelCode).toBe('gemini-omni-1.2-flash');
+    expect(getProfileDurations({ ...BASE, target: 'omni-flash', mode: 'text-to-video' })).toContain(
+      15,
+    );
+    expect(getProfileDurations({ ...BASE, target: 'omni-flash', mode: 'extend' })).toEqual([
+      3, 4, 5, 6, 7, 8, 9, 10,
+    ]);
   });
 
   it('preserves exact manually supplied native dialogue and optics in all variants', () => {

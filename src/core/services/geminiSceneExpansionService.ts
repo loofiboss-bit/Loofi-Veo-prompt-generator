@@ -16,7 +16,7 @@ import {
   getProfileDurations,
   getProfileAspectRatios,
 } from './modelTranspilerService';
-import { preserveLockedLyricSections } from './promptStudioEditingService';
+import { preserveLockedLyricSections } from './lyricSectionService';
 
 export interface ExpandVideoSceneOptions {
   model?: string;

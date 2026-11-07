@@ -677,6 +677,58 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
     },
   },
   {
+    id: 'gemini-omni-1.2-flash',
+    displayName: 'Gemini Omni 1.2 Flash',
+    provider: 'gemini-api',
+    providerModelId: 'gemini-omni-1.2-flash',
+    apiSurface: 'google-ai-interactions-v1beta',
+    providerBindings: googleBindings(
+      'gemini-omni-1.2-flash',
+      'gemini-omni-1.2-flash',
+      'google-ai-interactions-v1beta',
+    ),
+    lifecycle: 'stable',
+    minimumSdkVersion: '2.0.0',
+    regionRestrictions: [],
+    capabilities: {
+      operations: ['video', 'video-edit'],
+      inputModalities: ['text', 'image', 'audio', 'video'],
+      outputModalities: ['text', 'video'],
+      supportsInteraction: true,
+      supportsVideoEditing: true,
+      supportsReferenceImages: true,
+      supportsFirstLastFrame: true,
+      supportsExtension: true,
+      supportsSeed: true,
+      supportedDurationsSeconds: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      supportedAspectRatios: VIDEO_ASPECTS,
+      supportedResolutions: ['360p', '720p', '1080p', '4k'],
+      maximumReferenceImages: 6,
+      supportsAudioOutput: true,
+    },
+    pricing: {
+      status: 'priced',
+      source: priceSource(),
+      billingModes: ['input-tokens', 'output-tokens', 'video-seconds'],
+      tokenTiers: [
+        {
+          inputPerMillionUsd: { text: 1.5, image: 1.5, audio: 1.5, video: 1.5 },
+          outputPerMillionUsd: { text: 9, video: 17.5 },
+        },
+      ],
+      videoOutputTokensPerSecondByResolution: {
+        '360p': 2_896,
+        '720p': 5_792,
+        '1080p': 13_032,
+        '4k': 52_128,
+      },
+      assumptions: [
+        'Billed per generated video token across 360p, 720p, 1080p, and 4k with native audio synthesis.',
+        'The resulting maximum is an upper bound because billing follows actual output tokens.',
+      ],
+    },
+  },
+  {
     id: 'gemini-omni-1.1-flash',
     displayName: 'Gemini Omni 1.1 Flash',
     provider: 'gemini-api',
@@ -688,6 +740,7 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       'google-ai-interactions-v1beta',
     ),
     lifecycle: 'stable',
+    replacementModelId: 'gemini-omni-1.2-flash',
     minimumSdkVersion: '2.0.0',
     regionRestrictions: [],
     capabilities: {
@@ -722,11 +775,6 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
         '1080p': 13_032,
         '4k': 52_128,
       },
-      videoPerSecondByResolutionUsd: {
-        '720p': 0.1,
-        '1080p': 0.23,
-        '4k': 0.91,
-      },
       assumptions: [
         'Billed per generated video token across 360p, 720p, 1080p, and 4k with native audio synthesis.',
       ],
@@ -744,7 +792,7 @@ const MODEL_CATALOG_DRAFT: readonly ModelCatalogDraft[] = [
       'google-ai-interactions-v1beta',
     ),
     lifecycle: 'shut-down',
-    replacementModelId: 'gemini-omni-1.1-flash',
+    replacementModelId: 'gemini-omni-1.2-flash',
     minimumSdkVersion: '2.0.0',
     regionRestrictions: [],
     capabilities: {

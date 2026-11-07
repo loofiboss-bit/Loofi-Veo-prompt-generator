@@ -11,17 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **AI Video Iteration & Creative Loop**: Natural language, multi-turn conversational video modifications powered by Gemini Omni 1.1 Flash via the stateful Interactions API (`previous_interaction_id`). Enforces model constraints (3–10s, 360p–4K, 16:9/9:16) with SHA-256 idempotency request protection.
-- **Smart Version Control & Lineage**: Automatically archives video iterations as version lineage trees (`v1`, `v2`, `v3`, ...), preserving full instruction records and source media. Integrates A/B comparison playback (`VideoResultCompare`) and non-destructive timeline take insertion.
-- **Intelligent Creative Assistant**: Context-aware advisory engine providing voluntary, reviewable suggestions for camera movement, lighting & atmosphere continuity, goal alignment/deviation detection, and contextual iteration instructions. Includes an offline heuristic fallback when network or cloud provider is unavailable.
-- **Unified Creative Workflow**: Connects Prompt Studio, External Results, Video Iteration, and Timeline into a cohesive loop without manual asset re-import or loss of creative context.
-- **Timeline Version Badges**: Subtly indicates active iteration version tag (`[v2]`, `[v3]`) on timeline clips and storyboard takes.
-- **Fedora KDE / Wayland Performance Optimization**: Streamlined object URL management, CSS GPU acceleration, and low CPU/memory footprint preparing for native Qt 6/QML and Rust desktop runtime.
+- **AI Video Iteration & Creative Loop**: Natural language, multi-turn conversational video modifications and clip extensions powered by Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`, with `gemini-omni-1.1-flash` backwards compatibility) via the stateful Interactions API (`previous_interaction_id` and `response_format`). Supports 3–15s iterative edits, +3–10s clip extensions, up to 6 reference images, audio preservation/regeneration toggles, Turn-1 source video byte forwarding, and SHA-256 idempotency request protection.
+- **Smart Version Control & Lineage**: Automatically archives video iterations as strictly sequential version lineage trees (`v1`, `v2`, `v3 ← v1`) persisted in `DesktopMediaStore` (`loofi-media://`) and IndexedDB with automatic `Blob` ObjectURL hydration. Integrates arbitrary A/B version comparison (`VideoResultCompare`) with instruction diff summaries and self-healing, non-destructive Storyboard & Timeline synchronization.
+- **Intelligent Creative Assistant (Local-First + On-Demand AI)**: Zero-latency local heuristic advisor providing immediate camera, lighting, Storyboard continuity, and goal deviation suggestions with zero automatic API calls, paired with an explicit **Deep AI Analysis** button for voluntary Gemini/Ollama analysis.
+- **Unified Creative Workflow**: Connects Prompt Studio, External Results, Video Iteration, Storyboard, and Timeline into a cohesive loop—including automatic Storyboard scene creation when empty, global `Asset` catalog registration (`storageKey` for OTIO export), and direct navigation to Timeline.
+- **Timeline Version Badges**: Displays active iteration version badges (`v2`, `v3`) on timeline clips and storyboard takes.
+- **Fedora KDE / Wayland Performance Optimization**: Native Wayland/Ozone initialization (`--ozone-platform-hint=auto`, `WaylandWindowDecorations`, `VaapiVideoDecodeLinuxGL`), asynchronous off-main-thread Base64-to-Blob decoding, and strict `<video>` hardware decoder buffer cleanup on unmount.
 - One-request Prompt Studio scene development and three target-specific variants, applied directly
   with durable checkpoints and undo; explicit per-field AI protection and regeneration.
 - Progressive camera/optics/composition, character-bank Visual DNA, environment, sound and style
   controls reusing the original generator's options and presets.
-- Current Flow Lite/Fast/Quality, Omni 1.1, Kling 4.0, Runway Gen-4.5, Ray3.2, Wan 3.0, MiniMax-H3
+- Current Flow Lite/Fast/Quality, Omni 1.2 / 1.1, Kling 4.0, Runway Gen-4.5, Ray3.2, Wan 3.0, MiniMax-H3
   and Suno v6 family profiles with dated official sources.
 
 ### Changed

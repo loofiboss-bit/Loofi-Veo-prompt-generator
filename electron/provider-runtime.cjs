@@ -232,6 +232,22 @@ async function executeInteraction(input, client) {
         mime_type: item.mimeType,
       })),
     ];
+    const cfg = input.config && typeof input.config === 'object' ? input.config : null;
+    const aspectRatio = cfg ? cfg.aspectRatio || cfg.aspect_ratio : undefined;
+    const responseFormat =
+      cfg && (cfg.duration || cfg.resolution || aspectRatio)
+        ? {
+            type: 'video',
+            ...(cfg.duration
+              ? {
+                  duration:
+                    typeof cfg.duration === 'number' ? `${cfg.duration}s` : String(cfg.duration),
+                }
+              : {}),
+            ...(cfg.resolution ? { resolution: cfg.resolution } : {}),
+            ...(aspectRatio && cfg.mode !== 'extend' ? { aspect_ratio: aspectRatio } : {}),
+          }
+        : undefined;
     const interaction = await client.interactions.create(
       {
         model: input.providerModelId,
@@ -239,6 +255,7 @@ async function executeInteraction(input, client) {
         store: true,
         background: false,
         previous_interaction_id: input.interactionId || undefined,
+        ...(responseFormat ? { response_format: responseFormat } : {}),
       },
       input.signal ? { abortSignal: input.signal } : undefined,
     );

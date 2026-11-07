@@ -10,6 +10,8 @@ vi.mock('./videoIterationService', () => ({
 
 const mockSetSbShots = vi.fn();
 const mockSyncTimelineFromShots = vi.fn();
+const mockAddAsset = vi.fn();
+const mockUpdateTimelineClip = vi.fn();
 
 vi.mock('@core/store/useAppStore', () => ({
   useAppStore: {
@@ -24,6 +26,8 @@ vi.mock('@core/store/useAppStore', () => ({
       ],
       setSbShots: mockSetSbShots,
       syncTimelineFromShots: mockSyncTimelineFromShots,
+      addAsset: mockAddAsset,
+      updateTimelineClip: mockUpdateTimelineClip,
     })),
   },
 }));
@@ -113,5 +117,36 @@ describe('videoVersionService', () => {
     expect(updatedShots[0].takes[0]).toBe('blob:video-2');
     expect(updatedShots[0].videoUrl).toBe('blob:video-2');
     expect(updatedShots[0].action).toBe(turn.instruction);
+    expect(mockAddAsset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'asset-2',
+        version: 2,
+        storageKey: 'asset-2',
+      }),
+    );
+    expect(mockUpdateTimelineClip).toHaveBeenCalledWith(
+      'video_1',
+      expect.objectContaining({
+        label: 'Shot 1 (v2)',
+      }),
+    );
+  });
+
+  it('creates a new Storyboard scene automatically when shotId is -1 or sbShots is empty', () => {
+    const turn = mockSession.turns[1];
+    const success = videoVersionService.applyVersionToStoryboardShot(-1, turn);
+
+    expect(success).toBe(true);
+    expect(mockSetSbShots).toHaveBeenCalledOnce();
+    const updatedShots = mockSetSbShots.mock.calls[0][0];
+    expect(updatedShots).toHaveLength(2);
+    expect(updatedShots[1].id).toBe(2);
+    expect(updatedShots[1].videoUrl).toBe('blob:video-2');
+    expect(mockUpdateTimelineClip).toHaveBeenCalledWith(
+      'video_2',
+      expect.objectContaining({
+        label: 'Shot 2 (v2)',
+      }),
+    );
   });
 });

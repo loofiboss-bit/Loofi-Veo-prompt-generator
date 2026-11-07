@@ -25,7 +25,8 @@ describe('routeModel', () => {
 
   it('uses Omni Flash only for conversational video revisions', () => {
     const decision = routeModel({ operation: 'video-edit', mode: 'smart', conversational: true });
-    expect(decision.model.id).toBe('gemini-omni-1.1-flash');
+    expect(decision.model.id).toBe('gemini-omni-1.2-flash');
+    expect(decision.fallback?.id).toBe('gemini-omni-1.1-flash');
   });
 
   it('preserves explicitly selected active Vertex Veo routing', () => {

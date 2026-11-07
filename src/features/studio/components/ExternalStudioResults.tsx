@@ -47,11 +47,11 @@ function ExternalResultCard({
   const [iterationSession, setIterationSession] = useState<VideoIterationSession | null>(null);
   const reviewed = result.manualReview?.assetId === result.assetId;
 
-  const handleToggleIteration = () => {
+  const handleToggleIteration = async () => {
     if (!iterationSession && asset) {
       const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
-      const duration = Math.min(10, Math.max(3, Math.round(result.durationSeconds || 5)));
-      const session = videoIterationService.createInitialSession({
+      const duration = Math.min(15, Math.max(3, Math.round(result.durationSeconds || 5)));
+      const session = await videoIterationService.getOrCreateSession({
         projectId: result.projectId,
         artifactId: result.artifactId,
         variantIndex: result.variantIndex,
@@ -65,6 +65,7 @@ function ExternalResultCard({
         settings: {
           aspectRatio: (input?.aspectRatio as '16:9' | '9:16') ?? '16:9',
           durationSeconds: duration,
+          modelId: 'gemini-omni-1.2-flash',
         },
       });
       setIterationSession(session);

@@ -7,7 +7,7 @@ describe('UniversalTargetSelector', () => {
     render(<UniversalTargetSelector value="flow-veo" onChange={vi.fn()} />);
     for (const name of [
       /Google Flow/,
-      /Gemini Omni 1.1/,
+      /Gemini Omni 1\.2/,
       /Kling 4.0/,
       /Runway Gen-4.5/,
       /Ray3.2/,
