@@ -7,15 +7,15 @@ test.describe('Studio draft persistence', () => {
     await dismissModals(page);
     const text = 'A courier beneath a green aurora';
     await page.getByLabel(/^Core idea/).fill(text);
-    await page.getByLabel(/^Target(?: |$)/).selectOption('sora');
+    await page.getByLabel(/^Target(?: |$)/).selectOption('kling');
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Prompt Studio', exact: true }).click();
     await expect(page.getByLabel(/^Core idea/)).toHaveValue(text);
-    await expect(page.getByLabel(/^Target(?: |$)/)).toHaveValue('sora');
+    await expect(page.getByLabel(/^Target(?: |$)/)).toHaveValue('kling');
     await page.reload();
     await expect(page.getByLabel(/^Core idea/)).toHaveValue(text);
-    await expect(page.getByLabel(/^Target(?: |$)/)).toHaveValue('sora');
+    await expect(page.getByLabel(/^Target(?: |$)/)).toHaveValue('kling');
   });
 });
 

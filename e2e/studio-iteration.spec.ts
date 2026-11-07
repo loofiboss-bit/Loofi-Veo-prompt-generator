@@ -103,7 +103,7 @@ test('Arena closes with Escape and restores keyboard focus in a small viewport',
   await trigger.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('region')).toHaveCount(9);
+  await expect(dialog.getByRole('region')).toHaveCount(7);
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
