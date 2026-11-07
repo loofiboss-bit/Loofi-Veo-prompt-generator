@@ -157,23 +157,19 @@ const run = async () => {
 
   console.log('── 9. Release Identity Consistency ──');
   const productName = packageJson.build?.productName;
-  const shortcutName = packageJson.build?.nsis?.shortcutName;
   const buildWorkflow = await readFile(path.join(root, '.github/workflows/build.yml'), 'utf8');
-  const expectedExecutable = `${productName}.exe`;
-  const expectedShortcut = `${productName}.lnk`;
-  const shortcutReferenceCount = buildWorkflow.split(expectedShortcut).length - 1;
   if (
     typeof productName === 'string' &&
     productName.length > 0 &&
-    shortcutName === productName &&
-    buildWorkflow.includes(`release/win-unpacked/${expectedExecutable}`) &&
-    buildWorkflow.includes(`-Filter '${expectedExecutable}'`) &&
-    shortcutReferenceCount >= 2 &&
-    buildWorkflow.includes(`name: ${productName} v`)
+    buildWorkflow.includes(`name: ${productName} v`) &&
+    buildWorkflow.includes('release/*.AppImage') &&
+    buildWorkflow.includes('release/*.rpm')
   ) {
-    pass(`Windows smoke and GitHub Release use product name: ${productName}`);
+    pass(`Linux RPM / AppImage release uses product name: ${productName}`);
   } else {
-    fail('Windows smoke or GitHub Release identity differs from package.json build.productName');
+    fail(
+      'GitHub Release identity differs from package.json build.productName or missing Linux packages',
+    );
   }
   console.log('');
 

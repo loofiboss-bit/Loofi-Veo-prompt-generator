@@ -1,7 +1,7 @@
 # Fedora COPR packaging
 
 The `loofitheboss/loofi-creator-studio` project publishes `veo-prompt-generator` for Fedora 44
-x86_64. The package is a verified COPR rebuild of the matching GitHub release RPM, not an unofficial
+and Fedora 45 x86_64. The package is a verified COPR rebuild of the matching GitHub release RPM, not an unofficial
 provider integration.
 
 ## How the source build works
@@ -35,7 +35,7 @@ sudo dnf copr disable loofitheboss/loofi-creator-studio
 
 ```bash
 copr-cli build-package loofitheboss/loofi-creator-studio \
-  --name veo-prompt-generator -r fedora-44-x86_64
+  --name veo-prompt-generator -r fedora-44-x86_64 -r fedora-45-x86_64
 ```
 
 Inspect a downloaded result before installation:

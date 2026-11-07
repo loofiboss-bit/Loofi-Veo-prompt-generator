@@ -20,7 +20,7 @@
 
 [![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v2100)
+[![Platforms](<https://img.shields.io/badge/platform-Fedora%20RPM%20(Primary)%20%7C%20Windows%20(Optional)-3b82f6?style=flat-square&labelColor=0f172a>)](#install-v2200)
 [![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
@@ -226,20 +226,14 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 
 ## Install v22.0.0
 
-Download the [v21.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.0.0)
+Download the [v22.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.0.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
-### Windows
+### Fedora Linux (Primary Target — Fedora 44 & Fedora 45 x86_64)
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-22.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-22.0.0-win-x64-portable.exe`) without installation.
+The primary supported platform for Loofi Creator Studio is **Fedora Linux** (Fedora 44 and Fedora 45 on x86_64 / Wayland / KDE).
 
-### Fedora RPM from GitHub
-
-```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.rpm
-```
-
-### Fedora COPR
+#### Fedora COPR (Recommended)
 
 ```bash
 sudo dnf copr enable loofitheboss/loofi-creator-studio
@@ -247,16 +241,37 @@ sudo dnf install veo-prompt-generator
 ```
 
 The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
-publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
-checks `SHA256SUMS.txt` before COPR builds the package. Package availability follows COPR metadata; run `sudo dnf upgrade veo-prompt-generator`
+publishes verified packages for Fedora 44 and Fedora 45 x86_64. Package availability follows COPR metadata; run `sudo dnf upgrade veo-prompt-generator`
 if an older package is already installed.
 
-### Linux AppImage
+#### Fedora RPM from GitHub
+
+```bash
+sudo dnf install ./Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.rpm
+```
+
+#### Linux AppImage
 
 ```bash
 chmod +x Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.AppImage
 ./Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.AppImage
 ```
+
+### Windows (Optional / Manual Build Only)
+
+Windows binaries are not built or published by automated CI. Loofi Creator Studio prioritizes native Fedora Linux RPM and AppImage workflows. Users who want Windows binaries can build them manually:
+
+```bash
+# On a Windows x64 machine:
+npm ci
+npm run build
+npx electron-builder --win
+```
+
+Output binaries will be generated in `release/`:
+
+- NSIS installer: `Loofi-Flow-Veo-Studio-22.0.0-win-x64-setup.exe`
+- Portable executable: `Loofi-Flow-Veo-Studio-22.0.0-win-x64-portable.exe`
 
 ## Offline Video & Publication Guides
 

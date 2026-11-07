@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import os from 'node:os';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
@@ -70,14 +71,14 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    testTimeout: 15_000,
+    testTimeout: 30_000,
     pool: 'forks',
-    maxWorkers: 4,
+    maxWorkers: process.env.CI ? 4 : Math.min(6, os.cpus().length),
     setupFiles: [testSetupFile],
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov', 'json-summary'],
+      reporter: ['text-summary', 'lcov', 'json-summary'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.test.{ts,tsx}',

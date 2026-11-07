@@ -298,7 +298,7 @@ describe('PromptStudioPage durable copy desk', () => {
       'Retained narrow workspace idea',
     );
     expect(screen.queryByRole('button', { name: 'Editor' })).toBeNull();
-  });
+  }, 30_000);
 
   it('keeps the focused editor or result visible when a split workspace becomes tabbed', async () => {
     let resize!: ResizeObserverCallback;

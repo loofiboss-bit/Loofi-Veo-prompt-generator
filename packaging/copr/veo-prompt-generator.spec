@@ -79,6 +79,11 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Sat Nov 07 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.0.0-1
+- Release v22.0.0: AI Video Iteration Loop with Gemini Omni 1.2 Flash and smart version lineage.
+- Add local-first creative assistant, timeline iteration badges, and native Wayland/VA-API acceleration.
+- Support Fedora 44 and Fedora 45 x86_64 targets.
+
 * Thu Oct 29 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 21.1.0-1
 - Package Prompt Studio Gemini AI enhancement, modernized target engines and review workflows.
 - Preserve matching release checksums and explicit Fedora runtime requirements.
