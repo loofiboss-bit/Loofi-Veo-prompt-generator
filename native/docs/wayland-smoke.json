@@ -1,0 +1,753 @@
+{
+  "session": "wayland",
+  "checks": [
+    "sessions_project_create",
+    "native_file_dialog_select",
+    "video_play_pause",
+    "native_file_dialog_cancel",
+    "camera_navigation"
+  ],
+  "portalRequested": "0",
+  "dialogName": "Open a local video",
+  "dialogTree": [
+    {
+      "name": "Open a local video",
+      "role": "dialog"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "",
+      "role": "split pane"
+    },
+    {
+      "name": "Places",
+      "role": "panel"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "",
+      "role": "unknown"
+    },
+    {
+      "name": "",
+      "role": "unknown"
+    },
+    {
+      "name": "",
+      "role": "list"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "",
+      "role": "tool bar"
+    },
+    {
+      "name": "Error",
+      "role": "panel"
+    },
+    {
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "Name:",
+      "role": "label"
+    },
+    {
+      "name": "Name:",
+      "role": "combo box"
+    },
+    {
+      "name": "File type:",
+      "role": "label"
+    },
+    {
+      "name": "Video files",
+      "role": "combo box"
+    },
+    {
+      "name": "",
+      "role": "check box"
+    },
+    {
+      "name": "Open",
+      "role": "button"
+    },
+    {
+      "name": "Cancel",
+      "role": "button"
+    },
+    {
+      "name": "Home",
+      "role": "list item"
+    },
+    {
+      "name": "Desktop",
+      "role": "list item"
+    },
+    {
+      "name": "Documents",
+      "role": "list item"
+    },
+    {
+      "name": "Downloads",
+      "role": "list item"
+    },
+    {
+      "name": "Trash",
+      "role": "list item"
+    },
+    {
+      "name": "Network",
+      "role": "list item"
+    },
+    {
+      "name": "Recent Files",
+      "role": "list item"
+    },
+    {
+      "name": "Recent Locations",
+      "role": "list item"
+    },
+    {
+      "name": "fedora",
+      "role": "list item"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "",
+      "role": "split pane"
+    },
+    {
+      "name": "",
+      "role": "progress bar"
+    },
+    {
+      "name": "",
+      "role": "push button menu"
+    },
+    {
+      "name": "Back",
+      "role": "button"
+    },
+    {
+      "name": "Forward",
+      "role": "button"
+    },
+    {
+      "name": "Parent Folder",
+      "role": "button"
+    },
+    {
+      "name": "Reload",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "Icons View",
+      "role": "check box"
+    },
+    {
+      "name": "Compact View",
+      "role": "check box"
+    },
+    {
+      "name": "Details View",
+      "role": "check box"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "Show Preview",
+      "role": "check box"
+    },
+    {
+      "name": "Sorting",
+      "role": "push button menu"
+    },
+    {
+      "name": "Bookmarks",
+      "role": "push button menu"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "Zoom Out",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "slider"
+    },
+    {
+      "name": "Zoom In",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "Options",
+      "role": "push button menu"
+    },
+    {
+      "name": "",
+      "role": "label"
+    },
+    {
+      "name": "",
+      "role": "label"
+    },
+    {
+      "name": "Close",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "check box"
+    },
+    {
+      "name": "",
+      "role": "text"
+    },
+    {
+      "name": "",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "list"
+    },
+    {
+      "name": "",
+      "role": "text"
+    },
+    {
+      "name": "",
+      "role": "list"
+    },
+    {
+      "name": "",
+      "role": "text"
+    },
+    {
+      "name": "Places",
+      "role": "push button menu"
+    },
+    {
+      "name": "",
+      "role": "push button menu"
+    },
+    {
+      "name": "Go to Location on Path",
+      "role": "button"
+    },
+    {
+      "name": "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/",
+      "role": "combo box"
+    },
+    {
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "name": "Edit mode",
+      "role": "check box"
+    },
+    {
+      "name": "Home",
+      "role": "button"
+    },
+    {
+      "name": "Skrivbord",
+      "role": "button"
+    },
+    {
+      "name": "Loofi Work",
+      "role": "button"
+    },
+    {
+      "name": "Loofi-Creator-Studio-Native-M0",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "tree"
+    },
+    {
+      "name": "",
+      "role": "unknown"
+    },
+    {
+      "name": "",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "button"
+    },
+    {
+      "name": "Undo filename change",
+      "role": "button"
+    },
+    {
+      "name": "Video files",
+      "role": "list item"
+    },
+    {
+      "name": "All files",
+      "role": "list item"
+    },
+    {
+      "name": "",
+      "role": "button"
+    },
+    {
+      "name": "",
+      "role": "list"
+    },
+    {
+      "name": "",
+      "role": "text"
+    },
+    {
+      "name": "Name",
+      "role": "table column header"
+    },
+    {
+      "name": "Size",
+      "role": "table column header"
+    },
+    {
+      "name": "Date",
+      "role": "table column header"
+    },
+    {
+      "name": "Permissions",
+      "role": "table column header"
+    },
+    {
+      "name": "Owner",
+      "role": "table column header"
+    },
+    {
+      "name": "Group",
+      "role": "table column header"
+    },
+    {
+      "name": "Type",
+      "role": "table column header"
+    },
+    {
+      "name": "assets",
+      "role": "table cell"
+    },
+    {
+      "name": "50 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "build",
+      "role": "table cell"
+    },
+    {
+      "name": "44 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "docs",
+      "role": "table cell"
+    },
+    {
+      "name": "658 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "e2e",
+      "role": "table cell"
+    },
+    {
+      "name": "1010 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "electron",
+      "role": "table cell"
+    },
+    {
+      "name": "902 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "examples",
+      "role": "table cell"
+    },
+    {
+      "name": "14 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "native",
+      "role": "table cell"
+    },
+    {
+      "name": "234 B",
+      "role": "table cell"
+    },
+    {
+      "name": "12 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "node_modules",
+      "role": "table cell"
+    },
+    {
+      "name": "17.9 KiB",
+      "role": "table cell"
+    },
+    {
+      "name": "7 10 2026 at 09:41",
+      "role": "table cell"
+    },
+    {
+      "name": "lrwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "packaging",
+      "role": "table cell"
+    },
+    {
+      "name": "34 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "public",
+      "role": "table cell"
+    },
+    {
+      "name": "96 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "scripts",
+      "role": "table cell"
+    },
+    {
+      "name": "1.5 KiB",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "src",
+      "role": "table cell"
+    },
+    {
+      "name": "226 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "templates",
+      "role": "table cell"
+    },
+    {
+      "name": "42 B",
+      "role": "table cell"
+    },
+    {
+      "name": "29 minutes ago",
+      "role": "table cell"
+    },
+    {
+      "name": "drwxr-xr-x",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "loofi",
+      "role": "table cell"
+    },
+    {
+      "name": "Folder",
+      "role": "table cell"
+    },
+    {
+      "name": "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/",
+      "role": "list item"
+    },
+    {
+      "name": "",
+      "role": "button"
+    }
+  ],
+  "qtDialogLog": "Failed to open VDPAU backend libvdpau_nvidia.so: cannot open shared object file: No such file or directory\nlibva info: VA-API version 1.23.0\nlibva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so\nlibva info: Found init function __vaDriverInit_1_23\nlibva info: va_openDriver() returns 0\nlibva info: VA-API version 1.23.0\nlibva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so\nlibva info: Found init function __vaDriverInit_1_23\nlibva info: va_openDriver() returns 0\nNATIVE_DIALOG_HELPER\tKFileWidget\nNATIVE_DIALOG_HELPER\tKFileWidget\nNATIVE_DIALOG_HELPER\tKFileWidget\nNATIVE_DIALOG_HELPER\tKFileWidget\nNATIVE_DIALOG_HELPER\tKFileWidget\nInput #0, matroska,webm, from '/tmp/native-m0-fixtures/benchmark.webm':\n  Metadata:\n    ENCODER         : Lavf62.12.103\n  Duration: 00:00:30.00, start: 0.000000, bitrate: 1030 kb/s\n  Stream #0:0: Video: vp8, yuv420p(tv, progressive), 1280x720, SAR 1:1 DAR 16:9, 30 fps, 30 tbr, 1k tbn\n    Metadata:\n      ENCODER         : Lavc62.28.103 libvpx\n      DURATION        : 00:00:30.000000000\nNATIVE_DIALOG_HELPER\tKFileWidget\nNATIVE_DIALOG_HELPER\tKFileWidget\n",
+  "status": "passed",
+  "nativeHelper": "KFileWidget (KDE platform helper, confirmed through public QWidget runtime metadata)"
+}

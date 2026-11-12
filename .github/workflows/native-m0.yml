@@ -1,0 +1,25 @@
+name: Native M0
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/native-m0]
+    paths: [native/**, .github/workflows/native-m0.yml]
+  pull_request:
+    paths: [native/**, .github/workflows/native-m0.yml]
+permissions:
+  contents: read
+jobs:
+  fedora-native:
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and test dependencies
+        run: dnf5 install -y gcc-c++ cmake ninja-build curl git rust cargo rustfmt clippy lld qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtmultimedia-devel qt6-qtquick3d-devel qt6-qtshadertools-devel mesa-dri-drivers ffmpeg-free xorg-x11-server-Xvfb python3
+      - name: Verify Rust and native Qt integration
+        working-directory: native
+        env:
+          QT_QPA_PLATFORM: xcb
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          QSG_RHI_BACKEND: opengl
+        run: xvfb-run -a bash scripts/verify.sh release
