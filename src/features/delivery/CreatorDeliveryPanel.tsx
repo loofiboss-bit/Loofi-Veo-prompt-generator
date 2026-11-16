@@ -1734,11 +1734,12 @@ export function CreatorDeliveryPanel() {
               <option value="replace">{t('v16.replace', 'Replace captions')}</option>
             </select>
           </label>
-          <label>
+          <label className="min-w-0 max-w-full flex flex-col gap-1">
             {t('delivery.importSrt', 'Import SRT')}
             <input
               type="file"
               accept=".srt"
+              className="w-full max-w-full min-w-0 text-xs"
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file)

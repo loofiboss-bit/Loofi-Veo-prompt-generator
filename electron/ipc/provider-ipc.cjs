@@ -178,6 +178,15 @@ function registerProviderIpc({
     }
     const maximumChargeUsd = validateProviderCostApproval(input);
     const state = input?.requestId ? registerRequest(event, input.requestId) : null;
+    const calc = input.costApproval.calculationInputs || {};
+    const videoSummary =
+      calc.videoDurationSeconds || calc.videoResolution
+        ? ` (${[calc.videoDurationSeconds ? `${calc.videoDurationSeconds}s` : '', calc.videoResolution || ''].filter(Boolean).join(' ')})`
+        : '';
+    const promptPreview = String(request.prompt || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 140);
     const result = await dialog.showMessageBox(getMainWindow(), {
       type: 'warning',
       buttons: ['Approve maximum', 'Cancel'],
@@ -186,7 +195,7 @@ function registerProviderIpc({
       noLink: true,
       title: 'Approve provider charge',
       message: `Approve a maximum charge of $${maximumChargeUsd.toFixed(6)} USD?`,
-      detail: `${request.providerModelId} · ${request.operation}\nUpper bound from ${input.costApproval.sourceUrl}\nVerified ${input.costApproval.verifiedDate}. This approval is single-use.`,
+      detail: `${request.providerModelId} · ${request.operation}${videoSummary}\n${promptPreview ? `Prompt: "${promptPreview}${String(request.prompt || '').trim().length > 140 ? '…' : ''}"\n` : ''}Upper bound from ${input.costApproval.sourceUrl}\nVerified ${input.costApproval.verifiedDate}. This approval is single-use.`,
     });
     if (result.response !== 0) {
       if (state?.senderId === event?.sender?.id) deleteRequest(input.requestId, state);
@@ -231,10 +240,13 @@ function registerProviderIpc({
       const approval = consumeApproval(input);
       if (approval) {
         validateProviderCostApproval({ ...input, costApproval: approval.costApproval });
-        request.config = {
-          ...request.config,
-          maxOutputTokens: approval.costApproval.calculationInputs.estimatedOutputTokens,
-        };
+        const approvedMaxTokens = approval.costApproval?.calculationInputs?.estimatedOutputTokens;
+        if (Number.isFinite(approvedMaxTokens)) {
+          request.config = {
+            ...request.config,
+            maxOutputTokens: approvedMaxTokens,
+          };
+        }
       }
       if (state?.controller.signal.aborted)
         throw new DOMException('Provider request cancelled.', 'AbortError');
@@ -277,6 +289,12 @@ function registerProviderIpc({
       }
       const approval = consumeApproval(input);
       validateProviderCostApproval({ ...input, costApproval: approval.costApproval });
+      const calc = approval.costApproval.calculationInputs || {};
+      request.config = {
+        ...request.config,
+        ...(calc.videoDurationSeconds !== undefined ? { duration: calc.videoDurationSeconds } : {}),
+        ...(calc.videoResolution !== undefined ? { resolution: calc.videoResolution } : {}),
+      };
       const apiKey = await keytar.getPassword(keytarService, 'gemini-api-key');
       if (state?.controller.signal.aborted)
         throw new DOMException('Provider request cancelled.', 'AbortError');

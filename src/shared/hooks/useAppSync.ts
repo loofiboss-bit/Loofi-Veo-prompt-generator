@@ -56,7 +56,8 @@ export const useAppSync = () => {
         state.productionBible !== previous.productionBible
       ) {
         const id = useProjectStore.getState().currentProjectId;
-        if (id) useProjectSaveStore.getState().markDirty(id);
+        const snapId = useEditorSessionStore.getState().projectSnapshot?.id;
+        if (id && snapId === id) useProjectSaveStore.getState().markDirty(id);
       }
     });
     return () => {

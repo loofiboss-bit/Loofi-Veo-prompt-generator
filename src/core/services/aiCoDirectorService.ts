@@ -189,7 +189,14 @@ export class AiCoDirectorService {
     const desktopProxy = getDesktopGeminiProxy();
     let ai: GoogleGenAI | null = desktopProxy;
 
-    if (!ai?.live?.connect) {
+    if (isDesktop) {
+      if (!ai?.live?.connect) {
+        logger.info(
+          'Desktop AI Co-Director Live bridge unavailable; staying in offline intent engine.',
+        );
+        return this.activateOfflineFallback();
+      }
+    } else if (!ai?.live?.connect) {
       const apiKey = await getStoredApiKeyAsync();
       if (apiKey) {
         ai = new GoogleGenAI({ apiKey });

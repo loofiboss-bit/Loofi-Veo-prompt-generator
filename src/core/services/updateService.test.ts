@@ -27,7 +27,6 @@ const mockElectron = {
   resetSafeMode: vi.fn(),
   logError: vi.fn(),
   logErrorFireAndForget: vi.fn(),
-  logErrorSync: vi.fn(),
   getNleStatus: vi.fn(),
   directExportToNle: vi.fn(),
 };

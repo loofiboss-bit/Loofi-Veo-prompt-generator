@@ -173,3 +173,48 @@ test('validates payload hash and rejects tampering after cost approval', () => {
   };
   assert.throws(() => validateCostApproval(tamperedDurationTask), /Payload hash mismatch/);
 });
+
+test('locks video request config duration and resolution to approved cost calculation inputs', () => {
+  const omniRequest = {
+    provider: 'gemini-api',
+    providerModelId: 'gemini-omni-1.2-flash',
+    operation: 'video-edit',
+    prompt: 'Refine lighting while preserving motion.',
+    config: { duration: 8, resolution: '720p' },
+    costApproval: {
+      maximumChargeUsd: 0.81688,
+      currency: 'USD',
+      confidence: 'upper-bound',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      providerModelId: 'gemini-omni-1.2-flash',
+      calculationInputs: {
+        estimatedInputTokens: 4_000,
+        estimatedOutputTokens: 1,
+        videoDurationSeconds: 8,
+        videoResolution: '720p',
+      },
+    },
+  };
+
+  assert.equal(calculateProviderMaximumCharge(omniRequest), 0.81688);
+  assert.equal(validateProviderCostApproval(omniRequest), 0.81688);
+
+  assert.throws(
+    () =>
+      calculateProviderMaximumCharge({
+        ...omniRequest,
+        config: { duration: 15, resolution: '720p' },
+      }),
+    /Provider video config duration does not match approved calculation inputs/,
+  );
+
+  assert.throws(
+    () =>
+      calculateProviderMaximumCharge({
+        ...omniRequest,
+        config: { duration: 8, resolution: '4k' },
+      }),
+    /Provider video config resolution does not match approved calculation inputs/,
+  );
+});

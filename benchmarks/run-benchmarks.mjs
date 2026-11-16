@@ -4,6 +4,7 @@ import { runMediaBenchmark } from './benchmark-media.mjs';
 import { runRenderBenchmark } from './benchmark-render.mjs';
 import { runStartupBenchmark } from './benchmark-startup.mjs';
 import { runArchiveBenchmark } from './benchmark-archive.mjs';
+import { runSqliteBenchmark } from './benchmark-sqlite.mjs';
 import { environment } from './measure.mjs';
 
 const help = `Usage: npm run benchmark -- [--output PATH] [--runs 5]
@@ -52,6 +53,39 @@ async function main() {
     report.scenarios.media = await runMediaBenchmark({ runs: Number(options.runs || 5) });
     report.scenarios.render = await runRenderBenchmark({ runs: Number(options.runs || 5) });
     report.scenarios.archive = await runArchiveBenchmark({ runs: Number(options.runs || 5) });
+    report.scenarios.sqlite = await runSqliteBenchmark({ runs: Number(options.runs || 5) });
+    const budgets = {
+      sqliteMedianMs: 15,
+      archiveMedianMs: 5_000,
+      mediaResolveMedianMs: 2_000,
+      renderZipMedianMs: 5_000,
+    };
+    report.budgets = budgets;
+    if ((report.scenarios.sqlite?.medianMs ?? Infinity) >= budgets.sqliteMedianMs) {
+      throw new Error(
+        `SQLite 50-scene median ${report.scenarios.sqlite?.medianMs}ms exceeded budget ${budgets.sqliteMedianMs}ms.`,
+      );
+    }
+    if ((report.scenarios.archive?.medians?.durationMs ?? Infinity) >= budgets.archiveMedianMs) {
+      throw new Error(
+        `Archive streaming median ${report.scenarios.archive?.medians?.durationMs}ms exceeded budget ${budgets.archiveMedianMs}ms.`,
+      );
+    }
+    if (
+      (report.scenarios.media?.medians?.resolve?.durationMs ?? Infinity) >=
+      budgets.mediaResolveMedianMs
+    ) {
+      throw new Error(
+        `Media resolve median ${report.scenarios.media?.medians?.resolve?.durationMs}ms exceeded budget ${budgets.mediaResolveMedianMs}ms.`,
+      );
+    }
+    if (
+      (report.scenarios.render?.medians?.zip?.durationMs ?? Infinity) >= budgets.renderZipMedianMs
+    ) {
+      throw new Error(
+        `Render ZIP median ${report.scenarios.render?.medians?.zip?.durationMs}ms exceeded budget ${budgets.renderZipMedianMs}ms.`,
+      );
+    }
     report.scenarios.startup = options['baseline-executable']
       ? await runStartupBenchmark({
           baselineExecutable: options['baseline-executable'],

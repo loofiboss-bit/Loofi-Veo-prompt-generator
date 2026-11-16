@@ -20,12 +20,16 @@ interface JobQueueState {
   jobs: ReadonlyArray<Job>;
   /** Whether the service has hydrated from IndexedDB */
   hydrated: boolean;
+  /** Whether subscription has initialized */
+  initialized: boolean;
   /** Count of active + queued jobs (for badge display) */
   pendingCount: number;
 
   // ── Actions ──────────────────────────────────────────────────────────
   /** Initialize: hydrate from IDB and subscribe to changes */
   initialize: () => Promise<void>;
+  /** Reset store initialization state */
+  reset: () => void;
   /** Enqueue a new job */
   enqueue: (
     type: JobType,
@@ -43,16 +47,15 @@ interface JobQueueState {
   clearHistory: () => Promise<void>;
 }
 
-let initialized = false;
-
-export const useJobQueueStore = create<JobQueueState>()((set) => ({
+export const useJobQueueStore = create<JobQueueState>()((set, get) => ({
   jobs: [],
   hydrated: false,
+  initialized: false,
   pendingCount: 0,
 
   initialize: async () => {
-    if (initialized) return;
-    initialized = true;
+    if (get().initialized) return;
+    set({ initialized: true });
 
     // Subscribe to live updates from the service
     jobQueueService.subscribe((jobs) => {
@@ -64,6 +67,10 @@ export const useJobQueueStore = create<JobQueueState>()((set) => ({
 
     await jobQueueService.hydrate();
     set({ hydrated: true });
+  },
+
+  reset: () => {
+    set({ jobs: [], hydrated: false, initialized: false, pendingCount: 0 });
   },
 
   enqueue: async (type, label, payload, priority) => {

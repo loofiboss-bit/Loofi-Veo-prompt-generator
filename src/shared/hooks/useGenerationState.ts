@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import type { PromptVariation, PromptState } from '@core/types';
 import * as geminiService from '@core/services/geminiService';
@@ -14,7 +15,7 @@ import { getApiErrorMessage } from '@core/utils/errorHandler';
 import { useAppStore } from '@core/store/useAppStore';
 
 interface UseGenerationStateOptions {
-  promptState: PromptState;
+  promptState?: PromptState;
   addToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
 }
 
@@ -25,7 +26,16 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
     // eslint-disable-next-line react-hooks/exhaustive-deps -- i18n is a stable singleton; only language changes matter
     [i18n.language],
   );
-  const store = useAppStore();
+  const store = useAppStore(
+    useShallow((state) => ({
+      openModal: state.openModal,
+      closeModal: state.closeModal,
+    })),
+  );
+  const getPromptState = useCallback(
+    () => promptState ?? useAppStore.getState().promptState,
+    [promptState],
+  );
 
   const [promptVariations, setPromptVariations] = useState<PromptVariation[]>([]);
   const [isGeneratingVariations, setIsGeneratingVariations] = useState(false);
@@ -43,11 +53,12 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
       setPromptVariations([]);
       store.openModal('isVariationsOpen');
       try {
+        const currentPrompt = getPromptState();
         const variations = await geminiService.generatePromptVariations(
           basePrompt,
-          promptState.language,
-          promptState.model,
-          promptState.targetModel,
+          currentPrompt.language,
+          currentPrompt.model,
+          currentPrompt.targetModel,
         );
         setPromptVariations(variations);
       } catch (error) {
@@ -57,14 +68,7 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
         setIsGeneratingVariations(false);
       }
     },
-    [
-      promptState.language,
-      promptState.model,
-      promptState.targetModel,
-      addToast,
-      errorsBundle,
-      store,
-    ],
+    [getPromptState, addToast, errorsBundle, store],
   );
 
   const handleBrainstormIdeas = useCallback(async () => {
@@ -72,10 +76,11 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
     setPromptVariations([]);
     store.openModal('isVariationsOpen');
     try {
+      const currentPrompt = getPromptState();
       const ideas = await geminiService.suggestPromptIdeas(
-        promptState.idea,
-        promptState.language,
-        promptState.model,
+        currentPrompt.idea,
+        currentPrompt.language,
+        currentPrompt.model,
       );
       setPromptVariations(ideas);
     } catch (error) {
@@ -84,15 +89,16 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
     } finally {
       setIsBrainstorming(false);
     }
-  }, [promptState.idea, promptState.language, promptState.model, addToast, errorsBundle, store]);
+  }, [getPromptState, addToast, errorsBundle, store]);
 
   const handleGenerateArt = useCallback(
     async (prompt: string) => {
       setIsGeneratingArt(true);
       setConceptArtImage(null);
       try {
+        const currentPrompt = getPromptState();
         const imageUrl = await geminiService.generateConceptArt(prompt, {
-          aspectRatio: promptState.aspectRatio,
+          aspectRatio: currentPrompt.aspectRatio,
         });
         setConceptArtImage(imageUrl);
         addToast(t('toasts:toastArtGenerated'), 'success');
@@ -102,7 +108,7 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
         setIsGeneratingArt(false);
       }
     },
-    [promptState.aspectRatio, addToast, t, errorsBundle],
+    [getPromptState, addToast, t, errorsBundle],
   );
 
   const handleGenerateStoryboard = useCallback(
@@ -110,7 +116,8 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
       setIsGeneratingStoryboard(true);
       setStoryboardImages([]);
       try {
-        const images = await geminiService.generateStoryboard(prompt, promptState.aspectRatio);
+        const currentPrompt = getPromptState();
+        const images = await geminiService.generateStoryboard(prompt, currentPrompt.aspectRatio);
         setStoryboardImages(images);
         addToast(t('toasts:toastStoryboardGenerated'), 'success');
       } catch (error) {
@@ -119,7 +126,7 @@ export function useGenerationState({ promptState, addToast }: UseGenerationState
         setIsGeneratingStoryboard(false);
       }
     },
-    [promptState.aspectRatio, addToast, t, errorsBundle],
+    [getPromptState, addToast, t, errorsBundle],
   );
 
   const resetGenerationState = useCallback(() => {

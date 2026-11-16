@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { videoVersionService } from './videoVersionService';
+import { productionRunService } from './productionRunService';
 import type { VideoIterationSession } from '@core/types/videoIteration';
 
 vi.mock('./videoIterationService', () => ({
@@ -148,5 +149,46 @@ describe('videoVersionService', () => {
         label: 'Shot 2 (v2)',
       }),
     );
+  });
+
+  it('bridges an iteration turn directly into a ProductionRun shot as a ProductionTake', async () => {
+    const getRunSpy = vi.spyOn(productionRunService, 'getRun').mockResolvedValue({
+      id: 'run-1',
+      projectId: 'p1',
+      sourceArtifactId: 'a1',
+      sourceVariantIndex: 0,
+      shots: [
+        {
+          id: 1,
+          generationRequest: {
+            mode: 'text-to-video',
+            modelId: 'veo-3.1-fast',
+            prompt: 'Original prompt',
+            aspectRatio: '16:9',
+            resolution: '720p',
+            durationSeconds: 8,
+            referenceAssetIds: [],
+          },
+          takes: [],
+        },
+      ],
+    } as never);
+    const appendSpy = vi
+      .spyOn(productionRunService, 'appendTakeToShot')
+      .mockResolvedValue({} as never);
+
+    const take = await videoVersionService.applyVersionToProductionTake('run-1', 1, {
+      ...mockSession.turns[1],
+      interactionId: 'int-omni-2',
+    });
+
+    expect(take.status).toBe('complete');
+    expect(take.interactionId).toBe('int-omni-2');
+    expect(take.localMediaKey).toBe('asset-2');
+    expect(take.request.executionMode).toBe('gemini-omni');
+    expect(appendSpy).toHaveBeenCalledWith('run-1', 1, expect.objectContaining({ id: take.id }));
+
+    getRunSpy.mockRestore();
+    appendSpy.mockRestore();
   });
 });

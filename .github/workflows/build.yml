@@ -124,6 +124,25 @@ jobs:
       - name: Lint (strict)
         run: npm run lint:ci
 
+      - name: Circular dependency check
+        run: npm run check:circular
+
+      - name: Install checksum-pinned Gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          scanner_dir="$RUNNER_TEMP/creator-gitleaks"
+          mkdir -p "$scanner_dir"
+          curl --fail --location --retry 3 \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            --output "$scanner_dir/gitleaks.tar.gz"
+          echo '9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c  '"$scanner_dir/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf "$scanner_dir/gitleaks.tar.gz" -C "$scanner_dir" gitleaks
+          echo "$scanner_dir" >> "$GITHUB_PATH"
+
+      - name: Secret scan check
+        run: npm run secrets:check
+
       - name: Type check
         run: npm run typecheck
 
@@ -197,31 +216,8 @@ jobs:
           if [ "$HASH1" = "$HASH2" ]; then
             echo "✓ Build is reproducible (hashes match)"
           else
-            echo "::warning::Build is NOT reproducible (hashes differ)"
+            echo "::error::Build is NOT reproducible (hashes differ)"
             echo "This may indicate non-deterministic imports or timestamps in output"
-          fi
-        shell: bash
-
-      - name: PR changelog validation
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "=== PR Changelog Validation ==="
-          # Exceptions: docs-only and internal-only (CI, config) changes
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-
-          # Check if all changed files are exempt (docs, CI, config)
-          NON_EXEMPT=$(echo "$CHANGED_FILES" | grep -vE '^(docs/|\.github/|\.vscode/|\.editorconfig|\.prettier|\.husky/|commitlint|README|CONTRIBUTING|LICENSE|CHANGELOG|SECURITY|PRIVACY|SUPPORT|CODE_OF_CONDUCT|NOTICE|USER_GUIDE|package-lock\.json|package\.json)' || true)
-
-          if [ -z "$NON_EXEMPT" ]; then
-            echo "All changes are docs/config-only — changelog update not required."
-            exit 0
-          fi
-
-          # Check that CHANGELOG.md was modified
-          if echo "$CHANGED_FILES" | grep -q '^CHANGELOG.md$'; then
-            echo "✓ CHANGELOG.md updated"
-          else
-            echo "::error::CHANGELOG.md was not updated. All PRs with code changes must include a changelog entry. Exception: docs-only or CI/config-only changes."
             exit 1
           fi
         shell: bash

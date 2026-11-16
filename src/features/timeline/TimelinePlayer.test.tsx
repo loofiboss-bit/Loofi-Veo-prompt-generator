@@ -22,24 +22,27 @@ const {
   mockDirectExportToResolve: vi.fn(),
 }));
 
+const mockAppStoreState = {
+  tracks: [],
+  clips: [
+    {
+      id: 'video_1',
+      resourceId: 1,
+      type: 'video',
+      duration: 5,
+    },
+  ],
+  zoomLevel: 1,
+  currentTime: 0,
+  setCurrentTime: mockSetCurrentTime,
+  syncTimelineFromShots: mockSyncTimelineFromShots,
+  updateTimelineClip: mockUpdateTimelineClip,
+  updateShot: mockUpdateShot,
+};
+
 vi.mock('@core/store/useAppStore', () => ({
-  useAppStore: () => ({
-    tracks: [],
-    clips: [
-      {
-        id: 'video_1',
-        resourceId: 1,
-        type: 'video',
-        duration: 5,
-      },
-    ],
-    zoomLevel: 1,
-    currentTime: 0,
-    setCurrentTime: mockSetCurrentTime,
-    syncTimelineFromShots: mockSyncTimelineFromShots,
-    updateTimelineClip: mockUpdateTimelineClip,
-    updateShot: mockUpdateShot,
-  }),
+  useAppStore: (selector?: (state: typeof mockAppStoreState) => unknown) =>
+    typeof selector === 'function' ? selector(mockAppStoreState) : mockAppStoreState,
 }));
 
 vi.mock('@shared/hooks/useVideoGeneration', () => ({

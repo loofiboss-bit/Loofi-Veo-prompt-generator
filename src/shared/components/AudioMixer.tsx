@@ -140,7 +140,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({
   };
 
   return (
-    <div className="bg-slate-800/90 backdrop-blur-xl p-5 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-md">
+    <div className="bg-slate-800/90 backdrop-blur-xl p-3 sm:p-5 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-full sm:max-w-md">
       <div className="flex justify-between items-center mb-5 border-b border-slate-700/50 pb-3">
         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
           <Icon name="sliders" className="w-4 h-4 text-cyan-400" />
@@ -154,7 +154,7 @@ const AudioMixer: React.FC<AudioMixerProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <VerticalSlider
           label="Dialogue"
           icon="user"

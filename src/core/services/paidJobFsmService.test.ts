@@ -145,4 +145,43 @@ describe('PaidJobFsmService', () => {
       expect(VALID_FSM_TRANSITIONS[startState]).toContain('CANCELLED');
     }
   });
+
+  it('synchronizes desktop engine jobs and tracks valid state transitions', () => {
+    const initial = fsm.syncDesktopJob({
+      id: 'desktop-job-1',
+      status: 'Queued',
+      prompt: 'Drone shot',
+      model: 'veo-3.1-quality',
+      payloadHash: 'hash-1',
+      approvalToken: 'app-1',
+    });
+    expect(initial.state).toBe('APPROVED');
+
+    const dispatching = fsm.syncDesktopJob({
+      id: 'desktop-job-1',
+      status: 'Submitting',
+      prompt: 'Drone shot',
+      payloadHash: 'hash-1',
+      approvalToken: 'app-1',
+    });
+    expect(dispatching.state).toBe('DISPATCHING');
+
+    const running = fsm.syncDesktopJob({
+      id: 'desktop-job-1',
+      status: 'Polling',
+      prompt: 'Drone shot',
+      providerOperationId: 'operations/1',
+    });
+    expect(running.state).toBe('RUNNING');
+
+    const completed = fsm.syncDesktopJob({
+      id: 'desktop-job-1',
+      status: 'Complete',
+      prompt: 'Drone shot',
+      providerOperationId: 'operations/1',
+      resultMediaUri: 'loofi-media://media/1',
+    });
+    expect(completed.state).toBe('COMPLETED');
+    expect(completed.history).toHaveLength(3);
+  });
 });

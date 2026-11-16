@@ -150,3 +150,146 @@ test('IPC contract parity: validates inputs and rejects malformed payloads befor
   );
   await assert.rejects(handlers.get('desktop-media-set-accepted')(null, null), /accepted payload/);
 });
+
+test('validateProjectBackupSaveInput rejects deep nesting, cycles, and oversized snapshots', () => {
+  const { validateProjectBackupSaveInput } = require('./ipc-validator.cjs');
+
+  // Deep nesting > 24 levels
+  let nested = { leaf: true };
+  for (let i = 0; i < 26; i += 1) {
+    nested = { child: nested };
+  }
+  assert.throws(
+    () => validateProjectBackupSaveInput({ projectId: 'p1', snapshot: nested }),
+    /exceeds 24 levels/,
+  );
+
+  // Circular reference
+  const circular = {};
+  circular.self = circular;
+  assert.throws(
+    () => validateProjectBackupSaveInput({ projectId: 'p1', snapshot: circular }),
+    /circular reference/,
+  );
+
+  // Oversized (> 15 MB) snapshot
+  const oversized = { blob: 'x'.repeat(15 * 1024 * 1024 + 1024) };
+  assert.throws(
+    () => validateProjectBackupSaveInput({ projectId: 'p1', snapshot: oversized }),
+    /exceeds .* bytes limit/,
+  );
+});
+
+test('update-ipc throttles intermediate download-progress events while guaranteeing 100%', async () => {
+  const { handlers, ipcMain } = ipcFixture();
+  const sentProgress = [];
+
+  const os = require('os');
+  const fs = require('fs');
+  const path = require('path');
+  const crypto = require('crypto');
+  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'loofi-upd-'));
+
+  try {
+    const chunkA = Buffer.from('hello ');
+    const chunkB = Buffer.from('world ');
+    const chunkC = Buffer.from('update!');
+    const full = Buffer.concat([chunkA, chunkB, chunkC]);
+    const expectedHash = crypto.createHash('sha256').update(full).digest('hex');
+
+    async function* bodyStream() {
+      yield chunkA;
+      yield chunkB;
+      yield chunkC;
+    }
+
+    registerUpdateIpc({
+      ipcMain,
+      app: { getPath: () => tmpDir, quit: () => {} },
+      shell: { openPath: async () => '' },
+      fs,
+      path,
+      fetchImpl: async (url) => {
+        if (String(url).includes('SHA')) {
+          return { ok: true, text: async () => `${expectedHash}  installer.AppImage` };
+        }
+        return {
+          ok: true,
+          headers: new Headers({ 'content-length': String(full.length) }),
+          body: bodyStream(),
+        };
+      },
+      validateReleaseAssetUrl: (u) => ({
+        url: new URL(u),
+        fileName: String(u).endsWith('SHA256SUMS.txt') ? 'SHA256SUMS.txt' : 'installer.AppImage',
+      }),
+      checksumFromManifest: () => expectedHash,
+      sha256File: async () => expectedHash,
+      getMainWindow: () => ({
+        webContents: {
+          send: (channel, value) => {
+            if (channel === 'download-progress') sentProgress.push(value);
+          },
+        },
+      }),
+    });
+
+    await handlers.get('download-update')(null, {
+      url: 'https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v1/installer.AppImage',
+      checksumUrl:
+        'https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/download/v1/SHA256SUMS.txt',
+    });
+
+    assert.equal(sentProgress.at(-1), 100);
+    assert.ok(sentProgress.length <= 2, `Expected throttled progress events, got ${sentProgress}`);
+  } finally {
+    await fs.promises.rm(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('project IPC exposes validated SQLite WAL endpoints and rejects malformed inputs', async () => {
+  const { handlers, ipcMain } = ipcFixture();
+  const commits = [];
+  const mockDb = {
+    openProject: (id) => ({ id, name: 'SQLite Opened' }),
+    listProjects: () => [{ id: 'proj-1', name: 'SQLite Listed' }],
+    commitDelta: (input) => {
+      commits.push(input);
+      return { projectId: input.projectId, documentRevision: 1, entityChanges: 1 };
+    },
+    snapshotBackup: async ({ backupDir, projectId }) => ({
+      id: `${projectId}.sqlite`,
+      path: backupDir,
+    }),
+  };
+
+  registerProjectIpc({
+    ipcMain,
+    dialog: { showOpenDialog: async () => ({ canceled: true, filePaths: [] }) },
+    getMainWindow: () => null,
+    getProjectBackupStore: () => null,
+    getProjectDatabase: () => mockDb,
+    getSnapshotBackupDir: () => '/tmp/db-backups',
+    configureRoot: async () => {},
+  });
+
+  await assert.rejects(handlers.get('project-db-open')(null, '../escape'), /alphanumeric/);
+  assert.deepEqual(await handlers.get('project-db-open')(null, 'proj-1'), {
+    id: 'proj-1',
+    name: 'SQLite Opened',
+  });
+  assert.equal((await handlers.get('project-db-list')()).length, 1);
+  await assert.rejects(
+    handlers.get('project-db-commit-delta')(null, { projectId: 'proj-1', expectedRevision: -1 }),
+    /expectedRevision/,
+  );
+  const committed = await handlers.get('project-db-commit-delta')(null, {
+    projectId: 'proj-1',
+    expectedRevision: 0,
+    delta: { upsertedShots: [{ id: 1 }] },
+  });
+  assert.equal(committed.documentRevision, 1);
+  assert.equal(commits.length, 1);
+  const snap = await handlers.get('project-db-snapshot-backup')(null, 'proj-1');
+  assert.equal(snap.id, 'proj-1.sqlite');
+});

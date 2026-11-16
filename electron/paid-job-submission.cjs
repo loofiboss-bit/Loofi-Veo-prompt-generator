@@ -7,6 +7,57 @@ const PROVIDER_MODELS = {
   'veo-3.1-fast': 'veo-3.1-fast-generate-preview',
   'veo-3.1-lite': 'veo-3.1-lite-generate-preview',
 };
+const VERTEX_VEO_MODELS = Object.freeze({
+  'veo-3.1-quality': 'veo-3.1-generate-001',
+  'veo-3.1-fast': 'veo-3.1-fast-generate-001',
+  'veo-3.1-lite': 'veo-3.1-lite-generate-001',
+  'veo-3.1-generate-001': 'veo-3.1-generate-001',
+  'veo-3.1-fast-generate-001': 'veo-3.1-fast-generate-001',
+  'veo-3.1-lite-generate-001': 'veo-3.1-lite-generate-001',
+});
+const VERTEX_DIRECT_VEO_MODELS = new Set([
+  'veo-3.1-generate-001',
+  'veo-3.1-fast-generate-001',
+  'veo-3.1-lite-generate-001',
+]);
+const DURABLE_OMNI_MODELS = new Set(['gemini-omni-1.2-flash']);
+const SAFE_PROJECT_ID = /^[a-z][a-z0-9-]{4,61}[a-z0-9]$/;
+const SAFE_LOCATION = /^[a-z]+-[a-z]+\d$/;
+
+function isOmniTask(task) {
+  return task?.jobKind !== 'music' && DURABLE_OMNI_MODELS.has(task?.request?.modelId);
+}
+
+function isVertexVeoTask(task) {
+  if (task?.jobKind === 'music' || isOmniTask(task)) return false;
+  const modelId = task?.request?.modelId;
+  if (!modelId) return false;
+  if (VERTEX_DIRECT_VEO_MODELS.has(modelId)) return true;
+  if (
+    task?.provider === 'vertex-ai' ||
+    task?.request?.provider === 'vertex-ai' ||
+    task?.providerProfile?.provider === 'vertex-ai'
+  ) {
+    return Object.hasOwn(VERTEX_VEO_MODELS, modelId);
+  }
+  return false;
+}
+
+function resolveVertexTarget(task) {
+  const profile =
+    task?.providerProfile || task?.request?.vertexProfile || task?.vertexProfile || {};
+  const projectId = String(profile.projectId || '');
+  const location = String(profile.location || '');
+  if (!SAFE_PROJECT_ID.test(projectId)) {
+    throw new Error('Invalid Vertex AI project ID.');
+  }
+  if (location !== 'global' && !SAFE_LOCATION.test(location)) {
+    throw new Error('Invalid Vertex AI location.');
+  }
+  const host =
+    location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
+  return { projectId, location, host };
+}
 
 function buildMusicSubmission(task) {
   const { request } = task;
@@ -28,6 +79,49 @@ function buildMusicSubmission(task) {
     model: request.modelId,
     input,
     ...(request.responseFormat === 'wav' ? { response_format: { type: 'audio' } } : {}),
+  };
+}
+
+function buildOmniSubmission(task) {
+  const request = task.request || {};
+  const inputs = task.executionInputs || {};
+  const promptText = request.prompt || task.prompt || '';
+  const imageItems = [];
+  const firstFrame = inputs.firstFrame || task.inputImage;
+  if (firstFrame?.data) {
+    imageItems.push({ type: 'image', mime_type: firstFrame.mimeType, data: firstFrame.data });
+  }
+  if (inputs.lastFrame?.data) {
+    imageItems.push({
+      type: 'image',
+      mime_type: inputs.lastFrame.mimeType,
+      data: inputs.lastFrame.data,
+    });
+  }
+  for (const image of inputs.referenceImages || []) {
+    if (image?.data) {
+      imageItems.push({ type: 'image', mime_type: image.mimeType, data: image.data });
+    }
+  }
+  const input = imageItems.length
+    ? [{ type: 'text', text: promptText }, ...imageItems]
+    : promptText;
+  const durationSeconds = request.durationSeconds || task.settings?.durationSeconds || 8;
+  const resolution = request.resolution || task.settings?.resolution || '720p';
+  const aspectRatio = request.aspectRatio || task.settings?.aspectRatio || '16:9';
+  return {
+    model: request.modelId,
+    input,
+    ...(request.interactionId ? { previous_interaction_id: request.interactionId } : {}),
+    background: true,
+    generation_config: {
+      response_format: {
+        type: 'video',
+        duration: `${durationSeconds}s`,
+        resolution,
+        ...(request.mode !== 'extension' && aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+      },
+    },
   };
 }
 
@@ -74,16 +168,45 @@ function buildSubmission(task) {
 
 function createPaidSubmission(task) {
   const music = task.jobKind === 'music';
+  const omni = isOmniTask(task);
+  const vertex = isVertexVeoTask(task);
   const modelId = task.request?.modelId;
+  if (music) {
+    return Object.freeze({
+      version: 2,
+      modelId,
+      operation: 'interactions',
+      url: `${API_BASE}/interactions`,
+      body: JSON.stringify(buildMusicSubmission(task)),
+    });
+  }
+  if (omni) {
+    return Object.freeze({
+      version: 2,
+      modelId,
+      operation: 'interactions',
+      url: `${API_BASE}/interactions`,
+      body: JSON.stringify(buildOmniSubmission(task)),
+    });
+  }
+  if (vertex) {
+    const vertexModel = VERTEX_VEO_MODELS[modelId] || modelId;
+    const { projectId, location, host } = resolveVertexTarget(task);
+    return Object.freeze({
+      version: 2,
+      modelId,
+      operation: 'predictLongRunning',
+      url: `https://${host}/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(vertexModel)}:predictLongRunning`,
+      body: JSON.stringify(buildSubmission(task)),
+    });
+  }
   const providerModel = PROVIDER_MODELS[modelId] || modelId;
   return Object.freeze({
     version: 2,
     modelId,
-    operation: music ? 'interactions' : 'predictLongRunning',
-    url: music
-      ? `${API_BASE}/interactions`
-      : `${API_BASE}/models/${encodeURIComponent(providerModel)}:predictLongRunning`,
-    body: JSON.stringify(music ? buildMusicSubmission(task) : buildSubmission(task)),
+    operation: 'predictLongRunning',
+    url: `${API_BASE}/models/${encodeURIComponent(providerModel)}:predictLongRunning`,
+    body: JSON.stringify(buildSubmission(task)),
   });
 }
 
@@ -107,8 +230,10 @@ function computePaidSubmissionHash(submission) {
 /** Do not block envelope readback, operation polling or media recovery for historical jobs. */
 function assertNewSubmissionAvailable(task, now = Date.now()) {
   const modelId = task.request?.modelId;
+  if (task.jobKind === 'music' || isOmniTask(task) || isVertexVeoTask(task)) {
+    return;
+  }
   if (
-    task.jobKind !== 'music' &&
     (Object.hasOwn(PROVIDER_MODELS, modelId) || Object.values(PROVIDER_MODELS).includes(modelId)) &&
     now >= Date.UTC(2026, 9, 22)
   ) {
@@ -142,8 +267,14 @@ function requireApprovedSubmission(task) {
 module.exports = {
   API_BASE,
   PROVIDER_MODELS,
+  VERTEX_VEO_MODELS,
+  DURABLE_OMNI_MODELS,
+  isOmniTask,
+  isVertexVeoTask,
+  resolveVertexTarget,
   buildSubmission,
   buildMusicSubmission,
+  buildOmniSubmission,
   createPaidSubmission,
   computePaidSubmissionHash,
   requireApprovedSubmission,

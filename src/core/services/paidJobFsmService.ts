@@ -43,15 +43,37 @@ export interface PaidJobFsmContext {
 }
 
 export const VALID_FSM_TRANSITIONS: Record<PaidJobFsmState, readonly PaidJobFsmState[]> = {
-  DRAFT: ['QUOTED', 'CANCELLED'],
-  QUOTED: ['APPROVED', 'QUOTED', 'DRAFT', 'CANCELLED'],
-  APPROVED: ['DISPATCHING', 'CANCELLED'],
+  DRAFT: ['QUOTED', 'FAILED', 'CANCELLED'],
+  QUOTED: ['APPROVED', 'QUOTED', 'DRAFT', 'FAILED', 'CANCELLED'],
+  APPROVED: ['DISPATCHING', 'FAILED', 'CANCELLED'],
   DISPATCHING: ['RUNNING', 'FAILED', 'CANCELLED'],
   RUNNING: ['COMPLETED', 'FAILED', 'CANCELLED'],
   COMPLETED: [],
-  FAILED: ['QUOTED', 'DRAFT'],
+  FAILED: ['QUOTED', 'DRAFT', 'APPROVED', 'RUNNING'],
   CANCELLED: [],
 };
+
+export function mapDesktopStatusToFsmState(
+  status: string,
+  hasPayloadHash = false,
+): PaidJobFsmState {
+  switch (status) {
+    case 'Submitting':
+      return 'DISPATCHING';
+    case 'Polling':
+    case 'Fetching':
+    case 'Processing':
+      return 'RUNNING';
+    case 'Complete':
+      return 'COMPLETED';
+    case 'Error':
+    case 'RecoveryRequired':
+    case 'MediaAtRisk':
+      return 'FAILED';
+    default:
+      return hasPayloadHash ? 'APPROVED' : 'DRAFT';
+  }
+}
 
 export class PaidJobFsmService {
   private static instance: PaidJobFsmService;
@@ -185,6 +207,65 @@ export class PaidJobFsmService {
 
   clear(): void {
     this.jobs.clear();
+  }
+
+  syncDesktopJob(task: {
+    id: string;
+    status: string;
+    prompt: string;
+    model?: string;
+    state?: PaidJobFsmState;
+    payloadHash?: string;
+    approvalToken?: string;
+    providerOperationId?: string;
+    resultMediaUri?: string;
+    error?: string;
+  }): PaidJobFsmContext {
+    const now = Date.now();
+    const state = task.state ?? mapDesktopStatusToFsmState(task.status, Boolean(task.payloadHash));
+    const existing = this.jobs.get(task.id);
+    if (!existing) {
+      const created: PaidJobFsmContext = {
+        id: task.id,
+        state,
+        prompt: task.prompt,
+        model: task.model ?? 'veo-3.1-fast',
+        payloadHash: task.payloadHash,
+        approvalToken: task.approvalToken,
+        providerOperationId: task.providerOperationId,
+        resultMediaUri: task.resultMediaUri,
+        error: task.error,
+        createdAt: now,
+        updatedAt: now,
+        history: [],
+      };
+      this.jobs.set(task.id, created);
+      return created;
+    }
+    if (existing.state !== state && VALID_FSM_TRANSITIONS[existing.state].includes(state)) {
+      return this.transition(
+        task.id,
+        state,
+        {
+          payloadHash: task.payloadHash ?? existing.payloadHash,
+          approvalToken: task.approvalToken ?? existing.approvalToken,
+          providerOperationId: task.providerOperationId ?? existing.providerOperationId,
+          resultMediaUri: task.resultMediaUri ?? existing.resultMediaUri,
+          error: task.error,
+        },
+        'Synchronized with Electron PaidJobEngine',
+      );
+    }
+    const updated: PaidJobFsmContext = {
+      ...existing,
+      state,
+      providerOperationId: task.providerOperationId ?? existing.providerOperationId,
+      resultMediaUri: task.resultMediaUri ?? existing.resultMediaUri,
+      error: task.error,
+      updatedAt: now,
+    };
+    this.jobs.set(task.id, updated);
+    return updated;
   }
 }
 

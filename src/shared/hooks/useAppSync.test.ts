@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { useAppStore } from '@core/store/useAppStore';
 import { PROJECT_SAVED_EVENT } from '@core/services/projectDocumentService';
 import { useAppSync } from './useAppSync';
@@ -47,5 +49,24 @@ describe('project window notifications', () => {
     const { unmount } = renderHook(() => useAppSync());
     unmount();
     expect(channel.close).toHaveBeenCalled();
+  });
+
+  it('ignores store updates during project switch when snapshot id mismatches currentProjectId', () => {
+    useProjectStore.setState({ currentProjectId: 'proj-new' });
+    useEditorSessionStore.setState({
+      projectSnapshot: {
+        ...useAppStore.getState().promptState,
+        id: 'proj-old',
+      } as unknown as NonNullable<
+        ReturnType<typeof useEditorSessionStore.getState>['projectSnapshot']
+      >,
+    });
+
+    renderHook(() => useAppSync());
+    useAppStore.setState({
+      promptState: { ...useAppStore.getState().promptState, idea: 'Switching project noise' },
+    });
+
+    expect(useProjectSaveStore.getState().projects['proj-new']?.status).not.toBe('unsaved');
   });
 });

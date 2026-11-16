@@ -6,6 +6,7 @@ const path = require('path');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const { pathToFileURL } = require('url');
+const { getSharedFfmpegQueue, resolveFfmpegBinary } = require('./ffmpeg-queue.cjs');
 const execFileAsync = promisify(execFile);
 
 const SAFE_KEY = /^[a-zA-Z0-9._:-]{1,180}$/;
@@ -31,6 +32,10 @@ function extensionForMime(mimeType) {
   if (mimeType?.includes('wav')) return '.wav';
   if (mimeType?.includes('webm')) return '.webm';
   if (mimeType?.includes('quicktime')) return '.mov';
+  if (mimeType?.includes('png')) return '.png';
+  if (mimeType?.includes('jpeg') || mimeType?.includes('jpg')) return '.jpg';
+  if (mimeType?.includes('webp')) return '.webp';
+  if (mimeType?.includes('json')) return '.json';
   return '.mp4';
 }
 
@@ -41,43 +46,61 @@ async function sha256File(filePath) {
   return hash.digest('hex');
 }
 
-async function generateVideoDerivatives(record) {
-  const stem = record.path.replace(/\.[^.]+$/, '');
-  const thumbnailPath = `${stem}.thumbnail.jpg`;
-  const proxyPath = `${stem}.proxy.mp4`;
-  await execFileAsync('ffmpeg', [
-    '-y',
-    '-ss',
-    '0.5',
-    '-i',
-    record.path,
-    '-frames:v',
-    '1',
-    '-vf',
-    'scale=640:-2',
-    thumbnailPath,
-  ]);
-  await execFileAsync('ffmpeg', [
-    '-y',
-    '-i',
-    record.path,
-    '-vf',
-    'scale=960:-2',
-    '-c:v',
-    'libx264',
-    '-preset',
-    'veryfast',
-    '-crf',
-    '28',
-    '-an',
-    proxyPath,
-  ]);
-  return {
-    thumbnailPath,
-    thumbnailUrl: pathToFileURL(thumbnailPath).href,
-    proxyPath,
-    proxyUrl: pathToFileURL(proxyPath).href,
+function createVideoDerivativeGenerator({
+  runtimeRoot,
+  queue = getSharedFfmpegQueue(2),
+  execFileImpl = execFileAsync,
+} = {}) {
+  return async function generateQueuedDerivatives(record) {
+    const ffmpegBin = resolveFfmpegBinary(runtimeRoot);
+    const stem = record.path.replace(/\.[^.]+$/, '');
+    const thumbnailPath = `${stem}.thumbnail.jpg`;
+    const proxyPath = `${stem}.proxy.mp4`;
+    return queue.enqueue(
+      async () => {
+        await execFileImpl(ffmpegBin, [
+          '-y',
+          '-ss',
+          '0.5',
+          '-i',
+          record.path,
+          '-frames:v',
+          '1',
+          '-vf',
+          'scale=640:-2',
+          thumbnailPath,
+        ]);
+        await execFileImpl(ffmpegBin, [
+          '-y',
+          '-i',
+          record.path,
+          '-vf',
+          'scale=960:-2',
+          '-c:v',
+          'libx264',
+          '-preset',
+          'veryfast',
+          '-crf',
+          '28',
+          '-an',
+          proxyPath,
+        ]);
+        return {
+          thumbnailPath,
+          thumbnailUrl: pathToFileURL(thumbnailPath).href,
+          proxyPath,
+          proxyUrl: pathToFileURL(proxyPath).href,
+        };
+      },
+      { priority: 'normal' },
+    );
   };
+}
+
+const defaultDerivativeGenerator = createVideoDerivativeGenerator();
+
+async function generateVideoDerivatives(record) {
+  return defaultDerivativeGenerator(record);
 }
 
 class DesktopMediaStore {
@@ -85,13 +108,65 @@ class DesktopMediaStore {
     this.rootPath = rootPath;
     this.fetchImpl = fetchImpl;
     this.derivativeGenerator = derivativeGenerator;
+    this._index = null;
+    this._indexLoadPromise = null;
   }
 
-  async cacheRemote({ key, url, apiKey, metadata = {} }) {
+  invalidateIndex() {
+    this._index = null;
+    this._indexLoadPromise = null;
+  }
+
+  async _ensureIndex() {
+    if (this._index) return this._index;
+    if (this._indexLoadPromise) return this._indexLoadPromise;
+
+    this._indexLoadPromise = (async () => {
+      const directory = path.join(this.rootPath, 'media');
+      let names;
+      try {
+        names = await fs.promises.readdir(directory);
+      } catch (error) {
+        if (error?.code === 'ENOENT') {
+          this._index = new Map();
+          return this._index;
+        }
+        throw error;
+      }
+      const nextIndex = new Map();
+      for (const name of names.filter((entry) => entry.endsWith('.json'))) {
+        try {
+          const record = JSON.parse(await fs.promises.readFile(path.join(directory, name), 'utf8'));
+          if (record?.schemaVersion === 1 && SAFE_KEY.test(String(record.key || ''))) {
+            nextIndex.set(record.key, record);
+          }
+        } catch {
+          // Corrupt metadata is surfaced as an orphan by cleanupPreview.
+        }
+      }
+      this._index = nextIndex;
+      return this._index;
+    })();
+
+    try {
+      return await this._indexLoadPromise;
+    } finally {
+      this._indexLoadPromise = null;
+    }
+  }
+
+  _setIndexRecord(record) {
+    if (this._index && record?.key) {
+      this._index.set(record.key, record);
+    }
+  }
+
+  async cacheRemote({ key, url, apiKey, headers, metadata = {} }) {
     if (!SAFE_KEY.test(String(key || ''))) throw new Error('Invalid media key.');
     const providerUrl = validateMediaUrl(url);
+    const requestHeaders = headers || (apiKey ? { 'x-goog-api-key': apiKey } : {});
     const response = await this.fetchImpl(providerUrl, {
-      headers: apiKey ? { 'x-goog-api-key': apiKey } : {},
+      headers: requestHeaders,
     });
     if (!response.ok) throw new Error(`Media download failed (${response.status}).`);
     const mimeType = response.headers.get('content-type') || 'video/mp4';
@@ -153,6 +228,7 @@ class DesktopMediaStore {
       mode: 0o600,
     });
     await fs.promises.rename(metadataTemp, metadataPath);
+    this._setIndexRecord(record);
     if (this.derivativeGenerator && mimeType.startsWith('video/')) {
       void this.generateDerivatives(record, metadataPath);
     }
@@ -197,6 +273,7 @@ class DesktopMediaStore {
     await fs.promises.writeFile(metadataTemp, JSON.stringify(record, null, 2), { mode: 0o600 });
     await fs.promises.rename(metadataTemp, metadataPath);
     if (!(await this.verify(record))) throw new Error('Migrated media verification failed.');
+    this._setIndexRecord(record);
     if (this.derivativeGenerator && mimeType.startsWith('video/')) {
       void this.generateDerivatives(record, metadataPath);
     }
@@ -211,6 +288,7 @@ class DesktopMediaStore {
       const temporary = `${metadataPath}.${process.pid}.derivatives.tmp`;
       await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
       await fs.promises.rename(temporary, metadataPath);
+      this._setIndexRecord(updated);
     } catch (error) {
       let current = record;
       try {
@@ -228,6 +306,7 @@ class DesktopMediaStore {
       const temporary = `${metadataPath}.${process.pid}.derivatives.tmp`;
       await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
       await fs.promises.rename(temporary, metadataPath);
+      this._setIndexRecord(updated);
     }
   }
 
@@ -239,39 +318,38 @@ class DesktopMediaStore {
     }
   }
 
-  async records() {
-    const directory = path.join(this.rootPath, 'media');
-    let names;
-    try {
-      names = await fs.promises.readdir(directory);
-    } catch (error) {
-      if (error?.code === 'ENOENT') return [];
-      throw error;
-    }
-    const records = [];
-    for (const name of names.filter((entry) => entry.endsWith('.json'))) {
-      try {
-        const record = JSON.parse(await fs.promises.readFile(path.join(directory, name), 'utf8'));
-        if (record?.schemaVersion === 1 && SAFE_KEY.test(String(record.key || '')))
-          records.push(record);
-      } catch {
-        // Corrupt metadata is surfaced as an orphan by cleanupPreview.
-      }
-    }
-    return records;
+  async readBytes(key) {
+    const record = await this.resolve(key, { verifyChecksum: true });
+    if (!record) return null;
+    return fs.promises.readFile(record.path);
   }
 
-  async resolve(key) {
+  async records() {
+    const index = await this._ensureIndex();
+    return Array.from(index.values());
+  }
+
+  async resolve(key, options = {}) {
     if (typeof key !== 'string') throw new Error('Invalid media key.');
-    const record = (await this.records()).find(
-      (item) => item.key === key || `desktop:${item.path}` === key || item.localUrl === key,
-    );
+    const verifyChecksum = options?.verifyChecksum !== false;
+    const index = await this._ensureIndex();
+    let record = index.get(key);
+    if (!record) {
+      for (const item of index.values()) {
+        if (`desktop:${item.path}` === key || item.localUrl === key) {
+          record = item;
+          break;
+        }
+      }
+    }
     if (!record) return null;
     const mediaDirectory = await fs.promises.realpath(path.join(this.rootPath, 'media'));
     const realPath = await fs.promises.realpath(record.path);
     if (!realPath.startsWith(`${mediaDirectory}${path.sep}`))
       throw new Error('Media path outside store.');
-    if (!(await this.verify(record))) throw new Error('Stored media checksum verification failed.');
+    if (verifyChecksum && !(await this.verify(record))) {
+      throw new Error('Stored media checksum verification failed.');
+    }
     return {
       key: record.key,
       path: realPath,
@@ -336,6 +414,7 @@ class DesktopMediaStore {
     const temporary = `${metadataPath}.${process.pid}.tmp`;
     await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
     await fs.promises.rename(temporary, metadataPath);
+    this._setIndexRecord(updated);
     return updated;
   }
 
@@ -360,6 +439,7 @@ class DesktopMediaStore {
     const temporary = `${target}.${process.pid}.tmp`;
     await fs.promises.writeFile(temporary, JSON.stringify(updated, null, 2), { mode: 0o600 });
     await fs.promises.rename(temporary, target);
+    this._setIndexRecord(updated);
     return updated;
   }
 
@@ -431,6 +511,7 @@ class DesktopMediaStore {
 
 module.exports = {
   DesktopMediaStore,
+  createVideoDerivativeGenerator,
   extensionForMime,
   generateVideoDerivatives,
   sha256File,

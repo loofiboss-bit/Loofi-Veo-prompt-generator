@@ -24,6 +24,7 @@ import { pluginStorageManager } from './plugin/pluginStorageManager';
 import { pluginHealthManager } from './plugin/pluginHealthManager';
 import { pluginTrustManager } from './plugin/pluginTrustManager';
 import { pluginContextFactory } from './plugin/pluginContextFactory';
+import { pluginSandboxService } from './pluginSandboxService';
 
 /** App version from build-time define (falls back for tests) */
 const APP_VERSION: string =
@@ -92,6 +93,9 @@ class PluginService implements PluginRegistry {
 
       // Determine trust level from signature verification
       const trustLevel = await pluginTrustManager.evaluateTrustLevel(manifest);
+      if (trustLevel === 'invalid') {
+        throw new Error(`Plugin ${manifest.id} failed cryptographic signature verification`);
+      }
 
       // Create plugin instance
       const plugin: Plugin = {
@@ -166,6 +170,11 @@ class PluginService implements PluginRegistry {
       await this.deactivate(pluginId);
     }
 
+    // Dispose sandbox if running externally
+    if (!plugin.instance) {
+      await pluginSandboxService.destroySandbox(pluginId);
+    }
+
     // Call dispose hook via typed StudioPlugin interface
     if (plugin.instance?.dispose) {
       try {
@@ -201,18 +210,28 @@ class PluginService implements PluginRegistry {
       return;
     }
 
+    if (plugin.trustLevel === 'invalid') {
+      throw new Error(`Cannot activate plugin ${pluginId} with an invalid signature`);
+    }
+
     try {
-      // Create plugin context
-      const context = this.createPluginContext(plugin);
-      plugin.context = context;
-
-      // Load plugin code (in a real implementation, this would dynamically import the plugin)
-      // For now, we'll just mark it as active
-      plugin.state = 'active';
-
-      // Call onActivate hook via typed StudioPlugin interface
-      if (plugin.instance?.activate) {
-        await plugin.instance.activate(context);
+      if (!plugin.instance) {
+        const sandbox = pluginSandboxService.getSandboxInfo(pluginId);
+        if (!sandbox || sandbox.config.mode === 'direct') {
+          throw new Error(
+            `External plugin "${pluginId}" must run inside an isolated worker sandbox.`,
+          );
+        }
+        await pluginSandboxService.activateSandbox(pluginId);
+        plugin.state = 'active';
+      } else {
+        // Internal first-party plugin running with explicit StudioPlugin instance
+        const context = this.createPluginContext(plugin);
+        plugin.context = context;
+        plugin.state = 'active';
+        if (plugin.instance.activate) {
+          await plugin.instance.activate(context);
+        }
       }
 
       // Add to enabled plugins
@@ -245,8 +264,10 @@ class PluginService implements PluginRegistry {
     }
 
     try {
-      // Call onDeactivate hook via typed StudioPlugin interface
-      if (plugin.instance?.deactivate) {
+      if (!plugin.instance) {
+        await pluginSandboxService.deactivateSandbox(pluginId);
+      } else if (plugin.instance.deactivate) {
+        // Call onDeactivate hook via typed StudioPlugin interface
         await plugin.instance.deactivate();
       }
 

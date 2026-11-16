@@ -249,20 +249,25 @@ describe('useLocationStore', () => {
   });
 
   describe('storeMediator integration', () => {
-    it('should emit locations:updated event when adding a location', () => {
+    it('emits only canonical location:bankChanged event without duplicate emissions when adding a location', () => {
       const handler = vi.fn();
-      const unsub = storeMediator.on('locations:updated', handler);
+      const legacyHandler = vi.fn();
+      const unsub = storeMediator.on('location:bankChanged', handler);
+      const unsubLegacy = storeMediator.on('locations:updated', legacyHandler);
 
       useLocationStore.getState().addLocation(mockLocation1);
 
+      expect(handler).toHaveBeenCalledOnce();
       expect(handler).toHaveBeenCalledWith({ locations: [mockLocation1] });
+      expect(legacyHandler).not.toHaveBeenCalled();
       unsub();
+      unsubLegacy();
     });
 
-    it('should emit locations:updated event when updating a location', () => {
+    it('emits canonical location:bankChanged event when updating a location', () => {
       useLocationStore.setState({ locations: [mockLocation1] });
       const handler = vi.fn();
-      const unsub = storeMediator.on('locations:updated', handler);
+      const unsub = storeMediator.on('location:bankChanged', handler);
 
       useLocationStore.getState().updateLocation('loc-1', { name: 'Updated Beach' });
 
@@ -272,10 +277,10 @@ describe('useLocationStore', () => {
       unsub();
     });
 
-    it('should emit locations:updated event when deleting a location', () => {
+    it('emits canonical location:bankChanged event when deleting a location', () => {
       useLocationStore.setState({ locations: [mockLocation1, mockLocation2] });
       const handler = vi.fn();
-      const unsub = storeMediator.on('locations:updated', handler);
+      const unsub = storeMediator.on('location:bankChanged', handler);
 
       useLocationStore.getState().deleteLocation('loc-1');
 
@@ -283,9 +288,9 @@ describe('useLocationStore', () => {
       unsub();
     });
 
-    it('should emit locations:updated event when setting locations', () => {
+    it('emits canonical location:bankChanged event when setting locations', () => {
       const handler = vi.fn();
-      const unsub = storeMediator.on('locations:updated', handler);
+      const unsub = storeMediator.on('location:bankChanged', handler);
 
       useLocationStore.getState().setLocations([mockLocation2]);
 

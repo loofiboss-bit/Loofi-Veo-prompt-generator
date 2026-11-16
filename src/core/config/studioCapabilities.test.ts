@@ -3,6 +3,7 @@ import type { VideoPromptArtifactInput } from '@core/types';
 import {
   LAB_CAPABILITIES,
   STUDIO_CAPABILITIES,
+  getStudioExecutionContract,
   studioGenerationBlocker,
   studioVideoRequest,
   studioVideoRequestIssues,
@@ -18,19 +19,37 @@ const input: VideoPromptArtifactInput = {
 
 describe('Studio execution capabilities', () => {
   it.each([
-    'flow-veo',
-    'omni-flash',
-    'kling',
-    'runway-gen3',
-    'sora',
-    'luma-ray',
-    'wan-video',
-    'minimax-hailuo',
-    'suno',
-  ] as const)('keeps %s manual and prevents an internal provider request', (target) => {
-    expect(STUDIO_CAPABILITIES[target].handoff).toBe('manual');
-    if (target !== 'suno')
-      expect(() => studioVideoRequest({ ...input, target })).toThrow(/manual copy/);
+    ['flow-veo', 'vertex-veo-ga', false],
+    ['omni-flash', 'gemini-omni', false],
+    ['kling', 'external-manual-slot', true],
+    ['runway-gen3', 'external-manual-slot', true],
+    ['luma-ray', 'external-manual-slot', true],
+    ['wan-video', 'external-manual-slot', true],
+    ['minimax-hailuo', 'external-manual-slot', true],
+  ] as const)(
+    'unblocks %s for production handoff under %s contract',
+    (target, expectedMode, expectedManualIngestion) => {
+      const sample: VideoPromptArtifactInput = {
+        ...input,
+        target,
+        durationSeconds: target === 'wan-video' ? 30 : target === 'luma-ray' ? 5 : 8,
+      };
+      expect(getStudioExecutionContract(sample)).toMatchObject({
+        executionMode: expectedMode,
+        target,
+        requiresManualMediaIngestion: expectedManualIngestion,
+      });
+      expect(studioGenerationBlocker(sample)).toBeNull();
+      const request = studioVideoRequest(sample);
+      expect(request.executionMode).toBe(expectedMode);
+      expect(request.target).toBe(target);
+    },
+  );
+
+  it('keeps Sora and retired Veo Preview blocked for handoff', () => {
+    expect(STUDIO_CAPABILITIES.suno.handoff).toBe('manual');
+    expect(studioGenerationBlocker({ ...input, target: 'sora' })).toMatch(/retired/i);
+    expect(() => studioVideoRequest({ ...input, target: 'sora' })).toThrow(/retired/i);
   });
 
   it.each([4, 6, 8] as const)(

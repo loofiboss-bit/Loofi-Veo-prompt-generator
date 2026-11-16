@@ -15,6 +15,7 @@ import { useHotkeys } from '@shared/hooks/useHotkeys';
 import ExportModal from '@features/export/ExportModal';
 import { ExportProfile } from '@core/config/exportProfiles';
 import { useAppStore } from '@core/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 import Timeline from './components/TimelineSurface';
 import { useVideoGeneration } from '@shared/hooks/useVideoGeneration';
 import {
@@ -87,7 +88,18 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     syncTimelineFromShots,
     updateTimelineClip,
     updateShot,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      tracks: state.tracks,
+      clips: state.clips,
+      zoomLevel: state.zoomLevel,
+      currentTime: state.currentTime,
+      setCurrentTime: state.setCurrentTime,
+      syncTimelineFromShots: state.syncTimelineFromShots,
+      updateTimelineClip: state.updateTimelineClip,
+      updateShot: state.updateShot,
+    })),
+  );
 
   const { startGeneration } = useVideoGeneration(() => {});
 
@@ -733,8 +745,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
     <div
       className={
         embedded
-          ? 'relative flex min-h-[640px] h-[calc(100dvh-9rem)] flex-col bg-black'
-          : 'fixed inset-0 bg-black z-[100] flex flex-col'
+          ? 'relative flex min-h-[640px] h-[calc(100dvh-9rem)] min-w-0 flex-col overflow-x-hidden bg-black'
+          : 'fixed inset-0 bg-black z-[100] flex min-w-0 flex-col overflow-x-hidden'
       }
     >
       {bgMusicUrl && <audio ref={musicRef} src={bgMusicUrl} loop crossOrigin="anonymous" />}
@@ -799,7 +811,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
 
       {/* Panels */}
       {!deliveryMode && showFilters && (
-        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
+        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto sm:overflow-y-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <FilterControls
               filters={filters}
@@ -821,7 +833,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {!deliveryMode && showVFX && (
-        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
+        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto sm:overflow-y-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <VFXPanel
               filters={filters}
@@ -844,7 +856,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {!deliveryMode && showChromaKey && (
-        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:inset-x-3 sm:mx-0 sm:ms-auto">
+        <div className="relative mx-3 max-w-md z-30 sm:absolute sm:top-24 sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto sm:overflow-y-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <ChromaKeyPanel
               config={effectiveChromaConfig}
@@ -857,7 +869,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
         </div>
       )}
       {!deliveryMode && showMixer && (
-        <div className="relative mx-3 max-w-md z-40 sm:absolute sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto">
+        <div className="relative mx-3 max-w-md z-40 sm:absolute sm:top-24 sm:bottom-[40%] sm:inset-x-3 sm:mx-0 sm:ms-auto sm:overflow-y-auto">
           <Suspense fallback={<ModalSkeleton />}>
             <AudioMixer
               volumes={audioMix}
@@ -880,8 +892,8 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       )}
 
       {/* Player View */}
-      <div className="flex-grow flex h-[60%] border-b border-slate-800 bg-slate-920 overflow-hidden">
-        <div className="flex-grow relative flex items-center justify-center bg-black">
+      <div className="flex-grow flex min-w-0 h-[60%] border-b border-slate-800 bg-slate-920 overflow-hidden">
+        <div className="flex-grow min-w-0 relative flex items-center justify-center bg-black">
           <div className="relative max-h-full max-w-full aspect-video shadow-2xl flex items-center justify-center w-full h-full">
             {effectiveChromaConfig.enabled && bgUrl && (
               <video
@@ -949,7 +961,7 @@ const TimelinePlayer: React.FC<TimelinePlayerProps> = ({
       </div>
 
       {/* Timeline Area */}
-      <div className="h-[40%] bg-slate-900 border-t border-slate-800 flex flex-col z-20 relative">
+      <div className="h-[40%] min-w-0 overflow-hidden bg-slate-900 border-t border-slate-800 flex flex-col z-20 relative">
         <div className="min-h-10 shrink-0 min-w-0 bg-slate-850 flex flex-wrap items-center gap-3 px-3 py-2 border-b border-slate-700 justify-between">
           <div className="flex gap-2">
             <button

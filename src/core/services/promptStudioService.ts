@@ -723,8 +723,15 @@ export const toVideoPromptState = (input: VideoPromptArtifactInput): PromptState
 
 /** Map a Prompt Studio video brief into the existing production-run contract. */
 export const promptArtifactToProductionState = (input: VideoPromptArtifactInput): PromptState => {
-  if (input.target !== 'veo-api') throw new Error('This model uses a manual copy handoff.');
-  return toVideoPromptState(input);
+  const profile = getTargetProfile(input.target, input.profileId);
+  if (profile.lifecycle === 'retired') {
+    throw new Error(`${profile.displayName} is retired. Choose an active target.`);
+  }
+  const base = toVideoPromptState(input);
+  return {
+    ...base,
+    veoModel: profile.profileId.includes('quality') ? 'quality' : 'fast',
+  };
 };
 
 const toSunoSettings = (input: MusicPromptArtifactInput): SunoSettings => ({

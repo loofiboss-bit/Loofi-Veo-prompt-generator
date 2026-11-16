@@ -10,6 +10,7 @@ interface ExternalStudioResultState {
   assets: Record<string, Asset>;
   pending: boolean;
   error: string | null;
+  _hydrationVersion: number;
   hydrate: (projectId: string) => Promise<void>;
   importVideo: (
     projectId: string,
@@ -30,9 +31,8 @@ interface ExternalStudioResultState {
   ) => Promise<void>;
 }
 
-let hydration = 0;
 export const useExternalStudioResultStore = create<ExternalStudioResultState>((set, get) => {
-  const load = async (projectId: string, version = hydration) => {
+  const load = async (projectId: string, version = get()._hydrationVersion) => {
     const results = await externalStudioResultService.list(projectId);
     const entries = await Promise.all(
       results.map(async (result) => {
@@ -40,7 +40,7 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
         return asset ? ([result.id, asset] as const) : null;
       }),
     );
-    if (version !== hydration || get().projectId !== projectId) return;
+    if (version !== get()._hydrationVersion || get().projectId !== projectId) return;
     const assets = Object.fromEntries(entries.filter((entry) => entry !== null));
     set({ results, assets });
     const resolvedAssets: Asset[] = results.map(
@@ -60,22 +60,19 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
       projectId,
       assets: resolvedAssets,
     });
-    for (const asset of resolvedAssets) {
-      storeMediator.emit('asset:upserted', { asset });
-    }
   };
   const operate = async (projectId: string, operation: () => Promise<unknown>) => {
     if (get().pending || get().projectId !== projectId) return;
-    const version = hydration;
+    const version = get()._hydrationVersion;
     set({ pending: true, error: null });
     try {
       await operation();
       await load(projectId, version);
     } catch (error) {
-      if (version === hydration)
+      if (version === get()._hydrationVersion)
         set({ error: error instanceof Error ? error.message : String(error) });
     } finally {
-      if (version === hydration) set({ pending: false });
+      if (version === get()._hydrationVersion) set({ pending: false });
     }
   };
   return {
@@ -84,15 +81,23 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
     assets: {},
     pending: false,
     error: null,
+    _hydrationVersion: 0,
     hydrate: async (projectId) => {
-      const version = ++hydration;
-      set({ projectId, results: [], assets: {}, pending: true, error: null });
+      const version = get()._hydrationVersion + 1;
+      set({
+        projectId,
+        results: [],
+        assets: {},
+        pending: true,
+        error: null,
+        _hydrationVersion: version,
+      });
       try {
         await load(projectId, version);
       } catch (error) {
-        if (version === hydration) set({ error: String(error) });
+        if (version === get()._hydrationVersion) set({ error: String(error) });
       } finally {
-        if (version === hydration) set({ pending: false });
+        if (version === get()._hydrationVersion) set({ pending: false });
       }
     },
     importVideo: (projectId, artifact, variant, file) =>
@@ -103,9 +108,9 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
       const projectId = get().projectId;
       if (!projectId || get().pending)
         throw new Error('Wait for the active project to finish loading.');
-      const version = hydration;
+      const version = get()._hydrationVersion;
       await externalStudioResultService.saveComparisonNotes(projectId, resultId, notes);
-      if (version === hydration && get().projectId === projectId)
+      if (version === get()._hydrationVersion && get().projectId === projectId)
         set({
           results: get().results.map((result) =>
             result.id === resultId ? { ...result, comparisonNotes: notes } : result,
@@ -139,12 +144,6 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
               options?.editorSnapshot,
             );
             if (isCurrent()) {
-              storeMediator.emit('studioResult:timelineAccepted', {
-                projectId,
-                shots: project.storyboard.shots,
-                tracks: project.storyboard.timeline.tracks,
-                clips: project.storyboard.timeline.clips,
-              });
               storeMediator.emit('timeline:synced', {
                 shots: project.storyboard.shots,
                 tracks: project.storyboard.timeline.tracks,

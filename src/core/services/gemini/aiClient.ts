@@ -88,9 +88,12 @@ export const resilientCall = async (
   const { endpoint, retryConfig, signal } = options;
 
   const completeRequest = apiHealthMonitorService.startRequest(endpoint);
+  const desktopApprovalGated =
+    typeof window !== 'undefined' && Boolean(window.electron?.approveProviderCost);
+  const maxRetries = desktopApprovalGated ? 0 : 3;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(fn, 3, 1000, {
+    const response = await retryOperation<GenerateContentResponse>(fn, maxRetries, 1000, {
       circuitBreakerEndpoint: endpoint,
       ...retryConfig,
       ...(signal ? { signal } : {}),

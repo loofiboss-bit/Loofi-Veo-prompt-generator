@@ -424,4 +424,32 @@ describe('continuityService', () => {
       ]),
     );
   });
+
+  it('populates deterministic ContinuitySeedRegistry seeds on compiled requests', () => {
+    const first = continuityService.compileShot({
+      shot: shot(),
+      bible: continuityService.createEmptyBible(1),
+      assets: [],
+      projectId: 'proj-alpha',
+      now: 10,
+    });
+    const second = continuityService.compileShot({
+      shot: shot(),
+      bible: continuityService.createEmptyBible(1),
+      assets: [],
+      projectId: 'proj-alpha',
+      now: 20,
+    });
+    const otherShot = continuityService.compileShot({
+      shot: shot({ id: 2 }),
+      bible: continuityService.createEmptyBible(1),
+      assets: [],
+      projectId: 'proj-alpha',
+      now: 20,
+    });
+
+    expect(first.request.seed).toBeGreaterThan(0);
+    expect(first.request.seed).toBe(second.request.seed);
+    expect(first.request.seed).not.toBe(otherShot.request.seed);
+  });
 });

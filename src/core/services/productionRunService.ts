@@ -787,6 +787,33 @@ class ProductionRunService {
     return createdTake;
   }
 
+  /** Appends an externally or iteratively generated take (e.g. Omni Flash revision) onto a shot. */
+  async appendTakeToShot(
+    runId: string,
+    shotId: number,
+    take: ProductionTake,
+  ): Promise<ProductionRun> {
+    return this.mutateRun(runId, (run) => {
+      if (!run.shots.some((shot) => shot.id === shotId)) {
+        throw new Error(`Production shot ${shotId} was not found.`);
+      }
+      const shots = run.shots.map((shot) =>
+        shot.id === shotId
+          ? {
+              ...shot,
+              status: this.deriveShotStatus(take.status),
+              takes: [...shot.takes, take],
+            }
+          : shot,
+      );
+      return {
+        ...run,
+        status: this.deriveRunStatus(shots, run.status),
+        shots,
+      };
+    });
+  }
+
   /** Comparison notes are editorial metadata, never a take or review transition. */
   async saveComparisonNotes(
     runId: string,

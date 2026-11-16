@@ -61,12 +61,12 @@ export function DeliveryStepper({
       {/* Visual Stepper Header */}
       <nav
         aria-label={t('delivery.stepsLabel', 'Delivery steps')}
-        className="flex items-center justify-between gap-2 overflow-x-auto pb-2"
+        className="relative flex flex-wrap items-center justify-between gap-2 pb-2"
       >
         {steps.map((step, idx) => {
           const isActive = step.number === currentStepNumber;
           return (
-            <div key={step.number} className="flex items-center gap-2 min-w-max">
+            <div key={step.number} className="relative flex items-center gap-2 min-w-0">
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                   step.completed

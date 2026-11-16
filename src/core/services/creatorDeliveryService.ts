@@ -86,7 +86,7 @@ function deliveryDiagnostic(
     target: clipId ? 'clip' : code === 'timeline-empty' ? 'media' : undefined,
   };
 }
-function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
+function clipDiagnostics(clip: TimelineClip, bakeEffects = false): CreatorDeliveryDiagnostic[] {
   const issues: CreatorDeliveryDiagnostic[] = [];
   const add = (code: string, message: string, action: string) =>
     issues.push(deliveryDiagnostic(code, `${clip.label}: ${message}`, action, clip.id));
@@ -104,10 +104,10 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
   if (clip.isLoading) add('media-loading', 'Media is still loading.', 'Wait for import to finish.');
   const unsupported: [boolean, string, string, string][] = [
     [
-      !!clip.effects?.some((effect) => effect.isEnabled),
+      !bakeEffects && !!clip.effects?.some((effect) => effect.isEnabled),
       'effects-unsupported',
       'Timeline effects',
-      'Disable enabled timeline effects.',
+      'Enable Bake effects or disable timeline effects.',
     ],
     [
       !!clip.keyframes?.length,
@@ -115,7 +115,12 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
       'Motion keyframes',
       'Remove motion keyframes.',
     ],
-    [!!clip.colorGrade, 'color-grading-unsupported', 'Color grading', 'Reset color grading.'],
+    [
+      !bakeEffects && !!clip.colorGrade,
+      'color-grading-unsupported',
+      'Color grading',
+      'Enable Bake effects or reset color grading.',
+    ],
     [!!clip.cameraEffect, 'camera-motion-unsupported', 'Camera motion', 'Remove camera motion.'],
     [
       !!clip.reactivity,
@@ -136,10 +141,10 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
       'Use a static clip volume.',
     ],
     [
-      clip.opacity !== undefined && clip.opacity !== 1,
+      !bakeEffects && clip.opacity !== undefined && clip.opacity !== 1,
       'opacity-unsupported',
       'Clip opacity',
-      'Reset clip opacity to 100%.',
+      'Enable Bake effects or reset clip opacity to 100%.',
     ],
     [
       !!clip.panning && (clip.panning.x !== 0 || clip.panning.z !== 0),
@@ -151,6 +156,7 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
   for (const [enabled, code, name, action] of unsupported)
     if (enabled) add(code, `${name} is not supported by local export.`, action);
   if (
+    !bakeEffects &&
     clip.transform &&
     (clip.transform.scale !== 1 ||
       clip.transform.rotation !== 0 ||
@@ -161,7 +167,7 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
     add(
       'transforms-unsupported',
       'Timeline transforms are not supported.',
-      'Reset timeline transforms and use export crop controls.',
+      'Enable Bake effects or reset timeline transforms.',
     );
   if (clip.transition && !['cut', 'dissolve', 'fade_black'].includes(clip.transition.type))
     add(
@@ -171,8 +177,8 @@ function clipDiagnostics(clip: TimelineClip): CreatorDeliveryDiagnostic[] {
     );
   return issues;
 }
-function checkClip(clip: TimelineClip) {
-  const first = clipDiagnostics(clip)[0];
+function checkClip(clip: TimelineClip, bakeEffects = false) {
+  const first = clipDiagnostics(clip, bakeEffects)[0];
   if (first) throw new CreatorRenderError(first.message, clip.id);
 }
 export interface CreatorDeliveryDiagnostic {
@@ -223,11 +229,14 @@ class CreatorDeliveryService {
       );
     if (!media.length)
       add('timeline-empty', 'Timeline has no media.', 'Import media and add a clip.');
-    if (!Number.isFinite(duration) || duration <= 0 || duration > 180)
+    const settings = project.creatorDelivery ?? defaultCreatorDelivery(project);
+    const maxDurationSeconds = Math.min(1800, Math.max(180, settings.maxDurationSeconds ?? 180));
+    const bakeEffects = Boolean(settings.bakeEffects);
+    if (!Number.isFinite(duration) || duration <= 0 || duration > maxDurationSeconds)
       add(
         'duration-invalid',
-        'Video must be between 0 and 180 seconds.',
-        'Trim the timeline to three minutes.',
+        `Video must be between 0 and ${maxDurationSeconds} seconds.`,
+        `Trim the timeline within ${maxDurationSeconds} seconds.`,
       );
     if (
       new Set(media.filter((clip) => clip.type !== 'audio').map((clip) => clip.trackId)).size !== 1
@@ -237,7 +246,6 @@ class CreatorDeliveryService {
         'Local export requires one main video/image track.',
         'Move visual clips to one main track.',
       );
-    const settings = project.creatorDelivery ?? defaultCreatorDelivery(project);
     const clipIds = new Set<string>();
     for (const clip of timeline.clips) {
       if (clipIds.has(clip.id))
@@ -258,7 +266,7 @@ class CreatorDeliveryService {
           'Set volume between zero and four.',
           clip.id,
         );
-      const crop = settings.crops[clip.id];
+      const crop = settings.crops?.[clip.id];
       if (
         crop &&
         (![crop.x, crop.y].every((value) => Number.isFinite(value) && value >= 0 && value <= 1) ||
@@ -278,7 +286,7 @@ class CreatorDeliveryService {
           'Shorten or reset the audio fades.',
           clip.id,
         );
-      diagnostics.push(...clipDiagnostics(clip));
+      diagnostics.push(...clipDiagnostics(clip, bakeEffects));
       if (!timeline.tracks.some((track) => track.id === clip.trackId))
         add(
           'track-missing',
@@ -439,9 +447,11 @@ class CreatorDeliveryService {
     );
     if (visualTracks.size !== 1)
       throw new Error('Local export requires one main video/image track.');
+    const maxDurationSeconds = Math.min(1800, Math.max(180, settings.maxDurationSeconds ?? 180));
+    const bakeEffects = Boolean(settings.bakeEffects);
     const duration = Math.max(...clips.map((clip) => clip.startTime + clip.duration));
-    if (!Number.isFinite(duration) || duration <= 0 || duration > 180)
-      throw new Error('Video must be between 0 and 180 seconds.');
+    if (!Number.isFinite(duration) || duration <= 0 || duration > maxDurationSeconds)
+      throw new Error(`Video must be between 0 and ${maxDurationSeconds} seconds.`);
     const visuals = clips
       .filter((clip) => clip.type !== 'audio')
       .sort((a, b) => a.startTime - b.startTime);
@@ -501,7 +511,7 @@ class CreatorDeliveryService {
     const output: TimelineRenderPlanV1['clips'] = [];
     const registered = new Set<string>();
     for (const clip of clips) {
-      checkClip(clip);
+      checkClip(clip, bakeEffects);
       if (!timeline.tracks.some((track) => track.id === clip.trackId))
         throw new CreatorRenderError('Clip track is missing.', clip.id);
       const selection = resolveOtioSelection(clip.resourceId, clip.selectedTakeId, run, clip.type);
@@ -578,6 +588,9 @@ class CreatorDeliveryService {
       }
       const transition = clip.transition;
       const fades = settings.audioFades?.[clip.id];
+      const grade = clip.colorGrade as
+        | { brightness?: number; contrast?: number; saturation?: number }
+        | undefined;
       output.push({
         id: clip.id,
         mediaId: key,
@@ -587,7 +600,29 @@ class CreatorDeliveryService {
         offset: clip.offset,
         volume: clip.volume ?? 1,
         crop: (targetAspectRatio && settings.formatCrops?.[targetAspectRatio]?.[clip.id]) ??
-          settings.crops[clip.id] ?? { mode: 'fit', x: 0.5, y: 0.5 },
+          settings.crops?.[clip.id] ?? { mode: 'fit', x: 0.5, y: 0.5 },
+        ...(bakeEffects && clip.opacity !== undefined && clip.opacity !== 1
+          ? { opacity: clip.opacity }
+          : {}),
+        ...(bakeEffects && grade
+          ? {
+              colorGrade: {
+                ...(grade.brightness !== undefined ? { brightness: grade.brightness } : {}),
+                ...(grade.contrast !== undefined ? { contrast: grade.contrast } : {}),
+                ...(grade.saturation !== undefined ? { saturation: grade.saturation } : {}),
+              },
+            }
+          : {}),
+        ...(bakeEffects && clip.transform
+          ? {
+              transform: {
+                scale: clip.transform.scale,
+                rotation: clip.transform.rotation,
+                x: clip.transform.position?.x ?? 0,
+                y: clip.transform.position?.y ?? 0,
+              },
+            }
+          : {}),
         ...(fades ? { fadeInSeconds: fades.inSeconds, fadeOutSeconds: fades.outSeconds } : {}),
         ...(transition?.type === 'dissolve' ? { crossfadeSeconds: transition.duration } : {}),
         ...(transition?.type === 'fade_black'
@@ -598,7 +633,7 @@ class CreatorDeliveryService {
     const captions = timeline.clips
       .filter((clip) => clip.type === 'text')
       .map((clip) => {
-        checkClip(clip);
+        checkClip(clip, bakeEffects);
         if (clip.offset !== 0 || (clip.transition && clip.transition.type !== 'cut'))
           throw new CreatorRenderError(
             `${clip.label}: Text offsets and transitions are not supported.`,
@@ -621,6 +656,7 @@ class CreatorDeliveryService {
       projectId: project.id,
       projectName: project.name,
       durationSeconds: duration,
+      ...(maxDurationSeconds > 180 ? { maxDurationSeconds } : {}),
       fps: 30 as const,
       aspectRatio: activeAspectRatio,
       resolution,

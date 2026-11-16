@@ -62,16 +62,53 @@ const readBlob = (blob: Blob): Promise<ArrayBuffer> =>
     reader.readAsArrayBuffer(blob);
   });
 
+const bytesToBase64 = (bytes: ArrayBuffer): string => {
+  const view = new Uint8Array(bytes);
+  if (!view.length) return '';
+  const chunks: string[] = [];
+  const chunkSize = 0x8000;
+  for (let i = 0; i < view.length; i += chunkSize) {
+    chunks.push(String.fromCharCode(...view.subarray(i, i + chunkSize)));
+  }
+  return btoa(chunks.join(''));
+};
+
 const toInline = async (input: LocalMediaInput) => {
   const { bytes, mimeType } = await localMediaResolver.resolve(input);
-  const data = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-    reader.onerror = () => reject(new Error('Local media could not be read.'));
-    reader.readAsDataURL(new Blob([bytes], { type: mimeType }));
-  });
-  return { data, mimeType };
+  return { data: bytesToBase64(bytes), mimeType };
 };
+
+/** Resolve an immediately playable URL (desktop protocol or Blob ObjectURL) without giant base64 strings. */
+export async function resolvePlayableMediaUrl(
+  input: LocalMediaInput,
+): Promise<{ url: string; revoke: () => void }> {
+  const noop = () => {};
+  if (input.storageKey) {
+    try {
+      const desktop = await window.electron?.readDesktopMedia?.(input.storageKey);
+      if (desktop?.localUrl) {
+        return { url: desktop.localUrl, revoke: noop };
+      }
+    } catch {
+      // Fall through to IDB / byte-backed fallback
+    }
+    try {
+      const stored = await mediaAssetService.getRecord(input.storageKey);
+      if (stored?.blob.size) {
+        const objectUrl = URL.createObjectURL(stored.blob);
+        return { url: objectUrl, revoke: () => URL.revokeObjectURL(objectUrl) };
+      }
+    } catch {
+      // Fall through to resolve()
+    }
+  }
+  if (input.url && (input.url.startsWith('loofi-media:') || input.url.startsWith('blob:'))) {
+    return { url: input.url, revoke: noop };
+  }
+  const { bytes, mimeType } = await localMediaResolver.resolve(input);
+  const objectUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+  return { url: objectUrl, revoke: () => URL.revokeObjectURL(objectUrl) };
+}
 
 /** Resolve every frozen reference; missing references must not silently disappear. */
 export async function resolveProductionReviewMedia(take: ProductionTake, assets: Asset[]) {

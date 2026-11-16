@@ -18,6 +18,7 @@ const keytar = require('keytar');
 const { createLazyDesktopDependencies } = require('./lazy-desktop-dependencies.cjs');
 const { JSZip, vertexAuth } = createLazyDesktopDependencies();
 const { PaidJobEngine, PaidJobStore } = require('./paid-job-engine.cjs');
+const { PaidJobJournal } = require('./paid-job-fsm.cjs');
 const { registerProviderIpc } = require('./ipc/provider-ipc.cjs');
 const { registerPaidJobsIpc } = require('./ipc/paid-jobs-ipc.cjs');
 const { registerUpdateIpc } = require('./ipc/update-ipc.cjs');
@@ -27,6 +28,7 @@ const { registerCreatorRenderIpc } = require('./ipc/creator-render-ipc.cjs');
 const { registerMediaIpc } = require('./ipc/media-ipc.cjs');
 const { registerCreatorMediaProtocol } = require('./ipc/creator-media-protocol.cjs');
 const { registerProjectIpc } = require('./ipc/project-ipc.cjs');
+const { registerArchiveIpc } = require('./ipc/archive-ipc.cjs');
 const { registerDiagnosticsIpc } = require('./ipc/diagnostics-ipc.cjs');
 const {
   createCreatorAsrModelStore,
@@ -34,8 +36,9 @@ const {
   registerCreatorAsrProtocol,
 } = require('./ipc/creator-asr-ipc.cjs');
 const { createApplicationWindow, createSafeModeController } = require('./window-lifecycle.cjs');
-const { DesktopMediaStore, generateVideoDerivatives } = require('./media-store.cjs');
+const { DesktopMediaStore, createVideoDerivativeGenerator } = require('./media-store.cjs');
 const { ProjectBackupStore } = require('./project-backup-store.cjs');
+const { ProjectDatabase } = require('./project-db.cjs');
 const { buildSupportSnapshot } = require('./support-bundle.cjs');
 const {
   checksumFromManifest,
@@ -62,6 +65,7 @@ let mainWindow;
 let paidJobEngine;
 let desktopMediaStore;
 let projectBackupStore;
+let projectDb;
 let creatorRenderEngine;
 let creatorAsrModelStore;
 const isSmokeTest = process.argv.includes('--smoke-test');
@@ -104,12 +108,22 @@ async function configureProjectRoot(root) {
   const temporaryPath = `${configPath}.tmp`;
   await fs.promises.writeFile(temporaryPath, JSON.stringify({ root }, null, 2), { mode: 0o600 });
   await fs.promises.rename(temporaryPath, configPath);
-  desktopMediaStore = new DesktopMediaStore(root, fetch, generateVideoDerivatives);
+  const runtimeRoot = app.isPackaged
+    ? path.join(process.resourcesPath, 'media-runtime')
+    : path.join(__dirname, '..', 'packaging', 'media-runtime');
+  const derivativeGenerator = createVideoDerivativeGenerator({ runtimeRoot });
+  desktopMediaStore = new DesktopMediaStore(root, fetch, derivativeGenerator);
   projectBackupStore = new ProjectBackupStore(path.join(root, 'backups'), 5);
+  projectDb?.close();
+  projectDb = new ProjectDatabase(path.join(root, 'loofi-studio.sqlite')).open();
   return root;
 }
 
-if (isSmokeTest && process.platform === 'linux') {
+if (
+  isSmokeTest &&
+  process.platform === 'linux' &&
+  (!app.isPackaged || process.env.CI === 'true' || process.env.LOOFI_ALLOW_SMOKE_NO_SANDBOX === '1')
+) {
   app.commandLine.appendSwitch('no-sandbox');
 }
 
@@ -315,11 +329,6 @@ ipcMain.on('log-error-fire-and-forget', (_, entryOrBatch) => {
   enqueueErrorEntries(entryOrBatch);
 });
 
-ipcMain.on('log-error-sync', (event, entryOrBatch) => {
-  enqueueErrorEntries(entryOrBatch);
-  event.returnValue = true;
-});
-
 process.on('uncaughtException', (error) => {
   enqueueErrorEntries({
     level: 'error',
@@ -478,7 +487,16 @@ registerProjectIpc({
   dialog,
   getMainWindow: () => mainWindow,
   getProjectBackupStore: () => projectBackupStore,
+  getProjectDatabase: () => projectDb,
+  getSnapshotBackupDir: () => path.join(getConfiguredProjectRoot(), 'db-backups'),
   configureRoot: configureProjectRoot,
+});
+
+registerArchiveIpc({
+  ipcMain,
+  dialog,
+  getMainWindow: () => mainWindow,
+  getMediaStore: () => desktopMediaStore,
 });
 
 registerDiagnosticsIpc({
@@ -519,11 +537,21 @@ app.whenReady().then(async () => {
     getMainWindow: () => mainWindow,
   });
   const projectRoot = getConfiguredProjectRoot();
-  desktopMediaStore = new DesktopMediaStore(projectRoot, fetch, generateVideoDerivatives);
+  const runtimeRoot = app.isPackaged
+    ? path.join(process.resourcesPath, 'media-runtime')
+    : path.join(__dirname, '..', 'packaging', 'media-runtime');
+  const derivativeGenerator = createVideoDerivativeGenerator({ runtimeRoot });
+  desktopMediaStore = new DesktopMediaStore(projectRoot, fetch, derivativeGenerator);
   paidJobEngine = new PaidJobEngine({
     store: new PaidJobStore(path.join(app.getPath('userData'), 'paid-jobs-v1.json')),
+    journal: new PaidJobJournal(path.join(app.getPath('userData'), 'paid-jobs.jsonl')),
     getApiKey: () => keytar.getPassword(KEYTAR_SERVICE, 'gemini-api-key'),
+    getVertexAccessToken: async () => {
+      const access = await vertexAuth.getAccessToken();
+      return typeof access === 'string' ? access : access?.token;
+    },
     storeMedia: (input) => desktopMediaStore.importBytes(input),
+    readMedia: (key) => desktopMediaStore.readBytes(key),
     cacheVideo: (input) => desktopMediaStore.cacheRemote(input),
     onUpdate: (job) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -532,6 +560,13 @@ app.whenReady().then(async () => {
     },
   });
   projectBackupStore = new ProjectBackupStore(path.join(projectRoot, 'backups'), 5);
+  projectDb = new ProjectDatabase(path.join(projectRoot, 'loofi-studio.sqlite')).open();
+  void projectDb
+    .migrateLegacyJsonDirectory({
+      backupsRoot: path.join(projectRoot, 'backups'),
+      legacyPaidJobsPath: path.join(app.getPath('userData'), 'paid-jobs-v1.json'),
+    })
+    .catch((error) => console.warn('Legacy JSON->SQLite migration failed:', error));
   creatorRenderEngine = new CreatorRenderEngine({
     root: path.join(app.getPath('userData'), 'creator-render-jobs'),
     runtimeRoot: app.isPackaged
@@ -582,6 +617,11 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   safeMode.markCleanExit();
+  try {
+    projectDb?.close();
+  } catch (error) {
+    console.warn('Failed to cleanly close project SQLite database:', error);
+  }
 });
 
 app.on('window-all-closed', () => {

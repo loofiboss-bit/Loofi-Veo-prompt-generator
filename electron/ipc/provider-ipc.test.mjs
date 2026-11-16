@@ -262,3 +262,61 @@ test('credential status does not run a paid canary', async (t) => {
   assert.match(result.message, /No paid generation canary/);
   assert.equal(context.providerCalls(), 0);
 });
+
+test('locks interaction duration/resolution to approved quote and shows rich native approval detail', async () => {
+  const handlers = new Map();
+  let capturedDialogOptions;
+  let capturedInteractionRequest;
+
+  registerProviderIpc({
+    ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
+    keytar: { getPassword: async () => 'secret-key' },
+    keytarService: 'test-service',
+    dialog: {
+      showMessageBox: async (_win, options) => {
+        capturedDialogOptions = options;
+        return { response: 0 };
+      },
+    },
+    getMainWindow: () => null,
+    vertexAuth: { getClient: async () => ({}) },
+    createGeminiClient: async () => ({
+      interactions: {
+        create: async (request) => {
+          capturedInteractionRequest = request;
+          return { id: 'int-locked', model: request.model, output_text: 'ok' };
+        },
+      },
+    }),
+  });
+
+  const payload = interactionInput();
+  const token = await handlers.get('provider-cost-approve')(null, payload);
+
+  assert.match(capturedDialogOptions.detail, /gemini-omni-flash-preview · video \(8s 720p\)/);
+  assert.match(capturedDialogOptions.detail, /Prompt: "Create an eight second 720p clip\."/);
+
+  const result = await handlers.get('provider-interaction')(null, {
+    ...payload,
+    approvalToken: token,
+  });
+
+  assert.equal(result.interactionId, 'int-locked');
+  assert.deepEqual(capturedInteractionRequest.response_format, {
+    type: 'video',
+    duration: '8s',
+    resolution: '720p',
+  });
+  assert.equal('maxOutputTokens' in capturedInteractionRequest, false);
+
+  const token2 = await handlers.get('provider-cost-approve')(null, {
+    ...payload,
+    config: { duration: 8, resolution: '720p' },
+  });
+  const tampered = await handlers.get('provider-interaction')(null, {
+    ...payload,
+    config: { duration: 15, resolution: '720p' },
+    approvalToken: token2,
+  });
+  assert.match(tampered.message, /one-time provider cost approval/);
+});

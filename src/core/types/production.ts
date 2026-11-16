@@ -49,9 +49,15 @@ export type VeoDuration = 4 | 6 | 8;
 
 export type { VeoProviderArtifact } from './providerArtifact';
 
+export type StudioExecutionMode = 'vertex-veo-ga' | 'gemini-omni' | 'external-manual-slot';
+
 export interface VeoGenerationRequest {
   mode: VeoGenerationMode;
   modelId: VeoModelId;
+  provider?: 'gemini-api' | 'vertex-ai';
+  target?: import('./modelTranspiler').UniversalVideoTarget;
+  profileId?: string;
+  executionMode?: StudioExecutionMode;
   prompt: string;
   negativePrompt?: string;
   aspectRatio: '16:9' | '9:16';

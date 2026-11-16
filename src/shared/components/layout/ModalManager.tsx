@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppStore } from '@core/store/useAppStore';
+import { useHistoryStore } from '@core/store/useHistoryStore';
 import { performanceProfiler } from '@core/services/performanceProfiler';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { pluginService } from '@core/services/pluginService';
@@ -159,6 +160,7 @@ const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
 
 const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
   const store = useAppStore();
+  const historyEntries = useHistoryStore((state) => state.entries);
   const _locationStore = useLocationStore();
   const [pluginStudios, setPluginStudios] = React.useState(pluginService.getStudios());
 
@@ -496,7 +498,7 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
             <GlobalSearchModal
               isOpen={store.isSearchOpen}
               onClose={() => store.closeModal('isSearchOpen')}
-              history={store.history}
+              history={historyEntries}
               presets={store.customPresets}
               templates={getPromptTemplates(store.promptState.language)}
               onSelectHistory={handlers.handleUseHistoryEntry}

@@ -28,8 +28,8 @@ export interface IndexConfig {
 
 export interface Migration {
   version: number;
-  up: (db: IDBDatabase) => Promise<void>;
-  down?: (db: IDBDatabase) => Promise<void>;
+  up: (db: IDBDatabase) => void | Promise<void>;
+  down?: (db: IDBDatabase) => void | Promise<void>;
 }
 
 export interface BackupData {
@@ -128,7 +128,7 @@ class DatabaseService {
     // Migration 1: Initial schema
     this.migrations.push({
       version: 1,
-      up: async (db: IDBDatabase) => {
+      up: (db: IDBDatabase) => {
         // Projects store
         if (!db.objectStoreNames.contains('projects')) {
           const projectStore = db.createObjectStore('projects', { keyPath: 'id' });
@@ -224,25 +224,41 @@ class DatabaseService {
           };
 
           request.onsuccess = () => {
+            if (upgradeFailure) {
+              settle(() => reject(upgradeFailure));
+              return;
+            }
             settle(() => {
               this.db = request.result;
               resolve(request.result);
             });
           };
 
+          let upgradeFailure: unknown = null;
+
           request.onupgradeneeded = (event) => {
             const db = (event.target as IDBOpenDBRequest).result;
             this.db = db;
 
-            // IndexedDB migrations must perform schema work synchronously inside the
-            // versionchange transaction.
+            // IndexedDB migrations must execute schema operations synchronously inside
+            // the active versionchange transaction; guard against accidental async failures.
             for (const migration of migrations) {
               try {
-                void migration.up(db);
+                const maybePromise = migration.up(db);
+                if (maybePromise && typeof (maybePromise as Promise<void>).then === 'function') {
+                  void (maybePromise as Promise<void>).catch((error) => {
+                    upgradeFailure = upgradeFailure ?? error;
+                    logger.error('Async migration step failed', 'DatabaseService', {
+                      version: migration.version,
+                      error,
+                    });
+                  });
+                }
                 logger.info('Migration completed', 'DatabaseService', {
                   version: migration.version,
                 });
               } catch (error) {
+                upgradeFailure = error;
                 logger.error('Migration failed', 'DatabaseService', {
                   version: migration.version,
                   error,

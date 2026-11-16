@@ -16,6 +16,11 @@ const VIDEO_USD_PER_SECOND = Object.freeze({
   'veo-3.1-fast': Object.freeze({ '720p': 0.1, '1080p': 0.12, '4k': 0.3 }),
   'veo-3.1-lite': Object.freeze({ '720p': 0.05, '1080p': 0.08 }),
 });
+const CANONICAL_VEO_MODEL_ALIASES = Object.freeze({
+  'veo-3.1-generate-001': 'veo-3.1-quality',
+  'veo-3.1-fast-generate-001': 'veo-3.1-fast',
+  'veo-3.1-lite-generate-001': 'veo-3.1-lite',
+});
 
 const MUSIC_USD_PER_REQUEST = Object.freeze({
   'lyria-3-clip-preview': 0.04,
@@ -135,7 +140,45 @@ function calculateMaximumCharge(task) {
     }
     return requestPrice;
   }
-  const rate = VIDEO_USD_PER_SECOND[request?.modelId]?.[request?.resolution];
+  if (request?.modelId === 'gemini-omni-1.2-flash') {
+    const prices = PROVIDER_PRICING['gemini-omni-1.2-flash'];
+    const duration = request?.durationSeconds;
+    const resolution = request?.resolution;
+    const tokensPerSecond = prices?.videoTokensPerSecond?.[resolution];
+    if (
+      !Number.isFinite(duration) ||
+      duration <= 0 ||
+      !Number.isFinite(tokensPerSecond) ||
+      !Number.isFinite(prices?.videoOutput)
+    ) {
+      throw new Error('No trusted paid-job price is available for this model and resolution.');
+    }
+    const inputs = task.executionInputs || {};
+    const inputChars =
+      Number(inputs.firstFrame?.byteLength || inputs.firstFrame?.data?.length || 0) +
+      Number(inputs.lastFrame?.byteLength || inputs.lastFrame?.data?.length || 0) +
+      (Array.isArray(inputs.referenceImages)
+        ? inputs.referenceImages.reduce(
+            (sum, img) => sum + Number(img?.byteLength || img?.data?.length || 0),
+            0,
+          )
+        : 0);
+    const minTokens = Math.max(
+      1000,
+      Math.ceil((String(request?.prompt || task?.prompt || '').length + inputChars) / 3),
+    );
+    const estimatedInputTokens = Number.isFinite(
+      task.costApproval?.calculationInputs?.estimatedInputTokens,
+    )
+      ? Math.max(minTokens, task.costApproval.calculationInputs.estimatedInputTokens)
+      : minTokens;
+    return (
+      (estimatedInputTokens * prices.input + duration * tokensPerSecond * prices.videoOutput) /
+      1_000_000
+    );
+  }
+  const pricingModelId = CANONICAL_VEO_MODEL_ALIASES[request?.modelId] || request?.modelId;
+  const rate = VIDEO_USD_PER_SECOND[pricingModelId]?.[request?.resolution];
   if (!Number.isFinite(rate) || rate <= 0 || !Number.isFinite(request?.durationSeconds)) {
     throw new Error('No trusted paid-job price is available for this model and resolution.');
   }
@@ -245,6 +288,23 @@ function calculateProviderMaximumCharge(input) {
       !Number.isFinite(prices.videoOutput)
     ) {
       throw new Error('The provider video calculation is incomplete.');
+    }
+    const cfg = input.config && typeof input.config === 'object' ? input.config : null;
+    if (cfg && cfg.duration !== undefined) {
+      const cfgDuration =
+        typeof cfg.duration === 'number'
+          ? cfg.duration
+          : Number(String(cfg.duration).trim().replace(/s$/i, ''));
+      if (!Number.isFinite(cfgDuration) || cfgDuration !== duration) {
+        throw new Error(
+          'Provider video config duration does not match approved calculation inputs.',
+        );
+      }
+    }
+    if (cfg && cfg.resolution !== undefined && cfg.resolution !== resolution) {
+      throw new Error(
+        'Provider video config resolution does not match approved calculation inputs.',
+      );
     }
     maximumChargeUsd += (duration * tokensPerSecond * prices.videoOutput) / 1_000_000;
   } else {

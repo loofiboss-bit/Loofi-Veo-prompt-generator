@@ -1,6 +1,6 @@
-// Import FFmpeg scripts from CDN
-importScripts('https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/umd/ffmpeg.js');
-importScripts('https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js');
+// Load self-hosted FFmpeg scripts cleanly without external CDNs
+importScripts('./ffmpeg/ffmpeg.js');
+importScripts('./ffmpeg/util.js');
 
 const { FFmpeg } = FFmpegWASM;
 const { fetchFile, toBlobURL } = FFmpegUtil;
@@ -26,7 +26,7 @@ const loadFFmpeg = async () => {
     console.log('[SW-Render] FFmpeg:', message);
   });
 
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  const baseURL = './ffmpeg';
 
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
@@ -92,8 +92,7 @@ self.addEventListener('message', async (event) => {
         await instance.writeFile('font.ttf', new Uint8Array(fonts.data));
       } else {
         // Fallback font load inside worker
-        const fontUrl =
-          'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
+        const fontUrl = './creator-fonts/NotoSans.ttf';
         const fontData = await fetchFile(fontUrl);
         await instance.writeFile('font.ttf', fontData);
       }

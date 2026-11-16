@@ -6,6 +6,8 @@
  */
 
 import type { PromptBlock, BlockConnection } from '@core/types/composer';
+import type { UniversalVideoTarget } from '@core/types/modelTranspiler';
+import { TARGET_MODEL_PROFILES, getTargetProfile } from './modelTranspilerService';
 
 export type LintSeverity = 'error' | 'warning' | 'info';
 
@@ -29,10 +31,17 @@ export interface LintIssue {
   details?: Record<string, unknown>;
 }
 
-export type ModelTarget = 'veo-2' | 'veo-3' | 'veo-raw' | 'flow-director' | 'lyria-music';
+export type ModelTarget =
+  | UniversalVideoTarget
+  | 'veo-2'
+  | 'veo-3'
+  | 'veo-raw'
+  | 'flow-director'
+  | 'lyria-music';
 
 export interface LinterOptions {
   targetModel?: ModelTarget;
+  profileId?: string;
   durationSeconds?: number;
   aspectRatio?: string;
   fps?: number;
@@ -256,35 +265,62 @@ export class PromptAstLinterService {
     }
 
     // 2. Token Budget & Attention Limits
-    if (tokenEstimate > 280) {
+    const resolvedProfile = (() => {
+      const target = options.targetModel;
+      if (!target || !Object.hasOwn(TARGET_MODEL_PROFILES, target)) return null;
+      try {
+        return getTargetProfile(target as UniversalVideoTarget, options.profileId);
+      } catch {
+        return null;
+      }
+    })();
+    const tokenBudget = resolvedProfile ? 450 : 280;
+    if (tokenEstimate > tokenBudget) {
       warnings.push({
         code: 'HW-TOK-001',
         category: 'hardware-limit',
         severity: 'warning',
-        message: `Prompt length (~${tokenEstimate} tokens) approaches video diffusion cross-attention limits (280 tokens). Trailing details may be ignored.`,
+        message: `Prompt length (~${tokenEstimate} tokens) approaches video diffusion cross-attention limits (${tokenBudget} tokens). Trailing details may be ignored.`,
         suggestions: ['Condense prompt to core subject, action, lighting, and camera motion.'],
-        details: { tokenEstimate, limit: 280 },
+        details: { tokenEstimate, limit: tokenBudget },
       });
     }
 
     // 3. Aspect Ratio Validation
-    if (options.aspectRatio && !VALID_ASPECT_RATIOS.has(options.aspectRatio)) {
+    const allowedAspectRatios = resolvedProfile
+      ? new Set<string>(resolvedProfile.supportedAspectRatios)
+      : VALID_ASPECT_RATIOS;
+    if (options.aspectRatio && !allowedAspectRatios.has(options.aspectRatio)) {
       errors.push({
         code: 'HW-ASP-001',
         category: 'hardware-limit',
         severity: 'error',
-        message: `Unsupported aspect ratio "${options.aspectRatio}". Target generators support: ${[...VALID_ASPECT_RATIOS].join(', ')}.`,
+        message: `Unsupported aspect ratio "${options.aspectRatio}". Target generators support: ${[...allowedAspectRatios].join(', ')}.`,
         suggestions: [
           'Select a supported aspect ratio (e.g. 16:9 for landscape, 9:16 for vertical).',
         ],
-        details: { specified: options.aspectRatio, supported: [...VALID_ASPECT_RATIOS] },
+        details: { specified: options.aspectRatio, supported: [...allowedAspectRatios] },
       });
     }
 
     // 4. Duration Limits
     if (typeof options.durationSeconds === 'number') {
       const target = options.targetModel ?? 'veo-2';
-      if (target.startsWith('veo') && options.durationSeconds > 8) {
+      if (resolvedProfile) {
+        const maxDuration = Math.max(...resolvedProfile.durations);
+        if (options.durationSeconds > maxDuration) {
+          warnings.push({
+            code: 'HW-DUR-001',
+            category: 'hardware-limit',
+            severity: 'warning',
+            message: `Requested shot duration (${options.durationSeconds}s) exceeds ${resolvedProfile.displayName} single-pass limit (${maxDuration}s). Requires shot extension chaining.`,
+            suggestions: [
+              `Keep individual shots under ${maxDuration} seconds or plan an extension take.`,
+            ],
+            details: { duration: options.durationSeconds, maxSinglePass: maxDuration },
+          });
+        }
+      } else if (target.startsWith('veo') && options.durationSeconds > 8) {
         warnings.push({
           code: 'HW-DUR-001',
           category: 'hardware-limit',

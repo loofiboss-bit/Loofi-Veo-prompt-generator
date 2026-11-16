@@ -207,4 +207,54 @@ describe('videoIterationService', () => {
       }),
     ).rejects.toThrow(/Please enter instructions/);
   });
+
+  it('refuses mock fallback and silent $0.80 pricing fallback in desktop mode', async () => {
+    const { estimateMaximumModelCost } = await import('@core/models/cost');
+    const session = videoIterationService.createInitialSession({
+      projectId: 'proj-1',
+      artifactId: 'art-desktop',
+      variantIndex: 0,
+      baseAsset: { id: 'asset-orig' },
+      initialPrompt: 'Initial prompt',
+    });
+
+    (window as unknown as { electron?: unknown }).electron = {
+      approveProviderCost: vi.fn().mockResolvedValue('tok-1'),
+      testProviderConnection: vi.fn(),
+      executeProvider: vi.fn(),
+    };
+    try {
+      await expect(
+        videoIterationService.iterateVideo({
+          session,
+          projectId: 'proj-1',
+          artifactId: 'art-desktop',
+          variantIndex: 0,
+          instruction: 'Add fog',
+        }),
+      ).rejects.toThrow(/Desktop video iteration bridge is unavailable/);
+
+      vi.mocked(estimateMaximumModelCost).mockReturnValueOnce({
+        currency: 'USD',
+        confidence: 'upper-bound',
+      } as never);
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost: vi.fn().mockResolvedValue('tok-1'),
+        testProviderConnection: vi.fn(),
+        executeProvider: vi.fn(),
+        executeInteraction: vi.fn(),
+      };
+      await expect(
+        videoIterationService.iterateVideo({
+          session,
+          projectId: 'proj-1',
+          artifactId: 'art-desktop',
+          variantIndex: 0,
+          instruction: 'Add fog',
+        }),
+      ).rejects.toThrow(/Cannot compute a verifiable cost ceiling/);
+    } finally {
+      delete (window as unknown as { electron?: unknown }).electron;
+    }
+  });
 });

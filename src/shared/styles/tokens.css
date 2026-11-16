@@ -1322,3 +1322,16 @@ h1[tabindex='-1']:focus {
     flex-shrink: 0;
   }
 }
+
+@media (max-height: 820px) {
+  .studio-workspace {
+    padding-top: var(--spacing-3);
+    padding-bottom: var(--spacing-4);
+  }
+  .studio-heading {
+    margin-bottom: var(--spacing-2);
+  }
+  .studio-columns {
+    margin-top: var(--spacing-3);
+  }
+}

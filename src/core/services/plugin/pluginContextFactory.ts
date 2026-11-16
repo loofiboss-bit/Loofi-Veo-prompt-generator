@@ -18,6 +18,7 @@ import { logger } from '../loggerService';
 import { historyService } from '../historyService';
 import { projectService } from '../projectService';
 import { getUserTemplates } from '../templateManager';
+import { sanitizePluginProjectUpdates, sanitizeProjectForPlugin } from './pluginProjectSanitizer';
 
 export interface PluginContextDeps {
   hasPermission: (pluginId: string, permission: PluginPermission) => boolean;
@@ -83,20 +84,27 @@ export class PluginContextFactory {
           if (!deps.hasPermission(pluginId, 'projects:read')) {
             throw new Error('Plugin does not have projects:read permission');
           }
-          return projectService.getAllProjects();
+          const projects = await projectService.getAllProjects();
+          return projects.map(sanitizeProjectForPlugin);
         },
         getProject: async (id) => {
           if (!deps.hasPermission(pluginId, 'projects:read')) {
             throw new Error('Plugin does not have projects:read permission');
           }
-          return projectService.getProject(id);
+          const project = await projectService.getProject(id);
+          return project ? sanitizeProjectForPlugin(project) : null;
         },
         saveProject: async (project) => {
           if (!deps.hasPermission(pluginId, 'projects:write')) {
             throw new Error('Plugin does not have projects:write permission');
           }
-          const proj = project as { id: string; [key: string]: unknown };
-          await projectService.updateProject(proj.id, proj as Partial<Record<string, unknown>>);
+          const proj = project as { id?: unknown; [key: string]: unknown };
+          const id = typeof proj?.id === 'string' ? proj.id.trim() : '';
+          if (!id) {
+            throw new Error('Invalid project ID');
+          }
+          const safeUpdates = sanitizePluginProjectUpdates(proj);
+          await projectService.updateProject(id, safeUpdates);
         },
         getHistory: async () => {
           if (!deps.hasPermission(pluginId, 'history:read')) {

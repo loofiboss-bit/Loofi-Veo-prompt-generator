@@ -1,8 +1,10 @@
 import { useStore } from 'zustand';
-import { useCallback, useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TimelineClip } from '@core/types';
+import type { Shot, TimelineClip, TimelineTrack, Asset, ProductionRun } from '@core/types';
 import { useAppStore } from '@core/store/useAppStore';
+import { usePlaybackStore } from '@core/store/usePlaybackStore';
 import InspectorPanel from '@shared/components/InspectorPanel';
 import { TimelineSurface } from './components/TimelineSurface';
 import { TimelineSourcePreview } from './components/TimelineSourcePreview';
@@ -13,6 +15,102 @@ import { SilenceCutModal } from './components/SilenceCutModal';
 import { VoiceoverRecorderModal } from './components/VoiceoverRecorderModal';
 
 const EMPTY_AUDIO_FADES: Record<string, { inSeconds: number; outSeconds: number }> = {};
+
+function LocalSourcePreviewLeaf({
+  clips,
+  tracks,
+  assets,
+  shots,
+  run,
+  committedTime,
+  playing,
+  audioFades,
+  onFailure,
+}: {
+  clips: TimelineClip[];
+  tracks: TimelineTrack[];
+  assets: Asset[];
+  shots: Shot[];
+  run: ProductionRun | null;
+  committedTime: number;
+  playing: boolean;
+  audioFades: Record<string, { inSeconds: number; outSeconds: number }>;
+  onFailure: () => void;
+}) {
+  const liveTime = usePlaybackStore((state) => (state.isPlaying ? state.currentTime : null));
+  return (
+    <TimelineSourcePreview
+      clips={clips}
+      tracks={tracks}
+      assets={assets}
+      shots={shots}
+      run={run}
+      time={liveTime ?? committedTime}
+      playing={playing}
+      audioFades={audioFades}
+      onFailure={onFailure}
+    />
+  );
+}
+
+function LocalTransportScrubberLeaf({
+  committedTime,
+  duration,
+  onSeekCommit,
+  onPause,
+  stepBackLabel,
+  stepForwardLabel,
+  playheadLabel,
+}: {
+  committedTime: number;
+  duration: number;
+  onSeekCommit: (nextTime: number) => void;
+  onPause: () => void;
+  stepBackLabel: string;
+  stepForwardLabel: string;
+  playheadLabel: string;
+}) {
+  const liveTime = usePlaybackStore((state) => (state.isPlaying ? state.currentTime : null));
+  const activeTime = liveTime ?? committedTime;
+  return (
+    <>
+      <button
+        type="button"
+        disabled={!duration || activeTime <= 0}
+        aria-label={stepBackLabel}
+        onClick={() => {
+          onPause();
+          onSeekCommit(Math.max(0, Number((activeTime - 1 / 30).toFixed(4))));
+        }}
+      >
+        -1f
+      </button>
+      <button
+        type="button"
+        disabled={!duration || activeTime >= duration}
+        aria-label={stepForwardLabel}
+        onClick={() => {
+          onPause();
+          onSeekCommit(Math.min(duration, Number((activeTime + 1 / 30).toFixed(4))));
+        }}
+      >
+        +1f
+      </button>
+      <input
+        type="range"
+        min="0"
+        max={duration || 1}
+        step={1 / 30}
+        value={Math.min(activeTime, duration)}
+        aria-label={playheadLabel}
+        onChange={(event) => onSeekCommit(Number(event.target.value))}
+      />
+      <output>
+        {activeTime.toFixed(1)} / {duration.toFixed(1)}s
+      </output>
+    </>
+  );
+}
 
 /** Source playback aids editing; native delivery review is the composited output. */
 export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: () => void }) {
@@ -26,7 +124,25 @@ export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: (
     sbShots,
     setCurrentTime,
     updateTimelineClip,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      clips: state.clips,
+      tracks: state.tracks,
+      currentTime: state.currentTime,
+      zoomLevel: state.zoomLevel,
+      assets: state.assets,
+      sbShots: state.sbShots,
+      setCurrentTime: state.setCurrentTime,
+      updateTimelineClip: state.updateTimelineClip,
+    })),
+  );
+  const commitSeek = useCallback(
+    (nextTime: number) => {
+      usePlaybackStore.getState().setCurrentTime(nextTime);
+      setCurrentTime(nextTime);
+    },
+    [setCurrentTime],
+  );
   const canUndo = useStore(useAppStore.temporal, (state) => state.pastStates.length > 0);
   const canRedo = useStore(useAppStore.temporal, (state) => state.futureStates.length > 0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -43,11 +159,25 @@ export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: (
   const run = activeRun?.projectId === projectId ? activeRun : null;
   const duration = Math.max(0, ...clips.map((clip) => clip.startTime + clip.duration));
   const selected = clips.find((clip) => clip.id === selectedId) ?? null;
+  const timelineState = useMemo(
+    () => ({ clips, tracks, currentTime, zoomLevel }),
+    [clips, tracks, currentTime, zoomLevel],
+  );
+  const handleSelectClip = useCallback((clip: TimelineClip | null) => {
+    setSelectedId(clip?.id ?? null);
+  }, []);
+  const handleUnavailableGeneration = useCallback(async () => {
+    throw new Error('Generation is unavailable in local delivery mode.');
+  }, []);
+
   useEffect(() => {
     setPlaying(false);
+    usePlaybackStore.getState().resetPlayback();
   }, [projectId]);
   useEffect(() => {
+    usePlaybackStore.getState().setIsPlaying(playing);
     if (!playing) return;
+    usePlaybackStore.getState().setCurrentTime(useAppStore.getState().currentTime);
     let frame = 0;
     let previous = performance.now();
     const tick = (now: number) => {
@@ -55,15 +185,25 @@ export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: (
         frame = requestAnimationFrame(tick);
         return;
       }
-      const state = useAppStore.getState();
-      const next = Math.min(duration, state.currentTime + (now - previous) / 1000);
+      const playback = usePlaybackStore.getState();
+      const next = Math.min(duration, playback.currentTime + (now - previous) / 1000);
       previous = now;
-      state.setCurrentTime(next);
-      if (next >= duration) setPlaying(false);
-      else frame = requestAnimationFrame(tick);
+      playback.setCurrentTime(next);
+      if (next >= duration) {
+        playback.setIsPlaying(false);
+        setPlaying(false);
+        useAppStore.getState().setCurrentTime(next);
+      } else {
+        frame = requestAnimationFrame(tick);
+      }
     };
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      const playback = usePlaybackStore.getState();
+      playback.setIsPlaying(false);
+      useAppStore.getState().setCurrentTime(playback.currentTime);
+    };
   }, [playing, duration]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -82,41 +222,43 @@ export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: (
       const key = event.key.toLowerCase();
       if (event.key === ' ' || key === 'k') {
         event.preventDefault();
-        const nowTime = useAppStore.getState().currentTime;
-        if (nowTime >= duration) setCurrentTime(0);
+        const nowTime = usePlaybackStore.getState().isPlaying
+          ? usePlaybackStore.getState().currentTime
+          : useAppStore.getState().currentTime;
+        if (nowTime >= duration) commitSeek(0);
         setPlaying((prev) => !prev);
       } else if (event.key === 'ArrowLeft' || key === 'j') {
         event.preventDefault();
         setPlaying(false);
         const step = event.shiftKey ? 1 : 1 / 30;
         const nowTime = useAppStore.getState().currentTime;
-        setCurrentTime(Math.max(0, Number((nowTime - step).toFixed(4))));
+        commitSeek(Math.max(0, Number((nowTime - step).toFixed(4))));
       } else if (event.key === 'ArrowRight' || key === 'l') {
         event.preventDefault();
         setPlaying(false);
         const step = event.shiftKey ? 1 : 1 / 30;
         const nowTime = useAppStore.getState().currentTime;
-        setCurrentTime(Math.min(duration, Number((nowTime + step).toFixed(4))));
+        commitSeek(Math.min(duration, Number((nowTime + step).toFixed(4))));
       } else if (event.key === 'Home') {
         event.preventDefault();
         setPlaying(false);
-        setCurrentTime(0);
+        commitSeek(0);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [duration, setCurrentTime]);
+  }, [duration, commitSeek]);
   return (
     <div className="local-editor-workspace">
       <div className="local-editor-viewer">
         <div className="local-editor-source">
-          <TimelineSourcePreview
+          <LocalSourcePreviewLeaf
             clips={clips}
             tracks={tracks}
             assets={assets}
             shots={sbShots}
             run={run}
-            time={currentTime}
+            committedTime={currentTime}
             playing={playing}
             audioFades={audioFades}
             onFailure={stopPreview}
@@ -137,46 +279,24 @@ export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: (
           <button
             disabled={!duration}
             onClick={() => {
-              if (currentTime >= duration) setCurrentTime(0);
+              const activeTime = usePlaybackStore.getState().isPlaying
+                ? usePlaybackStore.getState().currentTime
+                : useAppStore.getState().currentTime;
+              if (activeTime >= duration) commitSeek(0);
               setPlaying((value) => !value);
             }}
           >
             {playing ? t('v16.pause', 'Pause') : t('v16.play', 'Play')}
           </button>
-          <button
-            type="button"
-            disabled={!duration || currentTime <= 0}
-            aria-label={t('v16.stepBackFrame', 'Step back 1 frame')}
-            onClick={() => {
-              setPlaying(false);
-              setCurrentTime(Math.max(0, Number((currentTime - 1 / 30).toFixed(4))));
-            }}
-          >
-            -1f
-          </button>
-          <button
-            type="button"
-            disabled={!duration || currentTime >= duration}
-            aria-label={t('v16.stepForwardFrame', 'Step forward 1 frame')}
-            onClick={() => {
-              setPlaying(false);
-              setCurrentTime(Math.min(duration, Number((currentTime + 1 / 30).toFixed(4))));
-            }}
-          >
-            +1f
-          </button>
-          <input
-            type="range"
-            min="0"
-            max={duration || 1}
-            step={1 / 30}
-            value={Math.min(currentTime, duration)}
-            aria-label={t('v16.playhead', 'Playhead')}
-            onChange={(event) => setCurrentTime(Number(event.target.value))}
+          <LocalTransportScrubberLeaf
+            committedTime={currentTime}
+            duration={duration}
+            onSeekCommit={commitSeek}
+            onPause={stopPreview}
+            stepBackLabel={t('v16.stepBackFrame', 'Step back 1 frame')}
+            stepForwardLabel={t('v16.stepForwardFrame', 'Step forward 1 frame')}
+            playheadLabel={t('v16.playhead', 'Playhead')}
           />
-          <output>
-            {currentTime.toFixed(1)} / {duration.toFixed(1)}s
-          </output>
           <button disabled={!canUndo} onClick={() => useAppStore.temporal.getState().undo()}>
             {t('v16.undo', 'Undo')}
           </button>
@@ -236,15 +356,13 @@ export function LocalTimelineEditor({ onReviewDelivery }: { onReviewDelivery?: (
       <div className="local-editor-timeline">
         <TimelineSurface
           deliveryMode
-          timelineState={{ clips, tracks, currentTime, zoomLevel }}
+          timelineState={timelineState}
           duration={duration}
           onClipUpdate={updateTimelineClip}
-          onSeek={setCurrentTime}
+          onSeek={commitSeek}
           selectedClipId={selectedId}
-          onSelectClip={(clip: TimelineClip | null) => setSelectedId(clip?.id ?? null)}
-          startVideoGeneration={async () => {
-            throw new Error('Generation is unavailable in local delivery mode.');
-          }}
+          onSelectClip={handleSelectClip}
+          startVideoGeneration={handleUnavailableGeneration}
         />
       </div>
     </div>

@@ -161,9 +161,43 @@ export function groupWhisperWordChunks(
 class CreatorAsrService {
   private static instance: CreatorAsrService;
   private activeInstallId: string | null = null;
+  private worker: Worker | null = null;
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private idleTtlMs = 5 * 60_000;
+  private activeQueueCount = 0;
+  private workerQueue: Promise<void> = Promise.resolve();
 
   static getInstance(): CreatorAsrService {
     return (this.instance ??= new CreatorAsrService());
+  }
+
+  private clearIdleTimer(): void {
+    if (this.idleTimer !== null) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+  }
+
+  private scheduleIdleDispose(): void {
+    this.clearIdleTimer();
+    if (!this.worker || this.idleTtlMs <= 0) return;
+    this.idleTimer = setTimeout(() => {
+      this.dispose();
+    }, this.idleTtlMs);
+  }
+
+  setIdleTtlForTesting(ttlMs: number): void {
+    this.idleTtlMs = Math.max(0, ttlMs);
+  }
+
+  dispose(): void {
+    this.clearIdleTimer();
+    if (this.worker) {
+      this.worker.onmessage = null;
+      this.worker.onerror = null;
+      this.worker.terminate();
+      this.worker = null;
+    }
   }
 
   async getModelInfo(): Promise<CreatorAsrModelInfo> {
@@ -233,50 +267,71 @@ class CreatorAsrService {
       throw new Error('The extracted local audio buffer is invalid.');
     // Transfer detaches the renderer's buffer, so retain its duration beforehand.
     const durationSeconds = pcm.byteLength / Float32Array.BYTES_PER_ELEMENT / 16000;
-    const worker = new CreatorAsrWorker();
-    const requestId = crypto.randomUUID();
-    return new Promise((resolve, reject) => {
-      const cleanup = () => {
-        worker.onmessage = null;
-        worker.onerror = null;
-        worker.terminate();
-      };
-      worker.onerror = (event) => {
-        cleanup();
-        reject(new Error(event.message || 'Local transcription worker failed.'));
-      };
-      worker.onmessage = (event: MessageEvent<AsrWorkerReply>) => {
-        const result = event.data;
-        if (!result || result.requestId !== requestId) return;
-        if (result.type === 'STATUS' && result.status) {
-          onStatus(result.status);
-          return;
-        }
-        if (result.type === 'ERROR') {
-          cleanup();
-          reject(new Error(result.message || 'Local speech transcription failed.'));
-          return;
-        }
-        if (result.type === 'RESULT') {
-          try {
-            if (result.modelId !== MODEL_ID || result.modelRevision !== MODEL_REVISION)
-              throw new Error('The speech model revision changed during transcription.');
-            const segments = groupWhisperWordChunks(result.chunks ?? [], durationSeconds);
-            cleanup();
-            resolve({
-              modelId: result.modelId,
-              modelRevision: result.modelRevision,
-              transcript: result.text ?? '',
-              segments,
-            });
-          } catch (error) {
-            cleanup();
-            reject(error instanceof Error ? error : new Error(String(error)));
+    const execute = () =>
+      new Promise<{
+        modelId: string;
+        modelRevision: string;
+        transcript: string;
+        segments: Caption[];
+      }>((resolve, reject) => {
+        this.clearIdleTimer();
+        const worker = (this.worker ??= new CreatorAsrWorker());
+        const requestId = crypto.randomUUID();
+        const detachHandlers = () => {
+          worker.onmessage = null;
+          worker.onerror = null;
+        };
+        worker.onerror = (event) => {
+          detachHandlers();
+          this.dispose();
+          reject(new Error(event.message || 'Local transcription worker failed.'));
+        };
+        worker.onmessage = (event: MessageEvent<AsrWorkerReply>) => {
+          const result = event.data;
+          if (!result || result.requestId !== requestId) return;
+          if (result.type === 'STATUS' && result.status) {
+            onStatus(result.status);
+            return;
           }
-        }
-      };
-      worker.postMessage({ type: 'TRANSCRIBE', requestId, pcm, language }, [pcm]);
+          if (result.type === 'ERROR') {
+            detachHandlers();
+            this.scheduleIdleDispose();
+            reject(new Error(result.message || 'Local speech transcription failed.'));
+            return;
+          }
+          if (result.type === 'RESULT') {
+            try {
+              if (result.modelId !== MODEL_ID || result.modelRevision !== MODEL_REVISION)
+                throw new Error('The speech model revision changed during transcription.');
+              const segments = groupWhisperWordChunks(result.chunks ?? [], durationSeconds);
+              detachHandlers();
+              this.scheduleIdleDispose();
+              resolve({
+                modelId: result.modelId,
+                modelRevision: result.modelRevision,
+                transcript: result.text ?? '',
+                segments,
+              });
+            } catch (error) {
+              detachHandlers();
+              this.scheduleIdleDispose();
+              reject(error instanceof Error ? error : new Error(String(error)));
+            }
+          }
+        };
+        worker.postMessage({ type: 'TRANSCRIBE', requestId, pcm, language }, [pcm]);
+      });
+
+    const isQueuedBehindActive = this.activeQueueCount > 0;
+    this.activeQueueCount += 1;
+    const run = (isQueuedBehindActive ? this.workerQueue.then(execute) : execute()).finally(() => {
+      this.activeQueueCount = Math.max(0, this.activeQueueCount - 1);
     });
+    this.workerQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
   }
 }
 

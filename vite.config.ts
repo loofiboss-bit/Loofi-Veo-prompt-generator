@@ -9,8 +9,29 @@ import { fileURLToPath } from 'url';
 const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 const testSetupFile = fileURLToPath(new URL('./src/test-setup.ts', import.meta.url));
 
+const unusedPdfOptionalDepsPlugin = () => ({
+  name: 'stub-unused-pdf-optional-deps',
+  apply: 'build' as const,
+  enforce: 'pre' as const,
+  resolveId(id: string) {
+    if (id === 'html2canvas' || id === 'canvg') {
+      return `\0${id}`;
+    }
+    return null;
+  },
+  load(id: string) {
+    if (id === '\0html2canvas') {
+      return 'export default async function html2canvasDisabled() { throw new Error("html2canvas is disabled in offline build."); }';
+    }
+    if (id === '\0canvg') {
+      return 'export const Canvg = {}; export const presets = {};';
+    }
+    return null;
+  },
+});
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), unusedPdfOptionalDepsPlugin()],
   base: './', // Ensures assets are loaded relatively
   resolve: {
     dedupe: ['react', 'react-dom'],
@@ -44,7 +65,7 @@ export default defineConfig({
           if (id.includes('/node_modules/jszip/')) return 'archive';
           if (/\/node_modules\/(?:yjs|y-webrtc|simple-peer)\//.test(id)) return 'collaboration';
           if (id.includes('/node_modules/@google/genai/')) return 'genai';
-          if (id.includes('/node_modules/html2canvas/')) return 'vision_bundle';
+          if (id.includes('/node_modules/@mediapipe/tasks-vision/')) return 'mediapipe_vision';
           if (id.includes('/node_modules/three/')) return 'three';
           return undefined;
         },
@@ -87,10 +108,10 @@ export default defineConfig({
         'src/**/*.d.ts',
       ],
       thresholds: {
-        statements: 52,
-        branches: 40,
-        functions: 47,
-        lines: 53,
+        statements: 61,
+        branches: 50,
+        functions: 58,
+        lines: 62,
       },
     },
   },

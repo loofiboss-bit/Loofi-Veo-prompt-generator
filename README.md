@@ -20,7 +20,7 @@
 
 [![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](<https://img.shields.io/badge/platform-Fedora%20RPM%20(Primary)%20%7C%20Windows%20(Optional)-3b82f6?style=flat-square&labelColor=0f172a>)](#install-v2200)
+[![Platforms](<https://img.shields.io/badge/platform-Fedora%20RPM%20(Primary)%20%7C%20Windows%20(Optional)-3b82f6?style=flat-square&labelColor=0f172a>)](#install-v2210)
 [![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
@@ -224,9 +224,9 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v22.0.0
+## Install v22.1.0
 
-Download the [v22.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.0.0)
+Download the [v22.1.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.0)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
 ### Fedora Linux (Primary Target — Fedora 44 & Fedora 45 x86_64)
@@ -247,14 +247,14 @@ if an older package is already installed.
 #### Fedora RPM from GitHub
 
 ```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.rpm
+sudo dnf install ./Loofi-Flow-Veo-Studio-22.1.0-linux-x86_64.rpm
 ```
 
 #### Linux AppImage
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-22.0.0-linux-x86_64.AppImage
+chmod +x Loofi-Flow-Veo-Studio-22.1.0-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-22.1.0-linux-x86_64.AppImage
 ```
 
 ### Windows (Optional / Manual Build Only)
@@ -270,8 +270,8 @@ npx electron-builder --win
 
 Output binaries will be generated in `release/`:
 
-- NSIS installer: `Loofi-Flow-Veo-Studio-22.0.0-win-x64-setup.exe`
-- Portable executable: `Loofi-Flow-Veo-Studio-22.0.0-win-x64-portable.exe`
+- NSIS installer: `Loofi-Flow-Veo-Studio-22.1.0-win-x64-setup.exe`
+- Portable executable: `Loofi-Flow-Veo-Studio-22.1.0-win-x64-portable.exe`
 
 ## Offline Video & Publication Guides
 

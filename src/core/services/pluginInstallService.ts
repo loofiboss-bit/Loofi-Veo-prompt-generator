@@ -59,7 +59,10 @@ class PluginInstallService {
    * Install a plugin from the registry.
    * Full pipeline: download → verify → store → sandbox → activate.
    */
-  async installFromRegistry(entry: RegistryEntry): Promise<InstallResult> {
+  async installFromRegistry(
+    entry: RegistryEntry,
+    options?: { allowUnsigned?: boolean },
+  ): Promise<InstallResult> {
     const startedAt = Date.now();
     const pluginId = entry.id;
 
@@ -98,21 +101,35 @@ class PluginInstallService {
       this._updateProgress(pluginId, 'extracting', 50, 'Extracting manifest...');
       const manifest = this._extractManifest(sourceCode, entry);
 
-      // Step 4: Verify signature
+      // Step 4: Verify signature (fail-closed)
       this._updateProgress(pluginId, 'verifying', 60, 'Verifying signature...');
       let trustLevel: PluginTrustLevel = 'unsigned';
       if (manifest.signature) {
+        let result;
         try {
-          const result = await verifyManifestSignature(manifest);
-          if (!result.valid) {
-            throw new Error(`Signature invalid: ${result.reason || 'unknown'}`);
-          }
-          trustLevel = await determinePluginTrustLevel(manifest);
+          result = await verifyManifestSignature(manifest);
         } catch (err) {
-          logger.warn(`Signature verification failed for ${pluginId}:`, err);
-          trustLevel = 'invalid';
+          throw new Error(
+            `Signature verification failed for ${pluginId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+        if (!result.valid) {
+          throw new Error(`Signature invalid for ${pluginId}: ${result.reason || 'unknown'}`);
+        }
+        trustLevel = await determinePluginTrustLevel(manifest);
+        if (trustLevel === 'invalid') {
+          throw new Error(`Signature trust evaluation failed for ${pluginId}`);
         }
       } else {
+        const allowDevUnsigned =
+          typeof import.meta !== 'undefined' &&
+          Boolean(import.meta.env?.DEV) &&
+          import.meta.env?.VITE_ALLOW_UNSIGNED_PLUGINS === 'true';
+        if (!options?.allowUnsigned && !allowDevUnsigned) {
+          throw new Error(
+            `Unsigned plugin "${pluginId}" blocked by security policy. Sign the plugin manifest or pass explicit dev override.`,
+          );
+        }
         trustLevel = 'unsigned';
       }
 
@@ -132,7 +149,7 @@ class PluginInstallService {
       };
       await this._storeBundle(bundle);
 
-      // Step 6: Create sandbox and activate
+      // Step 6: Create sandbox and register
       this._updateProgress(pluginId, 'activating', 85, 'Starting plugin...');
       const sandboxMode = pluginSandboxService.determineSandboxMode(trustLevel, false);
       await pluginSandboxService.createSandbox(
@@ -142,8 +159,14 @@ class PluginInstallService {
         sandboxMode,
       );
 
-      // Register with pluginService
-      await pluginService.load(manifest);
+      // Register with pluginService; roll back sandbox/bundle on registration failure
+      try {
+        await pluginService.load(manifest);
+      } catch (loadErr) {
+        await pluginSandboxService.destroySandbox(pluginId).catch(() => undefined);
+        await del(`${IDB_PREFIX_BUNDLE}${pluginId}`).catch(() => undefined);
+        throw loadErr;
+      }
 
       this._updateProgress(pluginId, 'complete', 100, 'Installation complete');
 

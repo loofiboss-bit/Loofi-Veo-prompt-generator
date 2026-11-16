@@ -107,7 +107,9 @@ interface MediatorOptions {
 
 class StoreMediator {
   private listeners = new Map<EventName, Set<EventHandler<EventName>>>();
+  private activeEvents = new Set<EventName>();
   private readonly maxListeners: number;
+  private readonly maxEmitDepth: number = 8;
   private readonly debug: boolean;
 
   constructor(options: MediatorOptions = {}) {
@@ -150,6 +152,11 @@ class StoreMediator {
     event: E,
     ...args: EventPayload<E> extends undefined ? [] : [EventPayload<E>]
   ): void {
+    if (this.activeEvents.has(event) || this.activeEvents.size >= this.maxEmitDepth) {
+      logger.warn(`StoreMediator: re-entrant or cyclic emit blocked for "${String(event)}"`);
+      return;
+    }
+
     const handlers = this.listeners.get(event);
 
     if (this.debug) {
@@ -160,12 +167,17 @@ class StoreMediator {
 
     const payload = args[0] as EventPayload<E>;
 
-    for (const handler of handlers) {
-      try {
-        (handler as EventHandler<E>)(payload);
-      } catch (error) {
-        logger.error(`StoreMediator: error in handler for "${event}"`, undefined, error);
+    this.activeEvents.add(event);
+    try {
+      for (const handler of [...handlers]) {
+        try {
+          (handler as EventHandler<E>)(payload);
+        } catch (error) {
+          logger.error(`StoreMediator: error in handler for "${event}"`, undefined, error);
+        }
       }
+    } finally {
+      this.activeEvents.delete(event);
     }
   }
 

@@ -65,11 +65,19 @@ export const generateStoryboard = async (
     `Closing shot: ${prompt}`,
   ];
 
-  const promises = prompts.map((p) => generateConceptArt(p, { aspectRatio }));
+  const isDesktopApprovalGated =
+    typeof window !== 'undefined' && Boolean(window.electron?.approveProviderCost);
 
   try {
-    const results = await Promise.all(promises);
-    return results;
+    if (isDesktopApprovalGated) {
+      // Run sequentially on desktop so native cost dialogs never overlap and cancellation stops early.
+      const results: string[] = [];
+      for (const shotPrompt of prompts) {
+        results.push(await generateConceptArt(shotPrompt, { aspectRatio }));
+      }
+      return results;
+    }
+    return await Promise.all(prompts.map((p) => generateConceptArt(p, { aspectRatio })));
   } catch (error) {
     parseAndThrowApiError(error);
     return [];
