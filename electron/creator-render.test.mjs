@@ -6,7 +6,15 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import crypto from 'node:crypto';
 const require = createRequire(import.meta.url);
-const { CreatorRenderEngine, validatePlan, planHash, srt, ass } = require('./creator-render.cjs');
+const {
+  CreatorRenderEngine,
+  validatePlan,
+  planHash,
+  srt,
+  ass,
+  buildBakedVisualFilters,
+  chunkVisualClips,
+} = require('./creator-render.cjs');
 const { registerCreatorRenderIpc } = require('./ipc/creator-render-ipc.cjs');
 const sha256FileForTest = async (file) =>
   crypto
@@ -1233,4 +1241,73 @@ test('local batch request identity recovers a lost start acknowledgement without
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
+});
+
+test('queues proxy creation behind active render jobs instead of rejecting with render conflict', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-proxy-queue-'));
+  try {
+    const events = [];
+    const { DesktopMediaStore } = require('./media-store.cjs');
+    const store = new DesktopMediaStore(root);
+    const engine = new CreatorRenderEngine({
+      root,
+      runtimeRoot: '/unused',
+      getMediaStore: () => store,
+    });
+    engine.jobs.set('active-1', {
+      directory: root,
+      job: { id: 'active-1', status: 'rendering' },
+    });
+    const proxyPromise = engine._waitForIdleRender().then(() => {
+      events.push('proxy-resumed');
+    });
+    events.push('queued');
+    await Promise.resolve();
+    assert.deepEqual(events, ['queued']);
+    engine.jobs.get('active-1').job.status = 'complete';
+    engine._notifyRenderIdle();
+    await proxyPromise;
+    assert.deepEqual(events, ['queued', 'proxy-resumed']);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('supports 200+ clip timelines, extended 10-minute duration, baked effect filters, and chunked segmentation', () => {
+  const manyClips = Array.from({ length: 200 }, (_, i) => ({
+    id: `clip-${i + 1}`,
+    mediaId: 'registered',
+    type: 'image',
+    startTime: i * 3,
+    duration: 3,
+    offset: 0,
+    volume: 1,
+    crop: { mode: 'fit', x: 0.5, y: 0.5 },
+  }));
+  const p = plan({
+    durationSeconds: 600,
+    maxDurationSeconds: 1800,
+    clips: manyClips,
+    captions: Array.from({ length: 600 }, (_, i) => ({
+      id: `cap-${i + 1}`,
+      text: `Line ${i + 1}`,
+      startTime: i,
+      endTime: i + 0.8,
+      style: 'classic',
+    })),
+  });
+  assert.equal(validatePlan(p).clips.length, 200);
+  const chunks = chunkVisualClips(manyClips);
+  assert.equal(chunks.length, 5);
+  assert.equal(chunks[0].length, 40);
+
+  const filterStr = buildBakedVisualFilters({
+    opacity: 0.5,
+    colorGrade: { brightness: 0.1, contrast: 1.2, saturation: 0.9 },
+    transform: { scale: 1.25, rotation: 10 },
+  });
+  assert.match(filterStr, /eq=brightness=0\.1:contrast=1\.2:saturation=0\.9/);
+  assert.match(filterStr, /scale=iw\*1\.25:ih\*1\.25/);
+  assert.match(filterStr, /rotate=/);
+  assert.match(filterStr, /colorchannelmixer=aa=0\.500/);
 });

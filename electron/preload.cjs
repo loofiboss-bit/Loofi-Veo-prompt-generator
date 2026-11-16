@@ -44,22 +44,19 @@ contextBridge.exposeInMainWorld('electron', {
     return () => ipcRenderer.removeListener('creator-asr-model-progress', listener);
   },
 
-  // Download progress listener
+  // Download progress listener (returns unsubscribe cleanup callback)
   onDownloadProgress: (callback) => {
-    ipcRenderer.on('download-progress', (event, progress) => {
+    const listener = (_event, progress) => {
       callback(progress);
-    });
+    };
+    ipcRenderer.on('download-progress', listener);
+    return () => ipcRenderer.removeListener('download-progress', listener);
   },
 
-  // Error logging transports
-  // logError is intentionally non-blocking in Sprint 1.
-  logError: (entryOrBatch) => {
-    ipcRenderer.send('log-error-fire-and-forget', entryOrBatch);
-    return Promise.resolve();
-  },
+  // Error logging transports (non-blocking async only)
+  logError: (entryOrBatch) => ipcRenderer.invoke('log-error', entryOrBatch),
   logErrorFireAndForget: (entryOrBatch) =>
     ipcRenderer.send('log-error-fire-and-forget', entryOrBatch),
-  logErrorSync: (entryOrBatch) => ipcRenderer.sendSync('log-error-sync', entryOrBatch),
 
   // Telemetry (v2.0.0 — Production Desktop)
   sendTelemetry: (events) => ipcRenderer.invoke('send-telemetry', events),
@@ -104,6 +101,17 @@ contextBridge.exposeInMainWorld('electron', {
   saveProjectBackup: (input) => ipcRenderer.invoke('project-backup-save', input),
   listProjectBackups: (projectId) => ipcRenderer.invoke('project-backup-list', projectId),
   restoreProjectBackup: (input) => ipcRenderer.invoke('project-backup-restore', input),
+  openProjectDb: (projectId) => ipcRenderer.invoke('project-db-open', projectId),
+  listProjectsDb: () => ipcRenderer.invoke('project-db-list'),
+  commitProjectDelta: (input) => ipcRenderer.invoke('project-db-commit-delta', input),
+  snapshotProjectDbBackup: (projectId) =>
+    ipcRenderer.invoke('project-db-snapshot-backup', projectId),
+  exportProjectArchive: (input) => ipcRenderer.invoke('project-archive-export', input),
+  onProjectArchiveProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('project-archive-progress', listener);
+    return () => ipcRenderer.removeListener('project-archive-progress', listener);
+  },
   selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
   getDesktopDiagnostics: () => ipcRenderer.invoke('desktop-diagnostics'),
   exportSupportBundle: () => ipcRenderer.invoke('export-support-bundle'),

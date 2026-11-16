@@ -50,6 +50,8 @@ export interface CreatorDeliveryV1 {
   audioProcessing?: CreatorAudioProcessingV1;
   coverTimestamp?: number;
   coverAssetId?: string;
+  bakeEffects?: boolean;
+  maxDurationSeconds?: number;
   title: string;
   description: string;
   updatedAt: number;
@@ -66,6 +68,18 @@ export interface TimelineRenderClipV1 {
   fadeInSeconds?: number;
   fadeOutSeconds?: number;
   crossfadeSeconds?: number;
+  opacity?: number;
+  colorGrade?: {
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+  };
+  transform?: {
+    scale?: number;
+    rotation?: number;
+    x?: number;
+    y?: number;
+  };
   crop: CreatorCropV1;
 }
 export interface TimelineRenderPlanV1 {
@@ -78,6 +92,7 @@ export interface TimelineRenderPlanV1 {
   projectName: string;
   contentHash: string;
   durationSeconds: number;
+  maxDurationSeconds?: number;
   fps: 30;
   aspectRatio: CreatorAspectRatio;
   resolution: '720p' | '1080p';

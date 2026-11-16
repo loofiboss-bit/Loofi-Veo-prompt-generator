@@ -62,6 +62,7 @@ export interface OtioTrack {
   name: string;
   kind: 'Video' | 'Audio';
   children: Array<OtioClip | OtioGap>;
+  markers?: OtioMarker[];
   metadata?: Record<string, unknown>;
 }
 

@@ -300,4 +300,26 @@ describe('databaseService', () => {
       expect(health.issues.some((i) => i.includes('Database size is large'))).toBe(true);
     });
   });
+
+  describe('migration transaction safety', () => {
+    it('supports synchronous Migration.up definitions on upgrade without unhandled async warnings', () => {
+      const migrations = (
+        databaseService as unknown as {
+          migrations: Array<{ version: number; up: (db: IDBDatabase) => unknown }>;
+        }
+      ).migrations;
+      expect(migrations.length).toBeGreaterThanOrEqual(1);
+      const createdStores: string[] = [];
+      const mockDb = {
+        objectStoreNames: { contains: () => false },
+        createObjectStore: (name: string) => {
+          createdStores.push(name);
+          return { createIndex: vi.fn() };
+        },
+      } as unknown as IDBDatabase;
+      const ret = migrations[0].up(mockDb);
+      expect(ret).toBeUndefined();
+      expect(createdStores).toEqual(['projects', 'history', 'templates', 'presets']);
+    });
+  });
 });

@@ -115,10 +115,9 @@ interface ElectronAPI {
     crashCount: number;
   }>;
   resetSafeMode: () => Promise<boolean>;
-  onDownloadProgress: (callback: (progress: number) => void) => void;
+  onDownloadProgress: (callback: (progress: number) => void) => (() => void) | void;
   logError: (entryOrBatch: unknown) => Promise<void>;
   logErrorFireAndForget: (entryOrBatch: unknown) => void;
-  logErrorSync: (entryOrBatch: unknown) => boolean;
   getNleStatus: (app?: 'resolve' | 'premiere') => Promise<{
     app: 'resolve' | 'premiere';
     available: boolean;
@@ -302,6 +301,54 @@ interface ElectronAPI {
     sha256: string;
     createdAt: number;
   }>;
+  openProjectDb?: (projectId: string) => Promise<import('./src/core/types').Project | null>;
+  listProjectsDb?: () => Promise<Array<Record<string, unknown>>>;
+  commitProjectDelta?: (input: {
+    projectId: string;
+    expectedRevision?: number;
+    preserveRevision?: boolean;
+    document?: import('./src/core/types').Project;
+    delta?: Record<string, unknown>;
+  }) => Promise<{
+    projectId: string;
+    documentRevision: number;
+    schemaVersion: number;
+    entityChanges: number;
+    updatedAt: number;
+  }>;
+  snapshotProjectDbBackup?: (projectId?: string) => Promise<{
+    id: string;
+    path: string;
+    sizeBytes: number;
+    createdAt: number;
+  }>;
+  exportProjectArchive?: (input: {
+    archive: Record<string, unknown>;
+    manifest: Record<string, unknown>;
+    diskAssets: Array<{
+      id: string;
+      archivePath: string;
+      storageKey?: string;
+      base64Data?: string;
+    }>;
+    extraFiles?: Record<string, string>;
+    defaultFileName?: string;
+    outputPath?: string;
+  }) => Promise<{
+    canceled: boolean;
+    path?: string;
+    sizeBytes?: number;
+    entryCount?: number;
+    checksums?: Record<string, string>;
+  }>;
+  onProjectArchiveProgress?: (
+    callback: (progress: {
+      phase: string;
+      percent: number;
+      processedBytes: number;
+      totalBytes: number;
+    }) => void,
+  ) => () => void;
   selectProjectFolder?: () => Promise<string | null>;
   getDesktopDiagnostics?: () => Promise<{
     app: { version: string; name: string; electron: string };

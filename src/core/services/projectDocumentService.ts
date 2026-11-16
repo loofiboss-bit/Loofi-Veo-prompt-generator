@@ -109,8 +109,22 @@ class ProjectDocumentService {
     const key = projectStorageKey(id);
     const store = getProjectSnapshotStore();
     const stored = await safeGet<Project>(key, store);
-    if (stored) {
-      const migration = projectMigrationService.migrateProjectDocument(stored);
+    let candidate = stored;
+    if (window.electron?.openProjectDb) {
+      try {
+        const dbDoc = await window.electron.openProjectDb(id);
+        if (
+          dbDoc &&
+          (!candidate || (dbDoc.documentRevision ?? 0) >= (candidate.documentRevision ?? 0))
+        ) {
+          candidate = dbDoc;
+        }
+      } catch (error) {
+        logger.warn(`SQLite project read failed for ${id}; falling back to local store`, error);
+      }
+    }
+    if (candidate) {
+      const migration = projectMigrationService.migrateProjectDocument(candidate);
       if (migration.migrated) {
         void atomicUpdate<Project>(key, () => migration.project, store).catch((error) => {
           logger.warn(`Could not persist migrated schema for project ${id}`, error);
@@ -274,7 +288,23 @@ class ProjectDocumentService {
       }),
     );
     try {
-      await window.electron?.saveProjectBackup?.({ projectId: project.id, snapshot });
+      if (window.electron?.commitProjectDelta) {
+        const dbCommit = await window.electron.commitProjectDelta({
+          projectId: project.id,
+          expectedRevision: (snapshot.documentRevision ?? 1) - 1,
+          document: snapshot,
+        });
+        snapshot.documentRevision = dbCommit.documentRevision;
+        project.documentRevision = dbCommit.documentRevision;
+        this.committedRevisions.set(project.id, dbCommit.documentRevision);
+        if (dbCommit.documentRevision % 10 === 0) {
+          void window.electron.snapshotProjectDbBackup?.(project.id).catch((err) => {
+            logger.warn('Periodic SQLite snapshot backup failed', err);
+          });
+        }
+      } else {
+        await window.electron?.saveProjectBackup?.({ projectId: project.id, snapshot });
+      }
     } catch (error) {
       result.backupError = error instanceof Error ? error.message : String(error);
       logger.warn('Project saved, but desktop backup failed', result.backupError);

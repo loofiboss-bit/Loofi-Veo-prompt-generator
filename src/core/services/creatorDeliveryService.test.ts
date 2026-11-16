@@ -303,4 +303,50 @@ describe('read-only delivery preflight', () => {
       ]),
     );
   });
+
+  it('bakes opacity, colorGrade, transform and allows extended duration when opted in', async () => {
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        readDesktopMedia: vi.fn().mockResolvedValue({
+          bytes: new Uint8Array([1, 2, 3]).buffer,
+          mimeType: 'video/mp4',
+        }),
+        inspectTimelineRenderMedia: vi
+          .fn()
+          .mockResolvedValue({ available: true, durationSeconds: 1200 }),
+      },
+    });
+    const longProject = {
+      ...makeProject([
+        {
+          ...clip,
+          startTime: 0,
+          duration: 600,
+          opacity: 0.75,
+          colorGrade: {
+            brightness: 0.1,
+            contrast: 1.2,
+            saturation: 1.1,
+          } as TimelineClip['colorGrade'],
+          transform: { scale: 1.15, rotation: 5, opacity: 1, position: { x: 0, y: 0 } },
+        },
+      ]),
+      creatorDelivery: {
+        ...defaultCreatorDelivery(makeProject([clip])),
+        bakeEffects: true,
+        maxDurationSeconds: 1800,
+      },
+    };
+    const diagnostics = await creatorDeliveryService.preflight(longProject, [asset]);
+    expect(diagnostics).toEqual([]);
+
+    const plan = await creatorDeliveryService.buildPlan(longProject, [asset]);
+    expect(plan.durationSeconds).toBe(600);
+    expect(plan.clips[0]).toMatchObject({
+      opacity: 0.75,
+      colorGrade: { brightness: 0.1, contrast: 1.2, saturation: 1.1 },
+      transform: { scale: 1.15, rotation: 5 },
+    });
+  });
 });

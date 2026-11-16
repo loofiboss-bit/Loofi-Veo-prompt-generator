@@ -6,9 +6,18 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const { FFmpegTaskQueue } = require('./ffmpeg-queue.cjs');
 const exec = promisify(execFile);
 const VERSION = '9.0.2';
 const PROGRESS_THROTTLE_MS = 150;
+const SEGMENT_CHUNK_SIZE = 40;
+const DEFAULT_RENDER_LIMITS = {
+  maxClips: 500,
+  defaultMaxDurationSeconds: 180,
+  maxExtendedDurationSeconds: 1800,
+  maxCaptions: 5000,
+  maxPlanBytes: 16 * 1024 * 1024,
+};
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const MEDIA_FORMATS =
   'mov,matroska,webm,avi,wav,mp3,flac,ogg,image2,png_pipe,jpeg_pipe,gif,bmp_pipe,webp_pipe';
@@ -38,9 +47,20 @@ function text(value, limit = 4000) {
 function number(value, min, max) {
   return Number.isFinite(value) && value >= min && value <= max;
 }
-function validatePlan(input) {
-  if (!input || JSON.stringify(input).length > 2000000) throw new Error('Invalid render plan.');
+function validatePlan(input, customLimits) {
+  const limits = { ...DEFAULT_RENDER_LIMITS, ...(customLimits || {}) };
+  if (!input || JSON.stringify(input).length > limits.maxPlanBytes)
+    throw new Error('Invalid render plan.');
   const p = JSON.parse(JSON.stringify(input));
+  const maxDurationSeconds =
+    typeof p.maxDurationSeconds === 'number' &&
+    number(
+      p.maxDurationSeconds,
+      limits.defaultMaxDurationSeconds,
+      limits.maxExtendedDurationSeconds,
+    )
+      ? p.maxDurationSeconds
+      : (customLimits?.maxDurationSeconds ?? limits.defaultMaxDurationSeconds);
   if (
     (p.clientRequestId !== undefined &&
       (typeof p.clientRequestId !== 'string' || !/^[\w:-]{1,180}$/.test(p.clientRequestId))) ||
@@ -48,7 +68,7 @@ function validatePlan(input) {
     !text(p.projectId, 180) ||
     !p.projectId ||
     !text(p.projectName, 300) ||
-    !number(p.durationSeconds, 1 / 30, 180) ||
+    !number(p.durationSeconds, 1 / 30, maxDurationSeconds) ||
     p.fps !== 30 ||
     (p.purpose !== undefined && !['preview', 'delivery'].includes(p.purpose)) ||
     !['9:16', '16:9', '1:1'].includes(p.aspectRatio) ||
@@ -83,9 +103,9 @@ function validatePlan(input) {
   if (
     !Array.isArray(p.clips) ||
     !p.clips.length ||
-    p.clips.length > 120 ||
+    p.clips.length > limits.maxClips ||
     !Array.isArray(p.captions) ||
-    p.captions.length > 500
+    p.captions.length > limits.maxCaptions
   )
     throw new Error('Invalid timeline.');
   if (
@@ -105,8 +125,8 @@ function validatePlan(input) {
       !text(c.mediaId, 180) ||
       !/^[\w.:-]+$/.test(c.mediaId) ||
       !['video', 'image', 'audio'].includes(c.type) ||
-      !number(c.startTime, 0, 180) ||
-      !number(c.duration, 1 / 30, 180) ||
+      !number(c.startTime, 0, maxDurationSeconds) ||
+      !number(c.duration, 1 / 30, maxDurationSeconds) ||
       c.startTime + c.duration > p.durationSeconds + 0.001 ||
       !number(c.offset, 0, 86400) ||
       !number(c.volume, 0, 4) ||
@@ -206,14 +226,96 @@ function ass(p) {
   };
   return `[Script Info]\nScriptType: v4.00+\nPlayResX: ${w}\nPlayResY: ${h}\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: Default,${font},${Math.round(h * 0.048)},&H00${p.captionStyle === 'karaoke' ? highlight : color},&H00${color},&H00111111,&H80111111,-1,0,0,0,100,100,0,0,${background},3,1,2,${margin},${margin},${margin},1\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n${p.captions.map((c) => `Dialogue: 0,${at(c.startTime)},${at(c.endTime)},Default,,0,0,0,,${captionText(c)}`).join('\n')}`;
 }
+function buildBakedVisualFilters(clip) {
+  const filters = [];
+  if (clip.colorGrade && typeof clip.colorGrade === 'object') {
+    const parts = [];
+    if (
+      typeof clip.colorGrade.brightness === 'number' &&
+      Number.isFinite(clip.colorGrade.brightness)
+    )
+      parts.push(`brightness=${Math.max(-1, Math.min(1, clip.colorGrade.brightness))}`);
+    if (typeof clip.colorGrade.contrast === 'number' && Number.isFinite(clip.colorGrade.contrast))
+      parts.push(`contrast=${Math.max(-1000, Math.min(1000, clip.colorGrade.contrast))}`);
+    if (
+      typeof clip.colorGrade.saturation === 'number' &&
+      Number.isFinite(clip.colorGrade.saturation)
+    )
+      parts.push(`saturation=${Math.max(0, Math.min(3, clip.colorGrade.saturation))}`);
+    if (parts.length) filters.push(`eq=${parts.join(':')}`);
+  }
+  if (clip.transform && typeof clip.transform === 'object') {
+    if (
+      typeof clip.transform.scale === 'number' &&
+      Number.isFinite(clip.transform.scale) &&
+      clip.transform.scale > 0 &&
+      clip.transform.scale !== 1
+    ) {
+      const s = Math.max(0.1, Math.min(4, clip.transform.scale));
+      filters.push(`scale=iw*${s}:ih*${s}`);
+    }
+    if (
+      typeof clip.transform.rotation === 'number' &&
+      Number.isFinite(clip.transform.rotation) &&
+      clip.transform.rotation !== 0
+    ) {
+      const radians = ((clip.transform.rotation * Math.PI) / 180).toFixed(6);
+      filters.push(`rotate=${radians}:fillcolor=black@0`);
+    }
+  }
+  if (typeof clip.opacity === 'number' && Number.isFinite(clip.opacity) && clip.opacity < 1) {
+    const alpha = Math.max(0, Math.min(1, clip.opacity)).toFixed(3);
+    filters.push(`colorchannelmixer=aa=${alpha}`);
+  }
+  return filters.length ? `,${filters.join(',')}` : '';
+}
+
+function chunkVisualClips(visuals, chunkSize = SEGMENT_CHUNK_SIZE) {
+  const sorted = [...visuals].sort((a, b) => a.startTime - b.startTime);
+  if (sorted.length <= chunkSize) return [sorted];
+  const chunks = [];
+  let cursor = 0;
+  while (cursor < sorted.length) {
+    let end = Math.min(sorted.length, cursor + chunkSize);
+    while (end < sorted.length && sorted[end].crossfadeSeconds > 0 && end - cursor > 1) {
+      end -= 1;
+    }
+    chunks.push(sorted.slice(cursor, end));
+    cursor = end;
+  }
+  return chunks;
+}
+
 class CreatorRenderEngine {
-  constructor({ root, runtimeRoot, fontsRoot, getMediaStore, onUpdate = () => {} }) {
+  constructor({ root, runtimeRoot, fontsRoot, getMediaStore, onUpdate = () => {}, limits = {} }) {
     this.root = root;
     this.runtimeRoot = runtimeRoot;
     this.fontsRoot = fontsRoot || path.join(runtimeRoot, 'fonts');
     this.getMediaStore = getMediaStore;
     this.onUpdate = onUpdate;
+    this.limits = { ...DEFAULT_RENDER_LIMITS, ...limits };
     this.jobs = new Map();
+    this._proxyQueue = new FFmpegTaskQueue(1);
+    this._idleWaiters = new Set();
+  }
+  _hasActiveRender() {
+    return (
+      Boolean(this.starting) ||
+      this.list().some((job) => ['queued', 'rendering', 'verifying'].includes(job.status))
+    );
+  }
+  _notifyRenderIdle() {
+    if (this._hasActiveRender()) return;
+    for (const resolve of [...this._idleWaiters]) {
+      this._idleWaiters.delete(resolve);
+      resolve();
+    }
+  }
+  async _waitForIdleRender() {
+    if (!this._hasActiveRender()) return;
+    await new Promise((resolve) => {
+      this._idleWaiters.add(resolve);
+    });
   }
   initialize() {
     this.readyPromise ||= this._initInternal().catch(() => {
@@ -289,7 +391,9 @@ class CreatorRenderEngine {
       return {
         available: true,
         version: VERSION,
-        maxDurationSeconds: 180,
+        maxDurationSeconds: this.limits.maxExtendedDurationSeconds,
+        maxClips: this.limits.maxClips,
+        maxCaptions: this.limits.maxCaptions,
         aspectRatios: ['9:16', '16:9', '1:1'],
         resolutions: ['720p', '1080p'],
         fps: 30,
@@ -303,6 +407,7 @@ class CreatorRenderEngine {
           'speech-ducking',
           'captions',
           'logo',
+          'bake-effects',
         ],
       };
     } catch (error) {
@@ -362,7 +467,7 @@ class CreatorRenderEngine {
     }
   }
   async startReserved(input) {
-    const plan = validatePlan(input);
+    const plan = validatePlan(input, this.limits);
     if (plan.clientRequestId) {
       if (!/^[\w:-]{1,180}$/.test(plan.clientRequestId))
         throw new Error('Invalid render request identity.');
@@ -426,7 +531,7 @@ class CreatorRenderEngine {
     if (!['failed', 'cancelled'].includes(job.status))
       throw new Error('Only interrupted jobs can be retried.');
     const snapshot = JSON.parse(await fs.readFile(path.join(state.directory, 'plan.json'), 'utf8'));
-    return this.start(validatePlan(snapshot));
+    return this.start(validatePlan(snapshot, this.limits));
   }
   async preview(id) {
     const state = this.jobs.get(id);
@@ -620,54 +725,56 @@ class CreatorRenderEngine {
     const key = `proxy:${sha256}:720-v1`;
     const existing = await store.read(key);
     if (existing) return { key, url: existing.localUrl, sha256 };
-    if (
-      this.proxyRunning ||
-      this.starting ||
-      this.list().some((job) => ['queued', 'rendering', 'verifying'].includes(job.status))
-    )
-      throw new Error('Another render is running. Retry proxy creation when it finishes.');
-    this.proxyRunning = true;
-    const temporary = path.join(this.root, `${crypto.randomUUID()}.proxy.mp4`);
-    try {
-      await exec(
-        this.binary('ffmpeg'),
-        [
-          '-hide_banner',
-          '-nostdin',
-          '-y',
-          '-protocol_whitelist',
-          'file,pipe',
-          '-format_whitelist',
-          MEDIA_FORMATS,
-          '-i',
-          record.path || fileURLToPath(record.localUrl),
-          '-vf',
-          'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
-          '-c:v',
-          'libx264',
-          '-preset',
-          'veryfast',
-          '-crf',
-          '28',
-          '-c:a',
-          'aac',
-          temporary,
-        ],
-        { timeout: 600000, maxBuffer: 2000000, windowsHide: true },
-      );
-      const metadata = await this.probe(temporary);
-      if (!metadata.streams.some((stream) => stream.codec_name === 'h264'))
-        throw new Error('Proxy verification failed.');
-      const proxy = await store.importBytes({
-        key,
-        bytes: await fs.readFile(temporary),
-        mimeType: 'video/mp4',
-      });
-      return { key, url: proxy.localUrl, sha256 };
-    } finally {
-      this.proxyRunning = false;
-      await fs.rm(temporary, { force: true });
-    }
+    return this._proxyQueue.enqueue(
+      async () => {
+        const cachedDuringWait = await store.read(key);
+        if (cachedDuringWait) return { key, url: cachedDuringWait.localUrl, sha256 };
+        await this._waitForIdleRender();
+        this.proxyRunning = true;
+        const temporary = path.join(this.root, `${crypto.randomUUID()}.proxy.mp4`);
+        try {
+          await exec(
+            this.binary('ffmpeg'),
+            [
+              '-hide_banner',
+              '-nostdin',
+              '-y',
+              '-protocol_whitelist',
+              'file,pipe',
+              '-format_whitelist',
+              MEDIA_FORMATS,
+              '-i',
+              record.path || fileURLToPath(record.localUrl),
+              '-vf',
+              'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
+              '-c:v',
+              'libx264',
+              '-preset',
+              'veryfast',
+              '-crf',
+              '28',
+              '-c:a',
+              'aac',
+              temporary,
+            ],
+            { timeout: 600000, maxBuffer: 2000000, windowsHide: true },
+          );
+          const metadata = await this.probe(temporary);
+          if (!metadata.streams.some((stream) => stream.codec_name === 'h264'))
+            throw new Error('Proxy verification failed.');
+          const proxy = await store.importBytes({
+            key,
+            bytes: await fs.readFile(temporary),
+            mimeType: 'video/mp4',
+          });
+          return { key, url: proxy.localUrl, sha256 };
+        } finally {
+          this.proxyRunning = false;
+          await fs.rm(temporary, { force: true });
+        }
+      },
+      { priority: 'normal' },
+    );
   }
   async cancel(id) {
     const state = this.jobs.get(id);
@@ -795,6 +902,11 @@ class CreatorRenderEngine {
           }
         }
       }
+      const visualClips = ordered.filter((c) => c.type !== 'audio');
+      const useChunkedConcat = visualClips.length > SEGMENT_CHUNK_SIZE;
+      const clipInputIndex = new Map();
+      const inputFiles = [];
+
       for (const c of ordered) {
         const store = this.getMediaStore();
         const record = store.resolve ? await store.resolve(c.mediaId) : await store.read(c.mediaId);
@@ -807,7 +919,7 @@ class CreatorRenderEngine {
         if (p.mediaHashes && mediaSha256 !== p.mediaHashes[c.mediaId])
           throw new Error(`Media changed after delivery check: ${c.id}.`);
         const ext = c.type === 'image' ? '.png' : c.type === 'audio' ? '.audio' : '.video';
-        const filename = `input-${index}${ext}`;
+        const filename = `input-${ordered.indexOf(c) + 1}${ext}`;
         const inputTarget = path.join(state.directory, filename);
         if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
           await fs.copyFile(record.path || fileURLToPath(record.localUrl), inputTarget);
@@ -820,69 +932,221 @@ class CreatorRenderEngine {
           throw new Error(`Media changed after delivery check: ${c.id}.`);
         let metadata;
         try {
-          metadata = await this.probe(path.join(state.directory, filename));
+          metadata = await this.probe(inputTarget);
         } catch {
           throw new Error(`Cannot read media for clip ${c.id}. Unsupported or damaged file.`);
         }
-        if (c.type === 'image') args.push('-loop', '1');
-        args.push(
-          '-protocol_whitelist',
-          'file,pipe',
-          '-format_whitelist',
-          MEDIA_FORMATS,
-          '-ss',
-          String(c.offset),
-          '-t',
-          String(c.duration),
-          '-i',
-          filename,
-        );
         if (c.type !== 'image' && !metadata.streams.some((s) => s.codec_type === c.type))
           throw new Error(`Missing ${c.type} stream in clip ${c.id}.`);
         if (c.type !== 'image' && Number(metadata.format.duration) + 0.05 < c.offset + c.duration)
           throw new Error(`Clip exceeds source duration: ${c.id}.`);
-        if (c.type !== 'audio') {
-          count++;
-          const scale =
-            c.crop.mode === 'fill'
-              ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:(iw-ow)*${c.crop.x}:(ih-oh)*${c.crop.y}`
-              : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
-          const fadeIn = c.crossfadeSeconds || c.fadeInSeconds;
-          const fade = `${fadeIn ? `,fade=t=in:st=0:d=${fadeIn}:alpha=1` : ''}${c.fadeOutSeconds ? `,fade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}:alpha=1` : ''}`;
-          filters.push(
-            `[${index}:v]trim=duration=${c.duration},setpts=PTS-STARTPTS,${scale},setsar=1,fps=30,format=rgba${fade},setpts=PTS+${c.startTime}/TB[v${count}]`,
+        inputFiles.push({ clip: c, filename, metadata });
+      }
+
+      if (useChunkedConcat) {
+        const chunks = chunkVisualClips(visualClips, SEGMENT_CHUNK_SIZE);
+        const concatLines = [];
+        let windowStart = 0;
+        for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx += 1) {
+          const chunk = chunks[chunkIdx];
+          const isLast = chunkIdx === chunks.length - 1;
+          const nextStart = isLast ? p.durationSeconds : chunks[chunkIdx + 1][0].startTime;
+          const chunkEnd = Math.max(windowStart + 0.05, Math.min(p.durationSeconds, nextStart));
+          const chunkDuration = chunkEnd - windowStart;
+          const chunkName = `segment-${chunkIdx}.mp4`;
+          const chunkArgs = [
+            '-hide_banner',
+            '-nostdin',
+            '-y',
+            '-filter_complex_threads',
+            '1',
+            '-f',
+            'lavfi',
+            '-i',
+            `color=c=black:s=${w}x${h}:r=30:d=${chunkDuration}`,
+          ];
+          const chunkFilters = ['[0:v]format=rgba[cbase0]'];
+          let chunkBase = 'cbase0';
+          let chunkInput = 1;
+          chunk.forEach((c, pos) => {
+            const info = inputFiles.find((item) => item.clip.id === c.id);
+            if (c.type === 'image') chunkArgs.push('-loop', '1');
+            chunkArgs.push(
+              '-protocol_whitelist',
+              'file,pipe',
+              '-format_whitelist',
+              MEDIA_FORMATS,
+              '-ss',
+              String(c.offset),
+              '-t',
+              String(c.duration),
+              '-i',
+              info.filename,
+            );
+            const scale =
+              c.crop.mode === 'fill'
+                ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:(iw-ow)*${c.crop.x}:(ih-oh)*${c.crop.y}`
+                : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
+            const fadeIn = c.crossfadeSeconds || c.fadeInSeconds;
+            const fade = `${fadeIn ? `,fade=t=in:st=0:d=${fadeIn}:alpha=1` : ''}${c.fadeOutSeconds ? `,fade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}:alpha=1` : ''}`;
+            const baked = buildBakedVisualFilters(c);
+            const relStart = Math.max(0, c.startTime - windowStart);
+            chunkFilters.push(
+              `[${chunkInput}:v]trim=duration=${c.duration},setpts=PTS-STARTPTS,${scale},setsar=1,fps=30,format=rgba${baked}${fade},setpts=PTS+${relStart}/TB[cv${pos + 1}]`,
+            );
+            chunkFilters.push(
+              `[${chunkBase}][cv${pos + 1}]overlay=eof_action=pass:enable='between(t,${relStart},${relStart + c.duration})'[cbase${pos + 1}]`,
+            );
+            chunkBase = `cbase${pos + 1}`;
+            chunkInput += 1;
+          });
+          chunkArgs.push(
+            '-filter_complex',
+            chunkFilters.join(';'),
+            '-map',
+            `[${chunkBase}]`,
+            '-an',
+            '-t',
+            String(chunkDuration),
+            '-r',
+            '30',
+            '-c:v',
+            'libx264',
+            '-preset',
+            'veryfast',
+            '-crf',
+            '18',
+            '-pix_fmt',
+            'yuv420p',
+            chunkName,
           );
-          filters.push(
-            `[${base}][v${count}]overlay=eof_action=pass:enable='between(t,${c.startTime},${c.startTime + c.duration})'[base${count}]`,
-          );
-          base = `base${count}`;
+          await this.run(state, chunkArgs, false);
+          concatLines.push(`file '${chunkName}'`);
+          windowStart = chunkEnd;
         }
-        if (c.type !== 'image' && metadata.streams.some((s) => s.codec_type === 'audio')) {
-          const label = `a${index}`;
-          const fadeIn = c.fadeInSeconds ? `,afade=t=in:st=0:d=${c.fadeInSeconds}` : '';
-          const fadeOut = c.fadeOutSeconds
-            ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
-            : '';
-          let ducking = '';
-          if (
-            c.type === 'audio' &&
-            p.audioProcessing?.speechDucking &&
-            speechIntervals.length > 0
-          ) {
-            const duckDb =
-              typeof p.audioProcessing.duckingGainDb === 'number'
-                ? p.audioProcessing.duckingGainDb
-                : -12;
-            const duckFactor = Math.pow(10, duckDb / 20).toFixed(4);
-            const conditions = speechIntervals.map(([s, e]) => `between(t,${s},${e})`).join('+');
-            ducking = `,volume='if(${conditions},${duckFactor},1)':eval=frame`;
+        await fs.writeFile(path.join(state.directory, 'concat.txt'), concatLines.join('\n'));
+        // Reset base input args to concat visual stream + audio-only inputs
+        args.length = 0;
+        args.push(
+          '-hide_banner',
+          '-nostdin',
+          '-y',
+          '-filter_complex_threads',
+          '1',
+          '-f',
+          'concat',
+          '-safe',
+          '0',
+          '-i',
+          'concat.txt',
+        );
+        filters.length = 0;
+        filters.push('[0:v]format=rgba[base0]');
+        base = 'base0';
+        index = 1;
+        for (const info of inputFiles) {
+          const c = info.clip;
+          if (c.type !== 'image' && info.metadata.streams.some((s) => s.codec_type === 'audio')) {
+            args.push(
+              '-protocol_whitelist',
+              'file,pipe',
+              '-format_whitelist',
+              MEDIA_FORMATS,
+              '-ss',
+              String(c.offset),
+              '-t',
+              String(c.duration),
+              '-i',
+              info.filename,
+            );
+            clipInputIndex.set(c.id, index);
+            const label = `a${index}`;
+            const fadeIn = c.fadeInSeconds ? `,afade=t=in:st=0:d=${c.fadeInSeconds}` : '';
+            const fadeOut = c.fadeOutSeconds
+              ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
+              : '';
+            let ducking = '';
+            if (
+              c.type === 'audio' &&
+              p.audioProcessing?.speechDucking &&
+              speechIntervals.length > 0
+            ) {
+              const duckDb =
+                typeof p.audioProcessing.duckingGainDb === 'number'
+                  ? p.audioProcessing.duckingGainDb
+                  : -12;
+              const duckFactor = Math.pow(10, duckDb / 20).toFixed(4);
+              const conditions = speechIntervals.map(([s, e]) => `between(t,${s},${e})`).join('+');
+              ducking = `,volume='if(${conditions},${duckFactor},1)':eval=frame`;
+            }
+            filters.push(
+              `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut}${ducking},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
+            );
+            audio.push(`[${label}]`);
+            index += 1;
           }
-          filters.push(
-            `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut}${ducking},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
-          );
-          audio.push(`[${label}]`);
         }
-        index++;
+      } else {
+        for (const info of inputFiles) {
+          const c = info.clip;
+          const metadata = info.metadata;
+          if (c.type === 'image') args.push('-loop', '1');
+          args.push(
+            '-protocol_whitelist',
+            'file,pipe',
+            '-format_whitelist',
+            MEDIA_FORMATS,
+            '-ss',
+            String(c.offset),
+            '-t',
+            String(c.duration),
+            '-i',
+            info.filename,
+          );
+          if (c.type !== 'audio') {
+            count++;
+            const scale =
+              c.crop.mode === 'fill'
+                ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:(iw-ow)*${c.crop.x}:(ih-oh)*${c.crop.y}`
+                : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
+            const fadeIn = c.crossfadeSeconds || c.fadeInSeconds;
+            const fade = `${fadeIn ? `,fade=t=in:st=0:d=${fadeIn}:alpha=1` : ''}${c.fadeOutSeconds ? `,fade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}:alpha=1` : ''}`;
+            const baked = buildBakedVisualFilters(c);
+            filters.push(
+              `[${index}:v]trim=duration=${c.duration},setpts=PTS-STARTPTS,${scale},setsar=1,fps=30,format=rgba${baked}${fade},setpts=PTS+${c.startTime}/TB[v${count}]`,
+            );
+            filters.push(
+              `[${base}][v${count}]overlay=eof_action=pass:enable='between(t,${c.startTime},${c.startTime + c.duration})'[base${count}]`,
+            );
+            base = `base${count}`;
+          }
+          if (c.type !== 'image' && metadata.streams.some((s) => s.codec_type === 'audio')) {
+            const label = `a${index}`;
+            const fadeIn = c.fadeInSeconds ? `,afade=t=in:st=0:d=${c.fadeInSeconds}` : '';
+            const fadeOut = c.fadeOutSeconds
+              ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
+              : '';
+            let ducking = '';
+            if (
+              c.type === 'audio' &&
+              p.audioProcessing?.speechDucking &&
+              speechIntervals.length > 0
+            ) {
+              const duckDb =
+                typeof p.audioProcessing.duckingGainDb === 'number'
+                  ? p.audioProcessing.duckingGainDb
+                  : -12;
+              const duckFactor = Math.pow(10, duckDb / 20).toFixed(4);
+              const conditions = speechIntervals.map(([s, e]) => `between(t,${s},${e})`).join('+');
+              ducking = `,volume='if(${conditions},${duckFactor},1)':eval=frame`;
+            }
+            filters.push(
+              `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut}${ducking},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
+            );
+            audio.push(`[${label}]`);
+          }
+          index++;
+        }
       }
       if (p.style?.logoAssetId) {
         const store = this.getMediaStore();
@@ -1024,11 +1288,18 @@ class CreatorRenderEngine {
         });
     } finally {
       for (const name of await fs.readdir(state.directory)) {
-        if (name.startsWith('input-') || name === 'logo.png' || name === 'fonts')
+        if (
+          name.startsWith('input-') ||
+          name.startsWith('segment-') ||
+          name === 'concat.txt' ||
+          name === 'logo.png' ||
+          name === 'fonts'
+        )
           await fs.rm(path.join(state.directory, name), { force: true, recursive: true });
       }
       if (state.cancelled || state.job.status === 'failed')
         await fs.rm(path.join(state.directory, 'output.mp4'), { force: true });
+      this._notifyRenderIdle();
     }
   }
   async save(id, destination, asPackage = false) {
@@ -1120,4 +1391,16 @@ class CreatorRenderEngine {
     }
   }
 }
-module.exports = { CreatorRenderEngine, validatePlan, planHash, canonical, dimensions, srt, ass };
+module.exports = {
+  CreatorRenderEngine,
+  validatePlan,
+  planHash,
+  canonical,
+  dimensions,
+  srt,
+  ass,
+  DEFAULT_RENDER_LIMITS,
+  SEGMENT_CHUNK_SIZE,
+  buildBakedVisualFilters,
+  chunkVisualClips,
+};

@@ -3,6 +3,16 @@ import type { Asset } from '@core/types';
 import { logger } from '@core/services/loggerService';
 
 const STORAGE_OPERATION_TIMEOUT_MS = 5000;
+const ASSET_SIGNATURE_CACHE_LIMIT = 500;
+const writtenAssetSignatures = new Map<string, string>();
+
+function dataSignature(data: string): string {
+  return `${data.length}:${data.slice(0, 24)}:${data.slice(-24)}`;
+}
+
+export function clearWrittenAssetSignatureCache(): void {
+  writtenAssetSignatures.clear();
+}
 
 function hasIndexedDbSupport(): boolean {
   return typeof indexedDB !== 'undefined';
@@ -117,24 +127,29 @@ async function withStorageTimeout<T>(
 const dehydrateAssets = async (
   fullPayload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> => {
-  const clone = JSON.parse(JSON.stringify(fullPayload)) as Record<string, unknown>;
-  const state = payloadState(clone);
+  const sourceState = payloadState(fullPayload);
+  const state: Record<string, unknown> = { ...sourceState };
 
-  // 1. Handle Global Asset Library
-  if (state.assets && Array.isArray(state.assets)) {
+  // 1. Handle Global Asset Library without cloning unrelated slices
+  if (Array.isArray(sourceState.assets)) {
     const lightweightAssets: Asset[] = [];
 
-    for (const asset of state.assets) {
+    for (const asset of sourceState.assets as Asset[]) {
       if (asset.data) {
-        // Save the heavy data to the asset store using the asset ID as key
-        await withStorageTimeout(`write asset ${asset.id}`, () =>
-          set(asset.id, asset.data, assetStore),
-        );
+        const sig = dataSignature(asset.data);
+        if (writtenAssetSignatures.get(asset.id) !== sig) {
+          await withStorageTimeout(`write asset ${asset.id}`, () =>
+            set(asset.id, asset.data, assetStore),
+          );
+          if (writtenAssetSignatures.size >= ASSET_SIGNATURE_CACHE_LIMIT) {
+            writtenAssetSignatures.clear();
+          }
+          writtenAssetSignatures.set(asset.id, sig);
+        }
 
-        // Create a lightweight reference
         lightweightAssets.push({
           ...asset,
-          data: '', // Strip data from main state
+          data: '',
         });
       } else {
         lightweightAssets.push(asset);
@@ -143,28 +158,42 @@ const dehydrateAssets = async (
     state.assets = lightweightAssets;
   }
 
-  // 2. Handle PromptState Uploads (Image)
-  const promptState = state.promptState as
-    | { uploadedImage?: { data?: string }; uploadedAudio?: { data?: string } }
+  // 2. Handle PromptState Uploads (Image & Audio) using dirty-slice copies only
+  const sourcePrompt = sourceState.promptState as
+    | {
+        uploadedImage?: { data?: string };
+        uploadedAudio?: { data?: string };
+        [key: string]: unknown;
+      }
     | undefined;
-  if (promptState?.uploadedImage?.data) {
-    const imgKey = 'prompt_uploaded_image';
-    await withStorageTimeout('write uploaded image', () =>
-      set(imgKey, promptState.uploadedImage!.data!, assetStore),
-    );
-    promptState.uploadedImage.data = 'STORED_IN_IDB';
+  if (sourcePrompt && (sourcePrompt.uploadedImage?.data || sourcePrompt.uploadedAudio?.data)) {
+    const nextPrompt = { ...sourcePrompt };
+    if (nextPrompt.uploadedImage?.data && nextPrompt.uploadedImage.data !== 'STORED_IN_IDB') {
+      const imgKey = 'prompt_uploaded_image';
+      const sig = dataSignature(nextPrompt.uploadedImage.data);
+      if (writtenAssetSignatures.get(imgKey) !== sig) {
+        await withStorageTimeout('write uploaded image', () =>
+          set(imgKey, nextPrompt.uploadedImage!.data!, assetStore),
+        );
+        writtenAssetSignatures.set(imgKey, sig);
+      }
+      nextPrompt.uploadedImage = { ...nextPrompt.uploadedImage, data: 'STORED_IN_IDB' };
+    }
+    if (nextPrompt.uploadedAudio?.data && nextPrompt.uploadedAudio.data !== 'STORED_IN_IDB') {
+      const audKey = 'prompt_uploaded_audio';
+      const sig = dataSignature(nextPrompt.uploadedAudio.data);
+      if (writtenAssetSignatures.get(audKey) !== sig) {
+        await withStorageTimeout('write uploaded audio', () =>
+          set(audKey, nextPrompt.uploadedAudio!.data!, assetStore),
+        );
+        writtenAssetSignatures.set(audKey, sig);
+      }
+      nextPrompt.uploadedAudio = { ...nextPrompt.uploadedAudio, data: 'STORED_IN_IDB' };
+    }
+    state.promptState = nextPrompt;
   }
 
-  // 3. Handle PromptState Uploads (Audio)
-  if (promptState?.uploadedAudio?.data) {
-    const audKey = 'prompt_uploaded_audio';
-    await withStorageTimeout('write uploaded audio', () =>
-      set(audKey, promptState.uploadedAudio!.data!, assetStore),
-    );
-    promptState.uploadedAudio.data = 'STORED_IN_IDB';
-  }
-
-  return withPayloadState(clone, state);
+  return withPayloadState(fullPayload, state);
 };
 
 /**
