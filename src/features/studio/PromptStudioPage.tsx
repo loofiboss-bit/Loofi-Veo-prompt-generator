@@ -606,7 +606,7 @@ export function PromptStudioPage() {
 
   const generateSceneAndPack = () =>
     void run(async () => {
-      if (!video.idea.trim() || !profileCompatible || changeInFlight.current) return;
+      if (!profileCompatible || changeInFlight.current) return;
       const baseline = usePromptStudioDraftStore.getState().draft!;
       const token = ++operation.current;
       aiRequest.current = token;
@@ -648,6 +648,7 @@ export function PromptStudioPage() {
         const revisions = await studioRevisionService.list(projectId);
         if (!isCurrent()) return;
         const origins = { ...baseline.fieldOrigins };
+        if (!baseline.video.idea.trim() && generated.input.idea.trim()) origins.idea = 'ai';
         for (const field of editableSceneFields)
           if (generated.input[field] !== baseline.video[field]) origins[field] = 'ai';
         if (
@@ -2057,7 +2058,7 @@ export function PromptStudioPage() {
                   <button
                     type="button"
                     className="studio-primary"
-                    disabled={busy || changing || !profileCompatible || !video.idea.trim()}
+                    disabled={busy || changing || !profileCompatible}
                     onClick={generateSceneAndPack}
                   >
                     {busy ? t('enhancing') : t('modern.createWithGemini')}

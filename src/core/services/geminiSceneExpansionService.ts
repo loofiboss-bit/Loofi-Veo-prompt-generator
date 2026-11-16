@@ -156,6 +156,9 @@ const sceneAndPackSchema = z
     recommendations: z.array(z.string()),
   })
   .strict();
+const sceneAndPackWithIdeaSchema = sceneAndPackSchema.extend({
+  idea: z.string(),
+});
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new DOMException('AI request cancelled.', 'AbortError');
@@ -270,7 +273,7 @@ function videoInstructions(
     'Use concrete, relevant action, environment, composition, camera and light details only when useful.',
     'Keep simple ideas simple. Avoid buzzwords, contradictory directions and generic negative lists.',
     'For image-to-video, describe motion rather than repeating appearance established by the image.',
-    'Preserve explicit dialogue exactly. Leave dialogue empty unless the input or idea requests speech.',
+    'Preserve explicit dialogue exactly. Leave dialogue as an empty string "" unless the input or idea requests speech.',
     'Only describe generated audio/negative parameters when supported by this exact target profile.',
     'Otherwise preserve audio/dialogue as separate post-production guidance, outside video prompt text.',
     `Input JSON: ${JSON.stringify({
@@ -366,19 +369,24 @@ export async function generateVideoSceneAndPack(
   input: VideoPromptArtifactInput,
   options: ExpandVideoSceneOptions = {},
 ): Promise<VideoSceneAndPackResult> {
-  if (!input.idea.trim()) throw new Error('Add a scene idea before generating.');
+  const needsIdea = !input.idea.trim();
   const editable = new Set(editableVideoFields(input, options));
   const { data, modelId } = await requestStructured(
     [
       videoInstructions(input, options),
+      needsIdea
+        ? 'The input idea is empty. Invent one concrete, original, filmable scene premise in the "idea" field (matching any supplied scene details, target, mode, duration, aspect ratio, and style direction), and use that premise to populate editable details and all three variants. Keep dialogue as an empty string "" unless explicit dialogue is already provided.'
+        : '',
       `Editable detail fields: ${[...editable].join(', ') || 'none'}.`,
       'Return all detail keys. Copy every existing non-editable detail exactly; use them as constraints for every variant.',
       'Develop useful optional creativeDetails only where absent; preserve existing creativeDetails exactly.',
       'Primary is the recommended prompt. Cinematic offers purposeful visual expression within the requested style.',
       'Control-focused prioritizes clear motion, continuity and framing. All variants follow target-specific writing rules.',
       'Recommendations are concise optional setting advice, not claims that settings were changed.',
-    ].join('\n'),
-    sceneAndPackSchema,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    needsIdea ? sceneAndPackWithIdeaSchema : sceneAndPackSchema,
     options,
     'gemini-studio-scene-and-pack',
   );
@@ -388,6 +396,14 @@ export async function generateVideoSceneAndPack(
     }
   }
   const merged = mergeVideoDetails(input, data.details, options);
+  if (needsIdea) {
+    const rawIdea = 'idea' in data ? data.idea : undefined;
+    const generatedIdea = typeof rawIdea === 'string' ? rawIdea.trim() : '';
+    if (!generatedIdea) {
+      throw new Error('The AI prompt generation did not return a scene idea.');
+    }
+    merged.idea = generatedIdea;
+  }
   if (data.details.dialogue?.trim() && !merged.dialogue?.trim()) {
     throw new Error('The AI response invented dialogue that was not requested.');
   }
