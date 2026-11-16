@@ -18,7 +18,7 @@ Historical v17 publication evidence remains in [release verification](V17_0_0_RE
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v22.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.0)
+[v22.1.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1)
 after Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -26,9 +26,9 @@ Expected official release assets:
 
 | Target         | Asset                                                | Status                       |
 | -------------- | ---------------------------------------------------- | ---------------------------- |
-| Fedora RPM     | `Loofi-Flow-Veo-Studio-22.1.0-linux-x86_64.rpm`      | Primary (CI Built & Tested)  |
-| Linux AppImage | `Loofi-Flow-Veo-Studio-22.1.0-linux-x86_64.AppImage` | Primary (CI Built & Tested)  |
-| Windows x64    | `Loofi-Flow-Veo-Studio-22.1.0-win-x64-setup.exe`     | Optional (Manual Build Only) |
+| Fedora RPM     | `Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.rpm`      | Primary (CI Built & Tested)  |
+| Linux AppImage | `Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.AppImage` | Primary (CI Built & Tested)  |
+| Windows x64    | `Loofi-Flow-Veo-Studio-22.1.1-win-x64-setup.exe`     | Optional (Manual Build Only) |
 
 Windows packages are not built in CI; users or contributors build them manually if needed (`npm run build && npx electron-builder --win`).
 The release includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`, and `release-manifest.json`.
