@@ -33,6 +33,8 @@ function registerUpdateIpc({
     }
     const totalSize = Number(response.headers.get('content-length')) || 0;
     let downloadedSize = 0;
+    let lastProgressSentAt = 0;
+    const PROGRESS_THROTTLE_MS = 100;
     const handle = await fs.promises.open(temporaryPath, 'w', 0o600);
     try {
       for await (const chunk of response.body) {
@@ -41,7 +43,12 @@ function registerUpdateIpc({
         downloadedSize += buffer.length;
         const mainWindow = getMainWindow();
         if (mainWindow && totalSize > 0) {
-          mainWindow.webContents.send('download-progress', (downloadedSize / totalSize) * 100);
+          const now = Date.now();
+          const completed = downloadedSize >= totalSize;
+          if (completed || now - lastProgressSentAt >= PROGRESS_THROTTLE_MS) {
+            lastProgressSentAt = now;
+            mainWindow.webContents.send('download-progress', (downloadedSize / totalSize) * 100);
+          }
         }
       }
       await handle.sync();

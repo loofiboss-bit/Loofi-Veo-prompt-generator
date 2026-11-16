@@ -59,6 +59,7 @@ class UpdateService {
   private config: UpdateConfig;
   private status: UpdateStatus;
   private checkTimer?: NodeJS.Timeout;
+  private unsubscribeDownloadProgress?: (() => void) | null = null;
   private listeners: Set<(status: UpdateStatus) => void>;
   private readonly GITHUB_REPO = 'loofiboss-bit/Loofi-Veo-prompt-generator';
   private readonly CURRENT_VERSION: string;
@@ -468,16 +469,22 @@ class UpdateService {
       throw new Error('Electron download not available');
     }
 
-    // Listen for progress events
-    electron.onDownloadProgress?.((progress: number) => {
+    this.unsubscribeDownloadProgress?.();
+    const unsubscribe = electron.onDownloadProgress?.((progress: number) => {
       this.status = {
         ...this.status,
         downloadProgress: progress,
       };
       this.notifyListeners();
     });
+    this.unsubscribeDownloadProgress = typeof unsubscribe === 'function' ? unsubscribe : null;
 
-    await electron.downloadUpdate({ url, checksumUrl });
+    try {
+      await electron.downloadUpdate({ url, checksumUrl });
+    } finally {
+      this.unsubscribeDownloadProgress?.();
+      this.unsubscribeDownloadProgress = null;
+    }
   }
 
   /**
@@ -526,6 +533,8 @@ class UpdateService {
    */
   destroy(): void {
     this.stopAutoCheck();
+    this.unsubscribeDownloadProgress?.();
+    this.unsubscribeDownloadProgress = null;
     this.listeners.clear();
     logger.info('UpdateService', 'Service destroyed');
   }

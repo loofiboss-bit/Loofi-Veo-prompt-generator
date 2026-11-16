@@ -97,6 +97,15 @@ describe('proxyService', () => {
       expect(mockReadFile).toHaveBeenCalled();
     });
 
+    it('loads @ffmpeg/core from self-hosted ./ffmpeg without external unpkg requests', async () => {
+      const { toBlobURL } = await import('@ffmpeg/util');
+      const mockFile = new File(['test'], 'test.mp4', { type: 'video/mp4' });
+      await generateProxy(mockFile);
+      for (const call of vi.mocked(toBlobURL).mock.calls) {
+        expect(call[0]).not.toMatch(/unpkg\.com/);
+      }
+    });
+
     it('should cleanup input and output files after success', async () => {
       const mockFile = new File(['test'], 'test.mp4', { type: 'video/mp4' });
 

@@ -108,6 +108,37 @@ describe('geminiVisionService — integration', () => {
       mockGenerateContent.mockRejectedValue(new Error('API quota'));
       await expect(generateStoryboard('test', '16:9')).rejects.toThrow('API quota');
     });
+
+    it('executes storyboard shots sequentially on desktop so approval dialogs never stack', async () => {
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost: vi.fn(),
+      };
+      try {
+        let inFlight = 0;
+        let maxConcurrent = 0;
+        mockGenerateContent.mockImplementation(async () => {
+          inFlight += 1;
+          maxConcurrent = Math.max(maxConcurrent, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          inFlight -= 1;
+          return mockImageResponse();
+        });
+
+        const results = await generateStoryboard('sequential check', '16:9');
+        expect(results).toHaveLength(4);
+        expect(maxConcurrent).toBe(1);
+
+        // If shot 2 fails/cancels, shots 3-4 are never started
+        mockGenerateContent.mockReset();
+        mockGenerateContent
+          .mockResolvedValueOnce(mockImageResponse())
+          .mockRejectedValueOnce(new Error('not approved'));
+        await expect(generateStoryboard('cancel early', '16:9')).rejects.toThrow(/not approved/);
+        expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+      } finally {
+        delete (window as unknown as { electron?: unknown }).electron;
+      }
+    });
   });
 
   describe('generateStyleThumbnail', () => {

@@ -32,7 +32,7 @@ const loadFFmpeg = async (): Promise<FFmpegInstance> => {
   const { toBlobURL } = await import('@ffmpeg/util');
   ffmpeg = new FFmpeg();
   ffmpeg.on('log', ({ message }) => logger.debug(`FFmpeg: ${message}`, 'videoEditorService'));
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  const baseURL = './ffmpeg';
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
@@ -229,7 +229,7 @@ export const renderTitleCard = async (
   try {
     await instance.readFile('font.ttf');
   } catch {
-    const fontUrl = 'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
+    const fontUrl = './creator-fonts/NotoSans.ttf';
     const fontData = await (await getFetchFile())(fontUrl);
     await instance.writeFile('font.ttf', fontData);
   }

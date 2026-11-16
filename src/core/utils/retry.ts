@@ -57,6 +57,14 @@ export function isRetryableError(error: unknown): boolean {
   // Handle standard Error objects (network, timeout, rate-limits, and provider overload)
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
+    // Never retry user-declined or invalid provider cost approval gates.
+    if (
+      msg.includes('not approved') ||
+      msg.includes('cost approval') ||
+      msg.includes('trusted pricing')
+    ) {
+      return false;
+    }
     return (
       msg.includes('network') ||
       msg.includes('failed to fetch') ||

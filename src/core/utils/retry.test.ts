@@ -224,4 +224,16 @@ describe('retryOperation', () => {
     expect(result).toBe('success');
     expect(operation).toHaveBeenCalledTimes(2);
   });
+
+  it('does not retry cost-approval or trusted pricing errors even with transient keywords', async () => {
+    const approvalErr = new Error('Operation was not approved by user');
+    const operation1 = vi.fn().mockRejectedValue(approvalErr);
+    await expect(retryOperation(operation1, 3, 10)).rejects.toThrow(/not approved/);
+    expect(operation1).toHaveBeenCalledTimes(1);
+
+    const pricingErr = new Error('Missing trusted pricing metadata for timeout test');
+    const operation2 = vi.fn().mockRejectedValue(pricingErr);
+    await expect(retryOperation(operation2, 3, 10)).rejects.toThrow(/trusted pricing/);
+    expect(operation2).toHaveBeenCalledTimes(1);
+  });
 });

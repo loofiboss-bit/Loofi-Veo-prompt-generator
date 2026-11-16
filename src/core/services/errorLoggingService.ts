@@ -187,7 +187,7 @@ class ErrorLoggingService {
     } catch {
       try {
         const electron = getElectron();
-        electron?.logErrorSync(batch);
+        void electron?.logError?.(batch);
       } catch {
         // Final fallback intentionally ignored.
       }

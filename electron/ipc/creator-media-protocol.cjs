@@ -63,7 +63,7 @@ function registerCreatorMediaProtocol({ protocol, getStore, getEngine, allowedOr
       let filePath;
       let mimeType;
       if (url.hostname === 'media') {
-        const record = await getStore()?.resolve(id);
+        const record = await getStore()?.resolve(id, { verifyChecksum: false });
         if (!record?.path) return new Response('Local media not found.', { status: 404 });
         filePath = record.path;
         mimeType = record.mimeType || 'application/octet-stream';

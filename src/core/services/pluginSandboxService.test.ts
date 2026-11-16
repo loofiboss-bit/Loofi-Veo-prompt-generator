@@ -684,5 +684,139 @@ describe('PluginSandboxService', () => {
       expect(info.state).toBe('ready');
       expect(info.config.pluginId).toBe('eval-plugin');
     });
+
+    it('locks down worker globals and prototype constructor escape vectors', async () => {
+      const fs = await import('fs');
+      const serviceContent = fs.readFileSync('src/core/services/pluginSandboxService.ts', 'utf-8');
+      const bootstrap = serviceContent.match(/const WORKER_BOOTSTRAP = `([\s\S]*?)`;/)![1];
+
+      expect(bootstrap).toContain('Object.defineProperty(_self, _apiName');
+      expect(bootstrap).toContain("'sendBeacon'");
+      expect(bootstrap).toContain("Object.defineProperty(_proto, 'constructor'");
+      expect(bootstrap).toContain('self, globalThis');
+    });
+
+    it('enforces per-minute rate limiting in worker API router', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
+        'rate-plugin',
+        'code',
+        ['ui:sidebar'],
+        'worker',
+      );
+      await vi.waitFor(() => expect(createdWorkers.length).toBeGreaterThan(0));
+      const worker = createdWorkers[createdWorkers.length - 1];
+      await vi.waitFor(() => expect(worker.onmessage).toBeTruthy());
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
+      for (let i = 0; i < 600; i += 1) {
+        worker.onmessage!(
+          new MessageEvent('message', {
+            data: {
+              type: 'api-call',
+              callId: `c-${i}`,
+              method: 'ui.showNotification',
+              args: ['hi'],
+            },
+          }),
+        );
+      }
+      worker.postMessage.mockClear();
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: { type: 'api-call', callId: 'c-over', method: 'ui.showNotification', args: ['hi'] },
+        }),
+      );
+
+      expect(worker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'api-response',
+          callId: 'c-over',
+          error: expect.stringContaining('Rate limit exceeded'),
+        }),
+      );
+    });
+
+    it('sanitizes project DTOs and restricts data.saveProject to allowlisted metadata fields', async () => {
+      const { projectService } = await import('./projectService');
+      const getAllSpy = vi.spyOn(projectService, 'getAllProjects').mockResolvedValue([
+        {
+          id: 'proj-1',
+          name: 'Studio Project',
+          description: 'Public desc',
+          createdAt: 100,
+          modifiedAt: 200,
+          tags: ['sci-fi'],
+          status: 'active',
+          settings: { defaultModel: 'secret-internal' } as never,
+          metadata: { secretPath: '/private/path' } as never,
+        },
+      ]);
+      const updateSpy = vi.spyOn(projectService, 'updateProject').mockResolvedValue({
+        id: 'proj-1',
+        name: 'Renamed',
+        description: 'Public desc',
+        createdAt: 100,
+        modifiedAt: 300,
+        tags: ['sci-fi'],
+        status: 'active',
+        settings: {} as never,
+        metadata: {} as never,
+      });
+
+      try {
+        const createPromise = pluginSandboxService.createSandbox(
+          'dto-plugin',
+          'code',
+          ['projects:read', 'projects:write'],
+          'worker',
+        );
+        await vi.waitFor(() => expect(createdWorkers.length).toBeGreaterThan(0));
+        const worker = createdWorkers[createdWorkers.length - 1];
+        await vi.waitFor(() => expect(worker.onmessage).toBeTruthy());
+        worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+        await createPromise;
+
+        worker.onmessage!(
+          new MessageEvent('message', {
+            data: { type: 'api-call', callId: 'c-list', method: 'data.getProjects', args: [] },
+          }),
+        );
+        await vi.waitFor(() =>
+          expect(worker.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ callId: 'c-list' }),
+          ),
+        );
+        const listCall = worker.postMessage.mock.calls.find(
+          (call) => (call[0] as { callId?: string })?.callId === 'c-list',
+        )![0] as { result: Array<Record<string, unknown>> };
+        expect(listCall.result[0]).toMatchObject({ id: 'proj-1', name: 'Studio Project' });
+        expect(listCall.result[0]).not.toHaveProperty('settings');
+        expect(listCall.result[0]).not.toHaveProperty('metadata');
+
+        worker.onmessage!(
+          new MessageEvent('message', {
+            data: {
+              type: 'api-call',
+              callId: 'c-save',
+              method: 'data.saveProject',
+              args: [
+                {
+                  id: 'proj-1',
+                  name: 'Renamed',
+                  promptState: { injected: true },
+                  status: 'archived',
+                },
+              ],
+            },
+          }),
+        );
+        await vi.waitFor(() => expect(updateSpy).toHaveBeenCalled());
+        expect(updateSpy).toHaveBeenCalledWith('proj-1', { name: 'Renamed' });
+      } finally {
+        getAllSpy.mockRestore();
+        updateSpy.mockRestore();
+      }
+    });
   });
 });

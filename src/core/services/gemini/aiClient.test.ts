@@ -419,5 +419,21 @@ describe('aiClient', () => {
       expect(mockStartRequest).toHaveBeenCalledWith('model-endpoint');
       expect(mockCompleteRequest).toHaveBeenCalledWith(true);
     });
+
+    it('disables retries on desktop runtimes with native cost approval gating', async () => {
+      const mockFn = vi.fn().mockResolvedValue({ response: 'ok' });
+      mockRetryOperation.mockResolvedValue({ response: 'ok' });
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost: vi.fn(),
+      };
+      try {
+        await resilientCall(mockFn, { endpoint: 'desktop-approval-endpoint' });
+        expect(mockRetryOperation).toHaveBeenCalledWith(mockFn, 0, 1000, {
+          circuitBreakerEndpoint: 'desktop-approval-endpoint',
+        });
+      } finally {
+        delete (window as unknown as { electron?: unknown }).electron;
+      }
+    });
   });
 });

@@ -18,6 +18,10 @@ import { logger } from './loggerService';
 import { projectService } from './projectService';
 import { historyService } from './historyService';
 import { getUserTemplates } from './templateManager';
+import {
+  sanitizePluginProjectUpdates,
+  sanitizeProjectForPlugin,
+} from './plugin/pluginProjectSanitizer';
 import type {
   SandboxConfig,
   SandboxState,
@@ -42,13 +46,55 @@ import type { PluginPermission } from '@core/types/plugin';
 const WORKER_BOOTSTRAP = `
 'use strict';
 
-// Restricted globals — remove dangerous APIs
+// Capture trusted host bindings before locking down global scope
+const _self = self;
+const _postMessage = _self.postMessage.bind(_self);
+const _importScripts = _self.importScripts.bind(_self);
+const _Blob = _self.Blob;
+const _createObjectURL = _self.URL.createObjectURL.bind(_self.URL);
+const _revokeObjectURL = _self.URL.revokeObjectURL.bind(_self.URL);
+const _setTimeout = _self.setTimeout.bind(_self);
+
+// Fail-closed global lockdown: strip network, nested import, and eval primitives
 const _restricted = [
-  'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts',
-  'eval', 'Function', 'SharedArrayBuffer', 'Atomics'
+  'fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'BroadcastChannel',
+  'indexedDB', 'caches', 'importScripts', 'eval', 'Function',
+  'SharedArrayBuffer', 'Atomics', 'openDatabase',
+  'webkitRequestFileSystem', 'webkitResolveLocalFileSystemURL'
 ];
-// Note: we don't actually delete them from globalThis to avoid errors;
-// instead we shadow them in the plugin scope.
+for (const _apiName of _restricted) {
+  try {
+    Object.defineProperty(_self, _apiName, {
+      value: undefined,
+      writable: false,
+      configurable: false,
+    });
+  } catch {
+    // Non-configurable built-ins in exotic runtimes cannot be redefined; shadowed below
+  }
+}
+try {
+  if (typeof navigator === 'object' && navigator) {
+    Object.defineProperty(navigator, 'sendBeacon', {
+      value: undefined,
+      writable: false,
+      configurable: false,
+    });
+  }
+} catch {}
+try {
+  const _asyncProto = Object.getPrototypeOf(async function () {});
+  const _genProto = Object.getPrototypeOf(function* () {});
+  for (const _proto of [Object.getPrototypeOf(function () {}), _asyncProto, _genProto]) {
+    if (_proto) {
+      Object.defineProperty(_proto, 'constructor', {
+        value: undefined,
+        writable: false,
+        configurable: false,
+      });
+    }
+  }
+} catch {}
 
 let _pluginInstance = null;
 let _pluginId = '';
@@ -62,9 +108,9 @@ function createApiProxy() {
     const callId = String(++_callIdCounter);
     return new Promise((resolve, reject) => {
       _pendingCalls.set(callId, { resolve, reject });
-      self.postMessage({ type: 'api-call', callId, method, args });
+      _postMessage({ type: 'api-call', callId, method, args });
       // Timeout after 30s
-      setTimeout(() => {
+      _setTimeout(() => {
         if (_pendingCalls.has(callId)) {
           _pendingCalls.delete(callId);
           reject(new Error('API call timed out: ' + method));
@@ -113,17 +159,17 @@ function createApiProxy() {
       emit: (event, ...args) => callApi('events.emit', event, ...args),
     },
     logger: {
-      debug: (...args) => self.postMessage({ type: 'log', level: 'debug', args }),
-      info:  (...args) => self.postMessage({ type: 'log', level: 'info',  args }),
-      warn:  (...args) => self.postMessage({ type: 'log', level: 'warn',  args }),
-      error: (...args) => self.postMessage({ type: 'log', level: 'error', args }),
+      debug: (...args) => _postMessage({ type: 'log', level: 'debug', args }),
+      info:  (...args) => _postMessage({ type: 'log', level: 'info',  args }),
+      warn:  (...args) => _postMessage({ type: 'log', level: 'warn',  args }),
+      error: (...args) => _postMessage({ type: 'log', level: 'error', args }),
     },
   };
 }
 
 const _context = createApiProxy();
 
-self.onmessage = async function(e) {
+_self.onmessage = async function(e) {
   const msg = e.data;
   try {
     switch (msg.type) {
@@ -134,25 +180,25 @@ self.onmessage = async function(e) {
         const exports = {};
         const module = { exports };
 
-        self.__currentPluginExports = exports;
-        self.__currentPluginModule = module;
-        self.__currentPluginContext = _context;
+        _self.__currentPluginExports = exports;
+        _self.__currentPluginModule = module;
+        _self.__currentPluginContext = _context;
 
-        const codeBlob = new Blob([
-          '(function(exports, module, context, fetch, XMLHttpRequest, WebSocket, importScripts, eval, Function, SharedArrayBuffer, Atomics) {\n' +
-          '"use strict";\n' +
-          msg.sourceCode + '\n' +
-          '})(self.__currentPluginExports, self.__currentPluginModule, self.__currentPluginContext, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);'
+        const codeBlob = new _Blob([
+          '(function(exports, module, context, fetch, XMLHttpRequest, WebSocket, EventSource, BroadcastChannel, indexedDB, caches, navigator, importScripts, eval, Function, SharedArrayBuffer, Atomics, self, globalThis) {\\n' +
+          '"use strict";\\n' +
+          msg.sourceCode + '\\n' +
+          '})(self.__currentPluginExports, self.__currentPluginModule, self.__currentPluginContext, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);'
         ], { type: 'application/javascript' });
 
-        const blobUrl = URL.createObjectURL(codeBlob);
+        const blobUrl = _createObjectURL(codeBlob);
         try {
-          importScripts(blobUrl);
+          _importScripts(blobUrl);
         } finally {
-          URL.revokeObjectURL(blobUrl);
-          delete self.__currentPluginExports;
-          delete self.__currentPluginModule;
-          delete self.__currentPluginContext;
+          _revokeObjectURL(blobUrl);
+          delete _self.__currentPluginExports;
+          delete _self.__currentPluginModule;
+          delete _self.__currentPluginContext;
         }
 
         const finalExports = module.exports && Object.keys(module.exports).length > 0 ? module.exports : exports;
@@ -164,21 +210,21 @@ self.onmessage = async function(e) {
           _pluginInstance = null;
         }
 
-        self.postMessage({ type: 'ready' });
+        _postMessage({ type: 'ready' });
         break;
       }
       case 'activate': {
         if (_pluginInstance && _pluginInstance.activate) {
           await _pluginInstance.activate(_context);
         }
-        self.postMessage({ type: 'activated' });
+        _postMessage({ type: 'activated' });
         break;
       }
       case 'deactivate': {
         if (_pluginInstance && _pluginInstance.deactivate) {
           await _pluginInstance.deactivate();
         }
-        self.postMessage({ type: 'deactivated' });
+        _postMessage({ type: 'deactivated' });
         break;
       }
       case 'dispose': {
@@ -186,7 +232,7 @@ self.onmessage = async function(e) {
           await _pluginInstance.dispose();
         }
         _pluginInstance = null;
-        self.postMessage({ type: 'disposed' });
+        _postMessage({ type: 'disposed' });
         break;
       }
       case 'api-response': {
@@ -203,7 +249,7 @@ self.onmessage = async function(e) {
       }
     }
   } catch (err) {
-    self.postMessage({
+    _postMessage({
       type: 'error',
       message: err.message || String(err),
       stack: err.stack,
@@ -229,9 +275,25 @@ class SandboxInstance {
   private _messageResolvers = new Map<string, (msg: SandboxOutMessage) => void>();
   private _onApiCall: ((callId: string, method: string, args: unknown[]) => void) | null = null;
   private _onLog: ((level: string, args: unknown[]) => void) | null = null;
+  private _rateLimitTimestamps: number[] = [];
 
   constructor(config: SandboxConfig) {
     this.config = config;
+  }
+
+  consumeRateLimitQuota(): boolean {
+    const limit = this.config.rateLimitPerMinute;
+    if (!Number.isFinite(limit) || limit <= 0) return false;
+    const now = Date.now();
+    const windowStart = now - 60_000;
+    while (this._rateLimitTimestamps.length > 0 && this._rateLimitTimestamps[0] <= windowStart) {
+      this._rateLimitTimestamps.shift();
+    }
+    if (this._rateLimitTimestamps.length >= limit) {
+      return false;
+    }
+    this._rateLimitTimestamps.push(now);
+    return true;
   }
 
   get state(): SandboxState {
@@ -656,6 +718,16 @@ class PluginSandboxService {
     const sandbox = this._sandboxes.get(pluginId);
     if (!sandbox) return;
 
+    if (!sandbox.consumeRateLimitQuota()) {
+      sandbox.respondToApiCall(
+        callId,
+        undefined,
+        `Rate limit exceeded for plugin ${pluginId} (${sandbox.config.rateLimitPerMinute}/min)`,
+      );
+      logger.warn(`Plugin ${pluginId} exceeded sandbox API rate limit`);
+      return;
+    }
+
     // Check permission
     if (!this.checkPermission(pluginId, method)) {
       sandbox.respondToApiCall(callId, undefined, `Permission denied: ${method}`);
@@ -684,19 +756,37 @@ class PluginSandboxService {
       // ── Data: Projects ──
       case 'data.getProjects': {
         const projects = await projectService.getAllProjects();
-        sandbox.respondToApiCall(callId, projects);
+        sandbox.respondToApiCall(callId, projects.map(sanitizeProjectForPlugin));
         return;
       }
       case 'data.getProject': {
-        const project = await projectService.getProject(args[0] as string);
-        sandbox.respondToApiCall(callId, project);
+        const id = typeof args[0] === 'string' ? args[0].trim() : '';
+        if (!id) {
+          sandbox.respondToApiCall(callId, undefined, 'Invalid project ID');
+          return;
+        }
+        const project = await projectService.getProject(id);
+        sandbox.respondToApiCall(callId, project ? sanitizeProjectForPlugin(project) : null);
         return;
       }
       case 'data.saveProject': {
-        const id = args[0] as string;
-        const updates = args[1] as Record<string, unknown>;
+        let id = '';
+        let rawUpdates: unknown;
+        if (typeof args[0] === 'string') {
+          id = args[0].trim();
+          rawUpdates = args[1];
+        } else if (args[0] && typeof args[0] === 'object' && !Array.isArray(args[0])) {
+          const payload = args[0] as Record<string, unknown>;
+          id = typeof payload.id === 'string' ? payload.id.trim() : '';
+          rawUpdates = payload;
+        }
+        if (!id) {
+          sandbox.respondToApiCall(callId, undefined, 'Invalid project ID for data.saveProject');
+          return;
+        }
+        const updates = sanitizePluginProjectUpdates(rawUpdates);
         const result = await projectService.updateProject(id, updates);
-        sandbox.respondToApiCall(callId, result);
+        sandbox.respondToApiCall(callId, result ? sanitizeProjectForPlugin(result) : null);
         return;
       }
 

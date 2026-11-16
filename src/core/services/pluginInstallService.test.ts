@@ -178,6 +178,59 @@ describe('pluginInstallService', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Download failed');
     });
+
+    it('rejects plugins with invalid signatures fail-closed', async () => {
+      const { verifyManifestSignature } = await import('@core/utils/pluginCrypto');
+      const { pluginSandboxService } = await import('./pluginSandboxService');
+      vi.mocked(verifyManifestSignature).mockResolvedValueOnce({
+        valid: false,
+        reason: 'signature mismatch',
+        verifiedAt: Date.now(),
+      });
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: vi.fn().mockResolvedValue('exports.activate = function() {};'),
+      });
+      globalThis.crypto.subtle.digest = vi.fn().mockResolvedValue(new Uint8Array(32).buffer);
+
+      const entry = createMockEntry({
+        checksum: '0'.repeat(64),
+        signature: 'bad-sig',
+      });
+      const result = await pluginInstallService.installFromRegistry(entry);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Signature invalid');
+      expect(pluginSandboxService.createSandbox).not.toHaveBeenCalled();
+    });
+
+    it('blocks unsigned plugins by default and allows only with explicit override', async () => {
+      const { pluginSandboxService } = await import('./pluginSandboxService');
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        text: vi.fn().mockResolvedValue('exports.activate = function() {};'),
+      });
+      globalThis.crypto.subtle.digest = vi.fn().mockResolvedValue(new Uint8Array(32).buffer);
+
+      const unsignedEntry = createMockEntry({
+        id: 'unsigned-plugin',
+        checksum: '0'.repeat(64),
+        signature: undefined,
+      });
+
+      const blocked = await pluginInstallService.installFromRegistry(unsignedEntry);
+      expect(blocked.success).toBe(false);
+      expect(blocked.error).toContain('blocked by security policy');
+      expect(pluginSandboxService.createSandbox).not.toHaveBeenCalled();
+
+      const allowed = await pluginInstallService.installFromRegistry(unsignedEntry, {
+        allowUnsigned: true,
+      });
+      expect(allowed.success).toBe(true);
+      expect(allowed.trustLevel).toBe('unsigned');
+      expect(pluginSandboxService.createSandbox).toHaveBeenCalled();
+    });
   });
 
   describe('uninstall', () => {

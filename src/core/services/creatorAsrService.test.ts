@@ -63,7 +63,11 @@ import {
 } from './creatorAsrService';
 
 describe('local Whisper caption proposal', () => {
-  beforeEach(() => mocks.workers.splice(0));
+  beforeEach(() => {
+    creatorAsrService.dispose();
+    creatorAsrService.setIdleTtlForTesting(5 * 60_000);
+    mocks.workers.splice(0);
+  });
 
   it('groups real word timestamps into editable sentence-sized captions', () => {
     const captions = groupWhisperWordChunks(
@@ -154,6 +158,28 @@ describe('local Whisper caption proposal', () => {
       transcript: 'Hello there',
       segments: [{ text: 'Hello', startTime: 0, endTime: 0.2 }],
     });
+    expect(worker.terminated).toBe(false);
+
+    // Reuses the persistent worker across batches instead of reloading ONNX weights
+    const pcm2 = new ArrayBuffer(16_000 * Float32Array.BYTES_PER_ELEMENT);
+    const secondPromise = creatorAsrService.transcribe(pcm2, 'en', () => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mocks.workers).toHaveLength(1);
+    worker.onmessage?.(
+      new MessageEvent('message', {
+        data: {
+          type: 'RESULT',
+          requestId: worker.posted!.requestId,
+          text: 'Second clip',
+          chunks: [{ text: ' Second', timestamp: [0, 0.3] }],
+          modelId: 'onnx-community/whisper-base',
+          modelRevision: '1846881b6b3a3024392c1eea3ad983695bc23925',
+        },
+      }),
+    );
+    await expect(secondPromise).resolves.toMatchObject({ transcript: 'Second clip' });
+
+    creatorAsrService.dispose();
     expect(worker.terminated).toBe(true);
   });
 });

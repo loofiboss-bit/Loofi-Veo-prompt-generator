@@ -25,8 +25,13 @@ test('streams only registered media and verified renders, including seek ranges'
       },
       allowedOrigins: ['http://localhost:8080'],
       getStore: () => ({
-        resolve: async (id) =>
-          id === 'local-media:123' ? { path: file, mimeType: 'video/mp4' } : null,
+        resolve: async (id, options) => {
+          if (id === 'local-media:123') {
+            assert.deepEqual(options, { verifyChecksum: false });
+            return { path: file, mimeType: 'video/mp4' };
+          }
+          return null;
+        },
       }),
       getEngine: () => ({
         preview: async (id) => {
