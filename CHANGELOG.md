@@ -7,7 +7,7 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [22.1.0] - 2026-11-16
 
 ### Added
 
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Remove legacy tracked `assets/videos/creator-v15-demo.mp4` binary, resolve `creatorDeliveryService` partial `crops` guard, eliminate unused store history duplication and stale project-switch dirty flags, and stabilize E2E visual regression / performance budget thresholds.
+- Remove legacy tracked `assets/videos/creator-v15-demo.mp4` binary, resolve `creatorDeliveryService` partial `crops` guard, eliminate unused store history duplication and stale project-switch dirty flags, install checksum-pinned Gitleaks in `validate.yml`/`build.yml` CI workflows for `secrets:check`, and stabilize E2E visual regression / performance budget thresholds.
 
 ## [22.0.0] - 2026-11-07
 

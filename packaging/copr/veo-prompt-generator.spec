@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        22.0.0
+Version:        22.1.0
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT
@@ -79,6 +79,11 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Mon Nov 16 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.1.0-1
+- Release v22.1.0: Post-v22 architecture hardening, SQLite WAL project persistence, and streaming ZIP export.
+- Harden CSP, canonical cost-approval hash binding, PaidJob FSM transitions, and FFmpeg worker isolation.
+- Support up to 1800s chunked rendering, OTIO caption markers, and Fedora 44/45 x86_64 targets.
+
 * Sat Nov 07 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.0.0-1
 - Release v22.0.0: AI Video Iteration Loop with Gemini Omni 1.2 Flash and smart version lineage.
 - Add local-first creative assistant, timeline iteration badges, and native Wayland/VA-API acceleration.
