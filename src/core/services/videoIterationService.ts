@@ -391,7 +391,23 @@ export class VideoIterationService {
       const inputCharacters = (inputs ?? []).reduce((sum, item) => sum + item.data.length, 0);
       const costEst = this.estimateIterationCost(settings, modelPrompt.length, inputCharacters);
 
+      const isDesktop = typeof window !== 'undefined' && Boolean(window.electron);
+      if (isDesktop && !bridge?.executeInteraction) {
+        throw new Error(
+          'Desktop video iteration bridge is unavailable. Refusing unapproved fallback in desktop mode.',
+        );
+      }
+
       if (bridge?.executeInteraction) {
+        if (
+          costEst.maximumChargeUsd == null ||
+          !Number.isFinite(costEst.maximumChargeUsd) ||
+          costEst.maximumChargeUsd <= 0
+        ) {
+          throw new Error(
+            `Cannot compute a verifiable cost ceiling for model ${settings.modelId}.`,
+          );
+        }
         const requestId = crypto.randomUUID();
         const config = {
           duration: settings.durationSeconds,
@@ -413,11 +429,12 @@ export class VideoIterationService {
             interactionId: parentTurn.interactionId,
             config,
             costApproval: {
-              maximumChargeUsd: costEst.maximumChargeUsd ?? 0.8,
+              maximumChargeUsd: costEst.maximumChargeUsd,
               currency: 'USD',
-              confidence: 'upper-bound',
-              sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
-              verifiedDate: '2026-10-29',
+              confidence: costEst.confidence,
+              sourceUrl:
+                model.pricing.source?.sourceUrl ?? 'https://ai.google.dev/gemini-api/docs/pricing',
+              verifiedDate: model.pricing.source?.verifiedDate ?? '2026-08-01',
               providerModelId: settings.modelId,
               calculationInputs: {
                 videoDurationSeconds: settings.durationSeconds,

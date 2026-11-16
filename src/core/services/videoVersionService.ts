@@ -1,6 +1,8 @@
 import type { VideoIterationSession, VideoIterationTurn } from '@core/types/videoIteration';
+import type { ProductionTake, VeoDuration, VeoResolution } from '@core/types/production';
 import type { VideoComparisonResult } from '@shared/components/VideoResultCompare';
 import { videoIterationService } from './videoIterationService';
+import { productionRunService } from './productionRunService';
 import { useAppStore } from '@core/store/useAppStore';
 import { logger } from './loggerService';
 
@@ -167,6 +169,90 @@ export class VideoVersionService {
     });
     logger.info(`Transferred version ${turn.version} to storyboard shot ${shotId}`);
     return true;
+  }
+
+  /**
+   * Bridges a completed video iteration turn directly into a ProductionRun shot as a ProductionTake.
+   */
+  async applyVersionToProductionTake(
+    runId: string,
+    shotId: number,
+    turn: VideoIterationTurn,
+  ): Promise<ProductionTake> {
+    const run = await productionRunService.getRun(runId);
+    if (!run) {
+      throw new Error(`Production run ${runId} was not found.`);
+    }
+    const shot = run.shots.find((candidate) => candidate.id === shotId);
+    if (!shot) {
+      throw new Error(`Production shot ${shotId} was not found in run ${runId}.`);
+    }
+
+    const appStore = useAppStore.getState();
+    if (typeof appStore.addAsset === 'function' && turn.assetId) {
+      appStore.addAsset({
+        id: turn.assetId,
+        type: 'video',
+        name: `Iteration v${turn.version}: ${turn.instruction.slice(0, 32)}`,
+        url: turn.assetUrl ?? '',
+        data: '',
+        mimeType: 'video/mp4',
+        version: turn.version,
+        parentId: turn.parentId ?? undefined,
+        storageKey: turn.assetId,
+        durationSeconds: turn.settings.durationSeconds,
+        tags: ['iteration', `v${turn.version}`],
+      });
+    }
+
+    const durationSeconds: VeoDuration =
+      turn.settings.durationSeconds <= 4 ? 4 : turn.settings.durationSeconds <= 6 ? 6 : 8;
+    const resolution: VeoResolution =
+      turn.settings.resolution === '1080p' || turn.settings.resolution === '4k'
+        ? turn.settings.resolution
+        : '720p';
+
+    const take: ProductionTake = {
+      id: crypto.randomUUID(),
+      sourceArtifactId: run.sourceArtifactId,
+      sourceVariantIndex: run.sourceVariantIndex,
+      prompt: turn.effectivePrompt,
+      request: {
+        ...shot.generationRequest,
+        prompt: turn.effectivePrompt,
+        aspectRatio: turn.settings.aspectRatio,
+        resolution,
+        durationSeconds,
+        target: 'omni-flash',
+        profileId: turn.settings.modelId,
+        executionMode: 'gemini-omni',
+      },
+      status: 'complete',
+      provider: 'gemini-api',
+      apiSurface: 'google-ai-v1beta',
+      interactionId: turn.interactionId,
+      modelLifecycleSnapshot: 'stable',
+      priceDimension: {
+        unit: 'video-second',
+        resolution,
+        usdPerUnit:
+          turn.settings.durationSeconds > 0
+            ? turn.costEstimateUsd / turn.settings.durationSeconds
+            : turn.costEstimateUsd,
+      },
+      localMediaKey: turn.assetId,
+      localMediaUrl: turn.assetUrl,
+      continuitySnapshot: shot.continuitySnapshot,
+      continuityReport: shot.continuityReport,
+      createdAt: turn.createdAt,
+      completedAt: Date.now(),
+    };
+
+    await productionRunService.appendTakeToShot(runId, shotId, take);
+    logger.info(
+      `Bridged iteration turn v${turn.version} (${turn.id}) into ProductionRun ${runId} shot ${shotId}`,
+    );
+    return take;
   }
 }
 

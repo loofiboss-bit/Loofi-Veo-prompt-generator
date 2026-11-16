@@ -1,7 +1,13 @@
 import type {
   PromptArtifactTarget,
+  StudioExecutionMode,
+  TargetModelProfile,
+  UniversalVideoTarget,
   VideoPromptArtifactInput,
+  VeoDuration,
+  VeoGenerationMode,
   VeoGenerationRequest,
+  VeoModelId,
   VeoCapabilityIssue,
 } from '@core/types';
 import {
@@ -16,6 +22,13 @@ export interface StudioCapability {
   handoff: 'manual' | 'approved-provider' | 'experimental';
   label: string;
   lifecycle: 'active' | 'retired' | 'legacy';
+}
+
+export interface StudioExecutionContract {
+  executionMode: StudioExecutionMode;
+  target: UniversalVideoTarget;
+  profile: TargetModelProfile;
+  requiresManualMediaIngestion: boolean;
 }
 
 /** UI labels and execution status are derived from the same source-backed profiles. */
@@ -118,12 +131,91 @@ export function studioVideoRequestIssues(
   return issues;
 }
 
-/** Kept for existing callers, but retired Gemini Veo Preview endpoints cannot be submitted. */
+const mapPromptModeToProductionMode = (
+  mode: VideoPromptArtifactInput['mode'],
+): VeoGenerationMode => {
+  switch (mode) {
+    case 'image-to-video':
+      return 'image-to-video';
+    case 'first-last-frames':
+      return 'interpolation';
+    case 'ingredients':
+      return 'reference-images';
+    case 'extend':
+      return 'extension';
+    case 'text-to-video':
+    default:
+      return 'text-to-video';
+  }
+};
+
+const normalizeDurationForProduction = (duration: number): VeoDuration => {
+  if (duration <= 4) return 4;
+  if (duration <= 6) return 6;
+  return 8;
+};
+
+const resolveProductionModelId = (profile: TargetModelProfile): VeoModelId => {
+  if (profile.profileId.includes('quality')) return 'veo-3.1-quality';
+  if (profile.profileId.includes('lite')) return 'veo-3.1-lite';
+  return 'veo-3.1-fast';
+};
+
+export function getStudioExecutionContract(
+  input: Pick<VideoPromptArtifactInput, 'target' | 'profileId'>,
+): StudioExecutionContract {
+  const profile = getTargetProfile(input.target, input.profileId);
+  if (profile.lifecycle === 'retired') {
+    if (input.target === 'veo-api') {
+      throw new Error(
+        'Veo 3.1 Preview in Gemini API shut down on 2026-10-22. Choose an active target.',
+      );
+    }
+    throw new Error(`${profile.displayName} is retired. Choose an active target.`);
+  }
+  const executionMode: StudioExecutionMode =
+    input.target === 'omni-flash'
+      ? 'gemini-omni'
+      : input.target === 'flow-veo'
+        ? 'vertex-veo-ga'
+        : 'external-manual-slot';
+  return {
+    executionMode,
+    target: input.target,
+    profile,
+    requiresManualMediaIngestion: executionMode === 'external-manual-slot',
+  };
+}
+
+/** Converts an active Studio brief/variant into a production-run request contract. */
 export function studioVideoRequest(input: VideoPromptArtifactInput): VeoGenerationRequest {
-  if (input.target !== 'veo-api') throw new Error('This target uses a manual copy handoff.');
-  throw new Error(
-    'Veo 3.1 Preview in Gemini API shut down on 2026-10-22. Choose an active target.',
-  );
+  const contract = getStudioExecutionContract(input);
+  const issues = studioVideoRequestIssues(input);
+  if (issues.length > 0) {
+    throw new Error(issues[0].message);
+  }
+  const referenceAssetIds = [...(input.referenceAssetIds ?? [])];
+  const rawAspect = input.aspectRatio;
+  const aspectRatio: '16:9' | '9:16' = rawAspect === '9:16' ? '9:16' : '16:9';
+  return {
+    mode: mapPromptModeToProductionMode(input.mode),
+    modelId: resolveProductionModelId(contract.profile),
+    provider: contract.executionMode === 'vertex-veo-ga' ? 'vertex-ai' : 'gemini-api',
+    target: input.target,
+    profileId: contract.profile.profileId,
+    executionMode: contract.executionMode,
+    prompt: input.idea.trim() || contract.profile.displayName,
+    ...(contract.profile.negativePolicy === 'unsupported'
+      ? {}
+      : { negativePrompt: input.negativePrompt }),
+    aspectRatio,
+    resolution: '720p',
+    durationSeconds: normalizeDurationForProduction(input.durationSeconds),
+    ...(input.firstFrameAssetId ? { firstFrameAssetId: input.firstFrameAssetId } : {}),
+    ...(input.lastFrameAssetId ? { lastFrameAssetId: input.lastFrameAssetId } : {}),
+    referenceAssetIds,
+    ...(input.extensionArtifact ? { extensionArtifact: input.extensionArtifact } : {}),
+  };
 }
 
 export function studioGenerationBlocker(input: VideoPromptArtifactInput): string | null {

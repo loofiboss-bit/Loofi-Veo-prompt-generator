@@ -402,7 +402,7 @@ describe('PromptStudioPage durable copy desk', () => {
     'luma-ray',
     'wan-video',
     'minimax-hailuo',
-  ])('keeps %s a manual copy handoff', async (target) => {
+  ])('keeps %s copyable while enabling production handoff for active targets', async (target) => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     open.mockClear();
     const { user } = await openStudio();
@@ -410,7 +410,15 @@ describe('PromptStudioPage durable copy desk', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Target' }), target);
     await buildPack(user);
     expect(usePromptStudioDraftStore.getState().draft?.artifact?.target).toBe(target);
-    expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
+    if (target === 'flow-veo' || target === 'omni-flash') {
+      expect(screen.getByRole('button', { name: 'Generate in app' })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Prepare in Production' }),
+      ).not.toBeInTheDocument();
+    } else {
+      expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Prepare in Production' })).toBeInTheDocument();
+    }
     await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
     expect(clipboard).toHaveBeenCalled();
     expect(open).not.toHaveBeenCalled();
@@ -489,11 +497,22 @@ describe('PromptStudioPage durable copy desk', () => {
     );
   });
 
-  it('keeps provider execution unavailable for all current manual targets', async () => {
+  it('enables production handoff for active targets while keeping retired Veo 3.1 API unavailable', async () => {
+    const createDraftSpy = vi.spyOn(promptStudioHandoffService, 'createDraft');
     const { user } = await openStudio();
     await buildPack(user);
-    expect(screen.queryByRole('button', { name: 'Generate in app' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Veo 3.1 API/ })).not.toBeInTheDocument();
+    const handoffButton = screen.getByRole('button', { name: 'Generate in app' });
+    expect(handoffButton).toBeEnabled();
+    await user.click(handoffButton);
+    await waitFor(() => {
+      expect(createDraftSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        'production',
+        expect.objectContaining({ variantIndex: 0 }),
+      );
+    });
+    createDraftSpy.mockRestore();
   });
 
   it('opens Suno only after explicitly copying the selected music variant', async () => {

@@ -10,6 +10,7 @@ export function VideoVariantCard({
   compareBaseline,
   onCopy,
   onHandoff,
+  handoffLabel,
   onEdit,
   supportsNegative = true,
 }: {
@@ -19,6 +20,7 @@ export function VideoVariantCard({
   compareBaseline?: VideoPromptVariant;
   onCopy: (text: string, label: string) => void;
   onHandoff?: () => void;
+  handoffLabel?: string;
   onEdit?: (changes: Partial<VideoPromptVariant>) => void;
 }) {
   const { t } = useTranslation('studio');
@@ -144,7 +146,9 @@ export function VideoVariantCard({
                 {t('copyChecklist')}
               </button>
             </details>
-            {onHandoff ? <button onClick={onHandoff}>{t('generateInApp')}</button> : null}
+            {onHandoff ? (
+              <button onClick={onHandoff}>{handoffLabel ?? t('generateInApp')}</button>
+            ) : null}
           </div>
         </div>
       ) : null}

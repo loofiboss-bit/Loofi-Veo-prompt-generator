@@ -4,13 +4,24 @@ const { randomUUID } = require('crypto');
 const { validatePaidTask } = require('../paid-job-engine.cjs');
 const { calculateMaximumCharge } = require('../paid-job-pricing.cjs');
 const { validatePaidTaskInput } = require('./ipc-validator.cjs');
-const { createPaidSubmission, computePaidSubmissionHash } = require('../paid-job-submission.cjs');
+const {
+  createPaidSubmission,
+  computePaidSubmissionHash,
+  isOmniTask,
+} = require('../paid-job-submission.cjs');
 
 function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
   const pendingSubmissions = new Map();
 
-  async function authorizePaidTask(input) {
-    const task = structuredClone(input);
+  async function hydrateExternalizedForApproval(task, engine) {
+    if (typeof engine?.hydrateTaskMedia === 'function') {
+      return engine.hydrateTaskMedia(task);
+    }
+    return task;
+  }
+
+  async function authorizePaidTask(input, engine) {
+    const task = await hydrateExternalizedForApproval(structuredClone(input), engine);
     // Renderer/legacy tokens are quotes, never an authorization to send this snapshot.
     task.costApproval = { ...task.costApproval };
     delete task.costApproval.payloadHash;
@@ -56,7 +67,7 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
     const submission = (async () => {
       const existing = await engine.store.get(task.id);
       if (existing) return existing;
-      return engine.submit(await authorizePaidTask(task));
+      return engine.submit(await authorizePaidTask(task, engine));
     })().finally(() => pendingSubmissions.delete(task.id));
     pendingSubmissions.set(task.id, submission);
     return submission;
@@ -68,9 +79,12 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
     const engine = getEngine();
     if (!engine || !context || typeof context.id !== 'string') return false;
     const job = await engine.store.get(context.id);
+    const hasProviderIdentity = Boolean(
+      job?.providerOperationName || (job?.providerInteractionId && isOmniTask(job)),
+    );
     if (
       !job ||
-      !job.providerOperationName ||
+      !hasProviderIdentity ||
       !['Error', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status) ||
       job.productionRunId !== context.runId ||
       job.productionShotId !== context.shotId ||
@@ -84,9 +98,10 @@ function registerPaidJobsIpc({ ipcMain, getEngine, dialog, getMainWindow }) {
     if (!engine) return false;
     const job = await engine.store.get(id);
     if (!job || !['Error', 'RecoveryRequired', 'MediaAtRisk'].includes(job.status)) return false;
-    if (job.providerOperationName) return engine.retry(id);
+    const isResumableOmni = Boolean(job.providerInteractionId && isOmniTask(job));
+    if (job.providerOperationName || isResumableOmni) return engine.retry(id);
     if (job.status !== 'Error' || job.providerInteractionId) return false;
-    const approved = await authorizePaidTask(job);
+    const approved = await authorizePaidTask(job, engine);
     return engine.retry(id, approved.costApproval, approved.approvedSubmission);
   });
 }

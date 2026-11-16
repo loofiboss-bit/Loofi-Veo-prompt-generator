@@ -199,4 +199,27 @@ describe('promptAstLinterService', () => {
 
     expect(result.warnings.some((w) => w.code === 'GRAPH-OUT-001')).toBe(true);
   });
+
+  it('respects model-specific durations and aspect ratios for UniversalVideoTarget inputs', () => {
+    const omniOk = promptAstLinterService.lintPromptText('Slow push toward rainy window.', {
+      targetModel: 'omni-flash',
+      durationSeconds: 15,
+      aspectRatio: '16:9',
+    });
+    expect(omniOk.warnings.some((w) => w.code === 'HW-DUR-001')).toBe(false);
+
+    const klingSquare = promptAstLinterService.lintPromptText('Hero steps onto rooftop.', {
+      targetModel: 'kling',
+      durationSeconds: 30,
+      aspectRatio: '1:1',
+    });
+    expect(klingSquare.errors).toEqual([]);
+    expect(klingSquare.warnings.some((w) => w.code === 'HW-DUR-001')).toBe(false);
+
+    const omniTooLong = promptAstLinterService.lintPromptText('Slow push toward rainy window.', {
+      targetModel: 'omni-flash',
+      durationSeconds: 20,
+    });
+    expect(omniTooLong.warnings.some((w) => w.code === 'HW-DUR-001')).toBe(true);
+  });
 });

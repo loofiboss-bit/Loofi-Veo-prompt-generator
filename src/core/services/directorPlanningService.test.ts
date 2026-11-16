@@ -53,4 +53,31 @@ describe('directorPlanningService', () => {
 
     expect(run.shots[0].generationRequest.durationSeconds).toBe(8);
   });
+
+  it('builds a local plan from active studio targets with deterministic continuity seeds', () => {
+    const baseInput = {
+      projectId: 'proj-seed-1',
+      title: 'Kling Handoff',
+      promptState: { ...INITIAL_STATE, idea: 'A lantern drifts across the harbor' },
+      studioInput: {
+        idea: 'A lantern drifts across the harbor',
+        target: 'kling' as const,
+        mode: 'text-to-video' as const,
+        durationSeconds: 10,
+        aspectRatio: '16:9' as const,
+      },
+      sourceVariantIndex: 1 as const,
+      shots: [shot],
+    };
+    const firstRun = directorPlanningService.buildLocalPlan(baseInput);
+    const secondRun = directorPlanningService.buildLocalPlan(baseInput);
+
+    expect(firstRun.shots[0].generationRequest.executionMode).toBe('external-manual-slot');
+    expect(firstRun.shots[0].generationRequest.target).toBe('kling');
+    expect(firstRun.shots[0].generationRequest.seed).toBeGreaterThan(0);
+    expect(firstRun.shots[0].generationRequest.seed).toBe(
+      secondRun.shots[0].generationRequest.seed,
+    );
+    expect(firstRun.cost.estimatedUsd).toBe(0);
+  });
 });

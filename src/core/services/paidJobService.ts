@@ -1,7 +1,34 @@
 import type { PaidJobTask } from '@core/types';
 import { costTrackingService } from './costTrackingService';
+import { paidJobFsmService, type PaidJobFsmState } from './paidJobFsmService';
+
+function syncTaskFsm(job: PaidJobTask): void {
+  const rec = job as unknown as Record<string, unknown>;
+  const req = job.request as { modelId?: string } | undefined;
+  const costApproval = job.costApproval as
+    | { approvalId?: string; payloadHash?: string }
+    | undefined;
+  paidJobFsmService.syncDesktopJob({
+    id: job.id,
+    status: job.status,
+    prompt: job.prompt,
+    model: req?.modelId,
+    state: typeof rec.state === 'string' ? (rec.state as PaidJobFsmState) : undefined,
+    payloadHash: costApproval?.payloadHash,
+    approvalToken: costApproval?.approvalId,
+    providerOperationId:
+      typeof rec.providerOperationName === 'string'
+        ? rec.providerOperationName
+        : typeof rec.providerInteractionId === 'string'
+          ? rec.providerInteractionId
+          : undefined,
+    resultMediaUri: typeof rec.localMediaUrl === 'string' ? rec.localMediaUrl : undefined,
+    error: job.error,
+  });
+}
 
 export async function recordCompletedPaidJobCost(job: PaidJobTask): Promise<void> {
+  syncTaskFsm(job);
   if (job.status !== 'Complete') return;
   const cost = job.costApproval?.maximumChargeUsd ?? 0;
   if (cost > 0 && job.request) {
@@ -41,6 +68,7 @@ class PaidJobService {
   async list(): Promise<PaidJobTask[]> {
     const jobs = (await window.electron?.listPaidJobs?.()) ?? [];
     for (const job of jobs) {
+      syncTaskFsm(job);
       // A ledger failure must not hide the native job or invite another submission.
       await recordCompletedPaidJobCost(job).catch(() => {});
     }

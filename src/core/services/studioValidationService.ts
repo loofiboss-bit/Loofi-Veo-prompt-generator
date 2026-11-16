@@ -128,7 +128,12 @@ export function validateStudioVideo(
     const action = { field: 'variant' as const, variantIndex: index as 0 | 1 | 2 };
     // Cinematic contradictions are writing guidance, not documented API limits.
     // Keep generic hardware/token estimates out of model compatibility checks.
-    const cinematic = promptAstLinterService.lintPromptText(variant.prompt);
+    const cinematic = promptAstLinterService.lintPromptText(variant.prompt, {
+      targetModel: input.target,
+      profileId: input.profileId,
+      durationSeconds: input.durationSeconds,
+      aspectRatio: input.aspectRatio,
+    });
     const seenCategories = new Map<string, PromptValidationCheck>();
     for (const issue of [...cinematic.errors, ...cinematic.warnings, ...cinematic.info]) {
       const label = CINEMATIC_LABELS[issue.category];

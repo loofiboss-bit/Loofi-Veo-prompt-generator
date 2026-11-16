@@ -4,13 +4,13 @@ const fs = require('fs');
 const path = require('path');
 
 const VALID_FSM_TRANSITIONS = Object.freeze({
-  DRAFT: Object.freeze(['QUOTED', 'CANCELLED']),
-  QUOTED: Object.freeze(['APPROVED', 'QUOTED', 'DRAFT', 'CANCELLED']),
-  APPROVED: Object.freeze(['DISPATCHING', 'CANCELLED']),
+  DRAFT: Object.freeze(['QUOTED', 'FAILED', 'CANCELLED']),
+  QUOTED: Object.freeze(['APPROVED', 'QUOTED', 'DRAFT', 'FAILED', 'CANCELLED']),
+  APPROVED: Object.freeze(['DISPATCHING', 'FAILED', 'CANCELLED']),
   DISPATCHING: Object.freeze(['RUNNING', 'FAILED', 'CANCELLED']),
   RUNNING: Object.freeze(['COMPLETED', 'FAILED', 'CANCELLED']),
   COMPLETED: Object.freeze([]),
-  FAILED: Object.freeze(['QUOTED', 'DRAFT']),
+  FAILED: Object.freeze(['QUOTED', 'DRAFT', 'APPROVED', 'RUNNING']),
   CANCELLED: Object.freeze([]),
 });
 
@@ -58,8 +58,13 @@ class PaidJobFSM {
   static recoverAfterCrash(job) {
     const now = Date.now();
     const current = job.state || 'DRAFT';
+    const hasConfirmedOperation = Boolean(
+      job.providerOperationName ||
+      job.providerOperationId ||
+      (job.providerInteractionId && job.request?.modelId === 'gemini-omni-1.2-flash'),
+    );
     if (current === 'DISPATCHING') {
-      if (job.providerOperationName || job.providerOperationId) {
+      if (hasConfirmedOperation) {
         return {
           ...job,
           state: 'RUNNING',
@@ -93,7 +98,7 @@ class PaidJobFSM {
       };
     }
 
-    if (current === 'RUNNING' && !job.providerOperationName && !job.providerOperationId) {
+    if (current === 'RUNNING' && !hasConfirmedOperation) {
       return {
         ...job,
         state: 'FAILED',

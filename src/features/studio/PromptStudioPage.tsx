@@ -68,6 +68,7 @@ import { studioReferenceService } from '@core/services/studioReferenceService';
 import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import {
   STUDIO_CAPABILITIES,
+  getStudioExecutionContract,
   studioGenerationBlocker,
   studioVideoRequestIssues,
 } from '@core/config/studioCapabilities';
@@ -1634,8 +1635,7 @@ export function PromptStudioPage() {
         ? t('motionDescription', 'Describe the motion')
         : t('idea');
   const generationBlocker = mode === 'video' ? studioGenerationBlocker(video) : null;
-  const videoIssues =
-    mode === 'video' && video.target === 'veo-api' ? studioVideoRequestIssues(video) : [];
+  const videoIssues = mode === 'video' ? studioVideoRequestIssues(video) : [];
   const textField = (key: string, value: string, onChange: (value: string) => void) => (
     <Field key={key} label={t(key)}>
       <input
@@ -2637,6 +2637,17 @@ export function PromptStudioPage() {
                         ? handoff
                         : undefined
                     }
+                    handoffLabel={(() => {
+                      try {
+                        return getStudioExecutionContract(
+                          currentArtifact.input as VideoPromptArtifactInput,
+                        ).requiresManualMediaIngestion
+                          ? t('prepareInProduction')
+                          : t('generateInApp');
+                      } catch {
+                        return t('generateInApp');
+                      }
+                    })()}
                   />
                   <VideoVariantEditPanel
                     supportsNegative={targetProfile.negativePolicy === 'supported'}

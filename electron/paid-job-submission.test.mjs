@@ -266,3 +266,66 @@ test('retired preview bindings remain hashable for saved jobs but cannot be newl
   assert.throws(() => assertNewSubmissionAvailable(historical, Date.UTC(2026, 9, 22)), /shut down/);
   assert.doesNotThrow(() => assertNewSubmissionAvailable(musicTask(), Date.UTC(2026, 9, 29)));
 });
+
+test('builds Vertex AI Veo 3.1 GA submissions and remains active past preview sunset', () => {
+  const vertex = {
+    ...videoTask(),
+    provider: 'vertex-ai',
+    providerProfile: {
+      provider: 'vertex-ai',
+      projectId: 'studio-prod-01',
+      location: 'us-central1',
+    },
+  };
+  approve(vertex);
+  assert.match(
+    vertex.approvedSubmission.url,
+    /^https:\/\/us-central1-aiplatform\.googleapis\.com\/v1\/projects\/studio-prod-01\/locations\/us-central1\/publishers\/google\/models\/veo-3\.1-fast-generate-001:predictLongRunning$/,
+  );
+  assert.doesNotThrow(() => assertNewSubmissionAvailable(vertex, Date.UTC(2026, 10, 15)));
+  assert.doesNotThrow(() => requireApprovedSubmission(vertex));
+
+  const badProfile = {
+    ...videoTask(),
+    provider: 'vertex-ai',
+    providerProfile: { provider: 'vertex-ai', projectId: '../bad', location: 'us-central1' },
+  };
+  assert.throws(() => createPaidSubmission(badProfile), /Invalid Vertex AI project ID/);
+});
+
+test('builds and hash-binds Gemini Omni 1.2 Flash background interaction submissions', () => {
+  const omni = {
+    id: 'omni-1',
+    prompt: 'Refine lighting to dusk.',
+    request: {
+      modelId: 'gemini-omni-1.2-flash',
+      prompt: 'Refine lighting to dusk.',
+      durationSeconds: 10,
+      resolution: '1080p',
+      aspectRatio: '16:9',
+      interactionId: 'prev-int-42',
+    },
+    executionInputs: {
+      referenceImages: [image()],
+    },
+    costApproval: {
+      modelId: 'gemini-omni-1.2-flash',
+      maximumChargeUsd: 2.3,
+      currency: 'USD',
+      confidence: 'upper-bound',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+    },
+  };
+  approve(omni);
+  assert.equal(omni.approvedSubmission.operation, 'interactions');
+  const parsedBody = JSON.parse(omni.approvedSubmission.body);
+  assert.equal(parsedBody.background, true);
+  assert.equal(parsedBody.previous_interaction_id, 'prev-int-42');
+  assert.equal(parsedBody.generation_config.response_format.duration, '10s');
+  assert.doesNotThrow(() => assertNewSubmissionAvailable(omni, Date.UTC(2026, 10, 15)));
+  assert.doesNotThrow(() => requireApprovedSubmission(omni));
+
+  omni.request.durationSeconds = 12;
+  assert.throws(() => requireApprovedSubmission(omni), /hash mismatch/);
+});
