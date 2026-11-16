@@ -25,8 +25,14 @@ async function stabilizeVisualPage(page: Page) {
   });
 }
 
-// Visual regression pixel comparisons are skipped in CI to prevent brittle rasterizer and font mismatches
-test.describe.skip('Creator Studio visual regression', () => {
+const screenshotOptions = {
+  animations: 'disabled' as const,
+  fullPage: true,
+  maxDiffPixelRatio: 0.03,
+};
+
+// Visual baselines execute on Linux desktop Chromium with deterministic 3% pixel tolerance
+test.describe('Creator Studio visual regression', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(
       testInfo.project.name !== 'chromium' || process.platform !== 'linux',
@@ -60,19 +66,13 @@ test.describe.skip('Creator Studio visual regression', () => {
 
   test('video prompt desk', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Prompt Studio', exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-video.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('creator-studio-video.png', screenshotOptions);
   });
 
   test('music and lyrics desk', async ({ page }) => {
     await page.getByRole('button', { name: 'Music & Lyrics', exact: true }).click();
     await expect(page.getByLabel('Song idea / story', { exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-music.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('creator-studio-music.png', screenshotOptions);
   });
 
   test('generation approval step', async ({ page }) => {
@@ -84,10 +84,7 @@ test.describe.skip('Creator Studio visual regression', () => {
     await expect(
       page.getByRole('button', { name: 'Generate a take · Shot 1', exact: true }),
     ).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-approval.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('creator-studio-approval.png', screenshotOptions);
   });
 
   test('projects hub', async ({ page }) => {
@@ -95,10 +92,7 @@ test.describe.skip('Creator Studio visual regression', () => {
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
     await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
-    await expect(page).toHaveScreenshot('projects-hub.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('projects-hub.png', screenshotOptions);
   });
 
   test('timeline hub', async ({ page }) => {
@@ -106,10 +100,7 @@ test.describe.skip('Creator Studio visual regression', () => {
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
     await expect(page.getByRole('heading', { name: 'Timeline', exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot('timeline-hub.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('timeline-hub.png', screenshotOptions);
   });
 
   test('settings hub', async ({ page }) => {
@@ -117,9 +108,6 @@ test.describe.skip('Creator Studio visual regression', () => {
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await expect(page).toHaveScreenshot('settings-hub.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('settings-hub.png', screenshotOptions);
   });
 });

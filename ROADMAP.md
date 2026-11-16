@@ -42,18 +42,18 @@
 
 ---
 
-## Phase 1: State Isolation & Non-Blocking Persistence (P0 — Completed)
+## Phase 1: State Isolation & Non-Blocking Persistence (Completed / Hardened Post-v22)
 
 _Goal: Zero UI frame drops during timeline/node editing and 100% decoupled Zustand stores._
 
 - [x] **1.1 Non-Blocking Autosave & Dirty Versioning (`useProjectAutosave`, `projectDocumentService.ts`):**
   - Replace synchronous deep-diffing and heavy array comparisons on the main thread in `captureProjectDocumentFromStores` with lightweight, monotonic store `mutationVersion` counters.
-  - Schedule snapshot capture via `requestIdleCallback` (or debounced idle slices) and offload JSON serialization/hashing off the critical UI path.
+  - Schedule snapshot capture via `requestIdleCallback` (or debounced idle slices), offload JSON serialization/hashing off the critical UI path, and mirror durable desktop edits into SQLite WAL (`electron/project-db.cjs`).
 - [x] **1.2 Strict `storeMediator` Decoupling:**
-  - Refactor `useLocationStore` and `useExternalStudioResultStore` to eliminate direct mutations on `useAppStore`. Route all cross-store state synchronization through typed events in `storeMediator`.
+  - Refactor `useLocationStore` and `useExternalStudioResultStore` to eliminate direct mutations on `useAppStore`. Route all cross-store state synchronization through typed events in `storeMediator` with re-entrancy cycle guards.
   - Add static lint enforcement (`no-restricted-imports` / boundary rules) to prevent store-to-store imports.
-- [x] **1.3 `AppRuntime` De-bloat & Render Isolation:**
-  - Strip redundant root hooks and unused prop generation from `AppRuntime`.
+- [x] **1.3 `AppRuntime` De-bloat, Playhead Isolation & Render Isolation:**
+  - Strip redundant root hooks, `promptState` top-level subscriptions, and dead stub callbacks from `AppRuntime`; move transient 10 Hz timeline playback into `usePlaybackStore` and use O(1) Zundo reference equality.
   - Enforce strict `React.lazy` / `Suspense` boundaries for heavy delivery panels and modal workflows.
 
 ---

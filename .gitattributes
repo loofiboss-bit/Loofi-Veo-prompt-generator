@@ -7,6 +7,25 @@
 # Binary files
 *.png binary
 *.jpg binary
+*.jpeg binary
+*.webp binary
 *.ico binary
+*.mp4 binary
+*.webm binary
+*.wav binary
+*.ttf binary
+*.ttc binary
+*.otf binary
+*.woff2 binary
+*.zip binary
 *.AppImage binary
 *.exe binary
+*.dmg binary
+*.rpm binary
+
+# Exclude showcase media, review archives, E2E suites, and CI workflows from release tarballs
+assets/videos/ export-ignore
+assets/screenshots/ export-ignore
+docs/reviews/ export-ignore
+e2e/ export-ignore
+.github/ export-ignore

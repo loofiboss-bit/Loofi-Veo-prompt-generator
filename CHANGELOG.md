@@ -7,6 +7,20 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Post-v22 Architecture Hardening & Persistence**: Add `node:sqlite` WAL project persistence (`ProjectDatabase` with atomic delta commits, CAS conflict detection, legacy migration, and `VACUUM INTO` snapshot backups), streaming main-process ZIP archiving (`archive-ipc`), dedicated `usePlaybackStore` playhead store, `bakeEffects` + 40-clip chunked FFmpeg segmentation up to 1800s, OTIO caption `Marker.1` + `exportOtioWithSrt`, and offline creator asset SHA-256 verification (`creator-assets:check`).
+
+### Changed
+
+- Enforce strict CSP (externalizing `theme-init.js` and `sw-register.js`), canonical cost-approval hash binding, PaidJob FSM transitions, preflight aspect/duration/continuity gates, plugin project sanitization, `useShallow` timeline/AppRuntime selector isolation, Vite chunk deduplication, ratcheted coverage gates (`61/50/58/62`), strict CI build reproducibility checks (`exit 1`), and `.gitattributes` `export-ignore` hygiene.
+
+### Fixed
+
+- Remove legacy tracked `assets/videos/creator-v15-demo.mp4` binary, resolve `creatorDeliveryService` partial `crops` guard, eliminate unused store history duplication and stale project-switch dirty flags, and stabilize E2E visual regression / performance budget thresholds.
+
 ## [22.0.0] - 2026-11-07
 
 ### Added

@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { dismissModals } from './helpers';
 
+const isCompiledBundle = Boolean(process.env.STAGING_URL);
 const BUDGETS = {
-  coldStartMs: 12_000,
+  coldStartMs: isCompiledBundle ? 5_000 : 7_500,
   projectWorkspaceLoadMs: 3_000,
   routeChangeMs: 2_000,
   longSessionMs: 15_000,
-  heapGrowthMb: 96,
+  heapGrowthMb: 32,
 } as const;
 
 const heapMb = async (page: import('@playwright/test').Page): Promise<number | null> =>

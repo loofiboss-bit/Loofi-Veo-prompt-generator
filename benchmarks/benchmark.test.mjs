@@ -107,3 +107,38 @@ test('dirty check and snapshot serialization overhead completes under 5ms on a 2
 
   assert.ok(measured.durationMs < 5, `Expected dirty check < 5ms, got ${measured.durationMs}ms`);
 });
+
+test('50-scene timeline & shot serialization stays within renderer frame budget (<16ms)', async () => {
+  const fiftyShots = Array.from({ length: 50 }, (_, i) => ({
+    id: i + 1,
+    action: `Scene ${i + 1} hero action`,
+    camera: 'Tracking medium shot',
+    duration: 5,
+    takes: [],
+  }));
+  const fiftyClips = Array.from({ length: 50 }, (_, i) => ({
+    id: `clip-${i + 1}`,
+    trackId: i % 2 === 0 ? 'video_main' : 'video_broll',
+    resourceId: i + 1,
+    startTime: i * 5,
+    duration: 5,
+    offset: 0,
+    type: 'video',
+  }));
+  const project50 = {
+    id: 'bench-project-50-scenes',
+    schemaVersion: 22,
+    mutationVersion: 100,
+    storyboard: { shots: fiftyShots, timeline: { clips: fiftyClips } },
+  };
+  for (let i = 0; i < 3; i++) JSON.stringify(project50);
+  const measured = await measure(async () => {
+    const raw = JSON.stringify(project50);
+    return JSON.parse(raw).storyboard.shots.length;
+  });
+  assert.equal(measured.result, 50);
+  assert.ok(
+    measured.durationMs < 16,
+    `Expected 50-scene serialization < 16ms, got ${measured.durationMs}ms`,
+  );
+});

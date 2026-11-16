@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 
 const COVERAGE_PATH = 'coverage/coverage-summary.json';
 const DEFAULT_THRESHOLDS = {
-  statements: 52,
-  branches: 40,
-  functions: 47,
-  lines: 53,
+  statements: 61,
+  branches: 50,
+  functions: 58,
+  lines: 62,
 };
 
 const CRITICAL_FILE_THRESHOLDS = {
@@ -14,6 +14,9 @@ const CRITICAL_FILE_THRESHOLDS = {
   'src/core/models/router.ts': { lines: 85, branches: 60 },
   'src/core/providers/providerRouter.ts': { lines: 90, branches: 70 },
   'src/core/services/mediaAssetService.ts': { lines: 75, branches: 65 },
+  'src/core/services/paidJobFsmService.ts': { lines: 85, branches: 75 },
+  'src/core/services/paidJobService.ts': { lines: 90, branches: 80 },
+  'src/core/services/pluginSandboxService.ts': { lines: 75, branches: 65 },
   'src/core/services/productionPreflightService.ts': { lines: 85, branches: 70 },
   'src/core/services/productionRunService.ts': { lines: 80, branches: 60 },
   'src/core/services/veoGenerationService.ts': { lines: 85, branches: 70 },
