@@ -2,9 +2,9 @@
 
 The primary supported release channel is **Fedora Linux (Fedora 44 and Fedora 45 x86_64)** via Fedora COPR, GitHub RPM, and AppImage. Windows is not built in CI; users who want Windows binaries can build them manually via `npm run build && npx electron-builder --win`. macOS is not a supported target.
 
-Download [v22.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.0).
+Download [v22.1.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1).
 It provides the official Fedora RPM, Linux AppImage, and `SHA256SUMS.txt`.
-See the [README installation steps](../../README.md#install-v2210) for package commands.
+See the [README installation steps](../../README.md#install-v2211) for package commands.
 
 ## Verification & Trust Boundary
 

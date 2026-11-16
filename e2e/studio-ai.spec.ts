@@ -76,8 +76,13 @@ async function installMockProvider(
               typeof input[key] === 'string' && input[key].trim() ? input[key] : fallback,
             ]),
           ) as typeof defaults;
-          const primary = `${input.idea}. ${details.action}. ${details.camera}.`;
+          const resolvedIdea =
+            typeof input.idea === 'string' && input.idea.trim()
+              ? input.idea.trim()
+              : 'A night market vendor lights paper lanterns before dawn';
+          const primary = `${resolvedIdea}. ${details.action}. ${details.camera}.`;
           const body = {
+            ...(typeof input.idea === 'string' && input.idea.trim() ? {} : { idea: resolvedIdea }),
             details,
             creativeDetails: input.creativeDetails ?? { lensType: '50mm' },
             primary,
@@ -219,4 +224,22 @@ test('a missing key explains the problem and permits a local pack without cost a
     cancellations: 0,
     clipboard: '',
   });
+});
+
+test('Create with Gemini works when Core idea is blank and populates the generated idea and prompt', async ({
+  page,
+}) => {
+  await blockExternalRequests(page);
+  await installMockProvider(page);
+  await openStudio(page);
+  const createButton = page.getByRole('button', { name: 'Create with Gemini', exact: true });
+  await expect(createButton).toBeEnabled();
+  await createButton.click();
+  await expect(page.getByLabel(/^Core idea/)).toHaveValue(
+    'A night market vendor lights paper lanterns before dawn',
+  );
+  await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(
+    /night market vendor lights paper lanterns/,
+  );
+  await expect(page.getByRole('button', { name: 'Undo AI creation', exact: true })).toBeVisible();
 });

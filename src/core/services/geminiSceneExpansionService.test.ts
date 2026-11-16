@@ -299,6 +299,33 @@ describe('one-request scene and prompt generation', () => {
     ).rejects.toMatchObject({ name: 'AbortError' });
     expect(mocks.generate).toHaveBeenCalledTimes(1);
   });
+
+  it('creates an idea, scene details, and variants when the input idea is blank', async () => {
+    respond({
+      idea: 'A street violinist plays under a glowing awning in rain',
+      details,
+      ...pack,
+      recommendations: ['Keep pacing steady.'],
+    });
+    const result = await generateVideoSceneAndPack({ ...video, idea: '   ' });
+    expect(result.input.idea).toBe('A street violinist plays under a glowing awning in rain');
+    expect(result.input.subject).toBe(details.subject);
+    expect(result.pack).toEqual(pack);
+    expect(mocks.generate.mock.calls[0][0].contents).toContain('The input idea is empty');
+    expect(mocks.generate.mock.calls[0][0].config.responseJsonSchema.required).toContain('idea');
+  });
+
+  it('rejects an empty AI-generated idea when the input idea is blank', async () => {
+    respond({
+      idea: '   ',
+      details,
+      ...pack,
+      recommendations: [],
+    });
+    await expect(generateVideoSceneAndPack({ ...video, idea: '' })).rejects.toThrow(
+      'did not return a scene idea',
+    );
+  });
 });
 
 describe('target-aware prompt variants', () => {

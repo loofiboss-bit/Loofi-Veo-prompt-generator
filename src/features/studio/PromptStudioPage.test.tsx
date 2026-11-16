@@ -1611,4 +1611,37 @@ describe('PromptStudioPage durable copy desk', () => {
     expect(usePromptStudioDraftStore.getState().draft!.video.subject).toBe(before.subject);
     expect(mocks.expandScene.mock.calls.at(-1)?.[1].editableFields).toEqual(['camera']);
   });
+
+  it('allows Create with Gemini when Core idea is blank and populates the generated idea atomically', async () => {
+    const { user } = await openStudio();
+    const createButton = screen.getByRole('button', { name: 'Create with Gemini' });
+    expect(createButton).toBeEnabled();
+    mocks.generateScene.mockImplementationOnce(async (input: VideoPromptArtifactInput) => ({
+      input: {
+        ...input,
+        idea: 'A cyclist rides across a sunlit bridge at dawn',
+        subject: 'A road cyclist',
+        action: 'Pedals smoothly across the bridge',
+      },
+      pack: {
+        primary: 'A road cyclist pedals smoothly across a sunlit bridge at dawn.',
+        cinematic: 'Warm morning light gleams across the bridge as the cyclist passes.',
+        controlFocused: 'Smooth lateral tracking shot of a cyclist crossing a bridge at dawn.',
+        negativePrompt: '',
+      },
+      modelId: 'gemini-3.8-flash',
+      recommendations: ['Keep the camera pace steady.'],
+    }));
+    await user.click(createButton);
+    await screen.findByRole('button', { name: 'Undo AI creation' });
+    expect(mocks.generateScene).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: 'Core idea' })).toHaveValue(
+      'A cyclist rides across a sunlit bridge at dawn',
+    );
+    expect(screen.getByRole('textbox', { name: 'Primary prompt' })).toHaveValue(
+      'A road cyclist pedals smoothly across a sunlit bridge at dawn.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Undo AI creation' }));
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Core idea' })).toHaveValue(''));
+  });
 });
