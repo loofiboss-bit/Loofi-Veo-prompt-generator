@@ -63,7 +63,6 @@ function getRoutedSection(pathname: string): string {
 export function AppRuntime() {
   useProjectAutosave();
   // ---------- Store & top-level hooks (granular selectors) ----------
-  const promptState = useAppStore((state) => state.promptState);
   const setPromptState = useAppStore((state) => state.setPromptState);
   const _hasHydrated = useAppStore((state) => state._hasHydrated);
   const openModal = useAppStore((state) => state.openModal);
@@ -163,14 +162,13 @@ export function AppRuntime() {
   }, [setTheme, theme]);
 
   // ---------- Domain hooks ----------
-  const generationState = useGenerationState({ promptState, addToast });
+  const generationState = useGenerationState({ addToast });
 
   // ---------- Initialization ----------
   useAppInitialization({
     _hasHydrated,
     hasSeenWelcome,
     currentProjectId,
-    promptIdea: promptState.idea,
     setNewProjectWizardOpen,
     addToast,
   });
@@ -206,21 +204,13 @@ export function AppRuntime() {
     openStudioSafely,
   ]);
 
-  // ---------- Handlers hook stubs & execution ----------
+  // ---------- Handlers hook & memoized scaffold props ----------
   const [generatedPrompt, setGeneratedPrompt] = useState<VeoPromptResponse | null>(null);
-  const emptyErrors = useMemo(() => ({}), []);
-  const noopSetErrors = useCallback(() => {}, []);
-  const noopResetEditHistory = useCallback(() => {}, []);
-  const noopSetIsEditing = useCallback(() => {}, []);
-  const noopSetIsEnhancingIdea = useCallback(() => {}, []);
 
   const { modalHandlers } = useAppHandlers({
-    promptState,
     setPromptState,
     generatedPrompt,
     setGeneratedPrompt,
-    errors: emptyErrors,
-    setErrors: noopSetErrors,
     addToast,
     promptVariations: generationState.promptVariations,
     isGeneratingVariations: generationState.isGeneratingVariations,
@@ -232,11 +222,6 @@ export function AppRuntime() {
     setStoryboardImages: generationState.setStoryboardImages,
     uploadedImageUrl,
     setUploadedImageUrl,
-    isEditing: false,
-    setIsEditing: noopSetIsEditing,
-    isEnhancingIdea: false,
-    setIsEnhancingIdea: noopSetIsEnhancingIdea,
-    resetEditHistory: noopResetEditHistory,
     ideaInputRef,
     safeModeStatus,
     openStudioSafely,
@@ -585,6 +570,19 @@ export function AppRuntime() {
     onDismissFallback: dismissFallback,
   });
 
+  const commandPalette = useMemo(
+    () => ({
+      isOpen: isCommandPaletteOpen,
+      onClose: handleCloseCommandPalette,
+      commands: commandPaletteCommands,
+      title: t('commandPalette.title', 'Command Palette'),
+      recentTitle: t('commandPalette.recent', 'Recent'),
+      searchPlaceholder: t('commandPalette.searchPlaceholder', 'Type a command...'),
+      emptyMessage: t('commandPalette.empty', 'No commands match your search.'),
+    }),
+    [isCommandPaletteOpen, handleCloseCommandPalette, commandPaletteCommands, t],
+  );
+
   const appOverlaysProps = useAppOverlaysProps({
     toasts,
     dismissToast,
@@ -598,77 +596,106 @@ export function AppRuntime() {
     onCloseDiagnostics: handleCloseDiagnostics,
     safeModeStatus,
     onExitSafeMode: handleExitSafeMode,
-    commandPalette: {
-      isOpen: isCommandPaletteOpen,
-      onClose: handleCloseCommandPalette,
-      commands: commandPaletteCommands,
-      title: t('commandPalette.title', 'Command Palette'),
-      recentTitle: t('commandPalette.recent', 'Recent'),
-      searchPlaceholder: t('commandPalette.searchPlaceholder', 'Type a command...'),
-      emptyMessage: t('commandPalette.empty', 'No commands match your search.'),
-    },
+    commandPalette,
   });
+
+  const handleOpenCommandPalette = useCallback(() => setIsCommandPaletteOpen(true), []);
+
+  const sidebarProps = useMemo(
+    () => ({
+      onNavigate: handleSidebarNavigate,
+      onOpenProject: () => navigate(ROUTES.PROJECTS),
+      onOpenAssets: () => navigate(ROUTES.ASSETS),
+      onOpenActivity: () => navigate(ROUTES.ACTIVITY),
+      onOpenHistory: () => openModal('isHistoryOpen'),
+      onOpenTemplates: () => openModal('isTemplatesOpen'),
+      onOpenSettings: () => openSettingsPage(),
+      onOpenPlugins: () => openSettingsPage('?tab=plugins'),
+      onOpenDiagnostics: () => openDiagnostics(),
+      onOpenBatchGenerator: () => setIsBatchModalOpen(true),
+      onOpenJobsPanel: () => setIsJobsPanelOpen(true),
+      onOpenWorkspaceManager: () => setIsWorkspaceManagerOpen(true),
+      onOpenQueue: () => setIsQueuePanelOpen(true),
+      onOpenHelpPanel: () => openHelpPanel(),
+      onOpenOptimize: () => navigate(ROUTES.OPTIMIZE),
+      onOpenDirector: () => navigate(ROUTES.CREATE),
+      onOpenCollaborate: () => setIsShareDialogOpen(true),
+      onOpenComments: () => setIsCommentPanelOpen(true),
+      onOpenRoles: () => setIsRoleManagerOpen(true),
+      diagnosticIssueCount,
+      pendingJobCount,
+      isApiConfigured: apiKeyConfigured,
+    }),
+    [
+      handleSidebarNavigate,
+      navigate,
+      openModal,
+      openSettingsPage,
+      openDiagnostics,
+      openHelpPanel,
+      setIsShareDialogOpen,
+      setIsCommentPanelOpen,
+      setIsRoleManagerOpen,
+      diagnosticIssueCount,
+      pendingJobCount,
+      apiKeyConfigured,
+    ],
+  );
+
+  const headerProps = useMemo(
+    () => ({
+      onShowHistory: () => openModal('isHistoryOpen'),
+      historyButtonText: t('common:historyButton'),
+      onShowImageStudio: () => openStudioSafely('image'),
+      imageStudioButtonText: t('common:imageStudioButton'),
+      onShowSunoStudio: () => navigate(`${ROUTES.STUDIO}?mode=music`),
+      sunoStudioButtonText: t('common:sunoStudioButton'),
+      onShowVideoAnalysis: () => openStudioSafely('analysis'),
+      isSyncConnected,
+      theme,
+      onThemeToggle: handleThemeToggle,
+      onStartTutorial: restartTutorial,
+      onResetAll: modalHandlers.handleResetAll,
+      onShowSearch: () => openModal('isSearchOpen'),
+      onShowVideoStudio: () => openStudioSafely('video'),
+      onOpenWizard: () => openModal('isWizardOpen'),
+      onOpenStoryBoard: () => openStudioSafely('story'),
+      onOpenCharacterBank: () => openModal('isCharacterBankOpen'),
+      onOpenLocationBank: () => openModal('isLocationBankOpen'),
+      onOpenProjectManager: () => openModal('isProjectManagerOpen'),
+      onOpenSeriesBible: () => openModal('isSeriesBibleOpen'),
+      onOpenVariablesPanel: () => openModal('isVariablesPanelOpen'),
+      onOpenScriptStudio: () => openStudioSafely('script'),
+      onOpenWritersRoom: () => setIsWritersRoomOpen(true),
+      currentProjectName,
+    }),
+    [
+      openModal,
+      t,
+      openStudioSafely,
+      navigate,
+      isSyncConnected,
+      theme,
+      handleThemeToggle,
+      restartTutorial,
+      modalHandlers.handleResetAll,
+      setIsWritersRoomOpen,
+      currentProjectName,
+    ],
+  );
 
   // ---------- Loading gate ----------
   if (!_hasHydrated || !criticalBootstrapComplete) return <AppLoadingGate />;
 
   return (
     <AppScaffold
-      onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      onOpenCommandPalette={handleOpenCommandPalette}
       skipToContentLabel={t('common:skipToContent', 'Skip to main content')}
       pathname={location.pathname}
       isChildRoute={isChildRoute}
       activeSection={activeSection}
-      sidebarProps={{
-        onNavigate: handleSidebarNavigate,
-        onOpenProject: () => navigate(ROUTES.PROJECTS),
-        onOpenAssets: () => navigate(ROUTES.ASSETS),
-        onOpenActivity: () => navigate(ROUTES.ACTIVITY),
-        onOpenHistory: () => openModal('isHistoryOpen'),
-        onOpenTemplates: () => openModal('isTemplatesOpen'),
-        onOpenSettings: () => openSettingsPage(),
-        onOpenPlugins: () => openSettingsPage('?tab=plugins'),
-        onOpenDiagnostics: () => openDiagnostics(),
-        onOpenBatchGenerator: () => setIsBatchModalOpen(true),
-        onOpenJobsPanel: () => setIsJobsPanelOpen(true),
-        onOpenWorkspaceManager: () => setIsWorkspaceManagerOpen(true),
-        onOpenQueue: () => setIsQueuePanelOpen(true),
-        onOpenHelpPanel: () => openHelpPanel(),
-        onOpenOptimize: () => navigate(ROUTES.OPTIMIZE),
-        onOpenDirector: () => navigate(ROUTES.CREATE),
-        onOpenCollaborate: () => setIsShareDialogOpen(true),
-        onOpenComments: () => setIsCommentPanelOpen(true),
-        onOpenRoles: () => setIsRoleManagerOpen(true),
-        diagnosticIssueCount,
-        pendingJobCount,
-        isApiConfigured: apiKeyConfigured,
-      }}
-      headerProps={{
-        onShowHistory: () => openModal('isHistoryOpen'),
-        historyButtonText: t('common:historyButton'),
-        onShowImageStudio: () => openStudioSafely('image'),
-        imageStudioButtonText: t('common:imageStudioButton'),
-        onShowSunoStudio: () => navigate(`${ROUTES.STUDIO}?mode=music`),
-        sunoStudioButtonText: t('common:sunoStudioButton'),
-        onShowVideoAnalysis: () => openStudioSafely('analysis'),
-        isSyncConnected,
-        theme,
-        onThemeToggle: handleThemeToggle,
-        onStartTutorial: restartTutorial,
-        onResetAll: modalHandlers.handleResetAll,
-        onShowSearch: () => openModal('isSearchOpen'),
-        onShowVideoStudio: () => openStudioSafely('video'),
-        onOpenWizard: () => openModal('isWizardOpen'),
-        onOpenStoryBoard: () => openStudioSafely('story'),
-        onOpenCharacterBank: () => openModal('isCharacterBankOpen'),
-        onOpenLocationBank: () => openModal('isLocationBankOpen'),
-        onOpenProjectManager: () => openModal('isProjectManagerOpen'),
-        onOpenSeriesBible: () => openModal('isSeriesBibleOpen'),
-        onOpenVariablesPanel: () => openModal('isVariablesPanelOpen'),
-        onOpenScriptStudio: () => openStudioSafely('script'),
-        onOpenWritersRoom: () => setIsWritersRoomOpen(true),
-        currentProjectName,
-      }}
+      sidebarProps={sidebarProps}
+      headerProps={headerProps}
       modalManagerProps={{ addToast, handlers: modalHandlers }}
       collaborationPanelsProps={collaborationPanelsProps}
       appPanelsProps={appPanelsProps}

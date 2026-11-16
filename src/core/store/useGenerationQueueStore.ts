@@ -27,10 +27,14 @@ interface GenerationQueueState {
   pendingCount: number;
   /** Whether the store has hydrated and subscribed to the queue service */
   hydrated: boolean;
+  /** Whether service subscription has been registered on this store instance */
+  initialized: boolean;
 
   // Actions
   /** Initialize the queue store and hydrate persisted items */
   initialize: () => Promise<void>;
+  /** Reset initialization tracking for clean test/runtime teardown */
+  reset: () => void;
   /** Refresh state from the queue service */
   refresh: () => void;
   /** Cancel a queued item */
@@ -39,27 +43,34 @@ interface GenerationQueueState {
   retry: (id: string) => void;
 }
 
-let initialized = false;
-
-export const useGenerationQueueStore = create<GenerationQueueState>((set) => {
+export const useGenerationQueueStore = create<GenerationQueueState>((set, get) => {
   const items = generationQueueService.getItems();
 
   return {
     ...summarizeItems(items),
     hydrated: false,
+    initialized: false,
 
     initialize: async () => {
-      if (!initialized) {
+      if (!get().initialized) {
         generationQueueService.subscribe(() => {
           set(summarizeItems(generationQueueService.getItems()));
         });
-        initialized = true;
+        set({ initialized: true });
       }
 
       await generationQueueService.hydrate();
       set({
         ...summarizeItems(generationQueueService.getItems()),
         hydrated: true,
+      });
+    },
+
+    reset: () => {
+      set({
+        ...summarizeItems([]),
+        hydrated: false,
+        initialized: false,
       });
     },
 

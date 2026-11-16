@@ -8,11 +8,16 @@ interface RenderJobsState {
   retry: (id: string) => Promise<TimelineRenderJobV1>;
   cancel: (id: string) => Promise<void>;
   receive: (job: TimelineRenderJobV1) => void;
+  cleanup: () => void;
 }
-let subscribed = false;
+let unsubscribeRenderUpdates: (() => void) | null = null;
 /** Native owns persistence and execution. This store survives route and panel lifecycles. */
 export const useRenderJobsStore = create<RenderJobsState>((set, get) => ({
   jobs: [],
+  cleanup: () => {
+    unsubscribeRenderUpdates?.();
+    unsubscribeRenderUpdates = null;
+  },
   receive: (job) =>
     set((state) => {
       const previous = state.jobs.find((item) => item.id === job.id);
@@ -27,9 +32,9 @@ export const useRenderJobsStore = create<RenderJobsState>((set, get) => ({
       return { jobs: [...state.jobs.filter((item) => item.id !== job.id), job] };
     }),
   hydrate: async () => {
-    if (!subscribed && window.electron?.onTimelineRenderUpdate) {
-      window.electron.onTimelineRenderUpdate((job) => get().receive(job));
-      subscribed = true;
+    if (!unsubscribeRenderUpdates && window.electron?.onTimelineRenderUpdate) {
+      unsubscribeRenderUpdates =
+        window.electron.onTimelineRenderUpdate((job) => get().receive(job)) ?? null;
     }
     const jobs = await window.electron?.listTimelineRenderJobs?.();
     // Merge with events that may have arrived while the journal was being read.
@@ -61,3 +66,9 @@ export const useRenderJobsStore = create<RenderJobsState>((set, get) => ({
     if (job) get().receive(job);
   },
 }));
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    useRenderJobsStore.getState().cleanup();
+  });
+}

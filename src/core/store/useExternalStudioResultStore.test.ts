@@ -69,9 +69,11 @@ describe('useExternalStudioResultStore', () => {
     });
   });
 
-  it('emits asset:upserted via storeMediator when hydrating active project results', async () => {
-    const assetHandler = vi.fn();
-    const unsub = storeMediator.on('asset:upserted', assetHandler);
+  it('emits single studioResult:assetsSynchronized without duplicate per-asset loops on hydrate', async () => {
+    const batchHandler = vi.fn();
+    const legacyPerAssetHandler = vi.fn();
+    const unsubBatch = storeMediator.on('studioResult:assetsSynchronized', batchHandler);
+    const unsubLegacy = storeMediator.on('asset:upserted', legacyPerAssetHandler);
 
     const mockResult = {
       id: 'res-1',
@@ -86,23 +88,30 @@ describe('useExternalStudioResultStore', () => {
 
     await useExternalStudioResultStore.getState().hydrate('p1');
 
-    expect(assetHandler).toHaveBeenCalledOnce();
-    expect(assetHandler).toHaveBeenCalledWith({
-      asset: expect.objectContaining({
-        id: 'asset-1',
-        storageKey: 'asset-1',
-        groupId: 'p1',
-        name: 'Render Take 1',
-        type: 'video',
-      }),
+    expect(batchHandler).toHaveBeenCalledOnce();
+    expect(batchHandler).toHaveBeenCalledWith({
+      projectId: 'p1',
+      assets: [
+        expect.objectContaining({
+          id: 'asset-1',
+          storageKey: 'asset-1',
+          groupId: 'p1',
+          name: 'Render Take 1',
+          type: 'video',
+        }),
+      ],
     });
+    expect(legacyPerAssetHandler).not.toHaveBeenCalled();
 
-    unsub();
+    unsubBatch();
+    unsubLegacy();
   });
 
-  it('emits timeline:synced via storeMediator when accepting a result', async () => {
+  it('emits only canonical timeline:synced when accepting a result', async () => {
     const timelineHandler = vi.fn();
+    const duplicateHandler = vi.fn();
     const unsub = storeMediator.on('timeline:synced', timelineHandler);
+    const unsubDuplicate = storeMediator.on('studioResult:timelineAccepted', duplicateHandler);
 
     await useExternalStudioResultStore.getState().hydrate('p1');
 
@@ -135,7 +144,9 @@ describe('useExternalStudioResultStore', () => {
       tracks: acceptedProject.storyboard.timeline.tracks,
       clips: acceptedProject.storyboard.timeline.clips,
     });
+    expect(duplicateHandler).not.toHaveBeenCalled();
 
     unsub();
+    unsubDuplicate();
   });
 });

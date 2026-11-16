@@ -197,4 +197,33 @@ describe('StoryBoard', () => {
     expect(screen.getByText('Create Route')).toBeInTheDocument();
     expect(addToast).not.toHaveBeenCalledWith('All shots queued in background studio.', 'success');
   });
+
+  it('preserves projects with more than 50 shots across unmount without truncating sbShots', () => {
+    const fiftyFiveShots = Array.from({ length: 55 }, (_, i) => ({
+      id: i + 1,
+      type: 'video' as const,
+      action: `Scene ${i + 1}`,
+      camera: 'Static',
+      characterId: 'char-1',
+      takes: [],
+      selectedTakeIndex: 0,
+      visualLink: false,
+      duration: 5,
+      transition: { type: 'cut' as const, duration: 0 },
+    }));
+
+    useAppStore.setState({ sbShots: fiftyFiveShots });
+
+    const { unmount } = render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter>
+          <StoryBoard isOpen={true} onClose={vi.fn()} addToast={vi.fn()} />
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    expect(screen.getAllByTestId('shot-card')).toHaveLength(55);
+    unmount();
+    expect(useAppStore.getState().sbShots).toHaveLength(55);
+  });
 });

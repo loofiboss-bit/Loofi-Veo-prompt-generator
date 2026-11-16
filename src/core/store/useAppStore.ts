@@ -1,14 +1,11 @@
 import { create, StoreApi, UseBoundStore } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, StorageValue } from 'zustand/middleware';
 import { temporal, TemporalState } from 'zundo';
 import { idbStorage } from '@core/utils/storage';
 import { INITIAL_STATE } from '@core/constants';
 import { logger } from '@core/services/loggerService';
 import { continuityService } from '@core/services/continuityService';
-import {
-  migratePromptStateCollection,
-  migratePromptStateTarget,
-} from '@core/utils/videoTargetMigration';
+import { migratePromptStateTarget } from '@core/utils/videoTargetMigration';
 
 import { storeMediator } from './mediator';
 
@@ -183,7 +180,39 @@ export const useAppStore = create<AppState>()(
       },
       {
         name: 'veo-prompt-state-v6', // Keep the storage key stable across additive migrations.
-        storage: createJSONStorage(() => idbStorage),
+        storage: (() => {
+          const baseStorage = createJSONStorage<Record<string, unknown>>(() => idbStorage);
+          if (!baseStorage) return undefined;
+          let lastStorageKey: string | null = null;
+          let lastPersistedFields: Record<string, unknown> | null = null;
+          return {
+            ...baseStorage,
+            setItem(name: string, value: StorageValue<Record<string, unknown>>) {
+              const nextFields = value?.state;
+              if (
+                nextFields &&
+                lastPersistedFields &&
+                lastStorageKey === name &&
+                Object.keys(nextFields).length === Object.keys(lastPersistedFields).length &&
+                Object.keys(nextFields).every(
+                  (key) => nextFields[key] === lastPersistedFields![key],
+                )
+              ) {
+                return Promise.resolve();
+              }
+              lastStorageKey = name;
+              lastPersistedFields = nextFields ?? null;
+              return baseStorage.setItem(name, value);
+            },
+            removeItem(name: string) {
+              if (lastStorageKey === name) {
+                lastStorageKey = null;
+                lastPersistedFields = null;
+              }
+              return baseStorage.removeItem(name);
+            },
+          };
+        })(),
         version: 8,
         migrate: (persistedState) => {
           const state = persistedState as Partial<AppState>;
@@ -199,7 +228,6 @@ export const useAppStore = create<AppState>()(
             promptState: state.promptState
               ? migratePromptStateTarget(state.promptState)
               : INITIAL_STATE,
-            history: migratePromptStateCollection(state.history),
             customPresets: state.customPresets?.map((preset) => ({
               ...preset,
               params: migratePromptStateTarget(preset.params),
@@ -239,7 +267,6 @@ export const useAppStore = create<AppState>()(
             assetCatalogRevisions: s.assetCatalogRevisions,
             assetCatalogTombstones: s.assetCatalogTombstones,
             characterBank: s.characterBank,
-            history: s.history,
             customPresets: s.customPresets,
             visualDNA: s.visualDNA,
             productionBible: s.productionBible,
@@ -259,8 +286,9 @@ export const useAppStore = create<AppState>()(
         clips: state.clips,
         // Explicitly exclude zoomLevel and currentTime from history snapshots
       }),
-      // Only add to history if these specific fields change
-      equality: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+      // Only add to history if these specific fields change (O(1) reference check)
+      equality: (a, b) =>
+        a === b || (a?.sbShots === b?.sbShots && a?.tracks === b?.tracks && a?.clips === b?.clips),
     },
   ),
 ) as unknown as UseBoundStore<StoreApi<AppState>> & { temporal: StoreApi<TemporalState<AppState>> };
@@ -349,28 +377,32 @@ export const registerAppStoreMediator = (): (() => void) => {
   };
 
   const unsubs: (() => void)[] = [
-    storeMediator.on('locations:updated', handleLocations),
     storeMediator.on('location:bankChanged', handleLocations),
 
-    storeMediator.on('asset:upserted', ({ asset }) => {
-      const app = useAppStore.getState();
-      if (app.assets.some((item) => item.id === asset.id)) {
-        app.updateAsset(asset.id, asset);
-      } else {
-        app.addAsset(asset);
-      }
-    }),
-
     storeMediator.on('studioResult:assetsSynchronized', ({ assets }) => {
-      const app = useAppStore.getState();
-      for (const asset of assets) {
-        if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
-        else app.addAsset(asset);
-      }
+      if (!assets.length) return;
+      useAppStore.setState((state) => {
+        const nextAssets = [...state.assets];
+        const nextRevisions = { ...state.assetCatalogRevisions };
+        const nextTombstones = { ...state.assetCatalogTombstones };
+        for (const asset of assets) {
+          const rev =
+            Math.max(Date.now(), nextRevisions[asset.id] ?? 0, nextTombstones[asset.id] ?? 0) + 1;
+          nextRevisions[asset.id] = rev;
+          delete nextTombstones[asset.id];
+          const idx = nextAssets.findIndex((item) => item.id === asset.id);
+          if (idx >= 0) nextAssets[idx] = { ...nextAssets[idx], ...asset };
+          else nextAssets.unshift(asset);
+        }
+        return {
+          assets: nextAssets,
+          assetCatalogRevisions: nextRevisions,
+          assetCatalogTombstones: nextTombstones,
+        };
+      });
     }),
 
     storeMediator.on('timeline:synced', handleTimelineSync),
-    storeMediator.on('studioResult:timelineAccepted', handleTimelineSync),
   ];
 
   appStoreMediatorUnsubs = unsubs;

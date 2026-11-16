@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAppStore } from '@core/store/useAppStore';
-import type { Asset, CharacterProfile, HistoryEntry, CustomPreset, VisualDNA } from '@core/types';
+import type { Asset, CharacterProfile, CustomPreset, VisualDNA } from '@core/types';
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn().mockResolvedValue(undefined),
@@ -43,13 +43,6 @@ const makeCharacter = (id: string): CharacterProfile => ({
   negativePrompt: '',
 });
 
-const makeHistoryEntry = (id: string): HistoryEntry => ({
-  id,
-  prompt: 'A cinematic shot',
-  params: {} as import('@core/types').PromptState,
-  timestamp: Date.now(),
-});
-
 const makePreset = (id: string): CustomPreset => ({
   id,
   name: `Preset ${id}`,
@@ -67,7 +60,6 @@ beforeEach(() => {
   useAppStore.setState({
     assets: [],
     characterBank: [],
-    history: [],
     customPresets: [],
     visualDNA: [],
   });
@@ -124,29 +116,6 @@ describe('assetSlice — characters', () => {
     useAppStore.getState().setCharacterBank([makeCharacter('c2'), makeCharacter('c3')]);
     expect(useAppStore.getState().characterBank).toHaveLength(2);
     expect(useAppStore.getState().characterBank[0].id).toBe('c2');
-  });
-});
-
-describe('assetSlice — history', () => {
-  it('addToHistory prepends and limits to 50 entries', () => {
-    for (let i = 0; i < 55; i++) {
-      useAppStore.getState().addToHistory(makeHistoryEntry(`h${i}`));
-    }
-    expect(useAppStore.getState().history).toHaveLength(50);
-  });
-
-  it('clearHistory empties history', () => {
-    useAppStore.getState().addToHistory(makeHistoryEntry('h1'));
-    useAppStore.getState().clearHistory();
-    expect(useAppStore.getState().history).toHaveLength(0);
-  });
-
-  it('deleteHistoryEntry removes specific entry', () => {
-    useAppStore.getState().addToHistory(makeHistoryEntry('h1'));
-    useAppStore.getState().addToHistory(makeHistoryEntry('h2'));
-    useAppStore.getState().deleteHistoryEntry('h1');
-    expect(useAppStore.getState().history.find((h) => h.id === 'h1')).toBeUndefined();
-    expect(useAppStore.getState().history).toHaveLength(1);
   });
 });
 

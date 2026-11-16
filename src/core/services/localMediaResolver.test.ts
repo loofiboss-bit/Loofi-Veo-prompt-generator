@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Asset, ProductionTake } from '@core/types';
 const { getRecord } = vi.hoisted(() => ({ getRecord: vi.fn() }));
 vi.mock('./mediaAssetService', () => ({ mediaAssetService: { getRecord } }));
-import { localMediaResolver, resolveProductionReviewMedia } from './localMediaResolver';
+import {
+  localMediaResolver,
+  resolvePlayableMediaUrl,
+  resolveProductionReviewMedia,
+} from './localMediaResolver';
 
 afterEach(() => {
   delete window.electron;
@@ -56,5 +60,30 @@ describe('local media for explicit AI review', () => {
       localMediaResolver.resolve({ url: 'https://provider.example/result' }),
     ).rejects.toThrow('Readable local media');
     expect(fetch).not.toHaveBeenCalled();
+  });
+  it('resolves playable desktop or ObjectURL media and revokes allocated ObjectURLs', async () => {
+    window.electron = {
+      readDesktopMedia: vi.fn().mockResolvedValue({
+        bytes: new Uint8Array([1]).buffer,
+        mimeType: 'video/mp4',
+        localUrl: 'loofi-media://clip/1',
+      }),
+    } as unknown as NonNullable<typeof window.electron>;
+    const desktopPlayable = await resolvePlayableMediaUrl({ storageKey: 'desktop:1' });
+    expect(desktopPlayable.url).toBe('loofi-media://clip/1');
+    desktopPlayable.revoke();
+
+    delete window.electron;
+    getRecord.mockResolvedValue({
+      blob: new Blob(['idb-audio'], { type: 'audio/wav' }),
+      mimeType: 'audio/wav',
+    });
+    const createSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-1');
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const idbPlayable = await resolvePlayableMediaUrl({ storageKey: 'sfx_1' });
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(idbPlayable.url).toBe('blob:mock-1');
+    idbPlayable.revoke();
+    expect(revokeSpy).toHaveBeenCalledWith('blob:mock-1');
   });
 });

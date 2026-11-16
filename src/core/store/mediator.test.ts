@@ -290,4 +290,16 @@ describe('storeMediator singleton', () => {
     expect(handler).toHaveBeenCalledOnce();
     expect(handler).toHaveBeenCalledWith(mockPayload);
   });
+
+  it('blocks cyclic re-entrant emissions to prevent feedback loops', () => {
+    const localMediator = new StoreMediator();
+    const handler = vi.fn(() => {
+      localMediator.emit('location:bankChanged', { locations: [] });
+    });
+    localMediator.on('location:bankChanged', handler);
+
+    localMediator.emit('location:bankChanged', { locations: [] });
+
+    expect(handler).toHaveBeenCalledOnce();
+  });
 });

@@ -17,9 +17,6 @@ const mockStore = {
   resetAll: vi.fn(),
   setNewProjectWizardOpen: vi.fn(),
   closeModal: vi.fn(),
-  clearHistory: vi.fn(),
-  deleteHistoryEntry: vi.fn(),
-  addToHistory: vi.fn(),
   addPreset: vi.fn(),
   deletePreset: vi.fn(),
   updatePreset: vi.fn(),
@@ -43,8 +40,14 @@ vi.mock('@core/store/useProjectStore', () => ({
   useProjectStore: () => mockProjectStore,
 }));
 
+const mockHistoryStore = {
+  addEntry: vi.fn(),
+  clearHistory: vi.fn(),
+  deleteEntry: vi.fn(),
+};
+
 vi.mock('@core/store/useHistoryStore', () => ({
-  useHistoryStore: () => ({}),
+  useHistoryStore: () => mockHistoryStore,
 }));
 
 const mockSetLocations = vi.fn();
@@ -312,7 +315,7 @@ describe('useAppHandlers', () => {
       result.current.saveToHistory();
     });
 
-    expect(mockStore.addToHistory).toHaveBeenCalledWith(
+    expect(mockHistoryStore.addEntry).toHaveBeenCalledWith(
       expect.objectContaining({ prompt: 'Test' }),
     );
     expect(opts.addToast).toHaveBeenCalledWith('toasts:toastHistorySaved', 'success');
