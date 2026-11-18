@@ -1,0 +1,245 @@
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtbuild/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtgen/src/controller.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtbuild/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtgen/src/projects.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-97b0c51724a36735/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtbuild/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtgen/src/projects.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtbuild/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtgen/src/controller.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /tmp/creator-native-m0-cargo/debug/build/creator_native_bridge-b86ab496e6e0de25/out/cxxqtbuild/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running unittests src/lib.rs (/tmp/creator-native-m0-cargo/debug/deps/creator_native_core-5be5616a3805c6a6)
+
+running 6 tests
+test tests::command_lifecycle ... ok
+test tests::file_errors ... ok
+test tests::input_and_cancellation ... ok
+test tests::xdg_absolute_overrides_and_fallback ... ok
+test tests::ids_and_prompt_size_are_bounded ... ok
+test tests::isolated_directories_and_regular_video ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (/tmp/creator-native-m0-cargo/debug/deps/creator_native_bridge-34f9ccc74ae9d4c9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests creator_native_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests creator_native_bridge
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+-- Rust Toolchain: stable-x86_64-unknown-linux-gnu
+-- Rust Target: x86_64-unknown-linux-gnu
+-- Using Corrosion as a subdirectory
+-- CXX-Qt Found crate(s): creator_native_bridge
+CMake Warning at /usr/lib64/cmake/Qt6Qml/Qt6QmlMacros.cmake:4853 (message):
+  The qml plugin 'Loofi_Native' is a dependency of
+  'loofi-creator-studio-native', but there is no target by that name in the
+  current scope.  The plugin will not be linked.
+Call Stack (most recent call first):
+  /usr/lib64/cmake/Qt6Qml/Qt6QmlMacros.cmake:4886 (qt6_import_qml_plugins)
+  CMakeLists.txt:24 (qt_import_qml_plugins)
+
+
+-- Configuring done (0.9s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release
+[0/15] cd "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/native/crates/bridge" && /usr/bin/cmake -E env "CXX_QT_EXPORT_DIR=/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/" CXX_QT_EXPORT_CRATE_creator_native_bridge=1 CXX_QT_QT_MODULES=Qt::Core,Qt::Gui,Qt::Qml,Qt::Quick QMAKE=/usr/lib64/qt6/bin/qmake CXX_x86_64_unknown_linux_gnu=/usr/lib64/ccache/c++ AR_x86_64_unknown_linux_gnu=/usr/bin/ar "CORROSION_BUILD_DIR=/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release" CARGO_BUILD_RUSTC=/home/loofi/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc /home/loofi/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo rustc --lib --target=x86_64-unknown-linux-gnu --package creator_native_bridge --manifest-path "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/native/crates/bridge/Cargo.toml" --target-dir "/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/./cargo/build" --release --locked -- -Cdefault-linker-libraries=yes
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/./cargo/build/x86_64-unknown-linux-gnu/release/build/creator_native_bridge-3ca679bfdee586a5/out/cxxqtgen/src/controller.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/./cargo/build/x86_64-unknown-linux-gnu/release/build/creator_native_bridge-3ca679bfdee586a5/out/cxxqtgen/src/projects.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+    Finished `release` profile [optimized] target(s) in 0.04s
+[3/15] Automatic MOC and UIC for target loofi-creator-studio-native
+[5/14] Copying byproducts `libcreator_native_bridge.a` to /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release
+[6/14] Running AUTOMOC file extraction for target loofi-creator-studio-native
+[0/4] cd "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/native/crates/bridge" && /usr/bin/cmake -E env "CXX_QT_EXPORT_DIR=/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/" CXX_QT_EXPORT_CRATE_creator_native_bridge=1 CXX_QT_QT_MODULES=Qt::Core,Qt::Gui,Qt::Qml,Qt::Quick QMAKE=/usr/lib64/qt6/bin/qmake CXX_x86_64_unknown_linux_gnu=/usr/lib64/ccache/c++ AR_x86_64_unknown_linux_gnu=/usr/bin/ar "CORROSION_BUILD_DIR=/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release" CARGO_BUILD_RUSTC=/home/loofi/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc /home/loofi/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo rustc --lib --target=x86_64-unknown-linux-gnu --package creator_native_bridge --manifest-path "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/native/crates/bridge/Cargo.toml" --target-dir "/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/./cargo/build" --release --locked -- -Cdefault-linker-libraries=yes
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/./cargo/build/x86_64-unknown-linux-gnu/release/build/creator_native_bridge-3ca679bfdee586a5/out/cxxqtgen/src/controller.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/qt6/QtCore/qstring.h:15,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qhashfunctions.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qlist.h:12,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qstringlist.h:6,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QStringList:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:11,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/qstring.h:9,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/./cargo/build/x86_64-unknown-linux-gnu/release/build/creator_native_bridge-3ca679bfdee586a5/out/cxxqtgen/src/projects.cxx.cpp:1:
+warning: creator_native_bridge@0.1.0: /usr/include/qt6/QtCore/qchar.h:48:31: warning: defining 'QChar', which previously failed to be complete in a SFINAE context [-Wsfinae-incomplete=]
+warning: creator_native_bridge@0.1.0:    48 | class QT6_ONLY(Q_CORE_EXPORT) QChar {
+warning: creator_native_bridge@0.1.0:       |                               ^~~~~
+warning: creator_native_bridge@0.1.0: In file included from /usr/include/c++/16/unordered_map:44,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/c++/16/functional:80,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcomparehelpers.h:29,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qcompare.h:661,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qnamespace.h:14,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/qbytearray.h:10,
+warning: creator_native_bridge@0.1.0:                  from /usr/include/qt6/QtCore/QByteArray:1,
+warning: creator_native_bridge@0.1.0:                  from /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release/cxxqt/crates/creator_native_bridge/include/cxx-qt-lib/core/qstring.h:10:
+warning: creator_native_bridge@0.1.0: /usr/include/c++/16/bits/range_access.h:325:24: note: here.  Use '-Wsfinae-incomplete=2' for a diagnostic at that point
+warning: creator_native_bridge@0.1.0:   325 |     -> decltype(__cont.data())
+warning: creator_native_bridge@0.1.0:       |                 ~~~~~~~^~~~
+    Finished `release` profile [optimized] target(s) in 0.03s
+[1/4] cd "/home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release" && /usr/bin/cmake -E true
+[3/4] Copying byproducts `libcreator_native_bridge.a` to /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release
+[4/4] cd "/home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0/native" && /usr/lib64/qt6/bin/qmllint @/home/loofi/Skrivbord/Loofi\ Work/.creator-native-m0-build/release/.rcc/qmllint/loofi-creator-studio-native.rsp
+Test project /home/loofi/Skrivbord/Loofi Work/.creator-native-m0-build/release
+    Start 1: native_bridge_smoke
+1/3 Test #1: native_bridge_smoke ..............   Passed    0.70 sec
+    Start 3: native_fixture
+2/3 Test #3: native_fixture ...................   Passed   11.03 sec
+    Start 2: native_visual_smoke
+3/3 Test #2: native_visual_smoke ..............   Passed    1.31 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =  13.04 sec

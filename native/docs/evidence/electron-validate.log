@@ -1,0 +1,867 @@
+
+> veo-prompt-generator@16.0.0 validate
+> npm run theme:check && npm run models:check && npm run i18n:create:check && npm run i18n:studio:check && npm run i18n:creator:check && npm run lint:ci && npm run typecheck && npm run test && npm run test:desktop && npm run format:check
+
+
+> veo-prompt-generator@16.0.0 theme:check
+> node scripts/check-theme-classes.mjs
+
+[32m✓ No forbidden .light class selectors found.[0m
+
+> veo-prompt-generator@16.0.0 models:check
+> node scripts/check-executable-models.mjs
+
+Executable model gate passed.
+
+> veo-prompt-generator@16.0.0 i18n:create:check
+> node scripts/check-create-translations.mjs
+
+Create translation gate passed (212 keys × 5 languages).
+
+> veo-prompt-generator@16.0.0 i18n:studio:check
+> node scripts/check-studio-translations.mjs
+
+Studio translation gate passed (310 keys x 5 languages).
+
+> veo-prompt-generator@16.0.0 i18n:creator:check
+> node scripts/check-creator-translations.mjs
+
+Creator translations and complete Swedish resources verified.
+
+> veo-prompt-generator@16.0.0 lint:ci
+> node scripts/lint-ci.mjs
+
+
+> veo-prompt-generator@16.0.0 typecheck
+> tsc --noEmit
+
+
+> veo-prompt-generator@16.0.0 test
+> node node_modules/vitest/vitest.mjs run --environment jsdom
+
+
+ RUN  v4.1.11 /home/loofi/Skrivbord/Loofi Work/Loofi-Creator-Studio-Native-M0
+
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: HTMLCanvasElement's getContext() method: without installing the canvas npm package
+Not implemented: navigation to another Document
+
+ Test Files  313 passed (313)
+      Tests  4307 passed (4307)
+   Start at  18:45:35
+   Duration  391.04s (transform 27.40s, setup 79.88s, import 113.49s, tests 276.80s, environment 776.22s)
+
+
+> veo-prompt-generator@16.0.0 test:desktop
+> node scripts/test-desktop.mjs
+
+TAP version 13
+# Subtest: validates frozen canonical snapshot and rejects mutated hash
+ok 1 - validates frozen canonical snapshot and rejects mutated hash
+  ---
+  duration_ms: 19.996798
+  type: 'test'
+  ...
+# Subtest: rejects unsupported bounds, paths, timings and overlap with clip identity
+ok 2 - rejects unsupported bounds, paths, timings and overlap with clip identity
+  ---
+  duration_ms: 2.657339
+  type: 'test'
+  ...
+# Subtest: SRT preserves unicode and millisecond timings
+ok 3 - SRT preserves unicode and millisecond timings
+  ---
+  duration_ms: 1.193324
+  type: 'test'
+  ...
+# Subtest: ASS explicitly selects bundled Arabic and Japanese fonts without a system provider
+ok 4 - ASS explicitly selects bundled Arabic and Japanese fonts without a system provider
+  ---
+  duration_ms: 14.846648
+  type: 'test'
+  ...
+# Subtest: missing verified runtime reports unavailable rather than using host binary
+ok 5 - missing verified runtime reports unavailable rather than using host binary
+  ---
+  duration_ms: 89.066795
+  type: 'test'
+  ...
+# Subtest: concurrent start requests reserve one render before asynchronous capability checks
+ok 6 - concurrent start requests reserve one render before asynchronous capability checks
+  ---
+  duration_ms: 88.736904
+  type: 'test'
+  ...
+# Subtest: save ENOSPC preserves the previous verified delivery
+ok 7 - save ENOSPC preserves the previous verified delivery
+  ---
+  duration_ms: 34.656365
+  type: 'test'
+  ...
+# Subtest: save EACCES preserves the previous verified delivery
+ok 8 - save EACCES preserves the previous verified delivery
+  ---
+  duration_ms: 17.397039
+  type: 'test'
+  ...
+# Subtest: IPC rejects other renderer and subframe, save only uses native destination
+ok 9 - IPC rejects other renderer and subframe, save only uses native destination
+  ---
+  duration_ms: 14.692678
+  type: 'test'
+  ...
+# Subtest: restart exposes interrupted job and cannot save it
+ok 10 - restart exposes interrupted job and cannot save it
+  ---
+  duration_ms: 75.802274
+  type: 'test'
+  ...
+# Subtest: real offline render verifies H264 AAC unicode captions, gap, crop, audio and publication ZIP
+ok 11 - real offline render verifies H264 AAC unicode captions, gap, crop, audio and publication ZIP # SKIP
+  ---
+  duration_ms: 0.701279
+  type: 'test'
+  ...
+# Subtest: real source trim, overlap dissolve, visual fade, audio mixing and failure preservation
+ok 12 - real source trim, overlap dissolve, visual fade, audio mixing and failure preservation # SKIP
+  ---
+  duration_ms: 0.237475
+  type: 'test'
+  ...
+# Subtest: cancellation remains terminal and removes render artifacts
+ok 13 - cancellation remains terminal and removes render artifacts
+  ---
+  duration_ms: 131.502374
+  type: 'test'
+  ...
+# Subtest: save failure preserves prior file and cleans temporary siblings
+ok 14 - save failure preserves prior file and cleans temporary siblings
+  ---
+  duration_ms: 9.892231
+  type: 'test'
+  ...
+# Subtest: accepts three-minute plans and lists/retries persisted immutable snapshots
+ok 15 - accepts three-minute plans and lists/retries persisted immutable snapshots
+  ---
+  duration_ms: 138.493905
+  type: 'test'
+  ...
+# Subtest: preview access verifies output checksum and accepts only known complete jobs
+ok 16 - preview access verifies output checksum and accepts only known complete jobs
+  ---
+  duration_ms: 129.816569
+  type: 'test'
+  ...
+# Subtest: real three-minute outputs retain duration and dimensions in every aspect ratio
+ok 17 - real three-minute outputs retain duration and dimensions in every aspect ratio # SKIP
+  ---
+  duration_ms: 0.31209
+  type: 'test'
+  ...
+# Subtest: bundled proxies are checksum cached and native metadata is scoped to registered identities
+ok 18 - bundled proxies are checksum cached and native metadata is scoped to registered identities # SKIP
+  ---
+  duration_ms: 0.116453
+  type: 'test'
+  ...
+# Subtest: frozen source hashes reject media replacement under a reused identity
+ok 19 - frozen source hashes reject media replacement under a reused identity
+  ---
+  duration_ms: 150.197601
+  type: 'test'
+  ...
+# Subtest: desktop diagnostics remain available when the credential vault is unavailable
+ok 20 - desktop diagnostics remain available when the credential vault is unavailable
+  ---
+  duration_ms: 119.332018
+  type: 'test'
+  ...
+# Subtest: issues approval metadata in main and requires native consent for every new paid job
+ok 21 - issues approval metadata in main and requires native consent for every new paid job
+  ---
+  duration_ms: 13.407495
+  type: 'test'
+  ...
+# Subtest: returns an existing durable job without asking for or spending another approval
+ok 22 - returns an existing durable job without asking for or spending another approval
+  ---
+  duration_ms: 0.894218
+  type: 'test'
+  ...
+# Subtest: does not seek renewed paid consent for recovery without an operation identity
+ok 23 - does not seek renewed paid consent for recovery without an operation identity
+  ---
+  duration_ms: 0.647188
+  type: 'test'
+  ...
+# Subtest: recovers known video media failures without authorizing another submission
+ok 24 - recovers known video media failures without authorizing another submission
+  ---
+  duration_ms: 0.484444
+  type: 'test'
+  ...
+# Subtest: scoped recovery refuses ambiguous or unrelated jobs without paid approval
+ok 25 - scoped recovery refuses ambiguous or unrelated jobs without paid approval
+  ---
+  duration_ms: 0.898567
+  type: 'test'
+  ...
+# Subtest: requires and consumes a native-approved one-time provider token
+ok 26 - requires and consumes a native-approved one-time provider token
+  ---
+  duration_ms: 673.803193
+  type: 'test'
+  ...
+# Subtest: binds a provider approval to the exact prompt and multimodal payload
+ok 27 - binds a provider approval to the exact prompt and multimodal payload
+  ---
+  duration_ms: 42.638527
+  type: 'test'
+  ...
+# Subtest: runs an approved Gemini interaction through the one-time provider boundary
+ok 28 - runs an approved Gemini interaction through the one-time provider boundary
+  ---
+  duration_ms: 26.42273
+  type: 'test'
+  ...
+# Subtest: cancellation never reaches a provider
+ok 29 - cancellation never reaches a provider
+  ---
+  duration_ms: 46.215199
+  type: 'test'
+  ...
+# Subtest: credential status does not run a paid canary
+ok 30 - credential status does not run a paid canary
+  ---
+  duration_ms: 20.810456
+  type: 'test'
+  ...
+# Subtest: credential IPC exposes only the allowlisted vault key and bounded values
+ok 31 - credential IPC exposes only the allowlisted vault key and bounded values
+  ---
+  duration_ms: 25.776709
+  type: 'test'
+  ...
+# Subtest: media IPC fails closed before initialization and validates migration bytes
+ok 32 - media IPC fails closed before initialization and validates migration bytes
+  ---
+  duration_ms: 5.902094
+  type: 'test'
+  ...
+# Subtest: project IPC returns safe empty state and respects folder-dialog cancellation
+ok 33 - project IPC returns safe empty state and respects folder-dialog cancellation
+  ---
+  duration_ms: 4.732096
+  type: 'test'
+  ...
+# Subtest: update IPC cannot install before a checksum-verified download
+ok 34 - update IPC cannot install before a checksum-verified download
+  ---
+  duration_ms: 6.030243
+  type: 'test'
+  ...
+# Subtest: atomically stores provider media with checksum and private metadata
+ok 35 - atomically stores provider media with checksum and private metadata
+  ---
+  duration_ms: 1250.409381
+  type: 'test'
+  ...
+# Subtest: generates thumbnail and proxy metadata asynchronously outside the renderer
+ok 36 - generates thumbnail and proxy metadata asynchronously outside the renderer
+  ---
+  duration_ms: 173.413249
+  type: 'test'
+  ...
+# Subtest: does not queue video derivatives for generated audio
+ok 37 - does not queue video derivatives for generated audio
+  ---
+  duration_ms: 128.424086
+  type: 'test'
+  ...
+# Subtest: imports legacy media with checksum readback before migration acknowledgement
+ok 38 - imports legacy media with checksum readback before migration acknowledgement
+  ---
+  duration_ms: 118.256363
+  type: 'test'
+  ...
+# Subtest: detects corruption and rejects non-provider hosts
+ok 39 - detects corruption and rejects non-provider hosts
+  ---
+  duration_ms: 149.85999
+  type: 'test'
+  ...
+# Subtest: fails safely on disk-full writes without acknowledging migrated media
+ok 40 - fails safely on disk-full writes without acknowledging migrated media
+  ---
+  duration_ms: 62.491995
+  type: 'test'
+  ...
+# Subtest: detects missing media and relinks only an exact checksum match
+ok 41 - detects missing media and relinks only an exact checksum match
+  ---
+  duration_ms: 153.697251
+  type: 'test'
+  ...
+# Subtest: cleanup preview identifies expired unreferenced media but always protects accepted media
+ok 42 - cleanup preview identifies expired unreferenced media but always protects accepted media
+  ---
+  duration_ms: 106.000867
+  type: 'test'
+  ...
+# Subtest: rejects an empty successful download before writing completion metadata
+ok 43 - rejects an empty successful download before writing completion metadata
+  ---
+  duration_ms: 40.487908
+  type: 'test'
+  ...
+# Subtest: reads only checksum verified local media by key or durable desktop reference
+ok 44 - reads only checksum verified local media by key or durable desktop reference
+  ---
+  duration_ms: 134.563353
+  type: 'test'
+  ...
+# Subtest: persists operation acknowledgement before polling and completes without duplicate submit
+ok 45 - persists operation acknowledgement before polling and completes without duplicate submit
+  ---
+  duration_ms: 1486.492305
+  type: 'test'
+  ...
+# Subtest: rejects malformed or unsupported paid submissions at the IPC engine boundary
+ok 46 - rejects malformed or unsupported paid submissions at the IPC engine boundary
+  ---
+  duration_ms: 26.735845
+  type: 'test'
+  ...
+# Subtest: rejects an approved frame request when its binary input is missing
+ok 47 - rejects an approved frame request when its binary input is missing
+  ---
+  duration_ms: 18.886321
+  type: 'test'
+  ...
+# Subtest: keeps compiled identity references in the provider payload for every compatible shot mode
+ok 48 - keeps compiled identity references in the provider payload for every compatible shot mode
+  ---
+  duration_ms: 15.89798
+  type: 'test'
+  ...
+# Subtest: marks lost submission acknowledgement for manual recovery instead of resubmitting
+ok 49 - marks lost submission acknowledgement for manual recovery instead of resubmitting
+  ---
+  duration_ms: 95.882807
+  type: 'test'
+  ...
+# Subtest: resumes a known operation after restart without another paid submission
+ok 50 - resumes a known operation after restart without another paid submission
+  ---
+  duration_ms: 132.133207
+  type: 'test'
+  ...
+# Subtest: cancels an active paid job and persists the user decision
+ok 51 - cancels an active paid job and persists the user decision
+  ---
+  duration_ms: 71.406653
+  type: 'test'
+  ...
+# Subtest: retries a known operation after an offline polling failure without resubmitting
+ok 52 - retries a known operation after an offline polling failure without resubmitting
+  ---
+  duration_ms: 130.706586
+  type: 'test'
+  ...
+# Subtest: never retries an ambiguous lost-acknowledgement submission
+ok 53 - never retries an ambiguous lost-acknowledgement submission
+  ---
+  duration_ms: 34.471121
+  type: 'test'
+  ...
+# Subtest: builds the documented Interactions request without requesting WAV for Clip
+ok 54 - builds the documented Interactions request without requesting WAV for Clip
+  ---
+  duration_ms: 8.170298
+  type: 'test'
+  ...
+# Subtest: parses interleaved Lyria model output blocks
+ok 55 - parses interleaved Lyria model output blocks
+  ---
+  duration_ms: 5.86688
+  type: 'test'
+  ...
+# Subtest: stores Lyria output atomically before marking the durable task complete
+ok 56 - stores Lyria output atomically before marking the durable task complete
+  ---
+  duration_ms: 96.157817
+  type: 'test'
+  ...
+# Subtest: rejects unsafe Lyria requests and under-approved flat pricing
+ok 57 - rejects unsafe Lyria requests and under-approved flat pricing
+  ---
+  duration_ms: 6.078353
+  type: 'test'
+  ...
+# Subtest: does not replay an ambiguous Lyria submission after restart
+ok 58 - does not replay an ambiguous Lyria submission after restart
+  ---
+  duration_ms: 33.410359
+  type: 'test'
+  ...
+# Subtest: never replays an accepted or ambiguous video submission with truncated JSON
+ok 59 - never replays an accepted or ambiguous video submission with truncated JSON
+  ---
+  duration_ms: 41.92737
+  type: 'test'
+  ...
+# Subtest: never replays an accepted or ambiguous video submission with missing operation ID
+ok 60 - never replays an accepted or ambiguous video submission with missing operation ID
+  ---
+  duration_ms: 32.340106
+  type: 'test'
+  ...
+# Subtest: never replays an accepted or ambiguous video submission with server error
+ok 61 - never replays an accepted or ambiguous video submission with server error
+  ---
+  duration_ms: 35.947288
+  type: 'test'
+  ...
+# Subtest: keeps a durable submission marker when operation acknowledgement persistence fails
+ok 62 - keeps a durable submission marker when operation acknowledgement persistence fails
+  ---
+  duration_ms: 41.760926
+  type: 'test'
+  ...
+# Subtest: recovers video storage failure by polling the existing operation without a second POST
+ok 63 - recovers video storage failure by polling the existing operation without a second POST
+  ---
+  duration_ms: 126.025116
+  type: 'test'
+  ...
+# Subtest: does not replay an ambiguous Lyria acknowledgement {
+ok 64 - does not replay an ambiguous Lyria acknowledgement {
+  ---
+  duration_ms: 58.762621
+  type: 'test'
+  ...
+# Subtest: does not replay an ambiguous Lyria acknowledgement {}
+ok 65 - does not replay an ambiguous Lyria acknowledgement {}
+  ---
+  duration_ms: 57.763235
+  type: 'test'
+  ...
+# Subtest: does not replay an ambiguous Lyria acknowledgement {"id":"interaction-without-audio"}
+ok 66 - does not replay an ambiguous Lyria acknowledgement {"id":"interaction-without-audio"}
+  ---
+  duration_ms: 40.692559
+  type: 'test'
+  ...
+# Subtest: serializes concurrent durable job updates without losing other jobs
+ok 67 - serializes concurrent durable job updates without losing other jobs
+  ---
+  duration_ms: 12.362357
+  type: 'test'
+  ...
+# Subtest: aborting video after POST dispatch cannot enable another paid submission
+ok 68 - aborting video after POST dispatch cannot enable another paid submission
+  ---
+  duration_ms: 114.310613
+  type: 'test'
+  ...
+# Subtest: aborting music after POST dispatch cannot enable another paid submission
+ok 69 - aborting music after POST dispatch cannot enable another paid submission
+  ---
+  duration_ms: 21.601652
+  type: 'test'
+  ...
+# Subtest: deduplicates concurrent submissions of the same durable job
+ok 70 - deduplicates concurrent submissions of the same durable job
+  ---
+  duration_ms: 37.127118
+  type: 'test'
+  ...
+# Subtest: resumes a durable approved queue entry but never replays its uncertain submission
+ok 71 - resumes a durable approved queue entry but never replays its uncertain submission
+  ---
+  duration_ms: 55.319194
+  type: 'test'
+  ...
+# Subtest: recalculates provider token charges at the privileged boundary
+ok 72 - recalculates provider token charges at the privileged boundary
+  ---
+  duration_ms: 6.384768
+  type: 'test'
+  ...
+# Subtest: rejects missing, stale, mismatched, and underestimated approvals
+ok 73 - rejects missing, stale, mismatched, and underestimated approvals
+  ---
+  duration_ms: 1.839422
+  type: 'test'
+  ...
+# Subtest: rotates automatic backups and restores only checksum-verified snapshots
+ok 74 - rotates automatic backups and restores only checksum-verified snapshots
+  ---
+  duration_ms: 95.464974
+  type: 'test'
+  ...
+# Subtest: rejects traversal in project and backup identifiers
+ok 75 - rejects traversal in project and backup identifiers
+  ---
+  duration_ms: 14.340325
+  type: 'test'
+  ...
+# Subtest: provider runtime rejects arbitrary providers, models, and Ollama hosts
+ok 76 - provider runtime rejects arbitrary providers, models, and Ollama hosts
+  ---
+  duration_ms: 6.754414
+  type: 'test'
+  ...
+# Subtest: Interactions API persists IDs and threads follow-up edits
+ok 77 - Interactions API persists IDs and threads follow-up edits
+  ---
+  duration_ms: 1.092496
+  type: 'test'
+  ...
+# Subtest: Vertex execution uses ADC OAuth and its distinct regional API surface
+ok 78 - Vertex execution uses ADC OAuth and its distinct regional API surface
+  ---
+  duration_ms: 708.232139
+  type: 'test'
+  ...
+# Subtest: Vertex connection reports missing ADC credentials without making a request
+ok 79 - Vertex connection reports missing ADC credentials without making a request
+  ---
+  duration_ms: 13.750008
+  type: 'test'
+  ...
+# Subtest: Gemini execution keeps the API key in a header and normalizes output
+ok 80 - Gemini execution keeps the API key in a header and normalizes output
+  ---
+  duration_ms: 18.012767
+  type: 'test'
+  ...
+# Subtest: HTTP errors receive stable provider classifications
+ok 81 - HTTP errors receive stable provider classifications
+  ---
+  duration_ms: 0.729093
+  type: 'test'
+  ...
+# Subtest: redacts API keys, authorization values, and URL credentials
+ok 82 - redacts API keys, authorization values, and URL credentials
+  ---
+  duration_ms: 28.353254
+  type: 'test'
+  ...
+# Subtest: support snapshot includes operational state but excludes prompts and credentials
+ok 83 - support snapshot includes operational state but excludes prompts and credentials
+  ---
+  duration_ms: 4.456201
+  type: 'test'
+  ...
+# Subtest: only accepts assets from the canonical GitHub release channel
+ok 84 - only accepts assets from the canonical GitHub release channel
+  ---
+  duration_ms: 23.0798
+  type: 'test'
+  ...
+# Subtest: parses exact checksum entries and verifies files
+ok 85 - parses exact checksum entries and verifies files
+  ---
+  duration_ms: 145.986225
+  type: 'test'
+  ...
+# Subtest: constants
+    # Subtest: ERROR_SCHEMA_VERSION is a semver string
+    ok 1 - ERROR_SCHEMA_VERSION is a semver string
+      ---
+      duration_ms: 12.025906
+      type: 'test'
+      ...
+    # Subtest: LOG_ROTATE_MAX_BYTES is 1 MB
+    ok 2 - LOG_ROTATE_MAX_BYTES is 1 MB
+      ---
+      duration_ms: 3.65283
+      type: 'test'
+      ...
+    # Subtest: LOG_ROTATE_KEEP_LINES is 500
+    ok 3 - LOG_ROTATE_KEEP_LINES is 500
+      ---
+      duration_ms: 0.767343
+      type: 'test'
+      ...
+    # Subtest: WRITE_BATCH_SIZE is 50
+    ok 4 - WRITE_BATCH_SIZE is 50
+      ---
+      duration_ms: 0.301263
+      type: 'test'
+      ...
+    # Subtest: DEDUPE_WINDOW_MS is 5000
+    ok 5 - DEDUPE_WINDOW_MS is 5000
+      ---
+      duration_ms: 0.276293
+      type: 'test'
+      ...
+    # Subtest: RATE_LIMIT_WINDOW_MS is 1000
+    ok 6 - RATE_LIMIT_WINDOW_MS is 1000
+      ---
+      duration_ms: 0.24247
+      type: 'test'
+      ...
+    # Subtest: RATE_LIMIT_MAX_ENTRIES is 120
+    ok 7 - RATE_LIMIT_MAX_ENTRIES is 120
+      ---
+      duration_ms: 0.500873
+      type: 'test'
+      ...
+    # Subtest: SAFE_MODE_THRESHOLD is 3
+    ok 8 - SAFE_MODE_THRESHOLD is 3
+      ---
+      duration_ms: 4.030436
+      type: 'test'
+      ...
+    1..8
+ok 86 - constants
+  ---
+  duration_ms: 48.675457
+  type: 'suite'
+  ...
+# Subtest: normalizeErrorEntry
+    # Subtest: returns defaults for null input
+    ok 1 - returns defaults for null input
+      ---
+      duration_ms: 12.745068
+      type: 'test'
+      ...
+    # Subtest: returns defaults for undefined input
+    ok 2 - returns defaults for undefined input
+      ---
+      duration_ms: 4.374919
+      type: 'test'
+      ...
+    # Subtest: returns defaults for string input
+    ok 3 - returns defaults for string input
+      ---
+      duration_ms: 0.395649
+      type: 'test'
+      ...
+    # Subtest: preserves valid fields
+    ok 4 - preserves valid fields
+      ---
+      duration_ms: 15.925142
+      type: 'test'
+      ...
+    # Subtest: defaults level to error for non-warning values
+    ok 5 - defaults level to error for non-warning values
+      ---
+      duration_ms: 0.504057
+      type: 'test'
+      ...
+    # Subtest: generates a correlationId when given empty string
+    ok 6 - generates a correlationId when given empty string
+      ---
+      duration_ms: 0.294036
+      type: 'test'
+      ...
+    # Subtest: uses "Unknown error" for whitespace-only message
+    ok 7 - uses "Unknown error" for whitespace-only message
+      ---
+      duration_ms: 1.498211
+      type: 'test'
+      ...
+    # Subtest: uses "UNEXPECTED_ERROR" for whitespace-only code
+    ok 8 - uses "UNEXPECTED_ERROR" for whitespace-only code
+      ---
+      duration_ms: 0.343943
+      type: 'test'
+      ...
+    # Subtest: ignores non-string stack
+    ok 9 - ignores non-string stack
+      ---
+      duration_ms: 0.260853
+      type: 'test'
+      ...
+    # Subtest: ignores non-object context
+    ok 10 - ignores non-object context
+      ---
+      duration_ms: 5.935055
+      type: 'test'
+      ...
+    # Subtest: uses Date.now() for non-finite timestamp
+    ok 11 - uses Date.now() for non-finite timestamp
+      ---
+      duration_ms: 1.313495
+      type: 'test'
+      ...
+    1..11
+ok 87 - normalizeErrorEntry
+  ---
+  duration_ms: 45.519498
+  type: 'suite'
+  ...
+# Subtest: passesRateLimit
+    # Subtest: allows entries within the limit
+    ok 1 - allows entries within the limit
+      ---
+      duration_ms: 4.471295
+      type: 'test'
+      ...
+    # Subtest: rejects entries that exceed the limit
+    ok 2 - rejects entries that exceed the limit
+      ---
+      duration_ms: 0.41819
+      type: 'test'
+      ...
+    # Subtest: prunes old entries beyond the window
+    ok 3 - prunes old entries beyond the window
+      ---
+      duration_ms: 0.385301
+      type: 'test'
+      ...
+    # Subtest: handles empty queue
+    ok 4 - handles empty queue
+      ---
+      duration_ms: 0.330949
+      type: 'test'
+      ...
+    1..4
+ok 88 - passesRateLimit
+  ---
+  duration_ms: 6.291954
+  type: 'suite'
+  ...
+# Subtest: shouldDeduplicate
+    # Subtest: returns false for the first occurrence
+    ok 1 - returns false for the first occurrence
+      ---
+      duration_ms: 7.786319
+      type: 'test'
+      ...
+    # Subtest: returns true for immediate duplicate within window
+    ok 2 - returns true for immediate duplicate within window
+      ---
+      duration_ms: 1.464691
+      type: 'test'
+      ...
+    # Subtest: returns false after the dedupe window expires
+    ok 3 - returns false after the dedupe window expires
+      ---
+      duration_ms: 4.456086
+      type: 'test'
+      ...
+    # Subtest: treats entries with different codes as distinct
+    ok 4 - treats entries with different codes as distinct
+      ---
+      duration_ms: 0.362944
+      type: 'test'
+      ...
+    # Subtest: treats entries with different stacks as distinct
+    ok 5 - treats entries with different stacks as distinct
+      ---
+      duration_ms: 7.050636
+      type: 'test'
+      ...
+    # Subtest: prunes fingerprints when map exceeds 1000 entries
+    ok 6 - prunes fingerprints when map exceeds 1000 entries
+      ---
+      duration_ms: 3.581565
+      type: 'test'
+      ...
+    1..6
+ok 89 - shouldDeduplicate
+  ---
+  duration_ms: 25.377512
+  type: 'suite'
+  ...
+# Subtest: getResolveInstallCandidates
+    # Subtest: returns Windows paths for win32
+    ok 1 - returns Windows paths for win32
+      ---
+      duration_ms: 0.728418
+      type: 'test'
+      ...
+    # Subtest: returns macOS paths for darwin
+    ok 2 - returns macOS paths for darwin
+      ---
+      duration_ms: 0.417057
+      type: 'test'
+      ...
+    # Subtest: returns Linux paths for linux
+    ok 3 - returns Linux paths for linux
+      ---
+      duration_ms: 0.285553
+      type: 'test'
+      ...
+    # Subtest: returns Linux paths for unknown platform
+    ok 4 - returns Linux paths for unknown platform
+      ---
+      duration_ms: 0.263824
+      type: 'test'
+      ...
+    1..4
+ok 90 - getResolveInstallCandidates
+  ---
+  duration_ms: 3.186968
+  type: 'suite'
+  ...
+# Subtest: safe mode records crash loops without changing the user-data identity
+ok 91 - safe mode records crash loops without changing the user-data identity
+  ---
+  duration_ms: 38.08039
+  type: 'test'
+  ...
+# Subtest: application window preserves the sandboxed renderer contract
+ok 92 - application window preserves the sandboxed renderer contract
+  ---
+  duration_ms: 5.878063
+  type: 'test'
+  ...
+1..92
+# tests 120
+# suites 5
+# pass 116
+# fail 0
+# cancelled 0
+# skipped 4
+# todo 0
+# duration_ms 4338.350805
+
+> veo-prompt-generator@16.0.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!

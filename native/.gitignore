@@ -1,0 +1,6 @@
+/target/
+__pycache__/
+
+.qmlls.ini
+
+!docs/evidence/*.log

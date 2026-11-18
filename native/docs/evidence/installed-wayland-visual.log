@@ -1,0 +1,37 @@
+Failed to open VDPAU backend libvdpau_nvidia.so: cannot open shared object file: No such file or directory
+libva info: VA-API version 1.23.0
+libva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so
+libva info: Found init function __vaDriverInit_1_23
+libva info: va_openDriver() returns 0
+libva info: VA-API version 1.23.0
+libva info: Trying to open /usr/lib64/dri-nonfree/iHD_drv_video.so
+libva info: Found init function __vaDriverInit_1_23
+libva info: va_openDriver() returns 0
+********* Start testing of SmokeTests *********
+Config: Using QtTest library 6.11.2, Qt 6.11.2 (x86_64-little_endian-lp64 shared (dynamic) release build; by GCC 16.2.1 20260819 (Red Hat 16.2.1-2)), fedora 44
+PASS   : SmokeTests::initTestCase()
+QWARN  : SmokeTests::visual() qt.qpa.services: Failed to register with host portal QDBusError("org.freedesktop.portal.Error.Failed", "Could not register app ID: App info not found for 'dev.loofi.CreatorStudioNative'")
+Input #0, matroska,webm, from '/tmp/native-m0-fixtures/benchmark.webm':
+  Metadata:
+    ENCODER         : Lavf62.12.103
+  Duration: 00:00:30.00, start: 0.000000, bitrate: 1030 kb/s
+  Stream #0:0: Video: vp8, yuv420p(tv, progressive), 1280x720, SAR 1:1 DAR 16:9, 30 fps, 30 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc62.28.103 libvpx
+      DURATION        : 00:00:30.000000000
+Input #0, matroska,webm, from '/tmp/native-m0-fixtures/benchmark.webm':
+  Metadata:
+    ENCODER         : Lavf62.12.103
+  Duration: 00:00:30.00, start: 0.000000, bitrate: 1030 kb/s
+  Stream #0:0: Video: vp8, yuv420p(tv, progressive), 1280x720, SAR 1:1 DAR 16:9, 30 fps, 30 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc62.28.103 libvpx
+      DURATION        : 00:00:30.000000000
+[matroska,webm @ 0x7fb04c011d80] Format matroska,webm detected only with low score of 1, misdetection possible!
+Truncating packet of size 10611 to 15
+[matroska,webm @ 0x7fb04c011d80] EBML header parsing failed
+QWARN  : SmokeTests::visual() qt.multimedia.ffmpeg.mediadataholder: Could not open media. FFmpeg error description: Invalid data found when processing input
+PASS   : SmokeTests::visual()
+PASS   : SmokeTests::cleanupTestCase()
+Totals: 3 passed, 0 failed, 0 skipped, 0 blacklisted, 935ms
+********* Finished testing of SmokeTests *********
