@@ -7,7 +7,7 @@
  * scene focus awareness, and LAN pairing invitations.
  */
 
-import type { PermissionAction } from './collaboration';
+import type { PermissionAction } from './collaborationPermissions';
 
 // ─── Creative Roles ──────────────────────────────────────────────────
 

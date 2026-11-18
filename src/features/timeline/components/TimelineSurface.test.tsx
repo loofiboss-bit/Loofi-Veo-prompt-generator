@@ -1,7 +1,9 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act } from '@testing-library/react';
 import { fireEvent, render, screen } from '@/test-utils';
 import { useAppStore } from '@core/store/useAppStore';
+import { usePlaybackStore } from '@core/store/usePlaybackStore';
 import type { TimelineClip } from '@core/types';
 import { TimelineSurface } from './TimelineSurface';
 
@@ -75,5 +77,49 @@ describe('timeline editing controls', () => {
     expect(useAppStore.getState().clips).toHaveLength(1);
     fireEvent.keyDown(window, { key: 'Delete' });
     expect(useAppStore.getState().clips).toHaveLength(0);
+  });
+
+  it('keeps TimelineTrackView stable while playback ticks update usePlaybackStore', () => {
+    const timelineState = {
+      tracks: [
+        {
+          id: 'video_main',
+          label: 'Video',
+          type: 'video' as const,
+          trackType: 'dialogue' as const,
+          zIndex: 1,
+        },
+      ],
+      clips: [clip],
+      currentTime: 0,
+      zoomLevel: 20,
+    };
+    const onClipUpdate = vi.fn();
+    const onSeek = vi.fn();
+    const startVideoGeneration = vi.fn();
+
+    render(
+      <TimelineSurface
+        timelineState={timelineState}
+        duration={10}
+        onClipUpdate={onClipUpdate}
+        onSeek={onSeek}
+        startVideoGeneration={startVideoGeneration}
+        deliveryMode
+      />,
+    );
+
+    act(() => {
+      usePlaybackStore.getState().setIsPlaying(true);
+      for (let step = 1; step <= 10; step += 1) {
+        usePlaybackStore.getState().setCurrentTime(step * 0.5);
+      }
+    });
+
+    expect(screen.getByTestId('playhead-timecode')).toHaveTextContent('00:05');
+    expect(useAppStore.getState().currentTime).toBe(0);
+    act(() => {
+      usePlaybackStore.getState().resetPlayback();
+    });
   });
 });

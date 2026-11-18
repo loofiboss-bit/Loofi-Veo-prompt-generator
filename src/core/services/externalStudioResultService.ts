@@ -156,6 +156,26 @@ class ExternalStudioResultService {
     return result;
   }
 
+  /** Notes never grant or refresh a content-bound manual review. */
+  async saveComparisonNotes(projectId: string, resultId: string, notes: string): Promise<void> {
+    await projectDocumentService.update(projectId, async (project) => {
+      if (!project?.studioResults?.some((result) => result.id === resultId))
+        throw new Error('The comparison result is unavailable.');
+      return {
+        ...project,
+        studioResults: project.studioResults.map((result) =>
+          result.id === resultId
+            ? {
+                ...result,
+                comparisonNotes: notes,
+                updatedAt: Math.max(Date.now(), result.updatedAt + 1),
+              }
+            : result,
+        ),
+      };
+    });
+  }
+
   async confirm(projectId: string, resultId: string, notes: string): Promise<void> {
     await projectDocumentService.update(projectId, async (project) => {
       if (!project) throw new Error('Project not found.');

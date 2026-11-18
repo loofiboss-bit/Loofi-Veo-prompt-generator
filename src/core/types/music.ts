@@ -1,4 +1,4 @@
-import type { PaidCostApproval } from './production';
+import type { PaidCostApproval } from './costApproval';
 
 export type LyriaModelId = 'lyria-3-clip-preview' | 'lyria-3-pro-preview';
 export type MusicOutputFormat = 'mp3' | 'wav';

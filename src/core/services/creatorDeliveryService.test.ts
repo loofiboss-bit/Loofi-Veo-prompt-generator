@@ -92,6 +92,30 @@ describe('creator render plans', () => {
     p.storyboard.timeline.clips[0].duration = 10;
     expect(plan.clips[0].duration).toBe(3);
     expect(plan.contentHash).toHaveLength(64);
+    expect(plan.audioProcessing).toEqual({
+      normalizeLoudness: true,
+      speechDucking: false,
+      duckingGainDb: -12,
+    });
+  });
+  it('includes audioProcessing in render plan and changes contentHash upon toggle', async () => {
+    const p = makeProject();
+    p.creatorDelivery = defaultCreatorDelivery(p);
+    const plan1 = await creatorDeliveryService.buildPlan(p, [asset]);
+
+    p.creatorDelivery.audioProcessing = {
+      normalizeLoudness: false,
+      speechDucking: true,
+      duckingGainDb: -14,
+    };
+    const plan2 = await creatorDeliveryService.buildPlan(p, [asset]);
+
+    expect(plan1.contentHash).not.toBe(plan2.contentHash);
+    expect(plan2.audioProcessing).toEqual({
+      normalizeLoudness: false,
+      speechDucking: true,
+      duckingGainDb: -14,
+    });
   });
   it('rejects unsupported effects instead of silently omitting them', async () => {
     await expect(
@@ -190,6 +214,38 @@ describe('creator render plans', () => {
       mediaId: 'audio-key',
     });
   });
+
+  it('builds sequential batch plans across multiple aspect ratios with format-specific crops', async () => {
+    const p = makeProject([clip]);
+    p.creatorDelivery = {
+      ...defaultCreatorDelivery(p),
+      crops: { clip: { mode: 'fit', x: 0.5, y: 0.5 } },
+      formatCrops: {
+        '16:9': { clip: { mode: 'fill', x: 0.2, y: 0.8 } },
+        '1:1': { clip: { mode: 'fill', x: 0.4, y: 0.4 } },
+      },
+      coverTimestamp: 1.5,
+    };
+    const plans = await creatorDeliveryService.buildBatchPlans(p, [asset], ['9:16', '16:9', '1:1']);
+    expect(plans).toHaveLength(3);
+    expect(plans[0].aspectRatio).toBe('9:16');
+    expect(plans[0].coverTimestamp).toBe(1.5);
+    // 9:16 falls back to generic crops
+    expect(plans[0].clips[0].crop).toEqual({ mode: 'fit', x: 0.5, y: 0.5 });
+
+    expect(plans[1].aspectRatio).toBe('16:9');
+    expect(plans[1].clips[0].crop).toEqual({ mode: 'fill', x: 0.2, y: 0.8 });
+
+    expect(plans[2].aspectRatio).toBe('1:1');
+    expect(plans[2].clips[0].crop).toEqual({ mode: 'fill', x: 0.4, y: 0.4 });
+  });
+
+  it('rejects batch export when no formats are provided', async () => {
+    const p = makeProject([clip]);
+    await expect(creatorDeliveryService.buildBatchPlans(p, [asset], [])).rejects.toThrow(
+      'At least one format must be selected for batch export.',
+    );
+  });
 });
 describe('read-only delivery preflight', () => {
   it('collects independent clip blockers without importing media', async () => {
@@ -230,6 +286,67 @@ describe('read-only delivery preflight', () => {
       ),
     ).toHaveLength(3);
     expect(diagnostics.every((item) => item.action.length > 0)).toBe(true);
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'opacity-unsupported', target: 'clip', clipId: 'clip' }),
+        expect.objectContaining({ code: 'source-duration', target: 'clip', clipId: 'clip' }),
+        expect.objectContaining({ code: 'track-missing', target: 'clip', clipId: 'other' }),
+      ]),
+    );
     expect(importMedia).not.toHaveBeenCalled();
+  });
+  it('offers an explicit media-panel target for an empty timeline', async () => {
+    const diagnostics = await creatorDeliveryService.preflight(makeProject([]), []);
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'timeline-empty', target: 'media' }),
+      ]),
+    );
+  });
+
+  it('bakes opacity, colorGrade, transform and allows extended duration when opted in', async () => {
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        readDesktopMedia: vi.fn().mockResolvedValue({
+          bytes: new Uint8Array([1, 2, 3]).buffer,
+          mimeType: 'video/mp4',
+        }),
+        inspectTimelineRenderMedia: vi
+          .fn()
+          .mockResolvedValue({ available: true, durationSeconds: 1200 }),
+      },
+    });
+    const longProject = {
+      ...makeProject([
+        {
+          ...clip,
+          startTime: 0,
+          duration: 600,
+          opacity: 0.75,
+          colorGrade: {
+            brightness: 0.1,
+            contrast: 1.2,
+            saturation: 1.1,
+          } as TimelineClip['colorGrade'],
+          transform: { scale: 1.15, rotation: 5, opacity: 1, position: { x: 0, y: 0 } },
+        },
+      ]),
+      creatorDelivery: {
+        ...defaultCreatorDelivery(makeProject([clip])),
+        bakeEffects: true,
+        maxDurationSeconds: 1800,
+      },
+    };
+    const diagnostics = await creatorDeliveryService.preflight(longProject, [asset]);
+    expect(diagnostics).toEqual([]);
+
+    const plan = await creatorDeliveryService.buildPlan(longProject, [asset]);
+    expect(plan.durationSeconds).toBe(600);
+    expect(plan.clips[0]).toMatchObject({
+      opacity: 0.75,
+      colorGrade: { brightness: 0.1, contrast: 1.2, saturation: 1.1 },
+      transform: { scale: 1.15, rotation: 5 },
+    });
   });
 });

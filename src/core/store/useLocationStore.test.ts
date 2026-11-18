@@ -33,6 +33,7 @@ vi.mock('@core/services/loggerService', () => ({
 }));
 
 import { useLocationStore } from './useLocationStore';
+import { storeMediator } from './mediator';
 import type { LocationProfile } from '@core/types';
 
 describe('useLocationStore', () => {
@@ -244,6 +245,57 @@ describe('useLocationStore', () => {
 
       const state = useLocationStore.getState();
       expect(state.locations).toEqual(locations);
+    });
+  });
+
+  describe('storeMediator integration', () => {
+    it('emits only canonical location:bankChanged event without duplicate emissions when adding a location', () => {
+      const handler = vi.fn();
+      const legacyHandler = vi.fn();
+      const unsub = storeMediator.on('location:bankChanged', handler);
+      const unsubLegacy = storeMediator.on('locations:updated', legacyHandler);
+
+      useLocationStore.getState().addLocation(mockLocation1);
+
+      expect(handler).toHaveBeenCalledOnce();
+      expect(handler).toHaveBeenCalledWith({ locations: [mockLocation1] });
+      expect(legacyHandler).not.toHaveBeenCalled();
+      unsub();
+      unsubLegacy();
+    });
+
+    it('emits canonical location:bankChanged event when updating a location', () => {
+      useLocationStore.setState({ locations: [mockLocation1] });
+      const handler = vi.fn();
+      const unsub = storeMediator.on('location:bankChanged', handler);
+
+      useLocationStore.getState().updateLocation('loc-1', { name: 'Updated Beach' });
+
+      expect(handler).toHaveBeenCalledWith({
+        locations: [{ ...mockLocation1, name: 'Updated Beach' }],
+      });
+      unsub();
+    });
+
+    it('emits canonical location:bankChanged event when deleting a location', () => {
+      useLocationStore.setState({ locations: [mockLocation1, mockLocation2] });
+      const handler = vi.fn();
+      const unsub = storeMediator.on('location:bankChanged', handler);
+
+      useLocationStore.getState().deleteLocation('loc-1');
+
+      expect(handler).toHaveBeenCalledWith({ locations: [mockLocation2] });
+      unsub();
+    });
+
+    it('emits canonical location:bankChanged event when setting locations', () => {
+      const handler = vi.fn();
+      const unsub = storeMediator.on('location:bankChanged', handler);
+
+      useLocationStore.getState().setLocations([mockLocation2]);
+
+      expect(handler).toHaveBeenCalledWith({ locations: [mockLocation2] });
+      unsub();
     });
   });
 });

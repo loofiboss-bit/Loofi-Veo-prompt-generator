@@ -9,6 +9,7 @@ import {
 
 import { logger } from './loggerService';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { projectMigrationService, CURRENT_PROJECT_SCHEMA_VERSION } from './projectMigrationService';
 
 const META_KEY = 'veo_projects_meta';
 const PROJECT_PREFIX = 'veo_project_';
@@ -52,6 +53,13 @@ export function cloneProjectDocument(project: Project, id: string, name: string)
     id: crypto.randomUUID(),
   }));
   return copy;
+}
+
+type DocumentRegisterCallback = (doc: Project) => Promise<void> | void;
+let documentRegisterCallback: DocumentRegisterCallback | null = null;
+
+export function setDocumentRegisterCallback(cb: DocumentRegisterCallback | null): void {
+  documentRegisterCallback = cb;
 }
 
 export class ProjectPersistenceError extends Error {
@@ -101,20 +109,36 @@ class ProjectDocumentService {
     const key = projectStorageKey(id);
     const store = getProjectSnapshotStore();
     const stored = await safeGet<Project>(key, store);
-    if (stored) return stored;
+    let candidate = stored;
+    if (window.electron?.openProjectDb) {
+      try {
+        const dbDoc = await window.electron.openProjectDb(id);
+        if (
+          dbDoc &&
+          (!candidate || (dbDoc.documentRevision ?? 0) >= (candidate.documentRevision ?? 0))
+        ) {
+          candidate = dbDoc;
+        }
+      } catch (error) {
+        logger.warn(`SQLite project read failed for ${id}; falling back to local store`, error);
+      }
+    }
+    if (candidate) {
+      const migration = projectMigrationService.migrateProjectDocument(candidate);
+      if (migration.migrated) {
+        void atomicUpdate<Project>(key, () => migration.project, store).catch((error) => {
+          logger.warn(`Could not persist migrated schema for project ${id}`, error);
+        });
+      }
+      return migration.project;
+    }
 
     const legacy = readLegacyJson<Project>(key);
     if (!legacy) return null;
     try {
-      let migrated = legacy;
-      await atomicUpdate<Project>(
-        key,
-        (current) => {
-          migrated = current ?? legacy;
-          return migrated;
-        },
-        store,
-      );
+      const migration = projectMigrationService.migrateProjectDocument(legacy);
+      const migrated = migration.project;
+      await atomicUpdate<Project>(key, (current) => current ?? migrated, store);
       return migrated;
     } catch (error) {
       logger.warn('Legacy project migration could not be persisted', error);
@@ -134,7 +158,7 @@ class ProjectDocumentService {
     return pending;
   }
 
-  save(project: Project): Promise<PersistenceResult> {
+  save(project: Project, options: { manageSaveStatus?: boolean } = {}): Promise<PersistenceResult> {
     const queuedBehindLocalWrite = this.writes.has(project.id);
     const revisionAtEnqueue = this.committedRevisions.get(project.id) ?? 0;
     const expectedRevision = project.documentRevision ?? 0;
@@ -148,7 +172,7 @@ class ProjectDocumentService {
               documentRevision: this.committedRevisions.get(project.id) ?? expectedRevision,
             }
           : project;
-      const result = await this.saveNow(candidate);
+      const result = await this.saveNow(candidate, options.manageSaveStatus !== false);
       project.documentRevision = candidate.documentRevision;
       return result;
     });
@@ -171,8 +195,9 @@ class ProjectDocumentService {
     const id = crypto.randomUUID();
     const copy = cloneProjectDocument(project, id, name);
     await this.save(copy);
-    const { projectService } = await import('./projectService');
-    await projectService.registerDocument(copy);
+    if (documentRegisterCallback) {
+      await documentRegisterCallback(copy);
+    }
     return copy;
   }
 
@@ -184,9 +209,10 @@ class ProjectDocumentService {
     return this.copy(backup.snapshot, `${backup.snapshot.name} (Recovered)`);
   }
 
-  private async saveNow(project: Project): Promise<PersistenceResult> {
+  private async saveNow(project: Project, manageSaveStatus = true): Promise<PersistenceResult> {
     const status = useProjectSaveStore.getState();
-    status.setStatus(project.id, { status: 'saving' });
+    if (manageSaveStatus) status.setStatus(project.id, { status: 'saving' });
+    const validated = projectMigrationService.validateProjectDocumentForSave(project);
     let snapshot!: Project;
     try {
       await atomicUpdate<Project>(
@@ -198,7 +224,8 @@ class ProjectDocumentService {
           }
           snapshot = {
             ...existing,
-            ...project,
+            ...validated,
+            schemaVersion: CURRENT_PROJECT_SCHEMA_VERSION,
             documentRevision: (project.documentRevision ?? 0) + 1,
           };
           // Delivery controls can save while an older editor snapshot is still pending.
@@ -238,18 +265,20 @@ class ProjectDocumentService {
         getProjectSnapshotStore(),
       );
     } catch (error) {
-      status.setStatus(project.id, {
-        status: error instanceof ProjectConflictError ? 'conflict' : 'error',
-        error: error instanceof Error ? error.message : String(error),
-        conflictDocument:
-          error instanceof ProjectConflictError ? structuredClone(project) : undefined,
-      });
+      if (manageSaveStatus)
+        status.setStatus(project.id, {
+          status: error instanceof ProjectConflictError ? 'conflict' : 'error',
+          error: error instanceof Error ? error.message : String(error),
+          conflictDocument:
+            error instanceof ProjectConflictError ? structuredClone(project) : undefined,
+        });
       if (error instanceof ProjectConflictError) throw error;
       throw new ProjectPersistenceError({
         durable: false,
         error: error instanceof Error ? error.message : String(error),
       });
     }
+    project.schemaVersion = snapshot.schemaVersion;
     project.documentRevision = snapshot.documentRevision;
     this.committedRevisions.set(project.id, snapshot.documentRevision!);
     const result: PersistenceResult = { durable: true };
@@ -259,16 +288,34 @@ class ProjectDocumentService {
       }),
     );
     try {
-      await window.electron?.saveProjectBackup?.({ projectId: project.id, snapshot });
+      if (window.electron?.commitProjectDelta) {
+        const dbCommit = await window.electron.commitProjectDelta({
+          projectId: project.id,
+          expectedRevision: (snapshot.documentRevision ?? 1) - 1,
+          document: snapshot,
+        });
+        snapshot.documentRevision = dbCommit.documentRevision;
+        project.documentRevision = dbCommit.documentRevision;
+        this.committedRevisions.set(project.id, dbCommit.documentRevision);
+        if (dbCommit.documentRevision % 10 === 0) {
+          void window.electron.snapshotProjectDbBackup?.(project.id).catch((err) => {
+            logger.warn('Periodic SQLite snapshot backup failed', err);
+          });
+        }
+      } else {
+        await window.electron?.saveProjectBackup?.({ projectId: project.id, snapshot });
+      }
     } catch (error) {
       result.backupError = error instanceof Error ? error.message : String(error);
       logger.warn('Project saved, but desktop backup failed', result.backupError);
     }
-    const latestStatus = useProjectSaveStore.getState().projects[project.id];
-    status.setStatus(project.id, {
-      status: latestStatus?.status === 'unsaved' ? 'unsaved' : 'saved',
-      backupError: result.backupError,
-    });
+    if (manageSaveStatus) {
+      const latestStatus = useProjectSaveStore.getState().projects[project.id];
+      status.setStatus(project.id, {
+        status: latestStatus?.status === 'unsaved' ? 'unsaved' : 'saved',
+        backupError: result.backupError,
+      });
+    }
     return result;
   }
 }

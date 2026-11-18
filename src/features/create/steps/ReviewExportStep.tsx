@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router';
 
+import { ROUTES } from '@core/config/routes';
 import Icon from '@shared/components/ui/Icon';
 import { TimelineExportRecovery } from '@shared/components/TimelineExportRecovery';
 import type { ProductionStepId } from '@features/production/hooks/useProductionWorkflow';
@@ -12,6 +14,7 @@ interface ReviewExportStepProps {
 
 export function ReviewExportStep({ activeStep, workflow }: ReviewExportStepProps) {
   const { t } = useTranslation('create');
+  const navigate = useNavigate();
   const continuityReviewApproved = Boolean(
     workflow.activeRun?.approvals.some(
       (approval) => approval.kind === 'continuity-review' && approval.status === 'active',
@@ -24,41 +27,59 @@ export function ReviewExportStep({ activeStep, workflow }: ReviewExportStepProps
     <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {activeStep === 'review' && (
-          <div className="space-y-2 text-xs text-slate-400">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={workflow.useGeminiReview}
-                onChange={(event) => workflow.setUseGeminiReview(event.target.checked)}
-                className="accent-blue-500"
-              />
-              {t('labels.semanticReview')}
-            </label>
-            {workflow.useGeminiReview && (
-              <div className="flex flex-wrap items-center gap-2 rounded-md border border-amber-900/70 bg-amber-950/20 p-2 text-[11px] text-amber-100">
-                <span>
-                  {t('labels.continuityReviewCost', {
-                    cost:
-                      workflow.continuityReviewEstimate.maximumChargeUsd?.toFixed(4) ??
-                      'unavailable',
-                  })}
-                </span>
-                <button
-                  type="button"
-                  disabled={continuityReviewApproved}
-                  onClick={() => void workflow.handleApproveContinuityReview()}
-                  className="rounded-md bg-amber-600 px-2 py-1 font-semibold text-slate-950 hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {continuityReviewApproved
-                    ? t('actions.continuityReviewApproved')
-                    : t('actions.approveContinuityReview')}
-                </button>
-              </div>
-            )}
+          <div className="flex w-full flex-wrap items-center justify-between gap-3">
+            <div className="space-y-2 text-xs text-slate-400">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={workflow.useGeminiReview}
+                  onChange={(event) => workflow.setUseGeminiReview(event.target.checked)}
+                  className="accent-blue-500"
+                />
+                {t('labels.semanticReview')}
+              </label>
+              {workflow.useGeminiReview && (
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-amber-900/70 bg-amber-950/20 p-2 text-[11px] text-amber-100">
+                  <span>
+                    {t('labels.continuityReviewCost', {
+                      cost:
+                        workflow.continuityReviewEstimate.maximumChargeUsd?.toFixed(4) ??
+                        'unavailable',
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={continuityReviewApproved}
+                    onClick={() => void workflow.handleApproveContinuityReview()}
+                    className="rounded-md bg-amber-600 px-2 py-1 font-semibold text-slate-950 hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {continuityReviewApproved
+                      ? t('actions.continuityReviewApproved')
+                      : t('actions.approveContinuityReview')}
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.TIMELINE)}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500"
+            >
+              <Icon name="film" className="h-4 w-4" />
+              {t('actions.openInTimeline', 'Open in Timeline')}
+            </button>
           </div>
         )}
         {activeStep === 'export' && (
-          <>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.TIMELINE)}
+              className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500"
+            >
+              <Icon name="film" className="h-4 w-4" />
+              {t('actions.openInTimeline', 'Open in Timeline')}
+            </button>
             <button
               type="button"
               onClick={() => void workflow.handleExport()}
@@ -77,7 +98,7 @@ export function ReviewExportStep({ activeStep, workflow }: ReviewExportStepProps
             <span className="text-xs text-slate-400">
               {t('labels.fcpxmlExperimental', 'FCPXML: experimental')}
             </span>
-          </>
+          </div>
         )}
       </div>
       {activeStep === 'export' && (

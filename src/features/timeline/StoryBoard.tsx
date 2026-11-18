@@ -11,7 +11,9 @@ import { buildShotPrompt } from '@core/services/promptBuilder';
 import * as geminiService from '@core/services/geminiService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { useDirectorsChain } from '@shared/hooks/useDirectorsChain';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@core/store/useAppStore';
+import { mediaAssetService } from '@core/services/mediaAssetService';
 import AutoBlockerModal from '../studios/modals/AutoBlockerModal';
 import { useLocationStore } from '@core/store/useLocationStore';
 import CameraPlotterModal from '../studios/modals/CameraPlotterModal';
@@ -59,7 +61,7 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
   // Connect to Collaborative Sync Hook
   useCollaborativeProject();
 
-  // Connect to Zustand Store
+  // Connect to Zustand Store with granular shallow selectors
   const {
     sbGlobalContext: globalContext,
     setSbGlobalContext: setGlobalContext,
@@ -68,13 +70,27 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
     addShot,
     deleteShot,
     updateShot: handleShotChange,
-    promptState,
+    uploadedAudio,
     addAsset,
     characterBank: savedCharacters,
     credits,
     deductCredits,
-    gcTimeline,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      sbGlobalContext: state.sbGlobalContext,
+      setSbGlobalContext: state.setSbGlobalContext,
+      sbShots: state.sbShots,
+      setSbShots: state.setSbShots,
+      addShot: state.addShot,
+      deleteShot: state.deleteShot,
+      updateShot: state.updateShot,
+      uploadedAudio: state.promptState.uploadedAudio,
+      addAsset: state.addAsset,
+      characterBank: state.characterBank,
+      credits: state.credits,
+      deductCredits: state.deductCredits,
+    })),
+  );
 
   // Connect to Location Store
   const { locations } = useLocationStore();
@@ -145,25 +161,39 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
 
   // --- Upscaling State ---
   const [isUpscaling, setIsUpscaling] = useState<Record<number, boolean>>({});
+  const shotListRef = useRef<HTMLDivElement>(null);
+  const [shotListScrollTop, setShotListScrollTop] = useState(0);
+  const [shotListViewportHeight, setShotListViewportHeight] = useState(0);
+
+  useEffect(() => {
+    const container = shotListRef.current;
+    if (!isOpen || !container) return;
+    const measure = () => setShotListViewportHeight(container.clientHeight);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isOpen]);
 
   // Prepare Background Music URL from Store
   const backgroundMusicUrl = useMemo(() => {
-    if (promptState.uploadedAudio) {
+    if (uploadedAudio) {
       try {
-        const byteCharacters = atob(promptState.uploadedAudio.data);
+        const byteCharacters = atob(uploadedAudio.data);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: promptState.uploadedAudio.mimeType });
+        const blob = new Blob([byteArray], { type: uploadedAudio.mimeType });
         return URL.createObjectURL(blob);
       } catch (e) {
         logger.error('Failed to process background music', e);
       }
     }
     return null;
-  }, [promptState.uploadedAudio]);
+  }, [uploadedAudio]);
 
   // Revoke background music blob URL when it changes or on unmount to prevent leaks
   useEffect(() => {
@@ -174,14 +204,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
       createdBlobUrls.current = [];
     };
   }, [backgroundMusicUrl]);
-
-  // GC timeline on unmount: prune shots/clips beyond the 50-entry limit
-  useEffect(() => {
-    return () => {
-      gcTimeline();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Cleanup-only effect: gcTimeline runs once on unmount; Zustand actions are stable refs
-  }, []);
 
   // --- DIRECTOR'S CHAIN INTEGRATION ---
   useDirectorsChain({
@@ -363,8 +385,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
     addToast(`Queuing ${promptsAndShots.length} shots for generation...`, 'info');
 
     try {
+      let anyQueued = false;
       for (const item of promptsAndShots) {
-        await videoGenerationService.startGeneration(
+        const taskId = await videoGenerationService.startGeneration(
           item.prompt,
           {
             aspectRatio: '16:9',
@@ -375,8 +398,17 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           undefined, // image
           (msg, type) => addToast(msg, type),
         );
+        if (!taskId) {
+          anyQueued = false;
+          onClose();
+          navigate(ROUTES.CREATE);
+          return;
+        }
+        anyQueued = true;
       }
-      addToast('All shots queued in background studio.', 'success');
+      if (anyQueued) {
+        addToast('All shots queued in background studio.', 'success');
+      }
     } catch (e) {
       logger.error('Batch generation incomplete', e);
       addToast('Batch generation incomplete.', 'error');
@@ -407,42 +439,55 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
   };
 
   // --- SFX / Foley Handler ---
-  const handleAddFoley = (soundBlob: Blob, description: string) => {
+  const handleAddFoley = async (soundBlob: Blob, description: string) => {
     if (foleyShotId === null) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64data = (reader.result as string).split(',')[1];
-      const assetId = `sfx_${Date.now()}`;
+    const assetId = `sfx_${Date.now()}`;
+    await mediaAssetService.storeBlob(assetId, soundBlob);
+    const objectUrl = URL.createObjectURL(soundBlob);
+    createdBlobUrls.current.push(objectUrl);
 
-      // 1. Create Asset
-      const newAsset: Asset = {
-        id: assetId,
-        type: 'audio',
-        name: description,
-        url: URL.createObjectURL(soundBlob),
-        data: base64data,
-        mimeType: 'audio/wav',
-      };
-      createdBlobUrls.current.push(newAsset.url);
-      addAsset(newAsset);
-
-      // 2. Add to Shot metadata
-      const shot = shots.find((s) => s.id === foleyShotId);
-      if (shot) {
-        const newSFX: SFXEvent = {
-          description: description,
-          timestamp: 0, // Start at beginning of shot by default
-        };
-        handleShotChange(foleyShotId, 'sfx', [...(shot.sfx || []), newSFX]);
-      }
-
-      addToast(`Added SFX: ${description}`, 'success');
+    const newAsset: Asset = {
+      id: assetId,
+      storageKey: assetId,
+      type: 'audio',
+      name: description,
+      url: objectUrl,
+      data: '',
+      mimeType: soundBlob.type || 'audio/wav',
     };
-    reader.readAsDataURL(soundBlob);
+    addAsset(newAsset);
+
+    const shot = shots.find((s) => s.id === foleyShotId);
+    if (shot) {
+      const newSFX: SFXEvent = {
+        description,
+        timestamp: 0,
+      };
+      handleShotChange(foleyShotId, 'sfx', [...(shot.sfx || []), newSFX]);
+    }
+
+    addToast(`Added SFX: ${description}`, 'success');
   };
 
   if (!isOpen) return null;
+
+  const ESTIMATED_SHOT_HEIGHT = 280;
+  const SHOT_OVERSCAN = 3;
+  const shouldVirtualizeShots = shots.length > 20 && shotListViewportHeight > 0;
+  const shotStartIndex = shouldVirtualizeShots
+    ? Math.max(0, Math.floor(shotListScrollTop / ESTIMATED_SHOT_HEIGHT) - SHOT_OVERSCAN)
+    : 0;
+  const shotEndIndex = shouldVirtualizeShots
+    ? Math.min(
+        shots.length,
+        Math.ceil((shotListScrollTop + shotListViewportHeight) / ESTIMATED_SHOT_HEIGHT) +
+          SHOT_OVERSCAN,
+      )
+    : shots.length;
+  const visibleShots = shouldVirtualizeShots ? shots.slice(shotStartIndex, shotEndIndex) : shots;
+  const topSpacerPx = shotStartIndex * ESTIMATED_SHOT_HEIGHT;
+  const bottomSpacerPx = Math.max(0, shots.length - shotEndIndex) * ESTIMATED_SHOT_HEIGHT;
 
   return (
     <div className="fixed inset-0 bg-slate-950/95 z-[60] flex flex-col overflow-hidden animate-fade-in-up">
@@ -552,7 +597,11 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
         </div>
 
         {/* Shot List */}
-        <div className="flex-grow bg-slate-950 overflow-y-auto p-6 space-y-4">
+        <div
+          ref={shotListRef}
+          onScroll={(e) => setShotListScrollTop(e.currentTarget.scrollTop)}
+          className="flex-grow bg-slate-950 overflow-y-auto p-6 space-y-4"
+        >
           {isAnimaticOpen && shots.length > 0 && (
             <AnimaticPlayer
               shots={shots}
@@ -570,33 +619,40 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
             />
           ) : (
             <>
-              {shots.map((shot, index) => (
-                <ShotCard
-                  key={shot.id}
-                  shot={shot}
-                  index={index}
-                  isSelected={selectedShotIds.includes(shot.id)}
-                  isUpscaling={!!isUpscaling[shot.id]}
-                  isColorMatching={isColorMatching}
-                  colorMatchTargetId={colorMatchTargetId}
-                  savedCharacters={savedCharacters}
-                  t={storyBoardStrings}
-                  onShotChange={handleShotChange}
-                  onDelete={handleDeleteShot}
-                  onSelectionToggle={handleSelectionToggle}
-                  onWhiteboard={setWhiteboardShotId}
-                  onCameraPlotter={setPlottingShotId}
-                  onPoseEditor={setPoseEditorShotId}
-                  onFoley={setFoleyShotId}
-                  onMagicMask={setMagicMaskShotId}
-                  onMotionEditor={setMotionEditorShotId}
-                  onDubbing={setDubbingShotId}
-                  onUpscale={handleUpscale}
-                  onColorMatch={handleColorMatch}
-                  onColorMatchTarget={setColorMatchTargetId}
-                  onRecording={setRecordingShotId}
-                />
-              ))}
+              {topSpacerPx > 0 && <div style={{ height: `${topSpacerPx}px` }} aria-hidden="true" />}
+              {visibleShots.map((shot, offset) => {
+                const index = shotStartIndex + offset;
+                return (
+                  <ShotCard
+                    key={shot.id}
+                    shot={shot}
+                    index={index}
+                    isSelected={selectedShotIds.includes(shot.id)}
+                    isUpscaling={!!isUpscaling[shot.id]}
+                    isColorMatching={isColorMatching}
+                    colorMatchTargetId={colorMatchTargetId}
+                    savedCharacters={savedCharacters}
+                    t={storyBoardStrings}
+                    onShotChange={handleShotChange}
+                    onDelete={handleDeleteShot}
+                    onSelectionToggle={handleSelectionToggle}
+                    onWhiteboard={setWhiteboardShotId}
+                    onCameraPlotter={setPlottingShotId}
+                    onPoseEditor={setPoseEditorShotId}
+                    onFoley={setFoleyShotId}
+                    onMagicMask={setMagicMaskShotId}
+                    onMotionEditor={setMotionEditorShotId}
+                    onDubbing={setDubbingShotId}
+                    onUpscale={handleUpscale}
+                    onColorMatch={handleColorMatch}
+                    onColorMatchTarget={setColorMatchTargetId}
+                    onRecording={setRecordingShotId}
+                  />
+                );
+              })}
+              {bottomSpacerPx > 0 && (
+                <div style={{ height: `${bottomSpacerPx}px` }} aria-hidden="true" />
+              )}
 
               <button
                 onClick={() => addShot('video')}

@@ -18,6 +18,9 @@ const threshold = getThreshold();
 const args = [
   '.',
   `--max-warnings=${threshold}`,
+  '--cache',
+  '--cache-location',
+  'node_modules/.cache/eslint/',
   '--no-warn-ignored',
   '--ignore-pattern',
   'dist/**',

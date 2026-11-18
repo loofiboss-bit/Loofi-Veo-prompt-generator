@@ -9,6 +9,7 @@ describe('provider failure classification', () => {
     [{ status: 400, message: 'invalid argument' }, 'invalid-capability'],
     [new Error('request blocked by safety policy'), 'safety'],
     [new Error('network timeout'), 'network'],
+    [new DOMException('Provider request cancelled.', 'AbortError'), 'cancelled'],
     [{ status: 503, message: 'unavailable' }, 'provider-incident'],
   ] as const)('classifies %o as %s', (error, expected) => {
     expect(classifyProviderFailure(error)).toBe(expected);
@@ -19,5 +20,6 @@ describe('provider failure classification', () => {
     expect(permitsModelFallback('rate-limit')).toBe(true);
     expect(permitsModelFallback('safety')).toBe(false);
     expect(permitsModelFallback('authentication')).toBe(false);
+    expect(permitsModelFallback('cancelled')).toBe(false);
   });
 });

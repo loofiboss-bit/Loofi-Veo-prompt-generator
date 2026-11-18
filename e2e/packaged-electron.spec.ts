@@ -126,8 +126,12 @@ test('packaged Electron boots with a narrow bridge and restores interrupted jobs
     await expect(window.getByRole('heading', { name: 'Activity', exact: true })).toBeVisible();
     await expect(window.getByText('Restart-safe neon rain video')).toBeVisible();
     await expect(window.getByText('Restart-safe analog synth music')).toBeVisible();
-    await expect(window.getByText('Durable active').locator('..')).toContainText('0');
-    await expect(window.getByText('Needs attention').locator('..')).toContainText('2');
+    await expect(
+      window.locator('.creator-activity-row').filter({ hasText: 'Durable active' }),
+    ).toContainText('0');
+    await expect(
+      window.locator('.creator-activity-row').filter({ hasText: 'Needs attention' }),
+    ).toContainText('2');
     await expect(window.getByText('RecoveryRequired', { exact: true })).toHaveCount(2);
     expect(await window.evaluate(() => window.electron?.retryPaidJob('restart-video-job'))).toBe(
       false,

@@ -1,5 +1,6 @@
-import type { OtioTimeline, OtioTrack, OtioClip, OtioGap } from '@core/types/otio';
-import type { Shot, TimelineState, ProductionRun, TimelineClip } from '@core/types';
+import type { OtioTimeline, OtioTrack, OtioClip, OtioGap, OtioMarker } from '@core/types/otio';
+import type { Caption, Shot, TimelineState, ProductionRun, TimelineClip } from '@core/types';
+import { exportCreatorSrt } from '@core/services/creatorCaptionService';
 
 export interface OtioExportOptions {
   projectName?: string;
@@ -127,7 +128,37 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
       },
     };
   };
+  const textClips: TimelineClip[] = options.timeline
+    ? options.timeline.clips
+        .filter((clip) => {
+          const track = options.timeline!.tracks.find((item) => item.id === clip.trackId);
+          return track?.type === 'text' || clip.type === 'text';
+        })
+        .sort((a, b) => a.startTime - b.startTime)
+    : [];
+
+  const captionMarkers: OtioMarker[] = textClips.map((clip) => ({
+    OTIO_SCHEMA: 'Marker.1',
+    name: clip.caption?.text ?? clip.label,
+    marked_range: {
+      start_time: { value: Math.round(clip.startTime * fps), rate: fps },
+      duration: { value: Math.round(clip.duration * fps), rate: fps },
+    },
+    color: 'CYAN',
+    comment: clip.caption?.style ?? 'classic',
+    metadata: {
+      loofiCaption: {
+        id: clip.id,
+        text: clip.caption?.text ?? clip.label,
+        style: clip.caption?.style ?? 'classic',
+        startTime: clip.startTime,
+        endTime: clip.startTime + clip.duration,
+      },
+    },
+  }));
+
   if (options.timeline) {
+    let attachedMarkers = false;
     for (const track of options.timeline.tracks) {
       if (track.type === 'text' || (track.type === 'audio' && options.includeAudioTracks === false))
         continue;
@@ -164,6 +195,26 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
           clip.selectedTakeId,
           clip.type ?? (track.type === 'audio' ? 'audio' : 'video'),
         );
+        if (track.type === 'video' && captionMarkers.length) {
+          const clipEnd = clip.startTime + clip.duration;
+          item.markers = textClips
+            .map((captionClip, idx) => ({ captionClip, marker: captionMarkers[idx] }))
+            .filter(
+              ({ captionClip }) =>
+                captionClip.startTime < clipEnd &&
+                captionClip.startTime + captionClip.duration > clip.startTime,
+            )
+            .map(({ captionClip, marker }) => ({
+              ...marker,
+              marked_range: {
+                start_time: {
+                  value: Math.max(0, Math.round((captionClip.startTime - clip.startTime) * fps)),
+                  rate: fps,
+                },
+                duration: marker.marked_range.duration,
+              },
+            }));
+        }
         item.metadata.loofi = {
           ...item.metadata.loofi!,
           volume: clip.volume,
@@ -173,12 +224,17 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
         children.push(item);
         cursor = clip.startTime + clip.duration;
       }
-      tracks.push({
+      const otioTrack: OtioTrack = {
         OTIO_SCHEMA: 'Track.1',
         name: track.label,
         kind: track.type === 'audio' ? 'Audio' : 'Video',
         children,
-      });
+      };
+      if (track.type === 'video' && !attachedMarkers && captionMarkers.length) {
+        otioTrack.markers = captionMarkers;
+        attachedMarkers = true;
+      }
+      tracks.push(otioTrack);
     }
   } else {
     const shots = options.shots.length ? options.shots : (options.productionRun?.shots ?? []);
@@ -186,6 +242,7 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
       OTIO_SCHEMA: 'Track.1',
       name: 'V1 - Selected takes',
       kind: 'Video',
+      ...(captionMarkers.length ? { markers: captionMarkers } : {}),
       children: shots.map((shot) =>
         makeClip(
           shot.id,
@@ -208,8 +265,9 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
       loofiProject: {
         id: options.projectId ?? '',
         name,
-        version: '14.0.0',
+        version: '22.0.0',
         exportedAt: new Date().toISOString(),
+        ...(captionMarkers.length ? { captionsSidecar: 'captions.srt' } : {}),
       },
       missingMedia: [...new Set(missing)],
     },
@@ -218,4 +276,30 @@ export function buildOtioTimeline(options: OtioExportOptions): OtioTimeline {
 
 export function exportOtioJson(options: OtioExportOptions): string {
   return JSON.stringify(buildOtioTimeline(options), null, 2);
+}
+
+export function exportOtioWithSrt(options: OtioExportOptions): {
+  otioJson: string;
+  srtContent: string;
+  markerCount: number;
+} {
+  const otio = buildOtioTimeline(options);
+  const captions: Caption[] = (options.timeline?.clips ?? [])
+    .filter((clip) => {
+      const track = options.timeline?.tracks.find((item) => item.id === clip.trackId);
+      return track?.type === 'text' || clip.type === 'text';
+    })
+    .map((clip) => ({
+      id: clip.id,
+      text: (clip.caption?.text ?? clip.label).trim() || clip.label,
+      startTime: clip.startTime,
+      endTime: clip.startTime + clip.duration,
+      style: clip.caption?.style ?? 'classic',
+    }));
+
+  return {
+    otioJson: JSON.stringify(otio, null, 2),
+    srtContent: captions.length ? exportCreatorSrt(captions) : '',
+    markerCount: captions.length,
+  };
 }

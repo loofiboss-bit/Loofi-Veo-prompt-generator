@@ -135,6 +135,21 @@ describe('retryOperation', () => {
     expect(operation).not.toHaveBeenCalled();
   });
 
+  it('does not retry a cancelled active request', async () => {
+    const controller = new AbortController();
+    const operation = vi.fn(async () => {
+      controller.abort();
+      throw new DOMException('Cancelled', 'AbortError');
+    });
+    await expect(
+      retryOperation(operation, 3, 1, {
+        signal: controller.signal,
+        circuitBreakerEndpoint: 'cancelled-request',
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(operation).toHaveBeenCalledOnce();
+  });
+
   it('should retry standard Error with network-related message', async () => {
     const operation = vi
       .fn()
@@ -179,5 +194,46 @@ describe('retryOperation', () => {
 
     const result = await retryOperation(operation, 3, 10);
     expect(result).toBe('ok');
+  });
+
+  it('should retry when Google API returns high demand / spikes in demand error', async () => {
+    const highDemandError = new Error(
+      'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
+    );
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(highDemandError)
+      .mockResolvedValueOnce('recovered-after-spike');
+
+    const result = await retryOperation(operation, 3, 10);
+    expect(result).toBe('recovered-after-spike');
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+
+  it('should retry when ProviderExecutionError has kind provider-incident', async () => {
+    const providerIncidentError = Object.assign(
+      new Error('Provider execution failed: provider-incident'),
+      { kind: 'provider-incident' },
+    );
+    const operation = vi
+      .fn()
+      .mockRejectedValueOnce(providerIncidentError)
+      .mockResolvedValueOnce('success');
+
+    const result = await retryOperation(operation, 3, 10);
+    expect(result).toBe('success');
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry cost-approval or trusted pricing errors even with transient keywords', async () => {
+    const approvalErr = new Error('Operation was not approved by user');
+    const operation1 = vi.fn().mockRejectedValue(approvalErr);
+    await expect(retryOperation(operation1, 3, 10)).rejects.toThrow(/not approved/);
+    expect(operation1).toHaveBeenCalledTimes(1);
+
+    const pricingErr = new Error('Missing trusted pricing metadata for timeout test');
+    const operation2 = vi.fn().mockRejectedValue(pricingErr);
+    await expect(retryOperation(operation2, 3, 10)).rejects.toThrow(/trusted pricing/);
+    expect(operation2).toHaveBeenCalledTimes(1);
   });
 });

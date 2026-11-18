@@ -8,6 +8,8 @@ import { useAppStore } from '@core/store/useAppStore';
 import TimelinePage from './TimelinePage';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { useTimelineRecoveryStore } from '@core/store/useTimelineRecoveryStore';
 import type { Project } from '@core/types';
 
 const delivery = vi.hoisted(() => ({
@@ -16,8 +18,13 @@ const delivery = vi.hoisted(() => ({
   preflight: vi.fn(),
   export: vi.fn(),
   download: vi.fn(),
+  saveProject: vi.fn(),
+}));
+vi.mock('@core/services/projectSaveCoordinator', () => ({
+  projectSaveCoordinator: { saveProject: delivery.saveProject, flushBeforeProjectChange: vi.fn() },
 }));
 vi.mock('@core/services/projectDocumentService', () => ({
+  setDocumentRegisterCallback: vi.fn(),
   projectDocumentService: { save: delivery.save, load: delivery.load },
 }));
 vi.mock('@core/services/projectTransferService', () => ({
@@ -66,6 +73,8 @@ vi.mock('./TimelinePlayer', () => ({
 describe('TimelinePage', () => {
   beforeEach(() => {
     useAppStore.getState().resetAll();
+    useEditorSessionStore.setState({ projectSnapshot: null });
+    useTimelineRecoveryStore.setState({ recovery: null });
     mockNavigate.mockReset();
     mockLocationState = null;
     useProjectStore.setState({ currentProjectId: 'external-project', projects: [] });
@@ -79,6 +88,7 @@ describe('TimelinePage', () => {
     delivery.preflight.mockReset().mockResolvedValue({ missingMedia: [] });
     delivery.export.mockReset().mockResolvedValue(new Blob(['delivery']));
     delivery.download.mockReset();
+    delivery.saveProject.mockReset().mockResolvedValue(undefined);
   });
 
   it('shows an empty state when there are no generated video clips', () => {
@@ -101,6 +111,32 @@ describe('TimelinePage', () => {
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES.HOME, {
       state: { reopenStudio: 'story' },
     });
+  });
+
+  it('navigates to production workflow from timeline empty state', async () => {
+    const { user } = render(<TimelinePage />);
+    await user.click(screen.getByRole('button', { name: /^production$/i }));
+    expect(mockNavigate).toHaveBeenCalledWith(ROUTES.CREATE);
+  });
+
+  it('switches to editor media mode when clicking open editor from empty state', async () => {
+    const { user } = render(<TimelinePage />);
+    await user.click(screen.getByRole('button', { name: /open editor & import media/i }));
+    const { useEditorSessionStore } = await import('@core/store/useEditorSessionStore');
+    expect(useEditorSessionStore.getState().projectSnapshot?.creatorDelivery?.editorMode).toBe(
+      'delivery',
+    );
+  });
+
+  it('opens the delivery section from the source preview without starting a render', async () => {
+    const { user } = render(<TimelinePage />);
+    await user.click(screen.getByRole('button', { name: /open editor & import media/i }));
+    const details = document.getElementById('timeline-delivery-panel') as HTMLDetailsElement;
+    expect(details).toBeTruthy();
+    details.open = false;
+    await user.click(screen.getByRole('button', { name: 'Open delivery review' }));
+    expect(details.open).toBe(true);
+    expect(details.querySelector('summary')).toHaveFocus();
   });
 
   it('renders the timeline player when a generated video clip exists', () => {
@@ -162,7 +198,7 @@ describe('TimelinePage', () => {
     const { user } = render(<TimelinePage />);
     await user.click(screen.getByRole('button', { name: /download otio with media/i }));
     await waitFor(() => expect(delivery.download).toHaveBeenCalledOnce());
-    expect(delivery.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'external-project' }));
+    expect(delivery.saveProject).toHaveBeenCalledWith('external-project');
     expect(delivery.export).toHaveBeenCalledWith(
       expect.objectContaining({ studioResults: [{ id: 'external-result' }] }),
       null,
@@ -191,12 +227,15 @@ describe('TimelinePage', () => {
     delivery.preflight.mockResolvedValueOnce({
       missingMedia: [{ clipId: 'opening', clipLabel: 'Opening', mediaKey: 'gone' }],
     });
-    const { user } = render(<TimelinePage />);
+    const { user, unmount } = render(<TimelinePage />);
     await user.click(screen.getByRole('button', { name: /download otio with media/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Opening (gone)');
     expect(delivery.download).not.toHaveBeenCalled();
-    await user.selectOptions(screen.getByRole('combobox'), 'replacement');
-    await user.click(screen.getByRole('button', { name: /relink clip/i }));
+    unmount();
+    const reopened = render(<TimelinePage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Opening (gone)');
+    await reopened.user.selectOptions(screen.getByRole('combobox'), 'replacement');
+    await reopened.user.click(screen.getByRole('button', { name: /relink clip/i }));
     await waitFor(() => expect(useAppStore.getState().clips[0].resourceId).toBe('replacement'));
     expect(useAppStore.getState().clips[0].selectedTakeId).toBeUndefined();
   });

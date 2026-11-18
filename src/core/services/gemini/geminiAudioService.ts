@@ -10,7 +10,7 @@ import { retryOperation } from '@core/utils/retry';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 import { resolveProviderModelId } from '@core/models/catalog';
 
-const DEFAULT_TTS_MODEL = resolveProviderModelId('gemini-3.1-flash-tts');
+const DEFAULT_TTS_MODEL = resolveProviderModelId('gemini-3.8-flash-tts');
 
 // ---------------------------------------------------------------------------
 // Speech & sound effects
@@ -304,20 +304,7 @@ const normalizeStylePrompt = (rawStyle: string, settings: SunoSettings): string 
       ),
   );
 
-  let ordered = dedupeTokens([...leading, ...remaining, ...FIDELITY_TOKENS]);
-  let stylePrompt = ordered.join(', ');
-
-  while (stylePrompt.length > 200 && remaining.length > 0) {
-    remaining.pop();
-    ordered = dedupeTokens([...leading, ...remaining, ...FIDELITY_TOKENS]);
-    stylePrompt = ordered.join(', ');
-  }
-
-  if (stylePrompt.length > 200) {
-    stylePrompt = dedupeTokens([...leading.slice(0, 5), ...FIDELITY_TOKENS]).join(', ');
-  }
-
-  return stylePrompt.slice(0, 200).replace(/,\s*$/, '');
+  return dedupeTokens([...leading, ...remaining, ...FIDELITY_TOKENS]).join(', ');
 };
 
 const buildFallbackLyrics = (topic: string): string => {
@@ -383,7 +370,10 @@ const normalizeSunoPack = (pack: Partial<SunoPack>, settings: SunoSettings): Sun
   };
 };
 
-export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack> => {
+export const generateSunoPack = async (
+  settings: SunoSettings,
+  signal?: AbortSignal,
+): Promise<SunoPack> => {
   const ai = await getAiClientAsync();
   const effectiveStyleInfluence = settings.styleInfluence ?? DEFAULT_STYLE_INFLUENCE;
   const inputContext = [
@@ -397,7 +387,7 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
     `Requested Instruments: "${settings.instruments || 'Auto'}"`,
     `Instrumental: "${settings.isInstrumental || settings.voice === 'Instrumental' ? 'Yes' : 'No'}"`,
     `Style Influence: ${effectiveStyleInfluence}%`,
-    `Target Profile: ${settings.targetProfile ?? 'suno-v5.5'} with Studio 1.2 handoff`,
+    `Target Profile: ${settings.targetProfile ?? 'suno-v6'} with manual Custom Mode handoff`,
     `Key / Time Signature: ${settings.key ?? 'Auto'} / ${settings.timeSignature ?? '4/4'}`,
     `Energy Curve: ${settings.energyCurve ?? 'Auto'}`,
     `Vocal Range: ${settings.vocalRange ?? 'Auto'}`,
@@ -414,7 +404,7 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
 
     Style Prompt Rules:
     - Use comma-separated tags, never full sentences.
-    - Keep the style string at or below 200 characters.
+    - Keep the style string concise; retain all requested instruments and creative details. Do not truncate to an assumed character limit.
     - Lead with Mood, Energy, two core instruments, Vocal identity, Genre, Tempo, then fidelity tokens.
     - Always include fidelity tokens: ${FIDELITY_TOKENS.join(', ')}.
 
@@ -430,15 +420,20 @@ export const generateSunoPack = async (settings: SunoSettings): Promise<SunoPack
     - Mention what makes the style prompt suitable for Suno playback.`;
 
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: getPromptModel(),
-        contents: `Generate a song package based on: ${inputContext}`,
-        config: {
-          systemInstruction: systemInstruction,
-          responseMimeType: 'application/json',
-        },
-      }),
+    const response = await retryOperation<GenerateContentResponse>(
+      () =>
+        ai.models.generateContent({
+          model: getPromptModel(),
+          contents: `Generate a song package based on: ${inputContext}`,
+          config: {
+            systemInstruction: systemInstruction,
+            responseMimeType: 'application/json',
+            abortSignal: signal,
+          },
+        }),
+      3,
+      1000,
+      { signal },
     );
     return normalizeSunoPack(JSON.parse(cleanJson(response.text)) as Partial<SunoPack>, settings);
   } catch (error) {

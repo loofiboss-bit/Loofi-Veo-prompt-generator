@@ -1,28 +1,50 @@
 import type {
   PromptArtifactTarget,
+  StudioExecutionMode,
+  TargetModelProfile,
+  UniversalVideoTarget,
   VideoPromptArtifactInput,
+  VeoDuration,
+  VeoGenerationMode,
   VeoGenerationRequest,
+  VeoModelId,
   VeoCapabilityIssue,
 } from '@core/types';
-import { getModel } from '@core/models/catalog';
-import { veoGenerationService } from '@core/services/veoGenerationService';
+import {
+  TARGET_MODEL_PROFILES,
+  getTargetProfile,
+  getProfileModes,
+  getProfileDurations,
+  getProfileAspectRatios,
+} from '@core/services/modelTranspilerService';
 
 export interface StudioCapability {
   handoff: 'manual' | 'approved-provider' | 'experimental';
   label: string;
+  lifecycle: 'active' | 'retired' | 'legacy';
 }
 
+export interface StudioExecutionContract {
+  executionMode: StudioExecutionMode;
+  target: UniversalVideoTarget;
+  profile: TargetModelProfile;
+  requiresManualMediaIngestion: boolean;
+}
+
+/** UI labels and execution status are derived from the same source-backed profiles. */
 export const STUDIO_CAPABILITIES: Record<PromptArtifactTarget, StudioCapability> = {
-  'flow-veo': { handoff: 'manual', label: 'Google Flow / Veo' },
-  'veo-api': { handoff: 'approved-provider', label: 'Veo API' },
-  kling: { handoff: 'manual', label: 'Kling' },
-  'runway-gen3': { handoff: 'manual', label: 'Runway' },
-  sora: { handoff: 'manual', label: 'OpenAI Sora' },
-  'luma-ray': { handoff: 'manual', label: 'Luma' },
-  'wan-video': { handoff: 'manual', label: 'Wan 2.1' },
-  'minimax-hailuo': { handoff: 'manual', label: 'Minimax / Hailuo' },
-  suno: { handoff: 'manual', label: 'Suno' },
-};
+  ...Object.fromEntries(
+    Object.entries(TARGET_MODEL_PROFILES).map(([target, item]) => [
+      target,
+      {
+        handoff: item.handoff,
+        label: item.displayName,
+        lifecycle: item.lifecycle,
+      },
+    ]),
+  ),
+  suno: { handoff: 'manual', label: 'Suno', lifecycle: 'active' },
+} as Record<PromptArtifactTarget, StudioCapability>;
 
 export const LAB_CAPABILITIES = [
   {
@@ -63,58 +85,137 @@ export const LAB_CAPABILITIES = [
   },
 ] as const;
 
-function buildStudioVideoRequest(input: VideoPromptArtifactInput): VeoGenerationRequest {
-  const modes = {
-    'text-to-video': 'text-to-video',
-    'image-to-video': 'image-to-video',
-    'first-last-frames': 'interpolation',
-    ingredients: 'reference-images',
-    extend: 'extension',
-  } as const;
-  const request: VeoGenerationRequest = {
-    mode: modes[input.mode],
-    modelId: 'veo-3.1-fast',
-    prompt: input.idea,
-    negativePrompt: input.negativePrompt,
-    aspectRatio: input.aspectRatio,
-    resolution: '720p',
-    durationSeconds: input.durationSeconds as 4 | 6 | 8,
-    firstFrameAssetId: input.firstFrameAssetId,
-    lastFrameAssetId: input.lastFrameAssetId,
-    referenceAssetIds: input.referenceAssetIds ?? [],
-    extensionSourceTakeId: input.extensionSourceTakeId,
-    extensionArtifact: input.extensionArtifact,
-  };
-  return request;
-}
-
-/** Shared with guidance; executing a request still uses the provider's fail-closed validator. */
+/** Profile checks are shared by local guidance and provider handoff. Never change saved settings here. */
 export function studioVideoRequestIssues(
   input: VideoPromptArtifactInput,
 ): Array<Omit<VeoCapabilityIssue, 'code'> & { code: string }> {
-  if (input.target !== 'veo-api') return [];
-  const request = buildStudioVideoRequest(input);
-  const issues: Array<Omit<VeoCapabilityIssue, 'code'> & { code: string }> =
-    veoGenerationService.validateRequest(request);
-  if (
-    !getModel(request.modelId)?.capabilities.supportedDurationsSeconds?.includes(
-      input.durationSeconds,
-    )
-  ) {
-    issues.unshift({
+  const issues: Array<Omit<VeoCapabilityIssue, 'code'> & { code: string }> = [];
+  let selected;
+  try {
+    selected = getTargetProfile(input.target, input.profileId);
+  } catch (error) {
+    return [
+      {
+        code: 'profile-unknown',
+        field: 'modelId',
+        message: error instanceof Error ? error.message : 'Unknown target profile.',
+      },
+    ];
+  }
+  if (selected.lifecycle === 'retired')
+    return [
+      {
+        code: 'target-retired',
+        field: 'modelId',
+        message: `${selected.displayName} is retired. Choose an active target; existing prompt text remains available.`,
+      },
+    ];
+  if (!getProfileModes(input).includes(input.mode))
+    issues.push({
+      code: 'mode-unsupported',
+      field: 'mode',
+      message: `${selected.displayName} does not support this mode.`,
+    });
+  if (!getProfileDurations(input).includes(input.durationSeconds))
+    issues.push({
       code: 'duration-unsupported',
       field: 'durationSeconds',
-      message: 'Veo API supports 4, 6 or 8 seconds.',
+      message: `${selected.displayName} supports these durations for this mode: ${getProfileDurations(input).join(', ')} seconds.`,
     });
-  }
+  if (!getProfileAspectRatios(input).includes(input.aspectRatio))
+    issues.push({
+      code: 'aspect-ratio-unsupported',
+      field: 'aspectRatio',
+      message: `${selected.displayName} supports these aspect ratios: ${getProfileAspectRatios(input).join(', ')}.`,
+    });
   return issues;
 }
 
+const mapPromptModeToProductionMode = (
+  mode: VideoPromptArtifactInput['mode'],
+): VeoGenerationMode => {
+  switch (mode) {
+    case 'image-to-video':
+      return 'image-to-video';
+    case 'first-last-frames':
+      return 'interpolation';
+    case 'ingredients':
+      return 'reference-images';
+    case 'extend':
+      return 'extension';
+    case 'text-to-video':
+    default:
+      return 'text-to-video';
+  }
+};
+
+const normalizeDurationForProduction = (duration: number): VeoDuration => {
+  if (duration <= 4) return 4;
+  if (duration <= 6) return 6;
+  return 8;
+};
+
+const resolveProductionModelId = (profile: TargetModelProfile): VeoModelId => {
+  if (profile.profileId.includes('quality')) return 'veo-3.1-quality';
+  if (profile.profileId.includes('lite')) return 'veo-3.1-lite';
+  return 'veo-3.1-fast';
+};
+
+export function getStudioExecutionContract(
+  input: Pick<VideoPromptArtifactInput, 'target' | 'profileId'>,
+): StudioExecutionContract {
+  const profile = getTargetProfile(input.target, input.profileId);
+  if (profile.lifecycle === 'retired') {
+    if (input.target === 'veo-api') {
+      throw new Error(
+        'Veo 3.1 Preview in Gemini API shut down on 2026-10-22. Choose an active target.',
+      );
+    }
+    throw new Error(`${profile.displayName} is retired. Choose an active target.`);
+  }
+  const executionMode: StudioExecutionMode =
+    input.target === 'omni-flash'
+      ? 'gemini-omni'
+      : input.target === 'flow-veo'
+        ? 'vertex-veo-ga'
+        : 'external-manual-slot';
+  return {
+    executionMode,
+    target: input.target,
+    profile,
+    requiresManualMediaIngestion: executionMode === 'external-manual-slot',
+  };
+}
+
+/** Converts an active Studio brief/variant into a production-run request contract. */
 export function studioVideoRequest(input: VideoPromptArtifactInput): VeoGenerationRequest {
-  if (input.target !== 'veo-api') throw new Error('This target uses a manual copy handoff.');
+  const contract = getStudioExecutionContract(input);
   const issues = studioVideoRequestIssues(input);
-  if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
-  return buildStudioVideoRequest(input);
+  if (issues.length > 0) {
+    throw new Error(issues[0].message);
+  }
+  const referenceAssetIds = [...(input.referenceAssetIds ?? [])];
+  const rawAspect = input.aspectRatio;
+  const aspectRatio: '16:9' | '9:16' = rawAspect === '9:16' ? '9:16' : '16:9';
+  return {
+    mode: mapPromptModeToProductionMode(input.mode),
+    modelId: resolveProductionModelId(contract.profile),
+    provider: contract.executionMode === 'vertex-veo-ga' ? 'vertex-ai' : 'gemini-api',
+    target: input.target,
+    profileId: contract.profile.profileId,
+    executionMode: contract.executionMode,
+    prompt: input.idea.trim() || contract.profile.displayName,
+    ...(contract.profile.negativePolicy === 'unsupported'
+      ? {}
+      : { negativePrompt: input.negativePrompt }),
+    aspectRatio,
+    resolution: '720p',
+    durationSeconds: normalizeDurationForProduction(input.durationSeconds),
+    ...(input.firstFrameAssetId ? { firstFrameAssetId: input.firstFrameAssetId } : {}),
+    ...(input.lastFrameAssetId ? { lastFrameAssetId: input.lastFrameAssetId } : {}),
+    referenceAssetIds,
+    ...(input.extensionArtifact ? { extensionArtifact: input.extensionArtifact } : {}),
+  };
 }
 
 export function studioGenerationBlocker(input: VideoPromptArtifactInput): string | null {

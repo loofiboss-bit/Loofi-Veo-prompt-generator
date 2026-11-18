@@ -1,4 +1,5 @@
 import type { Asset, ContinuityOverrideRecord, ProductionRun, ProductionShot } from '@core/types';
+import { getTargetProfile } from './modelTranspilerService';
 import { veoGenerationService } from './veoGenerationService';
 
 export type PreflightCategory =
@@ -233,15 +234,40 @@ class ProductionPreflightService {
 
     for (const shot of run.shots) {
       const request = shot.generationRequest;
+      const targetProfile = (() => {
+        if (!request.target) return null;
+        try {
+          return getTargetProfile(request.target, request.profileId);
+        } catch {
+          return null;
+        }
+      })();
       if (request.prompt.trim().length < 24) {
         add('prompt-clarity', `Shot ${shot.id} prompt is too short to express subject and action.`);
       }
       if (!shot.camera.trim()) add('camera', `Shot ${shot.id} has no camera intent.`);
       if (!includesMotion(`${request.prompt} ${shot.camera}`))
         add('motion', `Shot ${shot.id} has no explicit motion direction.`);
-      if (!includesAudio(request.prompt)) add('audio', `Shot ${shot.id} has no audio direction.`);
-      if (!request.negativePrompt?.trim())
+      if (targetProfile?.audioPolicy === 'post-production') {
+        if (includesAudio(request.prompt)) {
+          add(
+            'audio',
+            `Shot ${shot.id} target (${targetProfile.displayName}) handles audio in post-production; remove inline audio directives.`,
+          );
+        }
+      } else if (!includesAudio(request.prompt)) {
+        add('audio', `Shot ${shot.id} has no audio direction.`);
+      }
+      if (targetProfile?.negativePolicy === 'unsupported') {
+        if (request.negativePrompt?.trim()) {
+          add(
+            'capability',
+            `Shot ${shot.id}: ${targetProfile.displayName} does not support negative prompts.`,
+          );
+        }
+      } else if (!request.negativePrompt?.trim()) {
         add('safety', `Shot ${shot.id} has no negative constraints.`);
+      }
 
       if (shot.continuityReport) {
         continuityReportCount += 1;
@@ -262,8 +288,23 @@ class ProductionPreflightService {
         });
       }
 
-      for (const issue of veoGenerationService.validateRequest(request)) {
-        add('capability', `Shot ${shot.id}: ${issue.message}`);
+      if (request.executionMode === 'external-manual-slot' && targetProfile) {
+        if (!request.prompt.trim()) {
+          add('capability', `Shot ${shot.id}: Prompt is required.`);
+        }
+        if (targetProfile.lifecycle === 'retired') {
+          add('capability', `Shot ${shot.id}: ${targetProfile.displayName} is retired.`);
+        }
+        if (!targetProfile.supportedAspectRatios.includes(request.aspectRatio)) {
+          add(
+            'capability',
+            `Shot ${shot.id}: ${targetProfile.displayName} does not support ${request.aspectRatio}.`,
+          );
+        }
+      } else {
+        for (const issue of veoGenerationService.validateRequest(request)) {
+          add('capability', `Shot ${shot.id}: ${issue.message}`);
+        }
       }
 
       const requiredAssetIds = [
@@ -286,7 +327,11 @@ class ProductionPreflightService {
         }
       }
 
-      if (request.modelId === 'veo-3.1-quality' && request.resolution === '720p') {
+      if (
+        request.executionMode !== 'external-manual-slot' &&
+        request.modelId === 'veo-3.1-quality' &&
+        request.resolution === '720p'
+      ) {
         recommendations.push({
           id: `budget-${shot.id}`,
           category: 'cost',
@@ -305,7 +350,10 @@ class ProductionPreflightService {
     }
 
     const currentEstimate = run.shots.reduce(
-      (total, shot) => total + veoGenerationService.estimateCost(shot.generationRequest),
+      (total, shot) =>
+        shot.generationRequest.executionMode === 'external-manual-slot'
+          ? total
+          : total + veoGenerationService.estimateCost(shot.generationRequest),
       0,
     );
     if (run.cost.approvedUsd > 0 && currentEstimate > run.cost.approvedUsd) {

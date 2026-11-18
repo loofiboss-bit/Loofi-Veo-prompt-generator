@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { registerProviderIpc } = require('./provider-ipc.cjs');
+const { providerRequestFingerprint, registerProviderIpc } = require('./provider-ipc.cjs');
 
 function fixture({ dialogResponse = 0 } = {}) {
   const handlers = new Map();
@@ -39,6 +39,9 @@ function fixture({ dialogResponse = 0 } = {}) {
   return {
     handlers,
     providerCalls: () => providerCalls,
+    setFetch: (fetchImpl) => {
+      globalThis.fetch = fetchImpl;
+    },
     restore: () => {
       globalThis.fetch = originalFetch;
     },
@@ -124,6 +127,101 @@ test('binds a provider approval to the exact prompt and multimodal payload', asy
   assert.equal(context.providerCalls(), 0);
 });
 
+test('request IDs and AbortSignals do not change the cost approval fingerprint', () => {
+  const request = input();
+  const baseline = providerRequestFingerprint(request);
+  assert.equal(
+    providerRequestFingerprint({
+      ...request,
+      requestId: '3a861438-7637-4b79-96c7-d426eae20e48',
+      signal: new AbortController().signal,
+    }),
+    baseline,
+  );
+});
+
+test('cancellation is bound to the requesting renderer and stops dispatch after approval', async (t) => {
+  const context = fixture();
+  t.after(context.restore);
+  const sender = { sender: { id: 10 } };
+  const otherSender = { sender: { id: 11 } };
+  const requestId = '3a861438-7637-4b79-96c7-d426eae20e48';
+  const payload = { ...input(), requestId };
+  const token = await context.handlers.get('provider-cost-approve')(sender, payload);
+
+  assert.equal(
+    await context.handlers.get('provider-cancel-request')(otherSender, { requestId }),
+    false,
+  );
+  assert.equal(context.providerCalls(), 0);
+  assert.equal(await context.handlers.get('provider-cancel-request')(sender, { requestId }), true);
+  const result = await context.handlers.get('provider-execute')(sender, {
+    ...payload,
+    approvalToken: token,
+  });
+  assert.equal(result.failure, 'cancelled');
+  assert.equal(context.providerCalls(), 0);
+});
+
+test('invalid approval input is rejected before registering a cancellable request', async (t) => {
+  const context = fixture();
+  t.after(context.restore);
+  const event = { sender: { id: 21 } };
+  const requestId = '6a861438-7637-4b79-96c7-d426eae20e48';
+
+  await assert.rejects(
+    context.handlers.get('provider-cost-approve')(event, {
+      ...input(),
+      requestId,
+      provider: 'unknown-provider',
+    }),
+    /provider/i,
+  );
+  assert.equal(await context.handlers.get('provider-cancel-request')(event, { requestId }), false);
+});
+
+test('cancellation after approval remains attached until the matching execute consumes it', async (t) => {
+  const context = fixture();
+  t.after(context.restore);
+  const event = { sender: { id: 22 } };
+  const requestId = '7a861438-7637-4b79-96c7-d426eae20e48';
+  const payload = { ...input(), requestId };
+  const token = await context.handlers.get('provider-cost-approve')(event, payload);
+
+  assert.equal(await context.handlers.get('provider-cancel-request')(event, { requestId }), true);
+  const result = await context.handlers.get('provider-execute')(event, {
+    ...payload,
+    approvalToken: token,
+  });
+  assert.equal(result.failure, 'cancelled');
+  assert.equal(context.providerCalls(), 0);
+  assert.equal(await context.handlers.get('provider-cancel-request')(event, { requestId }), false);
+});
+
+test('cancellation during provider fetch aborts the active request', async (t) => {
+  const context = fixture();
+  t.after(context.restore);
+  let started;
+  const startedPromise = new Promise((resolve) => (started = resolve));
+  context.setFetch(async (_url, init) => {
+    started();
+    return await new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(init.signal.reason), { once: true });
+    });
+  });
+  const event = { sender: { id: 12 } };
+  const requestId = '8a861438-7637-4b79-96c7-d426eae20e48';
+  const payload = { ...input(), requestId };
+  const token = await context.handlers.get('provider-cost-approve')(event, payload);
+  const operation = context.handlers.get('provider-execute')(event, {
+    ...payload,
+    approvalToken: token,
+  });
+  await startedPromise;
+  assert.equal(await context.handlers.get('provider-cancel-request')(event, { requestId }), true);
+  assert.equal((await operation).failure, 'cancelled');
+});
+
 test('runs an approved Gemini interaction through the one-time provider boundary', async (t) => {
   const context = fixture();
   t.after(context.restore);
@@ -163,4 +261,62 @@ test('credential status does not run a paid canary', async (t) => {
   assert.equal(result.ok, true);
   assert.match(result.message, /No paid generation canary/);
   assert.equal(context.providerCalls(), 0);
+});
+
+test('locks interaction duration/resolution to approved quote and shows rich native approval detail', async () => {
+  const handlers = new Map();
+  let capturedDialogOptions;
+  let capturedInteractionRequest;
+
+  registerProviderIpc({
+    ipcMain: { handle: (channel, handler) => handlers.set(channel, handler) },
+    keytar: { getPassword: async () => 'secret-key' },
+    keytarService: 'test-service',
+    dialog: {
+      showMessageBox: async (_win, options) => {
+        capturedDialogOptions = options;
+        return { response: 0 };
+      },
+    },
+    getMainWindow: () => null,
+    vertexAuth: { getClient: async () => ({}) },
+    createGeminiClient: async () => ({
+      interactions: {
+        create: async (request) => {
+          capturedInteractionRequest = request;
+          return { id: 'int-locked', model: request.model, output_text: 'ok' };
+        },
+      },
+    }),
+  });
+
+  const payload = interactionInput();
+  const token = await handlers.get('provider-cost-approve')(null, payload);
+
+  assert.match(capturedDialogOptions.detail, /gemini-omni-flash-preview · video \(8s 720p\)/);
+  assert.match(capturedDialogOptions.detail, /Prompt: "Create an eight second 720p clip\."/);
+
+  const result = await handlers.get('provider-interaction')(null, {
+    ...payload,
+    approvalToken: token,
+  });
+
+  assert.equal(result.interactionId, 'int-locked');
+  assert.deepEqual(capturedInteractionRequest.response_format, {
+    type: 'video',
+    duration: '8s',
+    resolution: '720p',
+  });
+  assert.equal('maxOutputTokens' in capturedInteractionRequest, false);
+
+  const token2 = await handlers.get('provider-cost-approve')(null, {
+    ...payload,
+    config: { duration: 8, resolution: '720p' },
+  });
+  const tampered = await handlers.get('provider-interaction')(null, {
+    ...payload,
+    config: { duration: 15, resolution: '720p' },
+    approvalToken: token2,
+  });
+  assert.match(tampered.message, /one-time provider cost approval/);
 });

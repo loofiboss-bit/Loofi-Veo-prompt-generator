@@ -19,6 +19,7 @@ import {
   hydrateProjectMedia,
 } from '@core/services/projectTransferService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import EmptyState from '@shared/components/EmptyState';
@@ -116,9 +117,12 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
 
   const handleLoad = async (meta: ProjectMetadata) => {
     try {
-      if (!(await usePromptStudioDraftStore.getState().flush()))
-        throw new Error('Save the current Studio draft before changing projects.');
       if (confirm(t('projectManager.loadConfirm'))) {
+        if (!(await usePromptStudioDraftStore.getState().flush()))
+          throw new Error('Save the current Studio draft before changing projects.');
+        await projectSaveCoordinator.flushBeforeProjectChange(
+          useProjectStore.getState().currentProjectId,
+        );
         const project = await projectDocumentService.load(meta.id);
         if (project) {
           await hydrateProjectMedia(project);

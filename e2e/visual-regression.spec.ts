@@ -25,6 +25,13 @@ async function stabilizeVisualPage(page: Page) {
   });
 }
 
+const screenshotOptions = {
+  animations: 'disabled' as const,
+  fullPage: true,
+  maxDiffPixelRatio: 0.03,
+};
+
+// Visual baselines execute on Linux desktop Chromium with deterministic 3% pixel tolerance
 test.describe('Creator Studio visual regression', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(
@@ -35,10 +42,9 @@ test.describe('Creator Studio visual regression', () => {
     await page.emulateMedia({ colorScheme: 'dark' });
     // Keep revision and checkpoint timestamps stable while browser timers continue running.
     await page.clock.setFixedTime(new Date('2026-08-01T12:00:00Z'));
-    await page.goto('/');
-    await page.evaluate(async () => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
+    // Each test owns a fresh context. Seed before app startup so live stores
+    // never lose their IndexedDB connections during autosave.
+    await page.addInitScript(() => {
       window.localStorage.setItem('hasSeenWelcome', 'true');
       window.localStorage.setItem(
         'loofi-veo-onboarding',
@@ -51,23 +57,8 @@ test.describe('Creator Studio visual regression', () => {
           lastUpdated: '2026-08-01T00:00:00.000Z',
         }),
       );
-
-      const databases =
-        typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
-      await Promise.all(
-        databases.map(
-          (database) =>
-            new Promise<void>((resolve) => {
-              if (!database.name) return resolve();
-              const request = indexedDB.deleteDatabase(database.name);
-              request.onsuccess = () => resolve();
-              request.onerror = () => resolve();
-              request.onblocked = () => resolve();
-            }),
-        ),
-      );
     });
-    await page.reload();
+    await page.goto('/');
     await dismissModals(page);
     await stabilizeVisualPage(page);
     await expect(page.getByLabel(/^Core idea/)).toBeVisible();
@@ -75,19 +66,13 @@ test.describe('Creator Studio visual regression', () => {
 
   test('video prompt desk', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Prompt Studio', exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-video.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('creator-studio-video.png', screenshotOptions);
   });
 
   test('music and lyrics desk', async ({ page }) => {
     await page.getByRole('button', { name: 'Music & Lyrics', exact: true }).click();
     await expect(page.getByLabel('Song idea / story', { exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-music.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('creator-studio-music.png', screenshotOptions);
   });
 
   test('generation approval step', async ({ page }) => {
@@ -99,10 +84,7 @@ test.describe('Creator Studio visual regression', () => {
     await expect(
       page.getByRole('button', { name: 'Generate a take · Shot 1', exact: true }),
     ).toBeVisible();
-    await expect(page).toHaveScreenshot('creator-studio-approval.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('creator-studio-approval.png', screenshotOptions);
   });
 
   test('projects hub', async ({ page }) => {
@@ -110,10 +92,7 @@ test.describe('Creator Studio visual regression', () => {
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
     await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
-    await expect(page).toHaveScreenshot('projects-hub.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('projects-hub.png', screenshotOptions);
   });
 
   test('timeline hub', async ({ page }) => {
@@ -121,10 +100,7 @@ test.describe('Creator Studio visual regression', () => {
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
     await expect(page.getByRole('heading', { name: 'Timeline', exact: true })).toBeVisible();
-    await expect(page).toHaveScreenshot('timeline-hub.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('timeline-hub.png', screenshotOptions);
   });
 
   test('settings hub', async ({ page }) => {
@@ -132,9 +108,6 @@ test.describe('Creator Studio visual regression', () => {
     await dismissModals(page, { waitForPrompt: false });
     await stabilizeVisualPage(page);
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await expect(page).toHaveScreenshot('settings-hub.png', {
-      animations: 'disabled',
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot('settings-hub.png', screenshotOptions);
   });
 });

@@ -11,7 +11,7 @@ import { workspaceService } from './workspaceService';
 import { historyService } from './historyService';
 import { getUserTemplates, saveTemplate } from './templateManager';
 import { getAllPresets, savePreset } from './presetManager';
-import { projectDocumentService } from './projectDocumentService';
+import { projectDocumentService, setDocumentRegisterCallback } from './projectDocumentService';
 
 export interface Project {
   id: string;
@@ -617,3 +617,6 @@ class ProjectService {
 }
 
 export const projectService = new ProjectService();
+if (typeof setDocumentRegisterCallback === 'function') {
+  setDocumentRegisterCallback((doc) => projectService.registerDocument(doc));
+}

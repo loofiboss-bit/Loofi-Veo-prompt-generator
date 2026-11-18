@@ -119,6 +119,57 @@ describe('Studio templates', () => {
     expect(await studioTemplateService.list()).toEqual([adapted]);
   });
 
+  it('round-trips camera, character identity and atmosphere without carrying private references', async () => {
+    const legacy: UserTemplate = {
+      id: 'creative',
+      name: 'Creative',
+      description: '',
+      icon: 'template',
+      createdAt: 1,
+      updatedAt: 2,
+      isUserCreated: true,
+      params: {
+        idea: 'A courier',
+        cameraMovement: 'dolly',
+        cameraDistance: 'close-up',
+        lensType: '50mm',
+        compositionalGuide: 'rule of thirds',
+        weather: 'rain',
+        timeOfDay: 'dusk',
+        characterArchetype: 'courier',
+        characterAccessories: 'silver brooch',
+        characterVisualDNA: 'left brow scar',
+        environmentDynamicEvents: 'leaves drift across the street',
+      },
+    };
+    const adapted = adaptLegacyStudioTemplate(legacy);
+    expect(adapted.input).toMatchObject({
+      subject: 'courier, silver brooch',
+      camera: 'dolly',
+      creativeDetails: {
+        cameraDistance: 'close-up',
+        lensType: '50mm',
+        compositionalGuide: 'rule of thirds',
+        characterVisualDNA: 'left brow scar',
+        weather: 'rain',
+        timeOfDay: 'dusk',
+      },
+    });
+    if (adapted.kind !== 'video') throw new Error('Expected video');
+    const source = draft();
+    source.video = {
+      ...adapted.input,
+      profileId: 'flow-veo-3.1-lite',
+      firstFrameAssetId: 'private',
+    };
+    const saved = await studioTemplateService.create('Restored', '', source);
+    expect(saved.input).toMatchObject({
+      profileId: 'flow-veo-3.1-lite',
+      creativeDetails: adapted.input.creativeDetails,
+    });
+    expect(saved.input).not.toHaveProperty('firstFrameAssetId');
+  });
+
   it('fails visibly on storage reads and writes instead of returning successful empty results', async () => {
     vi.mocked(get).mockRejectedValueOnce(new Error('Read denied'));
     await expect(studioTemplateService.list()).rejects.toThrow('Read denied');

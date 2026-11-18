@@ -1,0 +1,274 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { TimelineClip } from '@core/types';
+import { creatorSilenceService } from './creatorSilenceService';
+
+const makeClip = (overrides: Partial<TimelineClip> = {}): TimelineClip => ({
+  id: 'v1',
+  label: 'Interview',
+  trackId: 'track_video',
+  type: 'video',
+  resourceId: 'asset_1',
+  startTime: 10,
+  duration: 8,
+  offset: 2, // represents source interval [2s, 10s]
+  ...overrides,
+});
+
+describe('creatorSilenceService', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('detectSilence invokes electron bridge with configured parameters', async () => {
+    const mockDetect = vi.fn().mockResolvedValue([
+      { start: 3, end: 4.5, duration: 1.5 },
+      { start: 6, end: 7, duration: 1.0 },
+    ]);
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: { detectTimelineSilence: mockDetect },
+    });
+
+    const result = await creatorSilenceService.detectSilence('asset_1', {
+      noiseThresholdDb: -40,
+      minDurationSeconds: 0.8,
+    });
+
+    expect(mockDetect).toHaveBeenCalledWith({
+      mediaId: 'asset_1',
+      noiseThresholdDb: -40,
+      minDurationSeconds: 0.8,
+    });
+    expect(result).toHaveLength(2);
+    expect(result[0].duration).toBe(1.5);
+  });
+
+  it('detectSilence returns empty array when electron bridge is unavailable', async () => {
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: undefined,
+    });
+
+    const result = await creatorSilenceService.detectSilence('asset_1');
+    expect(result).toEqual([]);
+  });
+
+  it('buildProposals filters and maps source silence intervals to timeline range', () => {
+    const clip = makeClip(); // source range: [2, 10], timeline range: [10, 18]
+
+    const silences = [
+      { start: 0.5, end: 1.5, duration: 1.0 }, // completely before clip.offset (ignored)
+      { start: 1.5, end: 3.0, duration: 1.5 }, // overlaps clip start: clamped to [2.0, 3.0]
+      { start: 5.0, end: 6.0, duration: 1.0 }, // inside clip: timeline [13.0, 14.0]
+      { start: 9.5, end: 11.0, duration: 1.5 }, // overlaps clip end: clamped to [9.5, 10.0]
+      { start: 12.0, end: 14.0, duration: 2.0 }, // completely after clip (ignored)
+    ];
+
+    const proposals = creatorSilenceService.buildProposals(clip, silences);
+
+    expect(proposals).toHaveLength(3);
+    // Overlapping start
+    expect(proposals[0].clipTimelineStart).toBe(10);
+    expect(proposals[0].clipTimelineEnd).toBe(11);
+    expect(proposals[0].selected).toBe(true);
+
+    // Completely inside
+    expect(proposals[1].clipTimelineStart).toBe(13);
+    expect(proposals[1].clipTimelineEnd).toBe(14);
+
+    // Overlapping end
+    expect(proposals[2].clipTimelineStart).toBe(17.5);
+    expect(proposals[2].clipTimelineEnd).toBe(18);
+  });
+
+  it('applyCuts splits the clip into non-silent segments and shifts subsequent clips', () => {
+    const targetClip = makeClip(); // start: 10, dur: 8, offset: 2 (timeline 10 to 18)
+    const subsequentClip = makeClip({
+      id: 'v2',
+      startTime: 18,
+      duration: 5,
+      offset: 0,
+    });
+    const subsequentTextClip: TimelineClip = {
+      id: 'caption_subsequent',
+      label: 'Later caption',
+      trackId: 'track_captions',
+      type: 'text',
+      resourceId: 'caption_res',
+      startTime: 19,
+      duration: 3,
+      offset: 0,
+      sourceClipId: 'v2',
+    };
+    const independentTextClip: TimelineClip = {
+      ...subsequentTextClip,
+      id: 'unlinked-text',
+      resourceId: 'free-text',
+      startTime: 20,
+      sourceClipId: undefined,
+    };
+    const unrelatedEarlyClip = makeClip({
+      id: 'v0',
+      startTime: 0,
+      duration: 5,
+      offset: 0,
+    });
+
+    const clips = [
+      unrelatedEarlyClip,
+      { ...targetClip, transition: { type: 'dissolve' as const, duration: 0.5 } },
+      subsequentClip,
+      subsequentTextClip,
+      independentTextClip,
+    ];
+
+    // Silence from timeline 13 to 14 (1 second pause in the middle)
+    const proposals = [
+      {
+        silence: { start: 5, end: 6, duration: 1 },
+        clipTimelineStart: 13,
+        clipTimelineEnd: 14,
+        selected: true,
+      },
+    ];
+
+    const updated = creatorSilenceService.applyCuts(clips, 'v1', proposals);
+
+    // Unrelated early clip should be unchanged
+    expect(updated.find((c) => c.id === 'v0')?.startTime).toBe(0);
+
+    // Target clip should now be split into 2 segments
+    const firstSegment = updated.find((c) => c.id === 'v1');
+    const secondSegment = updated.find((c) => c.id.startsWith('v1_cut_1'));
+
+    expect(firstSegment).toBeDefined();
+    expect(firstSegment?.startTime).toBe(10);
+    expect(firstSegment?.duration).toBe(3);
+    expect(firstSegment?.offset).toBe(2);
+    expect(firstSegment?.transition).toEqual({ type: 'dissolve', duration: 0.5 });
+
+    expect(secondSegment).toBeDefined();
+    expect(secondSegment?.startTime).toBe(13);
+    expect(secondSegment?.duration).toBe(4);
+    expect(secondSegment?.offset).toBe(6);
+    expect(secondSegment?.transition).toEqual({ type: 'cut', duration: 0 });
+
+    // Total duration removed was 1.0 second.
+    // Subsequent clips should be shifted backward by 1.0 second:
+    const updatedSubsequent = updated.find((c) => c.id === 'v2');
+    expect(updatedSubsequent?.startTime).toBe(17); // 18 - 1 = 17
+
+    const updatedText = updated.find((c) => c.id === 'caption_subsequent');
+    expect(updatedText?.startTime).toBe(18); // 19 - 1 = 18
+    expect(updated.find((c) => c.id === 'unlinked-text')?.startTime).toBe(20);
+  });
+
+  it('rebinds surviving linked captions to split segments and updates timing accurately (F2)', () => {
+    // 10s clip from timeline 0 to 10, offset 0
+    const targetClip = makeClip({
+      id: 'v_interview',
+      startTime: 0,
+      duration: 10,
+      offset: 0,
+    });
+    // Linked caption at 7-9 seconds (inside second segment after cutting 2-4s)
+    const linkedCaption: TimelineClip = {
+      id: 'caption_7_9',
+      resourceId: 'caption_7_9',
+      label: 'Linked phrase',
+      trackId: 'track_captions',
+      type: 'text',
+      sourceClipId: 'v_interview',
+      startTime: 7,
+      duration: 2,
+      offset: 0,
+      caption: {
+        id: 'cap_1',
+        text: 'Linked phrase',
+        startTime: 7,
+        endTime: 9,
+        style: 'classic',
+      },
+    };
+
+    const clips = [targetClip, linkedCaption];
+
+    // Silence from timeline 2 to 4 (remove 2 seconds)
+    const proposals = [
+      {
+        silence: { start: 2, end: 4, duration: 2 },
+        clipTimelineStart: 2,
+        clipTimelineEnd: 4,
+        selected: true,
+      },
+    ];
+
+    const updated = creatorSilenceService.applyCuts(clips, 'v_interview', proposals);
+
+    // Target split into 2 segments: [0, 2] and [2, 8]
+    const secondSegment = updated.find((c) => c.id.startsWith('v_interview_cut_1'));
+    expect(secondSegment).toBeDefined();
+    expect(secondSegment?.startTime).toBe(2);
+    expect(secondSegment?.duration).toBe(6);
+    expect(secondSegment?.offset).toBe(4);
+
+    // Linked caption at 7-9s originally was 3-5s into the second segment (4s offset)
+    // In new timeline, second segment starts at 2s, so caption should be at 2 + (7 - 4) = 5s to 7s!
+    const updatedCaption = updated.find((c) => c.id === 'caption_7_9');
+    expect(updatedCaption).toBeDefined();
+    expect(updatedCaption?.sourceClipId).toBe(secondSegment?.id);
+    expect(updatedCaption?.startTime).toBe(5);
+    expect(updatedCaption?.duration).toBe(2);
+    expect(updatedCaption?.caption?.startTime).toBe(5);
+    expect(updatedCaption?.caption?.endTime).toBe(7);
+  });
+
+  it('splits captions crossing a silence and removes captions fully inside the cut', () => {
+    const targetClip = makeClip({ id: 'v1', startTime: 0, duration: 10, offset: 0 });
+    const crossing: TimelineClip = {
+      id: 'crossing',
+      label: 'Crossing caption',
+      trackId: 'track_captions',
+      type: 'text',
+      resourceId: 'crossing',
+      sourceClipId: 'v1',
+      startTime: 1,
+      duration: 4,
+      offset: 0,
+      caption: {
+        id: 'crossing-caption',
+        text: 'Keep phrase',
+        startTime: 1,
+        endTime: 5,
+        style: 'classic',
+      },
+    };
+    const removed: TimelineClip = {
+      ...crossing,
+      id: 'removed',
+      sourceClipId: 'v1',
+      startTime: 2.5,
+      duration: 1,
+      caption: { ...crossing.caption!, id: 'removed-caption', startTime: 2.5, endTime: 3.5 },
+    };
+
+    const updated = creatorSilenceService.applyCuts([targetClip, crossing, removed], 'v1', [
+      {
+        silence: { start: 2, end: 4, duration: 2 },
+        clipTimelineStart: 2,
+        clipTimelineEnd: 4,
+        selected: true,
+      },
+    ]);
+    const crossingSegments = updated.filter(
+      (clip) => clip.id === 'crossing' || clip.id.startsWith('crossing_split_'),
+    );
+    expect(crossingSegments).toHaveLength(2);
+    expect(crossingSegments.map((clip) => [clip.startTime, clip.duration])).toEqual([
+      [1, 1],
+      [2, 1],
+    ]);
+    expect(crossingSegments.every((clip) => clip.sourceClipId && clip.caption)).toBe(true);
+    expect(updated.some((clip) => clip.id === 'removed')).toBe(false);
+  });
+});

@@ -145,4 +145,85 @@ describe('StoryBoard', () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.getByText('Timeline Route')).toBeInTheDocument();
   });
+
+  it('safely closes and redirects to ROUTES.CREATE when batch generation cannot approve legacy paid tasks', async () => {
+    const onClose = vi.fn();
+    const addToast = vi.fn();
+    const user = userEvent.setup();
+
+    const { videoGenerationService } = await import('@core/services/videoGenerationService');
+    vi.mocked(videoGenerationService.startGeneration).mockResolvedValue(null);
+
+    useAppStore.setState({
+      sbShots: [
+        {
+          id: 1,
+          type: 'video',
+          action: 'Hero leaps across rooftops',
+          camera: 'Wide',
+          characterId: 'char-1',
+          takes: [],
+          selectedTakeIndex: 0,
+          visualLink: false,
+          duration: 5,
+          transition: { type: 'cut', duration: 0 },
+        },
+      ],
+    });
+
+    render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter initialEntries={['/storyboard']}>
+          <Routes>
+            <Route
+              path="/storyboard"
+              element={<StoryBoard isOpen={true} onClose={onClose} addToast={addToast} />}
+            />
+            <Route path={ROUTES.CREATE} element={<div>Create Route</div>} />
+          </Routes>
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /batch generate/i }));
+
+    expect(videoGenerationService.startGeneration).toHaveBeenCalledWith(
+      expect.stringContaining('Hero leaps across rooftops'),
+      expect.any(Object),
+      undefined,
+      expect.any(Function),
+    );
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(screen.getByText('Create Route')).toBeInTheDocument();
+    expect(addToast).not.toHaveBeenCalledWith('All shots queued in background studio.', 'success');
+  });
+
+  it('preserves projects with more than 50 shots across unmount without truncating sbShots', () => {
+    const fiftyFiveShots = Array.from({ length: 55 }, (_, i) => ({
+      id: i + 1,
+      type: 'video' as const,
+      action: `Scene ${i + 1}`,
+      camera: 'Static',
+      characterId: 'char-1',
+      takes: [],
+      selectedTakeIndex: 0,
+      visualLink: false,
+      duration: 5,
+      transition: { type: 'cut' as const, duration: 0 },
+    }));
+
+    useAppStore.setState({ sbShots: fiftyFiveShots });
+
+    const { unmount } = render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter>
+          <StoryBoard isOpen={true} onClose={vi.fn()} addToast={vi.fn()} />
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+
+    expect(screen.getAllByTestId('shot-card')).toHaveLength(55);
+    unmount();
+    expect(useAppStore.getState().sbShots).toHaveLength(55);
+  });
 });

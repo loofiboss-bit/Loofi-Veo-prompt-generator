@@ -169,6 +169,138 @@ const extensionFor = (mimeType: string): string => {
   return subtype === 'jpeg' ? 'jpg' : subtype.replace(/[^a-zA-Z0-9]/g, '') || 'bin';
 };
 
+export interface DesktopArchiveExportResult {
+  canceled: boolean;
+  path?: string;
+  sizeBytes?: number;
+  entryCount?: number;
+  checksums?: Record<string, string>;
+}
+
+/** Stream multi-GB desktop archives directly from verified DesktopMediaStore files in Electron Main. */
+export const exportProjectToDesktopArchive = async (
+  project: Project,
+  globalAssets: Asset[],
+  options: ProjectArchiveOptions = {},
+): Promise<DesktopArchiveExportResult> => {
+  if (!window.electron?.exportProjectArchive) {
+    throw new Error('Streaming desktop archive export requires Electron runtime.');
+  }
+
+  const processedAssets: Asset[] = structuredClone(globalAssets);
+  const normalizedBible = continuityService.normalizeBible(
+    {
+      productionBible: options.productionBible ?? project.productionBible,
+      characterBank: project.characterBank,
+      locationBank: project.locationBank,
+      visualDNA: project.visualDNA,
+    },
+    Date.now(),
+  );
+  const projectWithBible = {
+    ...stripLegacyContinuityProjections(project),
+    productionBible: normalizedBible.productionBible,
+  };
+  const diskAssets: Array<{
+    id: string;
+    archivePath: string;
+    storageKey?: string;
+    base64Data?: string;
+  }> = [];
+  const exportedPaths = new Set<string>();
+
+  for (const asset of processedAssets) {
+    const filename = `${asset.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${extensionFor(asset.mimeType)}`;
+    const archivePath = `assets/${filename}`;
+    if (exportedPaths.has(archivePath)) {
+      throw new Error(`Ambiguous archive media path: ${archivePath}`);
+    }
+    exportedPaths.add(archivePath);
+
+    if (asset.storageKey) {
+      diskAssets.push({ id: asset.id, archivePath, storageKey: asset.storageKey });
+    } else if (asset.data) {
+      diskAssets.push({ id: asset.id, archivePath, base64Data: asset.data });
+    } else {
+      const resolvedBlob = await (options.resolveAssetBlob ?? resolveProjectAssetBlob)(asset);
+      if (!resolvedBlob) {
+        throw new Error(
+          `Local media missing for complete project export: ${asset.name || asset.id}`,
+        );
+      }
+      diskAssets.push({
+        id: asset.id,
+        archivePath,
+        base64Data: await blobToBase64(resolvedBlob),
+      });
+    }
+
+    asset.data = '';
+    asset.url = archivePath;
+    delete asset.storageKey;
+    delete asset.proxyUrl;
+  }
+
+  const pathMap = new Map(processedAssets.map((asset) => [asset.id, asset.url]));
+  const archive: ProjectArchiveV11 = {
+    schemaVersion: BUNDLE_SCHEMA_VERSION,
+    project: replaceMediaReferences(
+      projectWithBible,
+      new Map(globalAssets.map((asset, index) => [asset.url, processedAssets[index].url])),
+    ),
+    assets: processedAssets,
+    promptArtifacts: structuredClone(options.promptArtifacts ?? []),
+    handoffs: structuredClone(options.handoffs ?? []),
+    provenance: {
+      productionRuns: structuredClone(options.productionRuns ?? []).map((run) => ({
+        ...run,
+        shots: run.shots.map((shot) => ({
+          ...shot,
+          takes: shot.takes.map((take) => ({
+            ...take,
+            localMediaUrl: pathMap.get(take.localMediaKey ?? '') ?? take.localMediaUrl,
+          })),
+        })),
+      })),
+      productionBible: structuredClone(normalizedBible.productionBible),
+    },
+  };
+
+  const effectiveDates = Array.from(
+    new Set(MODEL_CATALOG.map((model) => model.pricing.source.effectiveDate)),
+  ).sort();
+  const manifest = {
+    format: 'loofi-project',
+    schemaVersion: BUNDLE_SCHEMA_VERSION,
+    createdAt: Date.now(),
+    appVersion: import.meta.env.VITE_APP_VERSION ?? '22.0.0',
+    projectFile: 'project.json',
+    assets: [],
+    checksums: {},
+    modelCatalogSnapshot: MODEL_CATALOG,
+    pricingEffectiveDates: effectiveDates,
+    migrationHistory: [
+      ...structuredClone(options.migrationHistory ?? []),
+      ...(normalizedBible.changed
+        ? [
+            {
+              ...normalizedBible.migration,
+              notes: normalizedBible.migration.notes,
+            },
+          ]
+        : []),
+    ],
+  };
+
+  return window.electron.exportProjectArchive({
+    archive: archive as unknown as Record<string, unknown>,
+    manifest: manifest as unknown as Record<string, unknown>,
+    diskAssets,
+    extraFiles: options.extraFiles,
+    defaultFileName: `${(project.name || 'project').replace(/[^a-zA-Z0-9_-]/g, '_')}.loofi-project`,
+  });
+};
+
 export const exportProjectToZip = async (
   project: Project,
   globalAssets: Asset[],
@@ -203,7 +335,7 @@ export const exportProjectToZip = async (
     if (asset.data || storedBlob) {
       const bytes = asset.data
         ? base64ToBytes(asset.data)
-        : base64ToBytes(await blobToBase64(storedBlob!));
+        : new Uint8Array(await storedBlob!.arrayBuffer());
       const filename = `${asset.id.replace(/[^a-zA-Z0-9_-]/g, '_')}.${extensionFor(asset.mimeType)}`;
       const archivePath = `assets/${filename}`;
       if (exportedPaths.has(archivePath))

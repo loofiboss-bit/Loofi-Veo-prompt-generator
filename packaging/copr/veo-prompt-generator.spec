@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        16.0.0
+Version:        22.1.1
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT
@@ -79,6 +79,32 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Mon Nov 16 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.1.1-1
+- Release v22.1.1: Allow Create with Gemini when Core idea is blank and clarify dark-mode placeholders.
+- Preserve existing prompt generation, manual field locks, and Fedora 44/45 x86_64 runtime requirements.
+
+* Mon Nov 16 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.1.0-1
+- Release v22.1.0: Post-v22 architecture hardening, SQLite WAL project persistence, and streaming ZIP export.
+- Harden CSP, canonical cost-approval hash binding, PaidJob FSM transitions, and FFmpeg worker isolation.
+- Support up to 1800s chunked rendering, OTIO caption markers, and Fedora 44/45 x86_64 targets.
+
+* Sat Nov 07 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.0.0-1
+- Release v22.0.0: AI Video Iteration Loop with Gemini Omni 1.2 Flash and smart version lineage.
+- Add local-first creative assistant, timeline iteration badges, and native Wayland/VA-API acceleration.
+- Support Fedora 44 and Fedora 45 x86_64 targets.
+
+* Thu Oct 29 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 21.1.0-1
+- Package Prompt Studio Gemini AI enhancement, modernized target engines and review workflows.
+- Preserve matching release checksums and explicit Fedora runtime requirements.
+
+* Wed Oct 28 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 21.0.0-1
+- Package guided delivery, coordinated saves, media guards and recovery navigation.
+- Preserve matching release checksums and explicit Fedora runtime requirements.
+
+* Sat Oct 24 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 19.0.0-1
+- Release v19.0.0: Reviewable Video Production & Deterministic Workbench.
+- Add zero-token batch local transforms, expanded cinematic AST conflict detection, Pro A/B video comparison, multi-shot batch tools, NLE frame-stepping, zero-token chapter timestamps, and hashVersion 2 paid approvals.
+
 * Thu Oct 08 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 15.0.0-1
 - Package Creator Delivery with bundled offline rendering resources.
 

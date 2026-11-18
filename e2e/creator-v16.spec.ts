@@ -5,9 +5,8 @@ import { blockExternalRequests, dismissModals } from './helpers';
 async function startLocalEditor(page: import('@playwright/test').Page) {
   await page.goto('/#/start');
   await dismissModals(page, { waitForPrompt: false });
-  await expect(
-    page.getByRole('button', { name: 'Create from your own clips', exact: true }),
-  ).toBeEnabled();
+  await page.goto('/#/start');
+  await expect(page.getByRole('button', { name: 'Use my own clips', exact: true })).toBeEnabled();
   await page.getByLabel('Choose local media', { exact: true }).setInputFiles({
     name: 'original.webm',
     mimeType: 'video/webm',
@@ -57,7 +56,9 @@ test('a stale window preserves its caption edit and offers explicit recovery', a
   await page.getByLabel('Text', { exact: true }).fill('First window saved');
   await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
   await second.getByLabel('Text', { exact: true }).fill('Second window preserved');
-  await expect(second.getByText('Conflicting changes', { exact: true })).toBeVisible();
+  await expect(
+    second.locator('#project-save-recovery').getByText('Conflicting changes', { exact: true }),
+  ).toBeVisible();
   await expect(second.getByLabel('Text', { exact: true })).toHaveValue('Second window preserved');
   await expect(second.getByRole('button', { name: 'Load latest', exact: true })).toBeEnabled();
   await second.getByRole('button', { name: 'Save as copy', exact: true }).click();
@@ -141,6 +142,15 @@ for (const language of ['sv', 'ar']) {
     await page.reload();
     await expect(page.locator('.local-editor-workspace')).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', language);
+    await expect(
+      page.getByRole('tab', { name: language === 'sv' ? /^Alla/ : /^الكل/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', {
+        name: language === 'sv' ? 'Spela in berättarröst' : 'تسجيل تعليق صوتي',
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.locator('.local-editor-delivery textarea').first()).toHaveValue(
       'Local original',
     );

@@ -7,6 +7,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
 import { useProjectStore } from '@core/store/useProjectStore';
 import type { Asset, ContinuityProfileKind } from '@core/types';
+import { MediaFilterTabs, type MediaFilterType } from '@features/media/components/MediaFilterTabs';
 
 const PROFILE_KINDS: ContinuityProfileKind[] = ['character', 'location', 'prop', 'look'];
 
@@ -69,20 +70,38 @@ const extractVideoFrame = (sourceUrl: string, seconds = 0.1): Promise<Blob> =>
 
 export function AssetsPage() {
   const { t } = useTranslation('common');
-  const assets = useAppStore((state) => state.assets);
-  const productionBible = useAppStore((state) => state.productionBible);
+  const rawAssets = useAppStore((state) => state.assets);
+  const assets = useMemo(() => rawAssets ?? [], [rawAssets]);
+  const productionBible = useAppStore((state) => state.productionBible) ?? {
+    profiles: [],
+    updatedAt: 0,
+  };
   const setProductionBible = useAppStore((state) => state.setProductionBible);
   const removeAsset = useAppStore((state) => state.removeAsset);
+  const rawClips = useAppStore((state) => state.clips);
+  const clips = useMemo(() => rawClips ?? [], [rawClips]);
   const runs = useProductionRunStore((state) => state.runs);
   const initializeRuns = useProductionRunStore((state) => state.initialize);
   const projectId = useProjectStore((state) => state.currentProjectId) ?? 'default';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<'media' | 'profiles'>('media');
+  const [mediaFilter, setMediaFilter] = useState<MediaFilterType>('all');
   const [profileName, setProfileName] = useState('');
   const [profileKind, setProfileKind] = useState<ContinuityProfileKind>('character');
   const [profileAssetId, setProfileAssetId] = useState('');
   const [promotionAssetIds, setPromotionAssetIds] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState('');
+
+  const clipUsage = useMemo(() => {
+    const counts = new Map<string, number>();
+    clips.forEach((clip) => {
+      if (clip.resourceId !== undefined && clip.resourceId !== null) {
+        const resId = String(clip.resourceId);
+        counts.set(resId, (counts.get(resId) ?? 0) + 1);
+      }
+    });
+    return counts;
+  }, [clips]);
 
   useEffect(() => {
     void initializeRuns(projectId);
@@ -140,28 +159,72 @@ export function AssetsPage() {
     [runs],
   );
 
+  const filterCounts = useMemo(() => {
+    const counts: Partial<Record<MediaFilterType, number>> = {
+      all: assets.length,
+      video: assets.filter((a) => a.type === 'video').length,
+      audio: assets.filter((a) => a.type === 'audio').length,
+      image: assets.filter((a) => a.type === 'image').length,
+      reference: assets.filter(
+        (a) => a.tags?.includes('reference') || (profileReferenceUsage.get(a.id)?.length ?? 0) > 0,
+      ).length,
+      generated: assets.filter(
+        (a) =>
+          a.tags?.includes('generated') || a.name.startsWith('veo_') || a.name.startsWith('gen_'),
+      ).length,
+    };
+    return counts;
+  }, [assets, profileReferenceUsage]);
+
+  const filteredAssets = useMemo(() => {
+    return assets.filter((asset) => {
+      if (mediaFilter === 'all') return true;
+      if (mediaFilter === 'video') return asset.type === 'video';
+      if (mediaFilter === 'audio') return asset.type === 'audio';
+      if (mediaFilter === 'image') return asset.type === 'image';
+      if (mediaFilter === 'reference') {
+        return (
+          asset.tags?.includes('reference') ||
+          (profileReferenceUsage.get(asset.id)?.length ?? 0) > 0
+        );
+      }
+      if (mediaFilter === 'generated') {
+        return (
+          asset.tags?.includes('generated') ||
+          asset.name.startsWith('veo_') ||
+          asset.name.startsWith('gen_')
+        );
+      }
+      return true;
+    });
+  }, [assets, mediaFilter, profileReferenceUsage]);
+
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
+      const isVideo = file.type.startsWith('video/');
+      const isAudio = file.type.startsWith('audio/');
+      const type: Asset['type'] = isVideo ? 'video' : isAudio ? 'audio' : 'image';
       const dataUrl = await readAsDataUrl(file);
       const data = dataUrl.split(',')[1] ?? '';
       const asset: Asset = {
         id: crypto.randomUUID(),
-        type: 'image',
+        type,
         name: file.name,
         url: dataUrl,
         data,
-        mimeType: file.type || 'image/png',
+        mimeType: file.type || (isVideo ? 'video/mp4' : isAudio ? 'audio/mpeg' : 'image/png'),
+        durationSeconds: isVideo || isAudio ? 10 : undefined,
       };
       useAppStore.getState().addAsset(asset);
-      setProfileAssetId(asset.id);
-      setStatusMessage(t('assets.uploaded', 'Local image added to the Production Bible library.'));
+      if (type === 'image') setProfileAssetId(asset.id);
+      setStatusMessage(t('assets.uploaded', 'Local asset added to the library.'));
     } catch (error) {
       setStatusMessage(
         error instanceof Error
           ? error.message
-          : t('assets.uploadFailed', 'Local image could not be read.'),
+          : t('assets.uploadFailed', 'Local asset could not be read.'),
       );
     } finally {
       event.target.value = '';
@@ -200,11 +263,18 @@ export function AssetsPage() {
   const handleRemoveAsset = (asset: Asset) => {
     const shotCount = assetUsage.get(asset.id) ?? 0;
     const profileNames = profileReferenceUsage.get(asset.id) ?? [];
-    if (shotCount > 0 || profileNames.length > 0) {
+    const clipCount = clipUsage.get(asset.id) ?? 0;
+    if (shotCount > 0 || profileNames.length > 0 || clipCount > 0) {
+      const parts: string[] = [];
+      if (clipCount > 0) parts.push(`${clipCount} timeline clip(s)`);
+      if (shotCount > 0) parts.push(`${shotCount} shot(s)`);
+      if (profileNames.length > 0)
+        parts.push(`canonical profile reference (${profileNames.join(', ')})`);
       setStatusMessage(
         t(
-          'assets.removeBlocked',
-          'This asset is still a canonical reference or shot input. Remove those bindings first.',
+          'assets.removeBlockedDetail',
+          'Cannot remove asset: it is actively used in {{reasons}}. Remove those usages first.',
+          { reasons: parts.join(', ') },
         ),
       );
       return;
@@ -374,7 +444,7 @@ export function AssetsPage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*,audio/*"
           onChange={handleUpload}
           className="hidden"
         />
@@ -631,21 +701,26 @@ export function AssetsPage() {
           aria-labelledby="assets-media-tab"
           hidden={activeTab !== 'media'}
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="media-library-title" className="text-lg font-semibold">
               {t('assets.mediaLibrary', 'Media library')}
             </h2>
-            <span className="text-xs text-slate-500">
-              {assets.length} {t('assets.files', 'files')}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">
+                {assets.length} {t('assets.files', 'files')}
+              </span>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-slate-500 hover:bg-slate-700"
+              >
+                {t('assets.addLocalMedia', 'Upload media')}
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-3 rounded-md border border-slate-700 px-3 py-2 text-sm font-semibold"
-          >
-            {t('assets.addLocalImage', 'Add local image')}
-          </button>
+          <div className="mt-3">
+            <MediaFilterTabs value={mediaFilter} onChange={setMediaFilter} counts={filterCounts} />
+          </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {assets.length === 0 ? (
               <p className="col-span-full rounded-xl border border-dashed border-slate-700 p-8 text-slate-400">
@@ -654,60 +729,82 @@ export function AssetsPage() {
                   'No assets yet. Add references or accept generated media in Create.',
                 )}
               </p>
+            ) : filteredAssets.length === 0 ? (
+              <p className="col-span-full rounded-xl border border-dashed border-slate-800 p-8 text-center text-slate-500">
+                {t('assets.noFilterMatches', 'No assets match the selected filter.')}
+              </p>
             ) : (
-              assets.map((asset) => (
-                <article
-                  key={asset.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    {asset.type === 'image' && previewUrl(asset) ? (
-                      <img
-                        src={previewUrl(asset)}
-                        alt=""
-                        className="h-12 w-12 rounded-md object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-800 text-[10px] uppercase text-slate-500">
-                        {asset.type}
-                      </span>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wide text-blue-300">{asset.type}</p>
-                      <h3 className="truncate font-semibold">{asset.name}</h3>
-                      <p className="mt-1 text-xs text-slate-500">{asset.mimeType}</p>
+              filteredAssets.map((asset) => {
+                const clipCount = clipUsage.get(asset.id) ?? 0;
+                const shotCount = assetUsage.get(asset.id) ?? 0;
+                const profileNames = profileReferenceUsage.get(asset.id) ?? [];
+                const isBlocked = clipCount > 0 || shotCount > 0 || profileNames.length > 0;
+                return (
+                  <article
+                    key={asset.id}
+                    className="rounded-xl border border-slate-800 bg-slate-900 p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      {asset.type === 'image' && previewUrl(asset) ? (
+                        <img
+                          src={previewUrl(asset)}
+                          alt=""
+                          className="h-12 w-12 rounded-md object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-800 text-[10px] uppercase text-slate-500">
+                          {asset.type}
+                        </span>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs uppercase tracking-wide text-blue-300">
+                          {asset.type}
+                        </p>
+                        <h3 className="truncate font-semibold">{asset.name}</h3>
+                        <p className="mt-1 text-xs text-slate-500">{asset.mimeType}</p>
+                      </div>
                     </div>
-                  </div>
-                  <p className="mt-3 truncate text-[10px] text-slate-600">
-                    sha {fingerprintAsset(asset)}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between gap-2 text-[10px]">
-                    <span
-                      className={
-                        (assetUsage.get(asset.id) ?? 0) > 0 ||
-                        (profileReferenceUsage.get(asset.id)?.length ?? 0) > 0
-                          ? 'text-amber-300'
-                          : 'text-slate-500'
-                      }
-                    >
-                      {(assetUsage.get(asset.id) ?? 0) > 0
-                        ? t('assets.removeWouldBreak', 'Used by {{count}} shot(s)', {
-                            count: assetUsage.get(asset.id),
-                          })
-                        : (profileReferenceUsage.get(asset.id)?.length ?? 0) > 0
-                          ? t('assets.removeCanonical', 'Canonical Bible reference')
-                          : t('assets.removeSafe', 'No continuity bindings')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAsset(asset)}
-                      className="rounded border border-slate-700 px-2 py-1 font-semibold text-slate-300 hover:border-rose-700 hover:text-rose-200"
-                    >
-                      {t('assets.remove', 'Remove')}
-                    </button>
-                  </div>
-                </article>
-              ))
+                    <p className="mt-3 truncate text-[10px] text-slate-600">
+                      sha {fingerprintAsset(asset)}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-2 text-[10px]">
+                      <span className={isBlocked ? 'text-amber-300' : 'text-slate-500'}>
+                        {clipCount > 0
+                          ? t('assets.usedInClips', 'Used in {{count}} clip(s)', {
+                              count: clipCount,
+                            })
+                          : shotCount > 0
+                            ? t('assets.removeWouldBreak', 'Used by {{count}} shot(s)', {
+                                count: shotCount,
+                              })
+                            : profileNames.length > 0
+                              ? t('assets.removeCanonical', 'Canonical Bible reference')
+                              : t('assets.removeSafe', 'Safe to remove')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAsset(asset)}
+                        disabled={isBlocked}
+                        title={
+                          isBlocked
+                            ? t(
+                                'assets.removeBlockedTooltip',
+                                'Cannot remove: used in timeline or shots',
+                              )
+                            : undefined
+                        }
+                        className={`rounded border px-2 py-1 font-semibold ${
+                          isBlocked
+                            ? 'cursor-not-allowed border-slate-800 text-slate-600'
+                            : 'border-slate-700 text-slate-300 hover:border-rose-700 hover:text-rose-200'
+                        }`}
+                      >
+                        {t('assets.remove', 'Remove')}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>

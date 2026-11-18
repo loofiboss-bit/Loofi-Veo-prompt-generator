@@ -85,11 +85,8 @@ describe('PluginSandboxService', () => {
       expect(pluginSandboxService.determineSandboxMode('untrusted', true)).toBe('direct');
     });
 
-    it('should return "restricted" for trusted external plugins', () => {
-      expect(pluginSandboxService.determineSandboxMode('trusted', false)).toBe('restricted');
-    });
-
-    it('should return "worker" for untrusted external plugins', () => {
+    it('should return "worker" for all external plugins (enforcing worker isolation)', () => {
+      expect(pluginSandboxService.determineSandboxMode('trusted', false)).toBe('worker');
       expect(pluginSandboxService.determineSandboxMode('untrusted', false)).toBe('worker');
       expect(pluginSandboxService.determineSandboxMode('unsigned', false)).toBe('worker');
     });
@@ -113,14 +110,24 @@ describe('PluginSandboxService', () => {
       expect(info.config.permissions).toEqual(['ui:sidebar']);
     });
 
-    it('should create a sandbox in restricted mode', async () => {
-      const info = await pluginSandboxService.createSandbox(
+    it('should create a sandbox in restricted mode using worker isolation', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
         'restricted-plugin',
         'exports.activate = function(ctx) {}',
         ['storage:read'],
         'restricted',
       );
 
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+      const worker = createdWorkers[createdWorkers.length - 1];
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+
+      const info = await createPromise;
       expect(info.state).toBe('ready');
       expect(info.config.mode).toBe('restricted');
     });
@@ -342,50 +349,81 @@ describe('PluginSandboxService', () => {
   // ── Restricted mode lifecycle ────────────────────────────────
 
   describe('restricted mode lifecycle', () => {
-    it('should activate a restricted sandbox with a context', async () => {
-      await pluginSandboxService.createSandbox(
+    it('should activate a restricted sandbox via worker messaging', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
         'restr-act',
         'exports.activate = function(ctx) { }',
         [],
         'restricted',
       );
 
-      await pluginSandboxService.activateSandbox('restr-act', { some: 'context' });
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+      const worker = createdWorkers[createdWorkers.length - 1];
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
+      const actPromise = pluginSandboxService.activateSandbox('restr-act', { some: 'context' });
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'activated' } }));
+      await actPromise;
 
       const info = pluginSandboxService.getSandboxInfo('restr-act');
       expect(info?.state).toBe('running');
     });
 
-    it('should deactivate a restricted sandbox', async () => {
-      await pluginSandboxService.createSandbox(
+    it('should deactivate a restricted sandbox via worker messaging', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
         'restr-deact',
         'exports.activate = function() {}; exports.deactivate = function() {}',
         [],
         'restricted',
       );
-      await pluginSandboxService.activateSandbox('restr-deact');
-      await pluginSandboxService.deactivateSandbox('restr-deact');
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+      const worker = createdWorkers[createdWorkers.length - 1];
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
+      const actPromise = pluginSandboxService.activateSandbox('restr-deact');
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'activated' } }));
+      await actPromise;
+
+      const deactPromise = pluginSandboxService.deactivateSandbox('restr-deact');
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'deactivated' } }));
+      await deactPromise;
 
       const info = pluginSandboxService.getSandboxInfo('restr-deact');
       expect(info?.state).toBe('suspended');
     });
 
     it('should destroy a restricted sandbox with dispose', async () => {
-      await pluginSandboxService.createSandbox(
+      const createPromise = pluginSandboxService.createSandbox(
         'restr-dispose',
         'exports.activate = function() {}; exports.dispose = function() {}',
         [],
         'restricted',
       );
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+      const worker = createdWorkers[createdWorkers.length - 1];
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
       await pluginSandboxService.destroySandbox('restr-dispose');
 
       expect(pluginSandboxService.getSandboxInfo('restr-dispose')).toBeUndefined();
-    });
-
-    it('should handle syntax errors in restricted source code', async () => {
-      await expect(
-        pluginSandboxService.createSandbox('bad-code', 'this is not valid js{{{', [], 'restricted'),
-      ).rejects.toThrow();
     });
   });
 
@@ -599,6 +637,186 @@ describe('PluginSandboxService', () => {
           error: expect.stringContaining('Permission denied'),
         }),
       );
+    });
+  });
+
+  // ── Security & Sandbox isolation checks ────────────────────────
+
+  describe('security and isolation', () => {
+    it('does not contain new Function in worker bootstrap code', async () => {
+      const fs = await import('fs');
+      const serviceContent = fs.readFileSync('src/core/services/pluginSandboxService.ts', 'utf-8');
+
+      // Match WORKER_BOOTSTRAP constant content
+      const workerBootstrapMatch = serviceContent.match(/const WORKER_BOOTSTRAP = `([\s\S]*?)`;/);
+      expect(workerBootstrapMatch).toBeTruthy();
+
+      const workerBootstrapCode = workerBootstrapMatch![1];
+
+      // Ensure new Function is not used inside WORKER_BOOTSTRAP
+      expect(workerBootstrapCode).not.toContain('new Function');
+      expect(workerBootstrapCode).toContain('importScripts');
+      expect(workerBootstrapCode).toContain('Blob');
+    });
+
+    it('evaluates worker code blob with correct formatting and exports initialization', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
+        'eval-plugin',
+        'exports.activate = function(ctx) {}; exports.testValue = 42;',
+        ['ui:sidebar'],
+        'worker',
+      );
+
+      await vi.waitFor(() => {
+        expect(createdWorkers.length).toBeGreaterThan(0);
+      });
+
+      const worker = createdWorkers[createdWorkers.length - 1];
+
+      await vi.waitFor(() => {
+        expect(worker.onmessage).toBeTruthy();
+      });
+
+      // Simulate worker ready
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+
+      const info = await createPromise;
+      expect(info.state).toBe('ready');
+      expect(info.config.pluginId).toBe('eval-plugin');
+    });
+
+    it('locks down worker globals and prototype constructor escape vectors', async () => {
+      const fs = await import('fs');
+      const serviceContent = fs.readFileSync('src/core/services/pluginSandboxService.ts', 'utf-8');
+      const bootstrap = serviceContent.match(/const WORKER_BOOTSTRAP = `([\s\S]*?)`;/)![1];
+
+      expect(bootstrap).toContain('Object.defineProperty(_self, _apiName');
+      expect(bootstrap).toContain("'sendBeacon'");
+      expect(bootstrap).toContain("Object.defineProperty(_proto, 'constructor'");
+      expect(bootstrap).toContain('self, globalThis');
+    });
+
+    it('enforces per-minute rate limiting in worker API router', async () => {
+      const createPromise = pluginSandboxService.createSandbox(
+        'rate-plugin',
+        'code',
+        ['ui:sidebar'],
+        'worker',
+      );
+      await vi.waitFor(() => expect(createdWorkers.length).toBeGreaterThan(0));
+      const worker = createdWorkers[createdWorkers.length - 1];
+      await vi.waitFor(() => expect(worker.onmessage).toBeTruthy());
+      worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+      await createPromise;
+
+      for (let i = 0; i < 600; i += 1) {
+        worker.onmessage!(
+          new MessageEvent('message', {
+            data: {
+              type: 'api-call',
+              callId: `c-${i}`,
+              method: 'ui.showNotification',
+              args: ['hi'],
+            },
+          }),
+        );
+      }
+      worker.postMessage.mockClear();
+      worker.onmessage!(
+        new MessageEvent('message', {
+          data: { type: 'api-call', callId: 'c-over', method: 'ui.showNotification', args: ['hi'] },
+        }),
+      );
+
+      expect(worker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'api-response',
+          callId: 'c-over',
+          error: expect.stringContaining('Rate limit exceeded'),
+        }),
+      );
+    });
+
+    it('sanitizes project DTOs and restricts data.saveProject to allowlisted metadata fields', async () => {
+      const { projectService } = await import('./projectService');
+      const getAllSpy = vi.spyOn(projectService, 'getAllProjects').mockResolvedValue([
+        {
+          id: 'proj-1',
+          name: 'Studio Project',
+          description: 'Public desc',
+          createdAt: 100,
+          modifiedAt: 200,
+          tags: ['sci-fi'],
+          status: 'active',
+          settings: { defaultModel: 'secret-internal' } as never,
+          metadata: { secretPath: '/private/path' } as never,
+        },
+      ]);
+      const updateSpy = vi.spyOn(projectService, 'updateProject').mockResolvedValue({
+        id: 'proj-1',
+        name: 'Renamed',
+        description: 'Public desc',
+        createdAt: 100,
+        modifiedAt: 300,
+        tags: ['sci-fi'],
+        status: 'active',
+        settings: {} as never,
+        metadata: {} as never,
+      });
+
+      try {
+        const createPromise = pluginSandboxService.createSandbox(
+          'dto-plugin',
+          'code',
+          ['projects:read', 'projects:write'],
+          'worker',
+        );
+        await vi.waitFor(() => expect(createdWorkers.length).toBeGreaterThan(0));
+        const worker = createdWorkers[createdWorkers.length - 1];
+        await vi.waitFor(() => expect(worker.onmessage).toBeTruthy());
+        worker.onmessage!(new MessageEvent('message', { data: { type: 'ready' } }));
+        await createPromise;
+
+        worker.onmessage!(
+          new MessageEvent('message', {
+            data: { type: 'api-call', callId: 'c-list', method: 'data.getProjects', args: [] },
+          }),
+        );
+        await vi.waitFor(() =>
+          expect(worker.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ callId: 'c-list' }),
+          ),
+        );
+        const listCall = worker.postMessage.mock.calls.find(
+          (call) => (call[0] as { callId?: string })?.callId === 'c-list',
+        )![0] as { result: Array<Record<string, unknown>> };
+        expect(listCall.result[0]).toMatchObject({ id: 'proj-1', name: 'Studio Project' });
+        expect(listCall.result[0]).not.toHaveProperty('settings');
+        expect(listCall.result[0]).not.toHaveProperty('metadata');
+
+        worker.onmessage!(
+          new MessageEvent('message', {
+            data: {
+              type: 'api-call',
+              callId: 'c-save',
+              method: 'data.saveProject',
+              args: [
+                {
+                  id: 'proj-1',
+                  name: 'Renamed',
+                  promptState: { injected: true },
+                  status: 'archived',
+                },
+              ],
+            },
+          }),
+        );
+        await vi.waitFor(() => expect(updateSpy).toHaveBeenCalled());
+        expect(updateSpy).toHaveBeenCalledWith('proj-1', { name: 'Renamed' });
+      } finally {
+        getAllSpy.mockRestore();
+        updateSpy.mockRestore();
+      }
     });
   });
 });

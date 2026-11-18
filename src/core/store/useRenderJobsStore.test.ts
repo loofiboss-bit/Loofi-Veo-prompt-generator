@@ -59,4 +59,19 @@ describe('native render job store', () => {
     expect(retry).toHaveBeenCalledWith(job.id);
     expect(useRenderJobsStore.getState().jobs).toHaveLength(2);
   });
+
+  it('unsubscribes render update listener on cleanup', async () => {
+    const unsubscribe = vi.fn();
+    useRenderJobsStore.getState().cleanup();
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        onTimelineRenderUpdate: vi.fn().mockReturnValue(unsubscribe),
+        listTimelineRenderJobs: vi.fn().mockResolvedValue([]),
+      },
+    });
+    await useRenderJobsStore.getState().hydrate();
+    useRenderJobsStore.getState().cleanup();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
 });

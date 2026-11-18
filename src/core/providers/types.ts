@@ -19,6 +19,7 @@ export type ProviderFailureKind =
   | 'safety'
   | 'network'
   | 'provider-incident'
+  | 'cancelled'
   | 'unknown';
 
 export interface ProviderConnectionResult {
@@ -39,6 +40,8 @@ export interface ProviderRequest {
   systemInstruction?: string;
   config?: Record<string, unknown>;
   costContext?: ModelCostContext;
+  /** Cancels this request without changing its cost approval or provider payload. */
+  signal?: AbortSignal;
 }
 
 export interface ProviderResponse {

@@ -14,6 +14,7 @@ import type {
   ShotContinuityBinding,
   VisualDNA,
 } from '@core/types';
+import { continuitySeedRegistry } from './continuitySeedRegistry';
 
 const BIBLE_SCHEMA_VERSION = 1 as const;
 const SNAPSHOT_SCHEMA_VERSION = 1 as const;
@@ -229,6 +230,7 @@ export interface CompileShotInput {
   bible: ProductionBible;
   assets: Asset[];
   now?: number;
+  projectId?: string;
 }
 
 const defaultBinding = (): ShotContinuityBinding => ({
@@ -441,7 +443,13 @@ class ContinuityService {
     ).productionBible;
   }
 
-  compileShot({ shot, bible, assets, now = Date.now() }: CompileShotInput): CompileShotResult {
+  compileShot({
+    shot,
+    bible,
+    assets,
+    now = Date.now(),
+    projectId,
+  }: CompileShotInput): CompileShotResult {
     const hasBinding = Boolean(shot.continuityBinding);
     const binding = shot.continuityBinding ?? defaultBinding();
     const profileIds = Array.from(
@@ -497,6 +505,30 @@ class ContinuityService {
     addLocks(bible.lockedDefaults, 'project defaults');
     validProfiles.forEach((profile) => addLocks(profile.lockedAttributes, profile.name));
     addLocks(binding.locks, 'shot binding');
+
+    const registryLocks = profileIds.flatMap((id) =>
+      continuitySeedRegistry.listLocksForProfile(id),
+    );
+    const seedScopeId = projectId ?? 'default-project';
+    const seedBinding = registryLocks.length
+      ? continuitySeedRegistry.bindShot(
+          seedScopeId,
+          shot.id,
+          registryLocks.map((lock) => lock.id),
+        )
+      : null;
+    if (seedBinding) {
+      for (const lock of seedBinding.locks) {
+        addLocks(lock.lockedAttributes, `registry:${lock.name}`);
+      }
+    }
+    const resolvedSeed =
+      shot.generationRequest.seed ??
+      (registryLocks.length > 0 ? registryLocks[0].seed : undefined) ??
+      continuitySeedRegistry.generateSeed({
+        projectId: seedScopeId,
+        shotId: shot.id,
+      });
 
     const profileReferenceAssetIds = Array.from(
       new Set(
@@ -641,6 +673,7 @@ class ContinuityService {
     return {
       request: {
         ...shot.generationRequest,
+        seed: resolvedSeed,
         prompt: compiledPrompt,
         referenceAssetIds: selectedReferenceAssetIds,
       },

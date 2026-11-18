@@ -1,10 +1,11 @@
 /**
- * CostBadge — shows estimated cost before an API call and actual cost after.
+ * CostBadge — shows estimated cost before an API call and estimated recorded spending after.
  * Displays as a small inline badge near the generate button.
  *
  * @module shared/components/resilience/CostBadge
  */
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCostStore } from '@core/store/useCostStore';
 
 interface CostBadgeProps {
@@ -21,11 +22,19 @@ const formatCost = (usd: number): string => {
 };
 
 export const CostBadge: React.FC<CostBadgeProps> = ({ className = '' }) => {
+  const { t } = useTranslation('creator');
+  const persistenceError = useCostStore((state) => state.persistenceError);
+  useEffect(() => {
+    void useCostStore
+      .getState()
+      .initialize()
+      .catch(() => {});
+  }, []);
   const lastEstimate = useCostStore((s) => s.lastEstimate);
   const withinBudget = useCostStore((s) => s.withinBudget);
   const lifetimeCost = useCostStore((s) => s.lifetimeCost);
 
-  if (!lastEstimate && lifetimeCost === 0) return null;
+  if (!lastEstimate && lifetimeCost === 0 && !persistenceError) return null;
 
   return (
     <div
@@ -35,7 +44,11 @@ export const CostBadge: React.FC<CostBadgeProps> = ({ className = '' }) => {
       title={
         lastEstimate
           ? `Estimated: ${formatCost(lastEstimate.estimatedCostUsd)} (${lastEstimate.modelId})`
-          : `Session total: ${formatCost(lifetimeCost)}`
+          : t('costs.estimatedTotal', {
+              defaultValue:
+                'Estimated recorded cost: {{cost}}. Actual provider billing is not available.',
+              cost: formatCost(lifetimeCost),
+            })
       }
     >
       {/* Cost icon */}
@@ -53,9 +66,29 @@ export const CostBadge: React.FC<CostBadgeProps> = ({ className = '' }) => {
       {lastEstimate ? (
         <span>~{formatCost(lastEstimate.estimatedCostUsd)}</span>
       ) : (
-        <span>{formatCost(lifetimeCost)}</span>
+        <span>~{formatCost(lifetimeCost)}</span>
       )}
 
+      {persistenceError && (
+        <>
+          <span role="status" className="sr-only">
+            {t(
+              'costs.storageFailed',
+              'Cost history is not saved. Retry when storage is available.',
+            )}
+          </span>
+          <span
+            className="text-amber-400 text-[10px]"
+            aria-hidden="true"
+            title={t(
+              'costs.storageFailed',
+              'Cost history is not saved. Retry when storage is available.',
+            )}
+          >
+            ⚠
+          </span>
+        </>
+      )}
       {!withinBudget && (
         <span className="text-amber-400 text-[10px]" title="Over monthly budget">
           ⚠

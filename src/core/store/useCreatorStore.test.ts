@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('@core/services/projectDocumentService', () => ({
   projectDocumentService: { load: mocks.load },
+  setDocumentRegisterCallback: vi.fn(),
 }));
 vi.mock('@core/services/projectTransferService', () => ({ hydrateProjectMedia: mocks.hydrate }));
 vi.mock('@core/store/useProjectStore', () => ({

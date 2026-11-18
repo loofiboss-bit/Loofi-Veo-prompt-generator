@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
+import { storeMediator } from './mediator';
 import { useExternalStudioResultStore } from './useExternalStudioResultStore';
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
@@ -7,24 +8,15 @@ const mocks = vi.hoisted(() => ({
   importVideo: vi.fn(),
   confirm: vi.fn(),
   accept: vi.fn(),
-  current: { currentProjectId: 'p1' },
-  app: { assets: [], addAsset: vi.fn(), updateAsset: vi.fn() },
-  setApp: vi.fn(),
 }));
 vi.mock('@core/services/externalStudioResultService', () => ({
   externalStudioResultService: mocks,
 }));
-vi.mock('@core/store/useProjectStore', () => ({
-  useProjectStore: { getState: () => mocks.current },
-}));
-vi.mock('@core/store/useAppStore', () => ({
-  useAppStore: { getState: () => mocks.app, setState: mocks.setApp },
-}));
 beforeEach(() => {
   vi.clearAllMocks();
+  storeMediator.clear();
   mocks.list.mockResolvedValue([]);
   mocks.resolveAsset.mockResolvedValue(null);
-  mocks.current.currentProjectId = 'p1';
   useExternalStudioResultStore.setState({
     projectId: null,
     results: [],
@@ -42,8 +34,8 @@ describe('useExternalStudioResultStore', () => {
           release = resolve;
         }),
     );
+    const emitSpy = vi.spyOn(storeMediator, 'emit');
     const pending = useExternalStudioResultStore.getState().hydrate('p1');
-    mocks.current.currentProjectId = 'p2';
     await useExternalStudioResultStore.getState().hydrate('p2');
     release([{ id: 'old', projectId: 'p1', assetId: 'a' } as ExternalStudioResultV1]);
     await pending;
@@ -52,7 +44,10 @@ describe('useExternalStudioResultStore', () => {
       results: [],
       pending: false,
     });
-    expect(mocks.app.addAsset).not.toHaveBeenCalled();
+    expect(emitSpy).not.toHaveBeenCalledWith(
+      'studioResult:assetsSynchronized',
+      expect.objectContaining({ projectId: 'p1' }),
+    );
   });
   it('blocks duplicate mutations while retaining actionable errors', async () => {
     await useExternalStudioResultStore.getState().hydrate('p1');
@@ -72,5 +67,86 @@ describe('useExternalStudioResultStore', () => {
       pending: false,
       error: 'Disk full',
     });
+  });
+
+  it('emits single studioResult:assetsSynchronized without duplicate per-asset loops on hydrate', async () => {
+    const batchHandler = vi.fn();
+    const legacyPerAssetHandler = vi.fn();
+    const unsubBatch = storeMediator.on('studioResult:assetsSynchronized', batchHandler);
+    const unsubLegacy = storeMediator.on('asset:upserted', legacyPerAssetHandler);
+
+    const mockResult = {
+      id: 'res-1',
+      projectId: 'p1',
+      assetId: 'asset-1',
+      assetName: 'Render Take 1',
+      mimeType: 'video/mp4',
+    } as ExternalStudioResultV1;
+
+    mocks.list.mockResolvedValueOnce([mockResult]);
+    mocks.resolveAsset.mockResolvedValueOnce(null); // triggers fallback asset creation
+
+    await useExternalStudioResultStore.getState().hydrate('p1');
+
+    expect(batchHandler).toHaveBeenCalledOnce();
+    expect(batchHandler).toHaveBeenCalledWith({
+      projectId: 'p1',
+      assets: [
+        expect.objectContaining({
+          id: 'asset-1',
+          storageKey: 'asset-1',
+          groupId: 'p1',
+          name: 'Render Take 1',
+          type: 'video',
+        }),
+      ],
+    });
+    expect(legacyPerAssetHandler).not.toHaveBeenCalled();
+
+    unsubBatch();
+    unsubLegacy();
+  });
+
+  it('emits only canonical timeline:synced when accepting a result', async () => {
+    const timelineHandler = vi.fn();
+    const duplicateHandler = vi.fn();
+    const unsub = storeMediator.on('timeline:synced', timelineHandler);
+    const unsubDuplicate = storeMediator.on('studioResult:timelineAccepted', duplicateHandler);
+
+    await useExternalStudioResultStore.getState().hydrate('p1');
+
+    const acceptedProject = {
+      storyboard: {
+        shots: [{ id: 1, action: 'Updated Shot' }],
+        timeline: {
+          tracks: [{ id: 'video_main', label: 'Video' }],
+          clips: [{ id: 'clip-1', trackId: 'video_main' }],
+        },
+      },
+    };
+
+    mocks.accept.mockImplementationOnce(
+      async (
+        _projId: string,
+        _resId: string,
+        _shotId: number | undefined,
+        _isCurrent: () => boolean,
+      ) => {
+        return acceptedProject;
+      },
+    );
+
+    await useExternalStudioResultStore.getState().accept('res-1', 1);
+
+    expect(timelineHandler).toHaveBeenCalledOnce();
+    expect(timelineHandler).toHaveBeenCalledWith({
+      shots: acceptedProject.storyboard.shots,
+      tracks: acceptedProject.storyboard.timeline.tracks,
+      clips: acceptedProject.storyboard.timeline.clips,
+    });
+    expect(duplicateHandler).not.toHaveBeenCalled();
+
+    unsub();
+    unsubDuplicate();
   });
 });

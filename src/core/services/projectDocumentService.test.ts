@@ -231,4 +231,54 @@ describe('projectDocumentService persistence', () => {
     );
     expect(mocks.atomic).not.toHaveBeenCalled();
   });
+  it('migrates legacy unversioned documents to schemaVersion 18 on load and stamps it on save', async () => {
+    mocks.get.mockResolvedValue({
+      id: 'legacy-doc',
+      name: 'Old Western',
+      lastModified: 1700000000,
+    });
+    const loaded = await projectDocumentService.load('legacy-doc');
+    expect(loaded?.schemaVersion).toBe(18);
+    expect(loaded?.mutationVersion).toBe(0);
+
+    const savingDoc = { id: 'saving-doc', name: 'Saving Test', documentRevision: 0 } as Project;
+    await projectDocumentService.save(savingDoc);
+    expect(savingDoc.schemaVersion).toBe(18);
+    expect(mocks.set.mock.calls.at(-1)![1].schemaVersion).toBe(18);
+  });
+
+  it('commits desktop saves via SQLite commitProjectDelta and triggers snapshot every 10 revisions', async () => {
+    const commitProjectDelta = vi.fn().mockResolvedValue({
+      projectId: 'a',
+      documentRevision: 10,
+      schemaVersion: 18,
+      entityChanges: 1,
+      updatedAt: 100,
+    });
+    const snapshotProjectDbBackup = vi
+      .fn()
+      .mockResolvedValue({ id: 'snap-10.sqlite', sizeBytes: 1024 });
+    const openProjectDb = vi
+      .fn()
+      .mockResolvedValue({ ...project, documentRevision: 10, name: 'From SQLite' });
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: {
+        commitProjectDelta,
+        snapshotProjectDbBackup,
+        openProjectDb,
+        saveProjectBackup: mocks.backup,
+      },
+    });
+
+    mocks.get.mockResolvedValueOnce({ ...project, documentRevision: 9 });
+    await projectDocumentService.save({ ...project, documentRevision: 9 });
+    expect(commitProjectDelta).toHaveBeenCalledTimes(1);
+    expect(snapshotProjectDbBackup).toHaveBeenCalledWith('a');
+    expect(mocks.backup).not.toHaveBeenCalled();
+
+    mocks.get.mockResolvedValue({ ...project, documentRevision: 5, name: 'Older IDB' });
+    const loaded = await projectDocumentService.load('a');
+    expect(loaded?.name).toBe('From SQLite');
+  });
 });

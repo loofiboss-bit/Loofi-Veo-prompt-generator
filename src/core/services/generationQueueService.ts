@@ -309,10 +309,16 @@ class GenerationQueueService {
 
       // Record cost on completion
       if (item.costEstimate) {
+        const payload = item.payload as { id?: unknown; costApproval?: unknown } | undefined;
+        const sourceJobId =
+          payload?.costApproval && typeof payload.id === 'string'
+            ? payload.id
+            : `queue:${item.id}:attempt:${item.retryCount}`;
         item.actualCost = costTrackingService.recordEstimatedCost(
           item.costEstimate,
           `${item.type}-generation`,
           item.label,
+          sourceJobId,
         );
       }
 

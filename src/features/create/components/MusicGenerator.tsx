@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getModel } from '@core/models/catalog';
+import { getModel, MODEL_CATALOG, type ModelCatalogEntry } from '@core/models/catalog';
 import { musicGenerationService } from '@core/services/musicGenerationService';
 import { useAppStore } from '@core/store/useAppStore';
 import type { LyriaModelId, MusicGenerationTask, MusicImageInput } from '@core/types';
@@ -41,6 +41,20 @@ export function MusicGenerator() {
     () => musicGenerationService.estimateMaximumCharge(modelId),
     [modelId],
   );
+
+  const lyriaModelOptions = useMemo(() => {
+    return MODEL_CATALOG.filter((entry): entry is ModelCatalogEntry & { id: LyriaModelId } =>
+      entry.capabilities.operations.includes('music'),
+    ).map((entry) => {
+      const duration = entry.capabilities.fixedDurationSeconds
+        ? ` · ${entry.capabilities.fixedDurationSeconds}s`
+        : '';
+      return {
+        id: entry.id as LyriaModelId,
+        label: `${entry.displayName}${duration}`,
+      };
+    });
+  }, []);
 
   const recordCompletedAsset = useCallback(
     (job: MusicGenerationTask) => {
@@ -135,8 +149,11 @@ export function MusicGenerator() {
               onChange={(event) => handleModelChange(event.target.value as LyriaModelId)}
               className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             >
-              <option value="lyria-3-clip-preview">Lyria 3 Clip · 30s</option>
-              <option value="lyria-3-pro-preview">Lyria 3 Pro</option>
+              {lyriaModelOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <label className="block text-sm text-slate-300">

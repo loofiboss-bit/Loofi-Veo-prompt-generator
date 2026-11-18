@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-15T12:57:59.353468+00:00",
+  "httpStatus": 200,
+  "parentPresent": true,
+  "resourceNamePresent": false,
+  "interpretation": "purged",
+  "reference": "https://docs.cloud.google.com/api-keys/docs/reference/rest/v2/keys/lookupKey",
+  "credentialValueIncluded": false
+}

@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@core/services/gemini/geminiAudioService', () => ({ transcribeAudio: vi.fn() }));
 import { transcribeAudio } from '@core/services/gemini/geminiAudioService';
 import {
+  calculateSpeechIntervals,
   creatorCaptionService,
   getCreatorCaptionOverlaps,
+  getCreatorCaptionReviewIssues,
   exportCreatorSrt,
   importCreatorSrt,
   validateCreatorCaptions,
@@ -71,5 +73,76 @@ describe('caption review and export order', () => {
   });
   it('does not report touching captions as overlapping', () => {
     expect(getCreatorCaptionOverlaps([caption('a', 0, 2), caption('b', 2, 3)])).toEqual([]);
+  });
+  it('reports optional reading and overlap advice using graphemes and strict thresholds', () => {
+    const captions = [
+      { ...caption('a', 0, 2), text: '👩‍👩‍👧‍👦'.repeat(42) },
+      { ...caption('b', 1, 4), text: 'a'.repeat(43) },
+      { ...caption('c', 4, 5), text: 'a'.repeat(20) },
+    ];
+    expect(getCreatorCaptionReviewIssues(captions)).toEqual([
+      { captionId: 'a', code: 'overlap' },
+      { captionId: 'a', code: 'reading-speed' },
+      { captionId: 'b', code: 'overlap' },
+      { captionId: 'b', code: 'line-length' },
+    ]);
+    expect(captions[1].text).toBe('a'.repeat(43));
+  });
+});
+
+describe('local offline caption generation', () => {
+  it('calculates non-silent speech intervals accurately', () => {
+    const silences = [
+      { start: 0, end: 0.5 },
+      { start: 2.0, end: 2.5 },
+      { start: 4.8, end: 5.0 },
+    ];
+    const intervals = calculateSpeechIntervals({
+      silenceIntervals: silences,
+      rangeStart: 0,
+      rangeEnd: 5.0,
+      minSpeechDuration: 0.3,
+      maxSegmentDuration: 4.0,
+    });
+
+    expect(intervals).toHaveLength(2);
+    expect(intervals[0]).toEqual({ start: 0.5, end: 2.0 });
+    expect(intervals[1]).toEqual({ start: 2.5, end: 4.8 });
+  });
+
+  it('creates honest empty text blocks based on detected silences', async () => {
+    const originalElectron = window.electron;
+    window.electron = {
+      detectTimelineSilence: vi.fn().mockResolvedValue([
+        { start: 0, end: 1.0 },
+        { start: 3.5, end: 4.0 },
+      ]),
+    } as unknown as NonNullable<Window['electron']>;
+
+    try {
+      const captions = await creatorCaptionService.createTimeBlocks({
+        mediaId: 'test-media',
+        clipOffset: 0,
+        clipDuration: 6.0,
+      });
+
+      expect(captions.length).toBeGreaterThan(0);
+      expect(captions[0].startTime).toBe(1.0);
+      expect(captions[0].endTime).toBe(3.5);
+      expect(captions[0].text).toBe('');
+    } finally {
+      window.electron = originalElectron;
+    }
+  });
+
+  it('aligns provided script lines to speech intervals', async () => {
+    const captions = await creatorCaptionService.createTimeBlocks({
+      clipOffset: 0,
+      clipDuration: 4.0,
+      transcriptScript: 'Hello world!\nWelcome to Creator Studio.',
+    });
+
+    expect(captions.length).toBeGreaterThan(0);
+    expect(captions[0].text).toBe('Hello world!');
   });
 });

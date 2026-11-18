@@ -15,6 +15,10 @@ import { parseAndThrowApiError } from '@core/utils/apiErrors';
 import { buildGeminiPrompt } from '../promptBuilder';
 import { getAiClientAsync, cleanJson, resilientCall, getPromptModel } from './aiClient';
 import { streamGenerateContent, type StreamChunkCallback } from '@core/utils/streaming';
+import { isRetryableError } from '@core/utils/retry';
+import { modelFallbackService } from '../modelFallbackService';
+import { resolveProviderModelId } from '@core/models/catalog';
+import { logger } from '../loggerService';
 
 // ---------------------------------------------------------------------------
 // Domain-specific parameter interfaces (replaces `any` params)
@@ -74,7 +78,10 @@ export interface ActionFlowParams {
 // Core prompt generation
 // ---------------------------------------------------------------------------
 
-export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptResponse> => {
+export const generateVeoPrompt = async (
+  state: PromptState,
+  signal?: AbortSignal,
+): Promise<VeoPromptResponse> => {
   const ai = await getAiClientAsync();
   const constructedPrompt = buildGeminiPrompt(state);
 
@@ -85,41 +92,65 @@ export const generateVeoPrompt = async (state: PromptState): Promise<VeoPromptRe
     tools.push({ googleSearch: {} });
   }
 
-  const modelName = getPromptModel(state.model);
+  const initialModel = getPromptModel(state.model);
+  const chain = modelFallbackService.getChain('prompt-generation');
+  const candidateModels = chain?.models?.length
+    ? [
+        initialModel,
+        ...chain.models.map((id) => resolveProviderModelId(id)).filter((m) => m !== initialModel),
+      ]
+    : [initialModel];
 
-  try {
-    const response = await resilientCall(
-      () =>
-        ai.models.generateContent({
-          model: modelName,
-          contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
-            Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
+  let lastError: unknown;
 
-            User Input Structure:
-            ${constructedPrompt}
+  for (const modelName of candidateModels) {
+    if (signal?.aborted) throw new DOMException('The AI request was cancelled.', 'AbortError');
+    try {
+      const response = await resilientCall(
+        () =>
+          ai.models.generateContent({
+            model: modelName,
+            contents: `You are an expert cinematic prompt engineer for Google Flow, Veo 3.1, and Gemini Omni 1.1 Flash video workflows.
+              Refine the following user inputs into a production-ready prompt optimized for modern generative video models.
 
-            Requirements:
-            1. Consolidate into a cohesive paragraph.
-            2. Enhance visual descriptions (lighting, texture, camera movement).
-            3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
-            4. Keep it under 300 words unless the input is a scene pack.
-            `,
-          config: {
-            tools: tools.length > 0 ? tools : undefined,
-            toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
-          },
-        }),
-      { endpoint: 'gemini-prompt', model: modelName },
-    );
+              User Input Structure:
+              ${constructedPrompt}
 
-    return {
-      prompt: response.text || '',
-      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
-    };
-  } catch (error) {
-    parseAndThrowApiError(error);
-    return { prompt: constructedPrompt };
+              Optimization Requirements:
+              1. Physical Action & Motion: Describe explicit motion trajectories, speed, subject behavior, and physical interactions.
+              2. Cinematography & Optics: Specify precise camera movement (dolly, track, boom, pan, or static), lens framing, and depth of field.
+              3. Lighting & Atmosphere: Detail light sources, color temperature, atmospheric density, and environmental depth.
+              4. Acoustic Synchrony: Provide ambient soundscapes, Foley details, and vocal cues for native synchronized audio generation.
+              5. Modern Model Rules:
+                 - For Image-to-Video: Focus strictly on motion and temporal progression; do not re-describe elements already visible in the source image.
+                 - Avoid obsolete buzzwords (e.g. "photorealistic", "8k", "octane render").
+                 - Consolidate into a cohesive cinematic description under 300 words unless generating a full scene pack.
+              `,
+            config: {
+              tools: tools.length > 0 ? tools : undefined,
+              toolConfig: Object.keys(toolConfig).length > 0 ? toolConfig : undefined,
+              abortSignal: signal,
+            },
+          }),
+        { endpoint: 'gemini-prompt', model: modelName, signal },
+      );
+
+      return {
+        prompt: response.text || '',
+        groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks,
+      };
+    } catch (error) {
+      if (signal?.aborted || (error instanceof Error && error.name === 'AbortError')) throw error;
+      lastError = error;
+      logger.warn(`[geminiPromptService] Model ${modelName} failed prompt generation:`, error);
+      if (!isRetryableError(error)) {
+        break;
+      }
+    }
   }
+
+  parseAndThrowApiError(lastError);
+  return { prompt: constructedPrompt };
 };
 
 // ---------------------------------------------------------------------------
@@ -159,17 +190,21 @@ export const generateVeoPromptStreaming = async (
       ai,
       {
         model: modelName,
-        contents: `You are an expert prompt engineer for Google Flow and Veo video workflows.
-            Refine the following user inputs into a Flow/Veo-ready prompt optimized for video planning and generation.
+        contents: `You are an expert cinematic prompt engineer for Google Flow, Veo 3.1, and Gemini Omni 1.1 Flash video workflows.
+            Refine the following user inputs into a production-ready prompt optimized for modern generative video models.
 
             User Input Structure:
             ${constructedPrompt}
 
-            Requirements:
-            1. Consolidate into a cohesive paragraph.
-            2. Enhance visual descriptions (lighting, texture, camera movement).
-            3. Include cinematic aesthetics, shot control, reference-image notes, and audio readiness when relevant.
-            4. Keep it under 300 words unless the input is a scene pack.
+            Optimization Requirements:
+            1. Physical Action & Motion: Describe explicit motion trajectories, speed, subject behavior, and physical interactions.
+            2. Cinematography & Optics: Specify precise camera movement (dolly, track, boom, pan, or static), lens framing, and depth of field.
+            3. Lighting & Atmosphere: Detail light sources, color temperature, atmospheric density, and environmental depth.
+            4. Acoustic Synchrony: Provide ambient soundscapes, Foley details, and vocal cues for native synchronized audio generation.
+            5. Modern Model Rules:
+               - For Image-to-Video: Focus strictly on motion and temporal progression; do not re-describe elements already visible in the source image.
+               - Avoid obsolete buzzwords (e.g. "photorealistic", "8k", "octane render").
+               - Consolidate into a cohesive cinematic description under 300 words unless generating a full scene pack.
             `,
         config: {
           tools: tools.length > 0 ? tools : undefined,

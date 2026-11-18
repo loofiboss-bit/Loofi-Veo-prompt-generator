@@ -2,16 +2,21 @@ import { expect, test } from '@playwright/test';
 import { blockExternalRequests } from './helpers';
 
 test.describe('Local first-run onboarding', () => {
-  test('starts creating locally in one step with no provider setup', async ({ page }) => {
+  test('offers the own-clips start path without provider setup', async ({ page }) => {
     await blockExternalRequests(page);
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Start creating', exact: true })).toBeVisible();
-    await page.getByRole('radio', { name: 'Use my own idea or media' }).check();
+    await page.getByRole('radio', { name: 'Use my own clips' }).check();
     await page.getByRole('button', { name: 'Start creating', exact: true }).click();
-    await expect(page.getByLabel(/^Core idea/)).toBeVisible();
-    await page.getByLabel(/^Core idea/).fill('A local sunrise scene');
-    await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
-    await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(/sunrise/i);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Your next creative moment' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use my own clips', exact: true })).toBeEnabled();
+    await expect(page.getByLabel('Choose local media', { exact: true })).toBeAttached();
+    await expect(
+      page.getByRole('button', { name: 'Open video prompts', exact: true }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole('button', { name: 'Open music and lyrics', exact: true }),
+    ).toBeEnabled();
+    await expect(page.getByLabel('API key', { exact: true })).toHaveCount(0);
   });
 });

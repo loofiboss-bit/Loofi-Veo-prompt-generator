@@ -28,7 +28,7 @@ describe('VideoVariantCard', () => {
     await user.click(screen.getByText('Copy options'));
     expect(screen.getByRole('button', { name: /Copy negative/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy checklist/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Copy handoff/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Copy full package/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Generate in app/i })).toBeInTheDocument();
   });
 
@@ -38,6 +38,26 @@ describe('VideoVariantCard', () => {
 
     await user.click(screen.getByRole('button', { name: /Copy prompt/i }));
     expect(onCopy).toHaveBeenCalledWith(MOCK_VARIANT.copyPrompt, 'Copied.');
+  });
+
+  it('compares changed prompt, negative prompt and settings against the primary', async () => {
+    const { user } = render(
+      <VideoVariantCard
+        variant={{
+          ...MOCK_VARIANT,
+          prompt: 'New prompt',
+          negativePrompt: 'New negative',
+          settingsChecklist: ['Duration: 4s'],
+        }}
+        compareBaseline={MOCK_VARIANT}
+        primary
+        onCopy={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByText('Compare with Primary'));
+    expect(screen.getByText('+ New prompt')).toBeVisible();
+    expect(screen.getByText('+ New negative')).toBeVisible();
+    expect(screen.getByText('+ Duration: 4s')).toBeVisible();
   });
 
   it('collapses and expands on button click', async () => {

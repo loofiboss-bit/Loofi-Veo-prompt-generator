@@ -7,6 +7,289 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [22.1.1] - 2026-11-16
+
+### Fixed
+
+- **Prompt Studio**: Allow **Create with Gemini** to generate an initial concrete scene premise (`idea`), fill editable scene details, and produce all three prompt variants even when **Core idea** is left blank, with atomic undo tracking (`origins.idea = 'ai'`).
+- **Studio Placeholder Clarity**: Dimmed `.studio-workspace ::placeholder` opacity (`0.65`) and added localized example prefixes across all 6 studio languages (`ar`, `en`, `es`, `fr`, `ja`, `sv`) so empty dark-mode placeholders are clearly distinguishable from typed input.
+
+## [22.1.0] - 2026-11-16
+
+### Added
+
+- **Post-v22 Architecture Hardening & Persistence**: Add `node:sqlite` WAL project persistence (`ProjectDatabase` with atomic delta commits, CAS conflict detection, legacy migration, and `VACUUM INTO` snapshot backups), streaming main-process ZIP archiving (`archive-ipc`), dedicated `usePlaybackStore` playhead store, `bakeEffects` + 40-clip chunked FFmpeg segmentation up to 1800s, OTIO caption `Marker.1` + `exportOtioWithSrt`, and offline creator asset SHA-256 verification (`creator-assets:check`).
+
+### Changed
+
+- Enforce strict CSP (externalizing `theme-init.js` and `sw-register.js`), canonical cost-approval hash binding, PaidJob FSM transitions, preflight aspect/duration/continuity gates, plugin project sanitization, `useShallow` timeline/AppRuntime selector isolation, Vite chunk deduplication, ratcheted coverage gates (`61/50/58/62`), strict CI build reproducibility checks (`exit 1`), and `.gitattributes` `export-ignore` hygiene.
+
+### Fixed
+
+- Remove legacy tracked `assets/videos/creator-v15-demo.mp4` binary, resolve `creatorDeliveryService` partial `crops` guard, eliminate unused store history duplication and stale project-switch dirty flags, install checksum-pinned Gitleaks in `validate.yml`/`build.yml` CI workflows for `secrets:check`, and stabilize E2E visual regression / performance budget thresholds.
+
+## [22.0.0] - 2026-11-07
+
+### Added
+
+- **AI Video Iteration & Creative Loop**: Natural language, multi-turn conversational video modifications and clip extensions powered by Gemini Omni 1.2 Flash (`gemini-omni-1.2-flash`, with `gemini-omni-1.1-flash` backwards compatibility) via the stateful Interactions API (`previous_interaction_id` and `response_format`). Supports 3–15s iterative edits, +3–10s clip extensions, up to 6 reference images, audio preservation/regeneration toggles, Turn-1 source video byte forwarding, and SHA-256 idempotency request protection.
+- **Smart Version Control & Lineage**: Automatically archives video iterations as strictly sequential version lineage trees (`v1`, `v2`, `v3 ← v1`) persisted in `DesktopMediaStore` (`loofi-media://`) and IndexedDB with automatic `Blob` ObjectURL hydration. Integrates arbitrary A/B version comparison (`VideoResultCompare`) with instruction diff summaries and self-healing, non-destructive Storyboard & Timeline synchronization.
+- **Intelligent Creative Assistant (Local-First + On-Demand AI)**: Zero-latency local heuristic advisor providing immediate camera, lighting, Storyboard continuity, and goal deviation suggestions with zero automatic API calls, paired with an explicit **Deep AI Analysis** button for voluntary Gemini/Ollama analysis.
+- **Unified Creative Workflow**: Connects Prompt Studio, External Results, Video Iteration, Storyboard, and Timeline into a cohesive loop—including automatic Storyboard scene creation when empty, global `Asset` catalog registration (`storageKey` for OTIO export), and direct navigation to Timeline.
+- **Timeline Version Badges**: Displays active iteration version badges (`v2`, `v3`) on timeline clips and storyboard takes.
+- **Fedora KDE / Wayland Performance Optimization**: Native Wayland/Ozone initialization (`--ozone-platform-hint=auto`, `WaylandWindowDecorations`, `VaapiVideoDecodeLinuxGL`), asynchronous off-main-thread Base64-to-Blob decoding, and strict `<video>` hardware decoder buffer cleanup on unmount.
+- One-request Prompt Studio scene development and three target-specific variants, applied directly
+  with durable checkpoints and undo; explicit per-field AI protection and regeneration.
+- Progressive camera/optics/composition, character-bank Visual DNA, environment, sound and style
+  controls reusing the original generator's options and presets.
+- Current Flow Lite/Fast/Quality, Omni 1.2 / 1.1, Kling 4.0, Runway Gen-4.5, Ray3.2, Wan 3.0, MiniMax-H3
+  and Suno v6 family profiles with dated official sources.
+
+### Changed
+
+- Share model profiles between AI instructions, offline compilation, Arena, controls and validation.
+  Preserve non-native sound as post-production notes and omit unsupported negative fields.
+- Preserve creative details through legacy history/template adapters, revisions and project reloads;
+  save AI settings and source/protection metadata with the project.
+- Remove retired Sora and Gemini API Veo Preview bindings from new generation; preserve stored
+  text and existing operation recovery without silently migrating providers.
+
+### Fixed
+
+- Validate structured AI responses at runtime; preserve manual strings, dialogue and locked lyrics,
+  including music expansion. Ignore cancelled or stale responses without hidden fallback requests.
+- Persist AI input and output atomically before display; retain prior content on checkpoint/write
+  failure. Replace obsolete target-tag transforms and undocumented Suno style truncation.
+
+## [21.1.0] - 2026-10-29
+
+### Added
+
+- Integrate Gemini AI expansion in Prompt Studio for automatic scene breakdown (subject, action,
+  environment, camera, lighting, style, audio/foley, dialogue, negative prompt) and Suno music
+  idea expansion (genre, mood, tempo, instruments, vocals, structured lyrics).
+- Add StudioAiControlBar with model selection (Gemini 3.8 Flash vs Gemini 4 Argon), cinematic style
+  presets, and prompt language selector.
+- Add 3 cinematic video variants (Primary, Cinematic texture, Control-focused) generated via DeepMind's
+  5-pillar cinematic architecture.
+- Add Gemini Omni 1.1 Flash as an active modern target engine with single-shot continuity directives,
+  synchronized ambient audio/foley, and up to 4K SynthID output.
+- Modernize video target profiles for Google Flow / Veo 3.1, Google Veo 3.1 API, Kling 1.5 / 2.0,
+  Runway Gen-3 / Gen-4, OpenAI Sora, Luma Dream Machine Ray-2, Wan 2.1, and Minimax / Hailuo Video 01.
+
+### Changed
+
+- Clarify when a Prompt Studio result no longer matches its brief, offer a rebuild, and require an
+  explicit choice before copying or opening the earlier result.
+- Show Veo API duration constraints alongside the input and review AI scene and music expansion
+  proposals before applying them. Organize the Studio workflow and clarify variant comparisons
+  and copy actions.
+
+### Fixed
+
+- Fix microdollar floating-point precision mismatch in desktop provider-cost-approve IPC handler.
+
+## [21.0.0] - 2026-10-28
+
+### Added
+
+- Review optional local caption suggestions for overlaps, lines over 42 grapheme clusters and
+  reading speeds over 20 grapheme clusters per second. Suggestions focus the affected caption and
+  never change text or timing automatically.
+- Continue the active project from Start, including recovery for known save conflicts, Studio draft
+  errors and missing timeline media. Examples and recipes remain available in expandable sections.
+- Open delivery review from the timeline and locate supported delivery diagnostics in the editor.
+
+### Changed
+
+- Refresh Gemini model routing and prompt guidance while preserving explicit provider approval.
+- Apply compatible dependency security updates required by the release audit.
+- Align the total JavaScript release budget with the bundled local transcription worker, retaining the main-entry limit.
+- Coordinate active-project saves before manual save, production handoff, project copy and export;
+  preserve conflicts and edits made during an in-flight save.
+- Distinguish current render completion from a confirmed file save. Previously saved jobs retain
+  their filename and are identified as previous results when their currentness cannot be established.
+- Localize delivery diagnostics and statuses in all six app languages. Correct welcome-dialog
+  naming, radio layout, close behavior and keyboard focus handling.
+
+### Added
+
+- **Guided 4-Step Delivery Pipeline:**
+  - Introduced `DeliveryStepper` and `DeliveryOutputs` breaking down export into clear sequential steps: Check delivery, Review delivery, Export video, and Save files.
+  - Interactive status badges, live check preflights, clean in-flight job cancellation, and soft recommendations to review before exporting.
+  - Integrated `DisabledReason` component providing tooltips with explanatory text and direct remediation actions for disabled export buttons.
+- **Unified Media Library & Deletion Guards:**
+  - Added `MediaFilterTabs` with live count badges across All, Video, Audio, Images, References, and Generated assets.
+  - Enabled multi-format local file uploading (`video/*,image/*,audio/*`) in Assets Hub.
+  - Built active deletion guards in `AssetsPage` blocking removal of assets actively referenced in timeline clips or Production Bible profiles with granular usage reasons.
+  - Added placed-on-timeline indicator badges in `EditorMediaPanel`.
+- **Top-Bar Project Status Chip:**
+  - Added compact, persistent `ProjectStatusChip` in `AppScaffold` header indicating `saved`, `saving`, `conflict`, and `error` states with a 1-click Save action.
+  - Streamlined `ProjectSaveStatus` to only display intrusive banners during actual merge conflicts or local persistence errors.
+- **Navigation Enhancements:**
+  - Redesigned empty timeline state with a prominent primary "Open editor & import media" button and secondary Production workflow navigation.
+  - Added "Continue editing" shortcut for the active project in Projects Hub with automatic routing to Timeline (if media exists) or Prompt Studio.
+- **Comprehensive Capability Matrix:** Added full offline / desktop / key-required / experimental feature breakdown to `README.md`.
+- **Phase 5 in Roadmap:** Completed Usability, Design Harmony & Production Trust roadmap goals.
+
+### Changed
+
+- **Plugin Sandbox Isolation:**
+  - Removed all `new Function` and `_initRestricted` main-thread execution from `pluginSandboxService.ts`. All external plugins now run strictly inside isolated Web Workers.
+  - Hardened `index.html` Content Security Policy: replaced `'unsafe-eval'` with `'wasm-unsafe-eval'`.
+- **Design Tokens & Accessibility:**
+  - Standardized radio button layouts and borders in `WelcomeModal`.
+  - Removed yellow focus outlines on header titles (`h1[tabindex="-1"]:focus`) across creator views.
+  - Unified color tokens (`var(--color-bg-primary)`, `var(--color-border-primary)`).
+  - Aligned `UniversalTargetSelector` padding to standard `px-3 py-2 text-sm`.
+
+### Fixed
+
+- Apply heading focus styling consistently on the first opened route, while preserving interactive control focus indicators.
+- Keep ordinary durable video generation on supported Veo adapters and reject unsupported Omni submissions before network access.
+- Align new Flash and Argon pricing mirrors with disclosed published post-promotion ceilings.
+- Fixed false "Unsaved" indicator appearing on freshly initialized or loaded projects.
+- Translated all remaining raw strings in UI (Focus Mode, Magnetic, Snap, Snap Cuts) across all supported locales (`en`, `sv`, `fr`, `es`, `ja`, `ar`).
+- Added scoped zero-warning ESLint guard (`react/jsx-no-literals`) for delivery and media components, maintaining 0 warnings under `.lint-threshold: 0`.
+
+## [20.0.0] - 2026-10-25
+
+### Added
+
+- Archive the v19.0.0 end-user review with prioritized workflow findings, proposed acceptance
+  criteria, verification boundaries and selected interface captures. The review records follow-up
+  work; it does not implement the proposed behavior changes.
+- Improve only the selected music variant's style, lyrics, or both from its current manual text. Review
+  each proposed field separately; occurrence-specific section locks, instrumental mode, other variants,
+  titles and production notes remain protected. Full-package improvement remains a separate action.
+- Improve prompts from production-take or imported-result notes using the current Studio variant as the
+  editable source and the frozen result prompt/settings as text context. Prompt-only is the default;
+  negative-prompt edits are optional and never start generation.
+- Protect quoted dialogue and supplied dialogue spans during video prompt editing, with an explicit
+  opt-in to rewrite dialogue. Add cancellation across Studio AI edits and provider network requests.
+- Desktop-only local speech transcription with a pinned multilingual Whisper Base q8 model,
+  checksum-verified installation, explicit download confirmation, trim-aware clip-occurrence
+  selection, editable proposals, and no cloud fallback. Manual captions and SRT remain available
+  in web mode; silence detection is labelled as timing-only. Capture audio duration before
+  transferring its buffer to the transcription worker.
+- An occurrence-aware lyric-section parser and lock model, segmented prompt/dialogue editing,
+  and an explicit motion field for image-to-video prompts.
+- Project-scoped render-batch recovery, local media resolution for production review, and a
+  persistent cost ledger that distinguishes estimates from verified charges.
+- Three clear Start destinations, a project summary with a next action, recent projects, and style
+  management under Settings.
+
+### Changed
+
+- Coordinate project saves in media, media catalog, project document, then saved-state order, and
+  serialize catalog changes without dropping other windows' additions.
+- Keep production acceptance separate from timeline placement, freeze existing take references,
+  and preserve a placed clip's trim, audio, transition, and caption links when replacing its source.
+- Mix timeline source audio through a shared Web Audio output with track mute/enable, clip volume
+  keyframes and fades; use native delivery review as the authority for rendered output.
+- Show whether AI review ran, distinguish the approved cost ceiling from estimates and actual
+  provider charges, and require a current delivery review before saving.
+- Complete the six application locales for the changed Studio, Create, Creator, and cost workflows,
+  including Swedish in the Studio translation gate.
+
+### Fixed
+
+- Isolate the cost ledger from shared IndexedDB object-store collisions and migrate existing
+  cost history and budgets without overwriting newer data.
+- Fetch the COPR packaging spec from the matching release tag.
+- Include the PostCSS configuration in Docker builds so Tailwind styles and control dimensions
+  remain correct in production staging.
+- Pin the direct ONNX runtime dependency to the override version so clean npm installs succeed.
+
+## [19.0.0] - 2026-10-24
+
+### Added
+
+- Improve the actual selected video variant with Gemini or Ollama, review prompt and negative-prompt
+  changes separately, and accept selected fields together without rebuilding other variants.
+- Zero-token deterministic local prompt transforms in VideoVariantEditPanel (`clean-compact`,
+  `sync-target-grammar`, `harden-negative`) and Music Studio (`normalize-sections`, `clean-style`,
+  `strip-visual-terms`) with an "Apply to all 3 variants" batch mode for instant offline refinement.
+- Expanded Prompt AST conflict lint rules (`OPT-001` telephoto vs ultra-wide conflict, `MOT-001`
+  high-speed shutter vs motion blur conflict, `LGT-002` low-angle sun vs high-noon shadow conflict,
+  `DOF-001` shallow bokeh vs deep focus conflict, and `TMP-001` slow-motion vs hyperlapse conflict)
+  to detect contradictory cinematic instructions before generation.
+- Multi-shot production batch toolbar in `ShotsStep` with total run cost summary, batch parameter
+  alignment (`720p`, `1080p (8s)`, `16:9`, `9:16`), and one-click "Send accepted takes to Timeline".
+- Zero-token timeline chapter timestamp generator (`Insert clip chapters (0 tokens)`) in
+  `CreatorDeliveryPanel` and `J/K/L` + frame-stepping (`-1f` / `+1f`) transport controls in
+  `LocalTimelineEditor`.
+- Enriched `Ctrl+K` Command Palette with direct Diagnostics and Theme toggle commands.
+- Show shared local camera, lighting and framing guidance in Studio and Arena, including after
+  manual edits. Cinematic advice remains distinct from documented provider requirements.
+- Direct compiled artifact handoff when selecting a target from Model Arena into Prompt Studio.
+- Compare production takes and imported Studio videos with synchronized playback and seeking,
+  Swap A/B mode, frame-stepping keyboard shortcuts, one selected audio source, frozen prompt/settings differences,
+  and separately saved result notes.
+- Complete project export & import bundling for external studio video result blobs, and automatic
+  spend recording of completed paid jobs into `costTrackingService`.
+
+### Fixed
+
+- Preserve original shot prompt when retaking a scene in the Create workflow, cleanly appending
+  revision notes rather than overwriting the entire prompt.
+- Fix take numbering in `TakeCompare` to accurately reflect 1-based sequential indices in the takes list.
+- Automatically discard stale variant AI proposals upon switching variants or making manual edits.
+- Unblock imported external studio results when draft parameters change, rendering a subtle stale
+  indicator rather than hiding or preventing video imports.
+- Resolve paid job recovery deadlocks by allowing cancellation of idle attention jobs in
+  `RecoveryRequired` or `MediaAtRisk` status, and enforce a 30-minute polling timeout ceiling with
+  exponential backoff on transient HTTP errors in the paid job engine.
+- Bind new Veo/Lyria approvals to a frozen versioned hash of the complete submitted request,
+  including actual image bytes, MIME types and generation settings. Existing provider operations
+  remain recoverable without another submission; unsent legacy approvals require renewal.
+- Keep comparison-note persistence separate from take acceptance, scene status and manual review.
+
+## [17.0.0] - 2026-10-17
+
+### Added — Smart Local Editing
+
+- **Microphone Voiceover Recording**: Record audio directly into the timeline from connected microphones using the Web Audio API with real-time waveform visualization, device selection, take naming, and automatic insertion into a dedicated dialogue track.
+- **Reviewable Silence-Cut Suggestions**: Detect audio pauses and silences across media clips using bundled offline FFmpeg `silencedetect`. Review individual pauses in a dedicated modal with adjustable noise floor (-60 dB to -20 dB) and minimum duration thresholds, and apply ripple cuts cleanly.
+- **Local Offline Speech-to-Text & Linked Captions**: Propose caption segments locally from dialogue speech intervals and optional script text without sending audio to cloud services. Generates aligned, non-overlapping caption blocks linked to source clips.
+- **EBU R128 Loudness Normalization**: Integrated broadcast-standard EBU R128 audio normalization (`loudnorm=I=-14:TP=-1.5:LRA=11`) into the native FFmpeg rendering pipeline for balanced delivery exports.
+- **Speech-Driven Audio Ducking**: Sidechain envelope volume ducking attenuating background music tracks by -14 dB during dialogue and voiceover intervals with smooth 200 ms attack/decay transitions.
+- **Save-on-Close Flush Resilience**: Immediate synchronous/microtask flush of pending debounced project autosaves on `beforeunload`, `pagehide`, and component unmount events to ensure zero edit loss when closing or navigating.
+- **Desktop Gemini Streaming Proxy**: Real-time token streaming support over IPC between Electron main and renderer with abort signal support for prompt generation and analysis.
+- **Dynamic Lyria Model Catalog**: Derive Lyria music generator options and duration limits dynamically from `MODEL_CATALOG` rather than hardcoded lists.
+
+### Fixed
+
+- **AI Co-Director Connection Gate**: Enforce explicit desktop user approval before initiating Co-Director WebSocket and Live sessions, preventing unprompted background connections.
+- **Legacy Quick-Generation Safe Redirect**: Safely redirect legacy quick-generation requests to the Create workspace with an informative toast notification instead of unhandled exceptions.
+- **Enhance with AI Resilience**: Add exponential backoff with jitter on 429/503 errors and robust model routing for Gemini 2.5 and 1.5 Flash models.
+- **Create Page Export Step Mock**: Supply initialized project state in `CreatePage.test.tsx` to ensure `CreatorDeliveryPanel` renders without unhandled exceptions during step navigation.
+
+### Changed & Performance
+
+- **Bundle Code-Splitting (React.lazy)**: Code-split `CreatorDeliveryPanel`, `ModalManager`, and CreatePage wizard steps (`BriefStep`, `ScenesStep`, `AssetsStep`, `GenerateStep`, `ReviewStep`, `ExportStep`), reducing initial bundle load.
+- **Root Shell Decoupling**: Prune dead `promptWorkspaceProps` and redundant top-level hooks from `AppRuntime.tsx` and `AppScaffold.tsx`.
+- **Decoupled Cross-Store State via storeMediator**: Decouple `useLocationStore` and `useExternalStudioResultStore` from direct `useAppStore` mutations using strongly-typed mediator events (`locations:updated`, `asset:upserted`, `timeline:synced`).
+
+## [16.0.1] - 2026-10-15
+
+### Fixed
+
+- Await successful render-engine restoration and expose initialization failures while keeping window startup asynchronous.
+- Verify copied original media and logos against frozen render-plan or stored-original checksums, including legacy plans.
+- Require delivery package assets, propagate ZIP stream failures and preserve destination files.
+- Persist terminal render states immediately and ignore late progress after completion or cancellation.
+- Reuse 3D renderer, scene geometry and materials during playback and scrub updates; dispose on actual scene changes.
+- Retain published v16 canonical media paths and packaged-window unload behavior on the performance branch.
+
+### Changed
+
+- Load ZIP and provider authentication integrations on first use with tested constructor, static and bound-method behavior.
+- Replace synthetic performance claims with production API benchmarks and paired packaged Electron startup measurements.
+- Avoid duplicate release tests and builds: pre-release already covers lint, types, coverage, desktop, benchmarks, formatting and build; retain all media, metadata, theme, model and translation checks without duplicate native renders.
+- Keep full-history secret scanning with individually documented historical false-positive fingerprints and a synthetic detection self-test. Remove the exact historical Google credential through an explicitly authorized rewrite of all published branch/tag history; an authenticated provider lookup confirms the old key is already purged.
+- Correct source documentation to identify v16.0.0 as published, retaining earlier qualification records as dated evidence.
+
 ## [16.0.0] - 2026-10-12
 
 ### Added — Local Creator Editing
@@ -44,8 +327,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Qualification
 
-- This is an unpublished development version. Physical Fedora/KDE and Windows operation and
-  five-person usability acceptance require separate observations; automated tests cannot prove them.
+- Published on 2026-10-12. The original source checks are retained in `docs/CREATOR_V16_VERIFICATION.md`; release availability and physical-platform qualification are separate claims.
 
 ## [15.0.0] - 2026-10-08
 

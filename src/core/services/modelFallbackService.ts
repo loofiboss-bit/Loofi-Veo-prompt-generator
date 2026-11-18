@@ -50,7 +50,23 @@ type FallbackListener = (result: FallbackResult) => void;
 // ---------------------------------------------------------------------------
 
 const routedModels = (...requests: RouteRequest[]): string[] => [
-  ...new Set(requests.map((request) => routeModel(request).model.id)),
+  ...new Set(
+    requests.flatMap((request) => {
+      try {
+        return [routeModel(request).model.id];
+      } catch (error) {
+        // An unavailable optional video adapter must not break prompt editing at import time.
+        // Keep an empty chain rather than switching to an unsupported provider implicitly.
+        if (
+          request.operation === 'video' &&
+          error instanceof Error &&
+          /^(No priced general video model|No available Veo model)/.test(error.message)
+        )
+          return [];
+        throw error;
+      }
+    }),
+  ),
 ];
 
 const endpointMap = (models: string[], operation: 'video' | 'prompt' | 'vision' | 'audio') =>
@@ -226,6 +242,8 @@ class ModelFallbackService {
    * If the requested model's circuit is open, falls back through its chain.
    */
   selectModelForId(modelId: string): FallbackResult {
+    if (isShutdownModel(modelId))
+      throw new Error(`Model ${modelId} is shut down. Choose an active model explicitly.`);
     // Start at the explicitly requested model; never silently upgrade/downgrade
     // to an earlier entry in the chain.
     for (const chain of this.chains.values()) {

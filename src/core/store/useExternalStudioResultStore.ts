@@ -1,9 +1,8 @@
 import { create } from 'zustand';
-import type { Asset, PromptArtifactV1 } from '@core/types';
+import type { Asset, PromptArtifactV1, Shot, TimelineState } from '@core/types';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
 import { externalStudioResultService } from '@core/services/externalStudioResultService';
-import { useAppStore } from '@core/store/useAppStore';
-import { useProjectStore } from '@core/store/useProjectStore';
+import { storeMediator } from '@core/store/mediator';
 
 interface ExternalStudioResultState {
   projectId: string | null;
@@ -11,6 +10,7 @@ interface ExternalStudioResultState {
   assets: Record<string, Asset>;
   pending: boolean;
   error: string | null;
+  _hydrationVersion: number;
   hydrate: (projectId: string) => Promise<void>;
   importVideo: (
     projectId: string,
@@ -19,13 +19,20 @@ interface ExternalStudioResultState {
     file: File,
   ) => Promise<void>;
   confirm: (resultId: string, notes: string) => Promise<void>;
+  saveComparisonNotes: (resultId: string, notes: string) => Promise<void>;
   replaceVideo: (resultId: string, file: File) => Promise<void>;
-  accept: (resultId: string, shotId?: number) => Promise<void>;
+  accept: (
+    resultId: string,
+    shotId?: number,
+    options?: {
+      editorSnapshot?: { shots: Shot[]; timeline: TimelineState };
+      isCurrent?: () => boolean;
+    },
+  ) => Promise<void>;
 }
 
-let hydration = 0;
 export const useExternalStudioResultStore = create<ExternalStudioResultState>((set, get) => {
-  const load = async (projectId: string, version = hydration) => {
+  const load = async (projectId: string, version = get()._hydrationVersion) => {
     const results = await externalStudioResultService.list(projectId);
     const entries = await Promise.all(
       results.map(async (result) => {
@@ -33,12 +40,12 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
         return asset ? ([result.id, asset] as const) : null;
       }),
     );
-    if (version !== hydration || get().projectId !== projectId) return;
+    if (version !== get()._hydrationVersion || get().projectId !== projectId) return;
     const assets = Object.fromEntries(entries.filter((entry) => entry !== null));
     set({ results, assets });
-    if (useProjectStore.getState().currentProjectId === projectId) {
-      for (const result of results) {
-        const asset = assets[result.id] ?? {
+    const resolvedAssets: Asset[] = results.map(
+      (result) =>
+        assets[result.id] ?? {
           id: result.assetId,
           storageKey: result.assetId,
           groupId: projectId,
@@ -47,25 +54,25 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
           mimeType: result.mimeType,
           data: '',
           url: '',
-        };
-        const app = useAppStore.getState();
-        if (app.assets.some((item) => item.id === asset.id)) app.updateAsset(asset.id, asset);
-        else app.addAsset(asset);
-      }
-    }
+        },
+    );
+    storeMediator.emit('studioResult:assetsSynchronized', {
+      projectId,
+      assets: resolvedAssets,
+    });
   };
   const operate = async (projectId: string, operation: () => Promise<unknown>) => {
     if (get().pending || get().projectId !== projectId) return;
-    const version = hydration;
+    const version = get()._hydrationVersion;
     set({ pending: true, error: null });
     try {
       await operation();
       await load(projectId, version);
     } catch (error) {
-      if (version === hydration)
+      if (version === get()._hydrationVersion)
         set({ error: error instanceof Error ? error.message : String(error) });
     } finally {
-      if (version === hydration) set({ pending: false });
+      if (version === get()._hydrationVersion) set({ pending: false });
     }
   };
   return {
@@ -74,21 +81,42 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
     assets: {},
     pending: false,
     error: null,
+    _hydrationVersion: 0,
     hydrate: async (projectId) => {
-      const version = ++hydration;
-      set({ projectId, results: [], assets: {}, pending: true, error: null });
+      const version = get()._hydrationVersion + 1;
+      set({
+        projectId,
+        results: [],
+        assets: {},
+        pending: true,
+        error: null,
+        _hydrationVersion: version,
+      });
       try {
         await load(projectId, version);
       } catch (error) {
-        if (version === hydration) set({ error: String(error) });
+        if (version === get()._hydrationVersion) set({ error: String(error) });
       } finally {
-        if (version === hydration) set({ pending: false });
+        if (version === get()._hydrationVersion) set({ pending: false });
       }
     },
     importVideo: (projectId, artifact, variant, file) =>
       operate(projectId, () =>
         externalStudioResultService.importVideo(projectId, artifact, variant, file),
       ),
+    saveComparisonNotes: async (resultId, notes) => {
+      const projectId = get().projectId;
+      if (!projectId || get().pending)
+        throw new Error('Wait for the active project to finish loading.');
+      const version = get()._hydrationVersion;
+      await externalStudioResultService.saveComparisonNotes(projectId, resultId, notes);
+      if (version === get()._hydrationVersion && get().projectId === projectId)
+        set({
+          results: get().results.map((result) =>
+            result.id === resultId ? { ...result, comparisonNotes: notes } : result,
+          ),
+        });
+    },
     confirm: (resultId, notes) => {
       const projectId = get().projectId;
       return projectId
@@ -103,38 +131,25 @@ export const useExternalStudioResultStore = create<ExternalStudioResultState>((s
           )
         : Promise.resolve();
     },
-    accept: (resultId, shotId) => {
+    accept: (resultId, shotId, options) => {
       const projectId = get().projectId;
       return projectId
         ? operate(projectId, async () => {
-            const editor = useAppStore.getState();
-            const isCurrent = () =>
-              get().projectId === projectId &&
-              useProjectStore.getState().currentProjectId === projectId &&
-              useAppStore.getState().sbShots === editor.sbShots &&
-              useAppStore.getState().clips === editor.clips &&
-              useAppStore.getState().tracks === editor.tracks;
+            const isCurrent = options?.isCurrent ?? (() => get().projectId === projectId);
             const project = await externalStudioResultService.accept(
               projectId,
               resultId,
               shotId,
               isCurrent,
-              {
-                shots: editor.sbShots,
-                timeline: {
-                  clips: editor.clips,
-                  tracks: editor.tracks,
-                  zoomLevel: editor.zoomLevel,
-                  currentTime: editor.currentTime,
-                },
-              },
+              options?.editorSnapshot,
             );
-            if (isCurrent())
-              useAppStore.setState({
-                sbShots: project.storyboard.shots,
+            if (isCurrent()) {
+              storeMediator.emit('timeline:synced', {
+                shots: project.storyboard.shots,
                 tracks: project.storyboard.timeline.tracks,
                 clips: project.storyboard.timeline.clips,
               });
+            }
           })
         : Promise.resolve();
     },

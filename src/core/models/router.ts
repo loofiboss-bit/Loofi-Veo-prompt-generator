@@ -1,5 +1,8 @@
 import {
   getModel,
+  getProviderBinding,
+  isShutdownModel,
+  type ModelProvider,
   type CostMode,
   type MediaModality,
   type ModelCatalogEntry,
@@ -8,6 +11,7 @@ import {
 } from './catalog';
 
 export interface RouteRequest {
+  provider?: ModelProvider;
   operation: ModelOperation;
   mode: CostMode;
   requiresReferenceImages?: boolean;
@@ -37,12 +41,14 @@ const resolve = (id: string): ModelCatalogEntry => {
 
 const supportsRequest = (model: ModelCatalogEntry, request: RouteRequest): boolean => {
   const capabilities = model.capabilities;
+  const lifecycle =
+    getProviderBinding(model.id, request.provider ?? model.provider)?.lifecycle ?? model.lifecycle;
   const requestedResolution = request.requires4k ? '4k' : request.requestedResolution;
   return (
     capabilities.operations.includes(request.operation) &&
-    model.lifecycle !== 'deprecated' &&
-    model.lifecycle !== 'shut-down' &&
-    (request.allowPreview !== false || model.lifecycle !== 'preview') &&
+    lifecycle !== 'deprecated' &&
+    !isShutdownModel(model.id, request.provider) &&
+    (request.allowPreview !== false || lifecycle !== 'preview') &&
     (!request.availableModelIds || request.availableModelIds.includes(model.id)) &&
     (!request.requiresReferenceImages || capabilities.supportsReferenceImages === true) &&
     (!request.requiresFirstLastFrame || capabilities.supportsFirstLastFrame === true) &&
@@ -85,11 +91,12 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
 
   if (request.operation === 'video' || request.operation === 'video-edit') {
     const requiresVeo =
-      request.requiresFirstLastFrame ||
-      request.requiresExtension ||
-      request.requires4k ||
-      request.requiresReferenceImages ||
-      (request.requestedResolution !== undefined && request.requestedResolution !== '720p');
+      request.operation === 'video' &&
+      (request.requiresFirstLastFrame ||
+        request.requiresExtension ||
+        request.requires4k ||
+        request.requiresReferenceImages ||
+        (request.requestedResolution !== undefined && request.requestedResolution !== '720p'));
 
     if (requiresVeo) {
       const requiresAdvancedVeo =
@@ -118,35 +125,38 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
       };
     }
 
-    if (request.mode === 'economy') {
-      const economy = select(['veo-3.1-lite', 'gemini-omni-flash'], request);
-      if (!economy) throw new Error('No priced economy video model is currently available.');
-      return {
-        model: economy,
-        fallback: select(['gemini-omni-flash', 'veo-3.1-fast'], request),
-        reason: 'Economy mode selected for an unconstrained video request.',
-      };
-    }
-
-    const general = select(['gemini-omni-flash', 'veo-3.1-fast'], request);
-    if (!general) throw new Error('No priced general video model is currently available.');
+    // Conversational revisions use Interactions; ordinary generation must stay on
+    // Veo because the durable desktop job engine submits predictLongRunning jobs.
+    const candidates =
+      request.operation === 'video-edit'
+        ? ['gemini-omni-1.2-flash', 'gemini-omni-1.1-flash', 'gemini-omni-flash']
+        : request.mode === 'economy'
+          ? ['veo-3.1-lite', 'veo-3.1-fast', 'veo-3.1-quality']
+          : request.mode === 'quality'
+            ? ['veo-3.1-quality', 'veo-3.1-fast']
+            : ['veo-3.1-fast', 'veo-3.1-quality'];
+    const model = select(candidates, request);
+    if (!model) throw new Error('No priced general video model is currently available.');
     return {
-      model: general,
-      fallback: select(['veo-3.1-fast', 'veo-3.1-quality'], request),
+      model,
+      fallback: select(
+        candidates.filter((id) => id !== model.id),
+        request,
+      ),
       reason:
-        general.id === 'gemini-omni-flash'
-          ? 'Gemini Omni Flash is the recommended general video model for unconstrained requests.'
-          : 'The recommended general video model is unavailable; using a compatible Veo fallback.',
+        request.operation === 'video-edit'
+          ? 'Conversational video revisions require an Interactions-compatible model.'
+          : 'A compatible Veo model is selected for durable video generation.',
     };
   }
 
   if (request.operation === 'image') {
     const candidates =
       request.mode === 'quality'
-        ? ['nano-banana-pro', 'nano-banana-2']
+        ? ['gemini-3-pro-image', 'nano-banana-pro', 'gemini-nano-banana-2.1', 'nano-banana-2']
         : request.mode === 'economy'
-          ? ['nano-banana-2-lite', 'nano-banana']
-          : ['nano-banana-2', 'nano-banana', 'nano-banana-2-lite'];
+          ? ['gemini-3.1-flash-lite-image', 'nano-banana-2-lite', 'nano-banana']
+          : ['gemini-nano-banana-2.1', 'nano-banana-2', 'nano-banana-pro', 'nano-banana-2-lite'];
     const model = select(candidates, request);
     if (!model) throw new Error('No priced image model supports the requested operation.');
     return {
@@ -156,7 +166,11 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
   }
 
   if (request.operation === 'tts') {
-    const model = select(['gemini-3.1-flash-tts'], request);
+    const candidates =
+      request.mode === 'economy'
+        ? ['gemini-3.8-flash-lite-tts', 'gemini-3.8-flash-tts', 'gemini-3.1-flash-tts']
+        : ['gemini-3.8-flash-tts', 'gemini-3.8-flash-lite-tts', 'gemini-3.1-flash-tts'];
+    const model = select(candidates, request);
     if (!model) throw new Error('No priced TTS model is currently available.');
     return { model, reason: 'Current priced voiceover model selected.' };
   }
@@ -167,10 +181,16 @@ export const routeModel = (request: RouteRequest): ModelDecision => {
 
   const candidates =
     request.mode === 'quality'
-      ? ['gemini-3.5-flash', 'gemini-3.1-pro', 'gemini-3.6-flash']
+      ? [
+          'gemini-4-argon',
+          'gemini-3.8-flash',
+          'gemini-3.5-flash',
+          'gemini-3.1-pro',
+          'gemini-3.6-flash',
+        ]
       : request.mode === 'economy'
-        ? ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash']
-        : ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+        ? ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash']
+        : ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
   const model = select(candidates, request);
   const fallback = model
     ? select(

@@ -3,21 +3,25 @@
  * v2.0.0 - Platform Transformation
  *
  * Provides isolated execution environments for plugins.
- * Three sandbox modes:
- *   - 'worker'     — Full isolation via Web Worker (untrusted/unsigned plugins)
- *   - 'restricted' — In-process with frozen globals (trusted plugins)
+ * Sandbox modes:
+ *   - 'worker'     — Full process isolation via Web Worker (all external plugins)
+ *   - 'restricted' — Sandboxed via Web Worker with restricted permissions
  *   - 'direct'     — No sandbox, direct execution (internal/builtin only)
  *
  * Architecture:
- *   Plugin code runs inside a sandbox. API calls from plugins are proxied
- *   through postMessage (worker mode) or function wrappers (restricted mode).
- *   Permission checks gate every API call.
+ *   Plugin code runs inside an isolated Web Worker sandbox. API calls from plugins
+ *   are proxied through postMessage and validated against granted permissions.
+ *   In-process evaluation with new Function has been completely removed.
  */
 
 import { logger } from './loggerService';
 import { projectService } from './projectService';
 import { historyService } from './historyService';
 import { getUserTemplates } from './templateManager';
+import {
+  sanitizePluginProjectUpdates,
+  sanitizeProjectForPlugin,
+} from './plugin/pluginProjectSanitizer';
 import type {
   SandboxConfig,
   SandboxState,
@@ -42,13 +46,55 @@ import type { PluginPermission } from '@core/types/plugin';
 const WORKER_BOOTSTRAP = `
 'use strict';
 
-// Restricted globals — remove dangerous APIs
+// Capture trusted host bindings before locking down global scope
+const _self = self;
+const _postMessage = _self.postMessage.bind(_self);
+const _importScripts = _self.importScripts.bind(_self);
+const _Blob = _self.Blob;
+const _createObjectURL = _self.URL.createObjectURL.bind(_self.URL);
+const _revokeObjectURL = _self.URL.revokeObjectURL.bind(_self.URL);
+const _setTimeout = _self.setTimeout.bind(_self);
+
+// Fail-closed global lockdown: strip network, nested import, and eval primitives
 const _restricted = [
-  'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts',
-  'eval', 'Function', 'SharedArrayBuffer', 'Atomics'
+  'fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'BroadcastChannel',
+  'indexedDB', 'caches', 'importScripts', 'eval', 'Function',
+  'SharedArrayBuffer', 'Atomics', 'openDatabase',
+  'webkitRequestFileSystem', 'webkitResolveLocalFileSystemURL'
 ];
-// Note: we don't actually delete them from globalThis to avoid errors;
-// instead we shadow them in the plugin scope.
+for (const _apiName of _restricted) {
+  try {
+    Object.defineProperty(_self, _apiName, {
+      value: undefined,
+      writable: false,
+      configurable: false,
+    });
+  } catch {
+    // Non-configurable built-ins in exotic runtimes cannot be redefined; shadowed below
+  }
+}
+try {
+  if (typeof navigator === 'object' && navigator) {
+    Object.defineProperty(navigator, 'sendBeacon', {
+      value: undefined,
+      writable: false,
+      configurable: false,
+    });
+  }
+} catch {}
+try {
+  const _asyncProto = Object.getPrototypeOf(async function () {});
+  const _genProto = Object.getPrototypeOf(function* () {});
+  for (const _proto of [Object.getPrototypeOf(function () {}), _asyncProto, _genProto]) {
+    if (_proto) {
+      Object.defineProperty(_proto, 'constructor', {
+        value: undefined,
+        writable: false,
+        configurable: false,
+      });
+    }
+  }
+} catch {}
 
 let _pluginInstance = null;
 let _pluginId = '';
@@ -62,9 +108,9 @@ function createApiProxy() {
     const callId = String(++_callIdCounter);
     return new Promise((resolve, reject) => {
       _pendingCalls.set(callId, { resolve, reject });
-      self.postMessage({ type: 'api-call', callId, method, args });
+      _postMessage({ type: 'api-call', callId, method, args });
       // Timeout after 30s
-      setTimeout(() => {
+      _setTimeout(() => {
         if (_pendingCalls.has(callId)) {
           _pendingCalls.delete(callId);
           reject(new Error('API call timed out: ' + method));
@@ -113,53 +159,72 @@ function createApiProxy() {
       emit: (event, ...args) => callApi('events.emit', event, ...args),
     },
     logger: {
-      debug: (...args) => self.postMessage({ type: 'log', level: 'debug', args }),
-      info:  (...args) => self.postMessage({ type: 'log', level: 'info',  args }),
-      warn:  (...args) => self.postMessage({ type: 'log', level: 'warn',  args }),
-      error: (...args) => self.postMessage({ type: 'log', level: 'error', args }),
+      debug: (...args) => _postMessage({ type: 'log', level: 'debug', args }),
+      info:  (...args) => _postMessage({ type: 'log', level: 'info',  args }),
+      warn:  (...args) => _postMessage({ type: 'log', level: 'warn',  args }),
+      error: (...args) => _postMessage({ type: 'log', level: 'error', args }),
     },
   };
 }
 
 const _context = createApiProxy();
 
-self.onmessage = async function(e) {
+_self.onmessage = async function(e) {
   const msg = e.data;
   try {
     switch (msg.type) {
       case 'init': {
         _pluginId = msg.pluginId;
         _permissions = msg.permissions || [];
-        // Evaluate plugin code in a restricted scope
-        const createPlugin = new Function(
-          'exports', 'context',
-          // Shadow dangerous globals
-          'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', 'eval',
-          msg.sourceCode + '; return typeof exports.activate === "function" ? exports : null;'
-        );
+
         const exports = {};
-        _pluginInstance = createPlugin(
-          exports, _context,
-          undefined, undefined, undefined, undefined, undefined
-        );
-        if (!_pluginInstance && exports.activate) {
-          _pluginInstance = exports;
+        const module = { exports };
+
+        _self.__currentPluginExports = exports;
+        _self.__currentPluginModule = module;
+        _self.__currentPluginContext = _context;
+
+        const codeBlob = new _Blob([
+          '(function(exports, module, context, fetch, XMLHttpRequest, WebSocket, EventSource, BroadcastChannel, indexedDB, caches, navigator, importScripts, eval, Function, SharedArrayBuffer, Atomics, self, globalThis) {\\n' +
+          '"use strict";\\n' +
+          msg.sourceCode + '\\n' +
+          '})(self.__currentPluginExports, self.__currentPluginModule, self.__currentPluginContext, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined);'
+        ], { type: 'application/javascript' });
+
+        const blobUrl = _createObjectURL(codeBlob);
+        try {
+          _importScripts(blobUrl);
+        } finally {
+          _revokeObjectURL(blobUrl);
+          delete _self.__currentPluginExports;
+          delete _self.__currentPluginModule;
+          delete _self.__currentPluginContext;
         }
-        self.postMessage({ type: 'ready' });
+
+        const finalExports = module.exports && Object.keys(module.exports).length > 0 ? module.exports : exports;
+        if (typeof finalExports.activate === 'function') {
+          _pluginInstance = finalExports;
+        } else if (typeof exports.activate === 'function') {
+          _pluginInstance = exports;
+        } else {
+          _pluginInstance = null;
+        }
+
+        _postMessage({ type: 'ready' });
         break;
       }
       case 'activate': {
         if (_pluginInstance && _pluginInstance.activate) {
           await _pluginInstance.activate(_context);
         }
-        self.postMessage({ type: 'activated' });
+        _postMessage({ type: 'activated' });
         break;
       }
       case 'deactivate': {
         if (_pluginInstance && _pluginInstance.deactivate) {
           await _pluginInstance.deactivate();
         }
-        self.postMessage({ type: 'deactivated' });
+        _postMessage({ type: 'deactivated' });
         break;
       }
       case 'dispose': {
@@ -167,7 +232,7 @@ self.onmessage = async function(e) {
           await _pluginInstance.dispose();
         }
         _pluginInstance = null;
-        self.postMessage({ type: 'disposed' });
+        _postMessage({ type: 'disposed' });
         break;
       }
       case 'api-response': {
@@ -184,7 +249,7 @@ self.onmessage = async function(e) {
       }
     }
   } catch (err) {
-    self.postMessage({
+    _postMessage({
       type: 'error',
       message: err.message || String(err),
       stack: err.stack,
@@ -210,14 +275,25 @@ class SandboxInstance {
   private _messageResolvers = new Map<string, (msg: SandboxOutMessage) => void>();
   private _onApiCall: ((callId: string, method: string, args: unknown[]) => void) | null = null;
   private _onLog: ((level: string, args: unknown[]) => void) | null = null;
-  private _restrictedInstance: {
-    activate?: (ctx: unknown) => Promise<void>;
-    deactivate?: () => Promise<void>;
-    dispose?: () => Promise<void>;
-  } | null = null;
+  private _rateLimitTimestamps: number[] = [];
 
   constructor(config: SandboxConfig) {
     this.config = config;
+  }
+
+  consumeRateLimitQuota(): boolean {
+    const limit = this.config.rateLimitPerMinute;
+    if (!Number.isFinite(limit) || limit <= 0) return false;
+    const now = Date.now();
+    const windowStart = now - 60_000;
+    while (this._rateLimitTimestamps.length > 0 && this._rateLimitTimestamps[0] <= windowStart) {
+      this._rateLimitTimestamps.shift();
+    }
+    if (this._rateLimitTimestamps.length >= limit) {
+      return false;
+    }
+    this._rateLimitTimestamps.push(now);
+    return true;
   }
 
   get state(): SandboxState {
@@ -246,12 +322,10 @@ class SandboxInstance {
     this._onApiCall = onApiCall;
     this._onLog = onLog;
 
-    if (this.config.mode === 'worker') {
+    if (this.config.mode === 'worker' || this.config.mode === 'restricted') {
       await this._initWorker(sourceCode);
-    } else if (this.config.mode === 'restricted') {
-      await this._initRestricted(sourceCode);
     } else {
-      // Direct mode — no sandbox
+      // Direct mode — internal only, no sandbox
       this._state = 'ready';
     }
   }
@@ -308,37 +382,6 @@ class SandboxInstance {
         reject(err);
       }
     });
-  }
-
-  /**
-   * Initialize restricted in-process sandbox.
-   */
-  private async _initRestricted(sourceCode: string): Promise<void> {
-    try {
-      const factory = new Function('exports', `"use strict";\n${sourceCode}\n`);
-      const exports: Record<string, unknown> = {};
-      factory(exports);
-
-      if (typeof exports.activate === 'function') {
-        this._restrictedInstance = exports as {
-          activate: (ctx: unknown) => Promise<void>;
-          deactivate?: () => Promise<void>;
-          dispose?: () => Promise<void>;
-        };
-      }
-
-      this._state = 'ready';
-    } catch (err) {
-      const error: SandboxError = {
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-        timestamp: Date.now(),
-        fatal: true,
-      };
-      this._errors.push(error);
-      this._state = 'terminated';
-      throw err;
-    }
   }
 
   /**
@@ -419,17 +462,15 @@ class SandboxInstance {
   /**
    * Activate the plugin inside the sandbox.
    */
-  async activate(context?: unknown): Promise<void> {
+  async activate(_context?: unknown): Promise<void> {
     if (this._state !== 'ready' && this._state !== 'suspended') {
       throw new Error(`Cannot activate sandbox in state: ${this._state}`);
     }
 
     this._state = 'running';
 
-    if (this.config.mode === 'worker') {
+    if (this.config.mode === 'worker' || this.config.mode === 'restricted') {
       await this._sendAndWait({ type: 'activate' }, 'activated');
-    } else if (this.config.mode === 'restricted' && this._restrictedInstance?.activate) {
-      await this._restrictedInstance.activate(context);
     }
     // Direct mode — no-op, handled externally
   }
@@ -440,10 +481,8 @@ class SandboxInstance {
   async deactivate(): Promise<void> {
     if (this._state !== 'running') return;
 
-    if (this.config.mode === 'worker') {
+    if (this.config.mode === 'worker' || this.config.mode === 'restricted') {
       await this._sendAndWait({ type: 'deactivate' }, 'deactivated');
-    } else if (this.config.mode === 'restricted' && this._restrictedInstance?.deactivate) {
-      await this._restrictedInstance.deactivate();
     }
 
     this._state = 'suspended';
@@ -456,7 +495,7 @@ class SandboxInstance {
     if (this._state === 'terminated') return;
 
     try {
-      if (this.config.mode === 'worker' && this._worker) {
+      if ((this.config.mode === 'worker' || this.config.mode === 'restricted') && this._worker) {
         if (this._state === 'running') {
           try {
             await this._sendAndWait({ type: 'dispose' }, 'disposed');
@@ -466,9 +505,6 @@ class SandboxInstance {
         }
         this._worker.terminate();
         this._worker = null;
-      } else if (this.config.mode === 'restricted' && this._restrictedInstance?.dispose) {
-        await this._restrictedInstance.dispose();
-        this._restrictedInstance = null;
       }
     } finally {
       this._state = 'terminated';
@@ -530,10 +566,10 @@ class PluginSandboxService {
 
   /**
    * Determine the appropriate sandbox mode for a plugin based on trust.
+   * All external plugins are isolated in Web Workers; trusted status determines permissions.
    */
   determineSandboxMode(trustLevel: string, isInternal: boolean): SandboxMode {
     if (isInternal) return 'direct';
-    if (trustLevel === 'trusted') return 'restricted';
     return 'worker';
   }
 
@@ -682,6 +718,16 @@ class PluginSandboxService {
     const sandbox = this._sandboxes.get(pluginId);
     if (!sandbox) return;
 
+    if (!sandbox.consumeRateLimitQuota()) {
+      sandbox.respondToApiCall(
+        callId,
+        undefined,
+        `Rate limit exceeded for plugin ${pluginId} (${sandbox.config.rateLimitPerMinute}/min)`,
+      );
+      logger.warn(`Plugin ${pluginId} exceeded sandbox API rate limit`);
+      return;
+    }
+
     // Check permission
     if (!this.checkPermission(pluginId, method)) {
       sandbox.respondToApiCall(callId, undefined, `Permission denied: ${method}`);
@@ -710,19 +756,37 @@ class PluginSandboxService {
       // ── Data: Projects ──
       case 'data.getProjects': {
         const projects = await projectService.getAllProjects();
-        sandbox.respondToApiCall(callId, projects);
+        sandbox.respondToApiCall(callId, projects.map(sanitizeProjectForPlugin));
         return;
       }
       case 'data.getProject': {
-        const project = await projectService.getProject(args[0] as string);
-        sandbox.respondToApiCall(callId, project);
+        const id = typeof args[0] === 'string' ? args[0].trim() : '';
+        if (!id) {
+          sandbox.respondToApiCall(callId, undefined, 'Invalid project ID');
+          return;
+        }
+        const project = await projectService.getProject(id);
+        sandbox.respondToApiCall(callId, project ? sanitizeProjectForPlugin(project) : null);
         return;
       }
       case 'data.saveProject': {
-        const id = args[0] as string;
-        const updates = args[1] as Record<string, unknown>;
+        let id = '';
+        let rawUpdates: unknown;
+        if (typeof args[0] === 'string') {
+          id = args[0].trim();
+          rawUpdates = args[1];
+        } else if (args[0] && typeof args[0] === 'object' && !Array.isArray(args[0])) {
+          const payload = args[0] as Record<string, unknown>;
+          id = typeof payload.id === 'string' ? payload.id.trim() : '';
+          rawUpdates = payload;
+        }
+        if (!id) {
+          sandbox.respondToApiCall(callId, undefined, 'Invalid project ID for data.saveProject');
+          return;
+        }
+        const updates = sanitizePluginProjectUpdates(rawUpdates);
         const result = await projectService.updateProject(id, updates);
-        sandbox.respondToApiCall(callId, result);
+        sandbox.respondToApiCall(callId, result ? sanitizeProjectForPlugin(result) : null);
         return;
       }
 

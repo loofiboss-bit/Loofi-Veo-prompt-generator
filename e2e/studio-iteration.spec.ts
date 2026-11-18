@@ -18,10 +18,9 @@ test.beforeEach(async ({ page }) => {
 
 for (const target of [
   'flow-veo',
-  'veo-api',
+  'omni-flash',
   'kling',
   'runway-gen3',
-  'sora',
   'luma-ray',
   'wan-video',
   'minimax-hailuo',
@@ -104,7 +103,7 @@ test('Arena closes with Escape and restores keyboard focus in a small viewport',
   await trigger.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('region')).toHaveCount(8);
+  await expect(dialog.getByRole('region')).toHaveCount(7);
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -147,4 +146,21 @@ test('reuses music input and locked original lyrics across projects', async ({ p
   await expect(
     page.getByRole('checkbox', { name: 'Lock this section', exact: true }),
   ).toBeChecked();
+});
+
+test('requires an explicit choice for a previous result and rebuilds the current brief', async ({
+  page,
+}) => {
+  await build(page, 'A lighthouse in rain');
+  await page.getByLabel(/^Core idea/).fill('A lighthouse in sunlight');
+  await expect(page.getByText('Changed fields', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Use previous result');
+  await page.getByRole('button', { name: 'Use previous result', exact: true }).click();
+  await expect(page.getByText('You are using the previous result.')).toBeVisible();
+  await page.getByRole('button', { name: 'Rebuild result', exact: true }).click();
+  await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(/sunlight/);
+  await expect(page.getByRole('button', { name: 'Use previous result', exact: true })).toHaveCount(
+    0,
+  );
 });

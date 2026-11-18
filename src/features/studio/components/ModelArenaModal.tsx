@@ -1,30 +1,50 @@
-import { studioCheckDetail } from './studioValidationPresentation';
+import { studioCheckDetail, studioCheckLabel } from './studioValidationPresentation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import type { VideoPromptArtifactInput, VideoPromptVariant } from '@core/types/promptArtifact';
+import type {
+  PromptArtifactV1,
+  PromptValidationAction,
+  VideoPromptArtifactInput,
+  VideoPromptVariant,
+} from '@core/types/promptArtifact';
 import { compileVideoPromptArtifact } from '@core/services/promptStudioService';
+import {
+  getTargetProfile,
+  getProfileDurations,
+  getProfileModes,
+  getProfileAspectRatios,
+} from '@core/services/modelTranspilerService';
 import { STUDIO_CAPABILITIES } from '@core/config/studioCapabilities';
 
 interface ModelArenaModalProps {
   isOpen: boolean;
   onClose: () => void;
   input: VideoPromptArtifactInput;
-  onSelectTarget: (target: VideoPromptArtifactInput['target']) => void | Promise<void>;
+  onSelectTarget: (
+    target: VideoPromptArtifactInput['target'],
+    compiledArtifact?: PromptArtifactV1,
+  ) => void | Promise<void>;
+  onValidationAction?: (action: PromptValidationAction) => void;
 }
 
 export const ARENA_TARGETS: VideoPromptArtifactInput['target'][] = [
   'flow-veo',
+  'omni-flash',
   'wan-video',
   'kling',
   'runway-gen3',
-  'sora',
   'minimax-hailuo',
   'luma-ray',
-  'veo-api',
 ];
 
-export function ModelArenaModal({ isOpen, onClose, input, onSelectTarget }: ModelArenaModalProps) {
+export function ModelArenaModal({
+  isOpen,
+  onClose,
+  input,
+  onSelectTarget,
+  onValidationAction,
+}: ModelArenaModalProps) {
   const { t } = useTranslation('studio');
   const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
   const [error, setError] = useState<'copyError' | 'selectError' | null>(null);
@@ -38,7 +58,16 @@ export function ModelArenaModal({ isOpen, onClose, input, onSelectTarget }: Mode
     () =>
       isOpen
         ? ARENA_TARGETS.map((target) => {
-            const artifact = compileVideoPromptArtifact({ ...input, target });
+            const candidate = { ...input, target, profileId: getTargetProfile(target).profileId };
+            const modes = getProfileModes(candidate);
+            if (!modes.includes(candidate.mode)) candidate.mode = modes[0];
+            const durations = getProfileDurations(candidate);
+            if (!durations.includes(candidate.durationSeconds))
+              candidate.durationSeconds = durations[0];
+            const aspects = getProfileAspectRatios(candidate);
+            if (!aspects.includes(candidate.aspectRatio))
+              candidate.aspectRatio = aspects[0] as VideoPromptArtifactInput['aspectRatio'];
+            const artifact = compileVideoPromptArtifact(candidate);
             return { target, artifact, primary: artifact.primary as VideoPromptVariant };
           })
         : [],
@@ -109,11 +138,14 @@ export function ModelArenaModal({ isOpen, onClose, input, onSelectTarget }: Mode
       setError('copyError');
     }
   };
-  const select = async (target: VideoPromptArtifactInput['target']) => {
+  const select = async (
+    target: VideoPromptArtifactInput['target'],
+    compiledArtifact?: PromptArtifactV1,
+  ) => {
     setSelecting(true);
     setError(null);
     try {
-      await onSelectTarget(target);
+      await onSelectTarget(target, compiledArtifact);
       onClose();
     } catch {
       setError('selectError');
@@ -232,12 +264,36 @@ export function ModelArenaModal({ isOpen, onClose, input, onSelectTarget }: Mode
                   {artifact.validation
                     .filter(
                       (check) =>
-                        check.id === 'target-compatibility' || check.id.startsWith('provider-'),
+                        check.id === 'target-compatibility' ||
+                        check.id.startsWith('provider-') ||
+                        check.id.startsWith('variant-0-cinematic-'),
                     )
                     .map((check) => (
-                      <p key={check.id} className="mb-1">
-                        {studioCheckDetail(check, t)}
-                      </p>
+                      <div key={check.id} className="mb-2">
+                        {check.id.includes('-cinematic-') && (
+                          <p className="font-semibold">
+                            {studioCheckLabel(check, t)} ·{' '}
+                            {t('evidenceHeuristic', { defaultValue: 'Writing guidance' })}
+                          </p>
+                        )}
+                        <p>{studioCheckDetail(check, t)}</p>
+                        {active &&
+                          check.status !== 'pass' &&
+                          check.action &&
+                          onValidationAction && (
+                            <button
+                              type="button"
+                              className="mt-1 underline"
+                              aria-label={`${t('validationAction', { defaultValue: 'Open control' })}: ${studioCheckLabel(check, t)}`}
+                              onClick={() => {
+                                onClose();
+                                onValidationAction(check.action!);
+                              }}
+                            >
+                              {t('validationAction', { defaultValue: 'Open control' })}
+                            </button>
+                          )}
+                      </div>
                     ))}
                 </div>
                 <div className="mt-auto flex gap-2">
@@ -254,7 +310,7 @@ export function ModelArenaModal({ isOpen, onClose, input, onSelectTarget }: Mode
                   <button
                     type="button"
                     disabled={active || selecting}
-                    onClick={() => void select(target)}
+                    onClick={() => void select(target, artifact)}
                     className="rounded-lg border px-2 py-2 text-xs"
                   >
                     {active

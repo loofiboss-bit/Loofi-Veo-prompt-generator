@@ -199,41 +199,9 @@ vi.mock('@shared/hooks/useAppInitialization', () => ({
 
 vi.mock('@shared/hooks/useAppHandlers', () => ({
   useAppHandlers: () => ({
-    handleInputChange: vi.fn(),
-    handleCheckboxChange: vi.fn(),
-    handleSelectChange: vi.fn(),
-    handleSliderChange: vi.fn(),
-  }),
-}));
-
-vi.mock('@shared/hooks/usePromptOptions', () => ({
-  usePromptOptions: () => ({
-    artStyleOptions: [],
-    cameraMovementOptions: [],
-    environmentOptions: [],
-  }),
-}));
-
-vi.mock('@shared/hooks/usePromptLogic', () => ({
-  usePromptLogic: () => ({
-    handleGeneratePrompt: vi.fn(),
-    handleRefinePrompt: vi.fn(),
-    handleTriggerCharacterDetails: vi.fn(),
-    isLoading: false,
-    generatedPrompt: null,
-    errorMessage: null,
-  }),
-}));
-
-vi.mock('@shared/hooks/useHistoryState', () => ({
-  useHistoryState: () => ({
-    state: '',
-    setState: vi.fn(),
-    undo: vi.fn(),
-    redo: vi.fn(),
-    reset: vi.fn(),
-    canUndo: false,
-    canRedo: false,
+    modalHandlers: {
+      handleResetAll: vi.fn(),
+    },
   }),
 }));
 
@@ -311,10 +279,6 @@ vi.mock('@shared/components/layout', () => ({
     </div>
   ),
   AppCollaborationPanels: () => <div data-testid="collaboration-panels" />,
-}));
-
-vi.mock('@features/prompt/PromptWorkspace', () => ({
-  PromptWorkspace: () => <div data-testid="prompt-workspace">PromptWorkspace</div>,
 }));
 
 // Mock lazy-loaded components

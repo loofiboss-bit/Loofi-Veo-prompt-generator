@@ -10,6 +10,7 @@ import { mediaAssetService } from '@core/services/mediaAssetService';
 import { productionRunService } from '@core/services/productionRunService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
 import { useAppStore } from '@core/store/useAppStore';
+import { ROUTES } from '@core/config/routes';
 
 export interface VideoGenerationSettings {
   aspectRatio: string;
@@ -19,6 +20,13 @@ export interface VideoGenerationSettings {
   count?: number;
   takeGroupId?: string;
   takeIndex?: number;
+}
+
+export interface CompatibilityRunResult {
+  ok: boolean;
+  message: string;
+  redirectTo: string;
+  contexts?: ProductionGenerationContext[];
 }
 
 export interface ProductionGenerationContext {
@@ -333,26 +341,46 @@ class VideoGenerationService {
   ): Promise<string | null> {
     this.initialize();
 
-    const count = settings.count || 1;
-    const prompts = Array(count).fill(prompt);
     const configured = await hasApiKeyAsync();
     if (!configured) {
       onToast?.('API Key missing. Please set your API key in Settings.', 'error');
       return null;
     }
-    const contexts = await this.createCompatibilityRun(prompts, settings, image);
 
-    return this.addToQueue(prompts, settings, image, onToast, contexts);
+    const count = settings.count || 1;
+    const prompts = Array(count).fill(prompt);
+
+    const compatibility = await this.createCompatibilityRun(prompts, settings, image);
+    if (!compatibility.ok) {
+      onToast?.(compatibility.message, 'info');
+      this.redirectToCreate();
+      return null;
+    }
+
+    if (compatibility.contexts) {
+      return this.addToQueue(prompts, settings, image, onToast, compatibility.contexts);
+    }
+
+    return null;
   }
 
-  private async createCompatibilityRun(
+  private redirectToCreate(): void {
+    if (typeof window !== 'undefined' && window.location) {
+      window.location.hash = `#${ROUTES.CREATE}`;
+    }
+  }
+
+  protected async createCompatibilityRun(
     _prompts: string[],
     _settings: VideoGenerationSettings,
     _image?: { data: string; mimeType: string },
-  ): Promise<ProductionGenerationContext[]> {
-    throw new Error(
-      'Legacy quick generation cannot approve a paid call automatically. Open Create to review and approve the maximum charge.',
-    );
+  ): Promise<CompatibilityRunResult> {
+    return {
+      ok: false,
+      message:
+        'Legacy quick generation cannot approve a paid call automatically. Open Create to review and approve the maximum charge.',
+      redirectTo: ROUTES.CREATE,
+    };
   }
 
   async startGenerationRequest(
@@ -516,6 +544,9 @@ class VideoGenerationService {
 
     // Enqueue via generation queue (handles offline, retry, etc.)
     newTasks.forEach((task) => {
+      if (!task.request || !task.costApproval) {
+        return;
+      }
       generationQueueService.enqueue({
         type: 'video',
         label: `Video: ${task.prompt.substring(0, 40)}...`,
@@ -525,7 +556,9 @@ class VideoGenerationService {
       });
     });
 
-    onToast?.(`Queued ${prompts.length} videos for background rendering.`, 'info');
+    if (newTasks.some((t) => t.request && t.costApproval)) {
+      onToast?.(`Queued ${prompts.length} videos for background rendering.`, 'info');
+    }
 
     return newTasks[0].id;
   }

@@ -2,6 +2,7 @@ import { paidJobService } from '@core/services/paidJobService';
 import type { PaidJobTask, GenerationTask } from '@core/types';
 import { studioRevisionService } from '@core/services/studioRevisionService';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import {
   exportProjectOtioBundle,
   preflightProjectOtioExport,
@@ -23,10 +24,15 @@ import {
   type PreflightRecommendation,
 } from '@core/services/productionPreflightService';
 import { productionReviewService } from '@core/services/productionReviewService';
-import { productionRunService } from '@core/services/productionRunService';
+import { resolveProductionReviewMedia } from '@core/services/localMediaResolver';
+import {
+  getProductionReviewInputIdentity,
+  productionRunService,
+} from '@core/services/productionRunService';
 import { continuityService } from '@core/services/continuityService';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 import { veoGenerationService } from '@core/services/veoGenerationService';
+import { recordCompletedPaidJobCost } from '@core/services/paidJobService';
 import { storeMediator } from '@core/store/mediator';
 import { useAppStore } from '@core/store/useAppStore';
 import { useProductionRunStore } from '@core/store/useProductionRunStore';
@@ -108,6 +114,7 @@ export function useCreateWorkflow() {
     let alive = true;
     const consume = async (job: PaidJobTask) => {
       if (!alive) return;
+      recordCompletedPaidJobCost(job);
       setDurableJobs((current) => [...current.filter((item) => item.id !== job.id), job]);
       if (
         !activeRun ||
@@ -198,6 +205,42 @@ export function useCreateWorkflow() {
     }
   };
 
+  const handleSaveComparisonNotes = async (
+    shot: ProductionShot,
+    take: ProductionTake,
+    notes: string,
+  ) => {
+    if (!activeRun) throw new Error('The production run is unavailable.');
+    const runId = activeRun.id;
+    await productionRunService.saveComparisonNotes(runId, shot.id, take.id, notes);
+    // Merge only this editorial field into live state; a late save must not
+    // restore an old run or overwrite a background generation update.
+    useProductionRunStore.setState((state) => {
+      if (
+        state.activeRun?.id !== runId ||
+        useProjectStore.getState().currentProjectId !== activeRun.projectId
+      )
+        return state;
+      const update = (run: typeof activeRun) => ({
+        ...run,
+        shots: run.shots.map((item) =>
+          item.id === shot.id
+            ? {
+                ...item,
+                takes: item.takes.map((candidate) =>
+                  candidate.id === take.id ? { ...candidate, comparisonNotes: notes } : candidate,
+                ),
+              }
+            : item,
+        ),
+      });
+      return {
+        activeRun: update(state.activeRun),
+        runs: state.runs.map((run) => (run.id === runId ? update(run) : run)),
+      };
+    });
+  };
+
   const handleManualReview = async (shot: ProductionShot, take: ProductionTake, notes: string) => {
     if (!activeRun) return;
     try {
@@ -228,6 +271,14 @@ export function useCreateWorkflow() {
           0,
         ) ?? 0,
     [activeRun, selectedShotIds],
+  );
+  const totalRunCost = useMemo(
+    () =>
+      activeRun?.shots.reduce(
+        (sum, shot) => sum + veoGenerationService.estimateCost(shot.generationRequest),
+        0,
+      ) ?? 0,
+    [activeRun],
   );
   const planEnhancementEstimate = useMemo(
     () => productionRunService.estimatePlanEnhancementCost(),
@@ -420,38 +471,88 @@ export function useCreateWorkflow() {
   };
 
   const handleReview = async (shot: ProductionShot, take: ProductionTake) => {
-    if (!activeRun) return;
+    const runId = activeRun?.id;
+    const projectId = useProjectStore.getState().currentProjectId;
+    const useGemini = useGeminiReview;
     if (
-      useGeminiReview &&
-      !activeRun.approvals.some(
-        (approval) =>
-          approval.kind === 'continuity-review' &&
-          approval.status === 'active' &&
-          approval.shotIds.includes(shot.id),
-      )
+      !runId ||
+      !projectId ||
+      activeRun?.projectId !== projectId ||
+      useEditorSessionStore.getState().projectSnapshot?.id !== projectId
     ) {
-      setFeedback(t('messages.continuityReviewRequired'));
+      setFeedback(t('messages.projectChanged'));
       return;
     }
-    let video: { data: string; mimeType: string } | undefined;
-    if (useGeminiReview && take.localMediaKey) {
-      const record = await mediaAssetService.getRecord(take.localMediaKey);
-      if (record) {
-        video = { data: await blobToBase64(record.blob), mimeType: record.mimeType };
-      }
-    }
-    const referenceImages = (take.continuitySnapshot?.referenceAssetIds ?? [])
-      .map((assetId) => assetToInput(assets.find((asset) => asset.id === assetId)))
-      .filter((input): input is VeoExecutionImage => Boolean(input));
+    const isCurrentProject = () =>
+      useProjectStore.getState().currentProjectId === projectId &&
+      useEditorSessionStore.getState().projectSnapshot?.id === projectId;
     try {
+      const currentRun = await productionRunService.getRun(runId);
+      const currentShot = currentRun?.shots.find((item) => item.id === shot.id);
+      const currentTake = currentShot?.takes.find((item) => item.id === take.id);
+      if (
+        !currentRun ||
+        currentRun.projectId !== projectId ||
+        !currentShot ||
+        !currentTake ||
+        !isCurrentProject()
+      ) {
+        setFeedback(t('messages.reviewStale'));
+        return;
+      }
+      const frozenShot = structuredClone(currentShot);
+      const frozenTake = structuredClone(currentTake);
+      const inputIdentity = getProductionReviewInputIdentity(frozenShot, frozenTake);
+      if (
+        useGemini &&
+        !currentRun.approvals.some(
+          (approval) =>
+            approval.kind === 'continuity-review' &&
+            approval.status === 'active' &&
+            approval.shotIds.includes(shot.id),
+        )
+      ) {
+        setFeedback(t('messages.continuityReviewRequired'));
+        return;
+      }
+
+      let video: { data: string; mimeType: string } | undefined;
+      let referenceImages: VeoExecutionImage[] = [];
+      if (useGemini) {
+        const resolved = await resolveProductionReviewMedia(
+          frozenTake,
+          useAppStore.getState().assets,
+        );
+        video = resolved.video;
+        referenceImages = resolved.referenceImages;
+      }
+      if (!isCurrentProject()) {
+        setFeedback(t('messages.reviewStale'));
+        return;
+      }
       const review = await productionReviewService.reviewTake({
-        shot,
-        take,
+        shot: frozenShot,
+        take: frozenTake,
         video,
         referenceImages,
-        useGemini: useGeminiReview,
+        useGemini,
       });
-      await productionRunService.recordReview(activeRun.id, shot.id, take.id, review);
+      const latestRun = await productionRunService.getRun(runId);
+      const latestTake = latestRun?.shots
+        .find((item) => item.id === shot.id)
+        ?.takes.find((item) => item.id === take.id);
+      const latestShot = latestRun?.shots.find((item) => item.id === shot.id);
+      const latestIdentity =
+        latestShot && latestTake ? getProductionReviewInputIdentity(latestShot, latestTake) : null;
+      if (
+        !isCurrentProject() ||
+        latestRun?.projectId !== projectId ||
+        latestIdentity !== inputIdentity
+      ) {
+        setFeedback(t('messages.reviewStale'));
+        return;
+      }
+      await productionRunService.recordReview(runId, shot.id, take.id, review, inputIdentity);
       await refreshActiveRun();
       setFeedback(
         review.source === 'local'
@@ -459,7 +560,14 @@ export function useCreateWorkflow() {
           : t('messages.reviewComplete', { score: review.overallScore }),
       );
     } catch (failure) {
-      setFeedback(t('flow.reviewFailed') + ' ' + (failure instanceof Error ? failure.message : ''));
+      setFeedback(
+        useGemini
+          ? `${t('messages.aiReviewNotRun', {
+              defaultValue:
+                'AI review was not run. Review locally or retry after fixing the media or provider issue.',
+            })} ${failure instanceof Error ? failure.message : ''}`
+          : `${t('flow.reviewFailed')} ${failure instanceof Error ? failure.message : ''}`,
+      );
     }
   };
 
@@ -482,6 +590,19 @@ export function useCreateWorkflow() {
 
   const handleAccept = async (shot: ProductionShot, take: ProductionTake) => {
     if (!activeRun) return;
+    const projectId = useProjectStore.getState().currentProjectId;
+    if (
+      !projectId ||
+      projectId !== activeRun.projectId ||
+      useEditorSessionStore.getState().projectSnapshot?.id !== projectId
+    ) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
     const localMediaUrl =
       take.localMediaUrl ||
       (take.localMediaKey ? await mediaAssetService.getObjectUrl(take.localMediaKey) : null) ||
@@ -491,51 +612,55 @@ export function useCreateWorkflow() {
       return;
     }
 
+    const timelineState = useAppStore.getState();
+    const storyboardShot = timelineState.sbShots.find((item) => item.id === shot.id);
+    const sourceAsset = storyboardShot?.generatedVideoUrl
+      ? timelineState.assets.find(
+          (asset) =>
+            asset.url === storyboardShot.generatedVideoUrl ||
+            asset.proxyUrl === storyboardShot.generatedVideoUrl,
+        )
+      : undefined;
+    const previousTakeId =
+      shot.selectedTakeId ??
+      shot.takes.find(
+        (item) =>
+          item.localMediaUrl === storyboardShot?.generatedVideoUrl ||
+          (sourceAsset && item.localMediaKey === sourceAsset.storageKey),
+      )?.id;
+    const frozenCount = timelineState.freezeTimelineTakeReferences(
+      shot.id,
+      previousTakeId,
+      previousTakeId ? undefined : sourceAsset?.id,
+    );
+    if (frozenCount > 0) {
+      try {
+        await projectSaveCoordinator.saveProject(projectId);
+      } catch {
+        setFeedback(
+          t('messages.timelineFreezeSaveFailed', {
+            defaultValue:
+              'Existing timeline references could not be saved. Retry saving the project before accepting this take.',
+          }),
+        );
+        return;
+      }
+    }
+    if (useProjectStore.getState().currentProjectId !== projectId) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+
     try {
       await productionRunService.acceptTake(activeRun.id, shot.id, take.id);
     } catch (failure) {
       setFeedback(failure instanceof Error ? failure.message : t('flow.reviewFailed'));
       return;
     }
-    const appState = useAppStore.getState();
-    appState.setSbShots((currentShots) => {
-      const existing = currentShots.find((item) => item.id === shot.id);
-      const nextTakeUrls = existing?.takes.includes(localMediaUrl)
-        ? existing.takes
-        : [...(existing?.takes ?? []), localMediaUrl];
-      if (existing) {
-        return currentShots.map((item) =>
-          item.id === shot.id
-            ? {
-                ...item,
-                action: shot.prompt,
-                camera: shot.camera,
-                duration: shot.durationSeconds,
-                generatedVideoUrl: localMediaUrl,
-                takes: nextTakeUrls,
-                selectedTakeIndex: nextTakeUrls.indexOf(localMediaUrl),
-              }
-            : item,
-        );
-      }
-      return [
-        ...currentShots,
-        {
-          id: shot.id,
-          type: 'video',
-          action: shot.prompt,
-          camera: shot.camera,
-          characterId: '',
-          generatedVideoUrl: localMediaUrl,
-          takes: [localMediaUrl],
-          selectedTakeIndex: 0,
-          visualLink: false,
-          duration: shot.durationSeconds,
-          transition: { type: 'cut', duration: 0 },
-        },
-      ];
-    });
-    appState.syncTimelineFromShots();
     storeMediator.emit('production:takeAccepted', {
       runId: activeRun.id,
       shotId: shot.id,
@@ -563,6 +688,111 @@ export function useCreateWorkflow() {
     );
   };
 
+  const handlePlaceTake = async (
+    shot: ProductionShot,
+    take: ProductionTake,
+    targetClipId?: string,
+  ) => {
+    if (!activeRun) return;
+    const projectId = useProjectStore.getState().currentProjectId;
+    if (!projectId || activeRun.projectId !== projectId) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+    const run = await productionRunService.getRun(activeRun.id);
+    if (!run || run.projectId !== projectId) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+    const latestShot = run.shots.find((item) => item.id === shot.id);
+    const latestTake = latestShot?.takes.find((item) => item.id === take.id);
+    if (
+      !latestShot ||
+      !latestTake ||
+      latestShot.selectedTakeId !== take.id ||
+      latestTake.localMediaKey !== take.localMediaKey ||
+      latestTake.status !== 'accepted'
+    ) {
+      setFeedback(
+        t('messages.takeChanged', {
+          defaultValue: 'This accepted take changed. Refresh review before placing it.',
+        }),
+      );
+      return;
+    }
+    if (!take.localMediaKey) {
+      setFeedback(
+        t('messages.localMediaRequired', {
+          defaultValue: 'Save this take locally before placing it in the timeline.',
+        }),
+      );
+      return;
+    }
+
+    const asset = useAppStore
+      .getState()
+      .assets.find((item) => item.id === take.id || item.storageKey === take.localMediaKey);
+    const metadata = await window.electron?.inspectTimelineRenderMedia?.(take.localMediaKey);
+    if (metadata && !metadata.available) {
+      setFeedback(metadata.reason ?? t('messages.localMediaRequired'));
+      return;
+    }
+    const duration = metadata?.durationSeconds ?? asset?.durationSeconds;
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+      setFeedback(
+        t('messages.mediaDurationUnverified', {
+          defaultValue:
+            'The local video duration could not be verified. Reimport the video and retry.',
+        }),
+      );
+      return;
+    }
+    if (
+      useProjectStore.getState().currentProjectId !== projectId ||
+      useEditorSessionStore.getState().projectSnapshot?.id !== projectId
+    ) {
+      setFeedback(
+        t('messages.projectChanged', {
+          defaultValue: 'The project changed. Reopen the intended project and retry.',
+        }),
+      );
+      return;
+    }
+
+    try {
+      const clipId = useAppStore.getState().placeProductionTake({
+        assetId: asset?.id ?? take.id,
+        takeId: take.id,
+        label: `${shot.title} · ${take.id.slice(0, 8)}`,
+        duration,
+        targetClipId,
+      });
+      await projectSaveCoordinator.saveProject(projectId);
+      setFeedback(
+        targetClipId
+          ? t('messages.takeReplaced', { defaultValue: 'The timeline clip was replaced.' })
+          : t('messages.takePlaced', {
+              defaultValue: 'The accepted take was added as a separate timeline clip.',
+            }),
+      );
+      useAppStore
+        .getState()
+        .setCurrentTime(
+          useAppStore.getState().clips.find((clip) => clip.id === clipId)?.startTime ?? 0,
+        );
+    } catch (failure) {
+      setFeedback(failure instanceof Error ? failure.message : t('flow.reviewFailed'));
+    }
+  };
+
   const handleReject = async (shot: ProductionShot, take: ProductionTake) => {
     if (!activeRun) return;
     await productionRunService.rejectTake(activeRun.id, shot.id, take.id);
@@ -576,10 +806,17 @@ export function useCreateWorkflow() {
     useRevision: boolean,
     revisionNotes?: string,
   ) => {
-    const prompt =
-      useRevision && (revisionNotes?.trim() || take.review?.proposedRevisionPrompt)
-        ? (revisionNotes?.trim() ?? take.review?.proposedRevisionPrompt ?? shot.prompt)
-        : shot.prompt;
+    let prompt = shot.prompt;
+    if (useRevision) {
+      if (take.review?.proposedRevisionPrompt) {
+        prompt = take.review.proposedRevisionPrompt;
+      } else if (revisionNotes?.trim()) {
+        const notes = revisionNotes.trim();
+        prompt = shot.prompt.includes('[Revision note:')
+          ? shot.prompt.replace(/\[Revision note:[\s\S]*?\]/, `[Revision note: ${notes}]`)
+          : `${shot.prompt}\n\n[Revision note: ${notes}]`;
+      }
+    }
     await handleReject(shot, take);
     await updateShotRequest(shot.id, { prompt });
     setFeedback(
@@ -593,6 +830,29 @@ export function useCreateWorkflow() {
     if (!activeRun) return;
     await productionRunService.waiveMediaRisk(activeRun.id, shot.id, take.id);
     await refreshActiveRun();
+  };
+
+  const handleBatchShotSettings = async (
+    updates: Partial<Pick<VeoGenerationRequest, 'resolution' | 'aspectRatio' | 'durationSeconds'>>,
+  ) => {
+    if (!activeRun) return;
+    const targetShots = activeRun.shots.filter((shot) =>
+      selectedShotIds.length > 0 ? selectedShotIds.includes(shot.id) : shot.status !== 'accepted',
+    );
+    for (const shot of targetShots) {
+      const nextUpdates = { ...updates };
+      if (updates.durationSeconds !== undefined) {
+        await updateShotRequest(shot.id, nextUpdates);
+      } else {
+        await updateShotRequest(shot.id, nextUpdates);
+      }
+    }
+    setFeedback(
+      t('messages.batchSettingsApplied', {
+        defaultValue: 'Applied batch settings to {{count}} shots.',
+        count: targetShots.length,
+      }),
+    );
   };
 
   const handleExport = async () => {
@@ -623,39 +883,35 @@ export function useCreateWorkflow() {
     }
   };
 
-  const captureExportProject = () =>
-    useEditorSessionStore
-      .getState()
-      .captureCurrentProjectDocument({ id: currentProjectId, name: projectName });
-
   const handleRelinkExportMedia = async (entry: MissingTimelineMedia, assetId: string) => {
     const state = useAppStore.getState();
     const asset = state.assets.find((item) => item.id === assetId);
     const clip = state.clips.find((item) => item.id === entry.clipId);
     if (!asset || !clip || asset.type !== clip.type) return;
     state.updateTimelineClip(clip.id, { resourceId: assetId, selectedTakeId: undefined });
-    const project = captureExportProject();
-    await projectDocumentService.save(project);
+    await projectSaveCoordinator.saveProject(currentProjectId);
+    const project = await projectDocumentService.load(currentProjectId);
+    if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
+    if (!project) throw new Error('Saved project document is unavailable.');
     const check = await preflightProjectOtioExport(project, activeRun);
+    if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
     setExportMissingMedia(check.missingMedia);
   };
 
   const handleExportOtio = async () => {
     if (!activeRun) return;
     try {
-      const document = useEditorSessionStore
-        .getState()
-        .captureCurrentProjectDocument({ id: currentProjectId, name: projectName });
-      await projectDocumentService.save(document);
+      await projectSaveCoordinator.saveProject(currentProjectId);
       const saved = await projectDocumentService.load(currentProjectId);
+      if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
       if (!saved) throw new Error('Saved project document is unavailable.');
       const check = await preflightProjectOtioExport(saved, activeRun);
+      if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
       setExportMissingMedia(check.missingMedia);
       if (check.missingMedia.length) return;
-      downloadProjectBlob(
-        await exportProjectOtioBundle(saved, activeRun),
-        `${projectName}.otio.zip`,
-      );
+      const bundle = await exportProjectOtioBundle(saved, activeRun);
+      if (useProjectStore.getState().currentProjectId !== currentProjectId) return;
+      downloadProjectBlob(bundle, `${projectName}.otio.zip`);
       setFeedback(t('messages.otioReady', 'OTIO package downloaded with local media.'));
     } catch (failure) {
       setFeedback(failure instanceof Error ? failure.message : 'OTIO export failed');
@@ -669,6 +925,7 @@ export function useCreateWorkflow() {
     recoveringJobId,
     handleRecoverJob,
     handleManualReview,
+    handleSaveComparisonNotes,
     handleExportOtio,
     promptState,
     productionBible,
@@ -682,6 +939,7 @@ export function useCreateWorkflow() {
     imageAssets,
     extensionTakes,
     selectedCost,
+    totalRunCost,
     planEnhancementEstimate,
     continuityReviewEstimate,
     preflight,
@@ -705,9 +963,11 @@ export function useCreateWorkflow() {
     handleApproveContinuityReview,
     handleContinuityOverride,
     handleAccept,
+    handlePlaceTake,
     handleReject,
     handlePrepareRetake,
     handleWaiveMediaRisk,
+    handleBatchShotSettings,
     handleExport,
   };
 }

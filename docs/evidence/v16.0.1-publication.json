@@ -1,0 +1,153 @@
+{
+  "version": "16.0.1",
+  "date": "2026-10-15",
+  "repository": "loofiboss-bit/Loofi-Veo-prompt-generator",
+  "sourceCommit": "26e399552ed9e7837e49089c76c5815f5338d358",
+  "annotatedTagObject": "d080940f638c51d4519f4dc3e5997ed040fb3718",
+  "tag": "v16.0.1",
+  "pullRequest": 65,
+  "validation": {
+    "prRun": 38739025499,
+    "mainRun": 38740973361,
+    "unitTests": 4312,
+    "chromiumPassed": 111,
+    "chromiumSkipped": 1,
+    "skipReason": "packaged Electron requires PACKAGED_ELECTRON_PATH; tested by release jobs"
+  },
+  "canonicalReleaseRun": 38740981465,
+  "status": "published-and-verified",
+  "historicalKey": "Google administrative lookup confirms purged; writable Git refs sanitized; GitHub cache/read-only PR refs remain separate",
+  "wiki": {
+    "commit": "ea2e34948d9dbdd62c4541d2b5b890fff6217894",
+    "pages": [
+      {
+        "page": "Home",
+        "httpStatus": 200,
+        "currentVersionVerified": true
+      },
+      {
+        "page": "Quick-Start",
+        "httpStatus": 200,
+        "currentVersionVerified": true
+      },
+      {
+        "page": "Release-Notes",
+        "httpStatus": 200,
+        "currentVersionVerified": true
+      },
+      {
+        "page": "Installation-and-Updates",
+        "httpStatus": 200,
+        "currentVersionVerified": true
+      }
+    ],
+    "bannerBytes": 1759097,
+    "bannerSha256": "2edee99ddfa94439dd7fdf65f1f98fca2780adbf72ca493e6736b80410f4674e"
+  },
+  "github": {
+    "url": "https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.1",
+    "public": true,
+    "publishedAt": "2026-10-15T14:04:27Z",
+    "assets": [
+      {
+        "name": "latest.yml",
+        "sha256": "76af3ad4effe44e25b2bb32de1d24527fcfc11d2ca0ee0b6dd848d4ef96c1de2",
+        "bytes": 390,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      },
+      {
+        "name": "Loofi-Flow-Veo-Studio-16.0.1-linux-x86_64.AppImage",
+        "sha256": "a8ce5d0b85afd4c5dc9fa32c984a60548e12642a34727f0185466334d248c21e",
+        "bytes": 338737795,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": false
+      },
+      {
+        "name": "Loofi-Flow-Veo-Studio-16.0.1-linux-x86_64.rpm",
+        "sha256": "becc2be23d74dfa51120c8a2698cd2e035ae262ab906849bcc39ffcff5dcc99e",
+        "bytes": 258761593,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      },
+      {
+        "name": "Loofi-Flow-Veo-Studio-16.0.1-win-x64-portable.exe",
+        "sha256": "1f8232a493da8cbf6ad309a5d2055fb2ebc72ec7a092d779a1f93e1293c597af",
+        "bytes": 304493061,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": false
+      },
+      {
+        "name": "Loofi-Flow-Veo-Studio-16.0.1-win-x64-setup.exe",
+        "sha256": "0a16b754921833e7dfbf82f6ab66f50999c844e0bcd8e5ef39e6cd1e77c1a7f2",
+        "bytes": 304723750,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": false
+      },
+      {
+        "name": "Loofi-Flow-Veo-Studio-16.0.1-win-x64-setup.exe.blockmap",
+        "sha256": "9385b78f24ff6dfb1b8fa479853f541dd10c33963eb085ad4f3a1145f579c81f",
+        "bytes": 314587,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      },
+      {
+        "name": "provenance.intoto.json",
+        "sha256": "d5b199ec7ae7995d03e8d04e1833b501ed5f602fd98feb8e0fb3ca9b8b70c211",
+        "bytes": 2225,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      },
+      {
+        "name": "release-manifest.json",
+        "sha256": "5d0d7b8e0ae7af9442f3928fee5040cb35cd4a98cf1596c81afcf093c23c5c31",
+        "bytes": 333,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      },
+      {
+        "name": "sbom.cdx.json",
+        "sha256": "0ca26e54584e45fcdb01248093d82f1b178a019b8c1dd0595330a922a8143448",
+        "bytes": 112763,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "sha256": "d45982d04b0e87acb164e96a03bb74480d26b787b30ad93988080888a99c0b44",
+        "bytes": 657,
+        "serverDigestVerified": true,
+        "downloadedFileVerified": true
+      }
+    ],
+    "checksumEntries": 6,
+    "provenanceMatchesCommit": true,
+    "sbomComponents": 128,
+    "windowsCodeSigned": false,
+    "rpmAttestationVerified": {
+      "sourceRef": "refs/tags/v16.0.1",
+      "sourceDigest": "26e399552ed9e7837e49089c76c5815f5338d358",
+      "signerWorkflow": ".github/workflows/build.yml",
+      "signerDigest": "26e399552ed9e7837e49089c76c5815f5338d358"
+    }
+  },
+  "copr": {
+    "version": {
+      "epoch": "0",
+      "ver": "16.0.1",
+      "rel": "1.fc44"
+    },
+    "packageUrl": "https://download.copr.fedorainfracloud.org/results/loofitheboss/loofi-creator-studio/fedora-44-x86_64/Packages/v/veo-prompt-generator-16.0.1-1.fc44.x86_64.rpm",
+    "checksumAlgorithm": "sha256",
+    "checksum": "d1c87210b9b014895248dbf39df07ae312d5678096bc2c3c7592bd194593bd1b",
+    "repodataVerified": true,
+    "buildId": 11138004,
+    "state": "succeeded",
+    "nevra": "veo-prompt-generator-16.0.1-1.fc44.x86_64",
+    "signatureVerified": true,
+    "signatureResult": "RPM: digests signatures OK",
+    "payloadEntriesCompared": 232,
+    "payloadMatchesGithub": true,
+    "requirementsVerified": true
+  }
+}

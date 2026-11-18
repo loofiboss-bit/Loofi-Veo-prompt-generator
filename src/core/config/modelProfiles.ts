@@ -51,7 +51,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'flow-scene-pack',
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       aspectRatio: '16:9',
       artStyle: 'cinematic',
       cameraMovement: 'tracking',
@@ -70,7 +70,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'flow-shot-card',
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       aspectRatio: '9:16',
       artStyle: '',
     },
@@ -88,7 +88,7 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'single-prompt',
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       aspectRatio: '1:1',
       artStyle: 'abstract',
       cameraMovement: 'dolly',
@@ -107,13 +107,33 @@ export const MODEL_PROFILES: ModelProfile[] = [
     defaults: {
       targetModel: 'flow-veo',
       flowVeoOutputMode: 'flow-shot-card',
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.8-flash',
       veoModel: 'fast',
       aspectRatio: '16:9',
     },
     recommendedAspectRatios: ['16:9', '9:16'],
     maxDurationSeconds: 5,
     tags: ['fast', 'draft', 'iteration'],
+    fallbackChainId: 'video-generation-fast',
+  },
+  {
+    id: 'gemini-omni-direct',
+    label: 'Gemini Omni 1.1 Direct',
+    description:
+      'Direct video generation, multi-shot editing, and first/last frame transitions with native audio.',
+    targetModel: 'flow-veo',
+    icon: 'sparkles',
+    defaults: {
+      targetModel: 'flow-veo',
+      flowVeoOutputMode: 'veo-api-prompt',
+      model: 'gemini-3.8-flash',
+      aspectRatio: '16:9',
+      resolution: '1080p',
+      artStyle: 'cinematic',
+    },
+    recommendedAspectRatios: ['16:9', '9:16'],
+    maxDurationSeconds: 10,
+    tags: ['omni', 'multimodal', 'video', 'editing'],
     fallbackChainId: 'video-generation-fast',
   },
   {

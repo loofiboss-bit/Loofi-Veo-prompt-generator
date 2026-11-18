@@ -4,7 +4,7 @@
 
 - Node.js 24 (`.nvmrc` is authoritative)
 - npm and the committed `package-lock.json`
-- Windows x64 or Linux; Fedora 44 is the supported Linux packaging baseline
+- Fedora Linux (Fedora 44 / Fedora 45 x86_64) is the primary supported platform; Windows x64 is optional and community-maintained
 
 ```bash
 git clone https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator.git

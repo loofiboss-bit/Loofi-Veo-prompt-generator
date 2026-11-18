@@ -11,6 +11,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/#/start', { waitUntil: 'domcontentloaded' });
       await dismissModals(page, { waitForPrompt: false });
+      await page.goto('/#/start');
       await expect(page.getByRole('heading', { name: 'Your next creative moment' })).toBeVisible();
       const start = page.locator('.creator-start');
       const contrast = await start.evaluate((element) => {
@@ -35,6 +36,7 @@ for (const theme of ['light', 'dark'] as const) {
       });
       expect(Math.min(...contrast)).toBeGreaterThanOrEqual(4.5);
       await page.screenshot({ path: testInfo.outputPath(`creator-start-${theme}-${width}.png`) });
+      await page.locator('summary').filter({ hasText: 'Try it offline' }).click();
       const example = page.getByRole('button', { name: 'Open example', exact: true }).first();
       await example.focus();
       await expect(example).toBeFocused();

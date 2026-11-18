@@ -402,4 +402,38 @@ describe('productionPreflightService', () => {
       [],
     );
   });
+
+  it('respects target audioPolicy and negativePolicy for Runway Gen-4.5 external slots', () => {
+    const runwayRun = run({
+      shots: [
+        {
+          ...run().shots[0],
+          generationRequest: {
+            mode: 'text-to-video',
+            modelId: 'veo-3.1-fast',
+            target: 'runway-gen3',
+            profileId: 'runway-gen-4.5',
+            executionMode: 'external-manual-slot',
+            prompt: 'A bicycle courier races through wet cobblestone streets at blue hour.',
+            aspectRatio: '16:9',
+            resolution: '720p',
+            durationSeconds: 8,
+            referenceAssetIds: [],
+          },
+        },
+      ],
+    });
+    const cleanResult = productionPreflightService.analyze({ run: runwayRun, assets: [] });
+    expect(cleanResult.canApprove).toBe(true);
+    expect(cleanResult.categories.find((c) => c.category === 'audio')?.status).toBe('ready');
+    expect(cleanResult.categories.find((c) => c.category === 'safety')?.status).toBe('ready');
+
+    // Supplying a negativePrompt on Runway should block capability compatibility.
+    runwayRun.shots[0].generationRequest.negativePrompt = 'no blur';
+    const invalidResult = productionPreflightService.analyze({ run: runwayRun, assets: [] });
+    expect(invalidResult.canApprove).toBe(false);
+    expect(invalidResult.categories.find((c) => c.category === 'capability')?.status).toBe(
+      'blocked',
+    );
+  });
 });

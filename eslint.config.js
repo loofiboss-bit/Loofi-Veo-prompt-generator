@@ -113,4 +113,45 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Enforce store boundary guardrail: stores must communicate via storeMediator
+    files: ['src/core/store/useLocationStore.ts', 'src/core/store/useExternalStudioResultStore.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                './useAppStore',
+                '@core/store/useAppStore',
+                './useProjectStore',
+                '@core/store/useProjectStore',
+              ],
+              message:
+                'Zustand stores must not import or mutate other stores directly. Route cross-store communication through storeMediator.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // i18n Guard: Disallow raw string literals in JSX in fully localized critical feature views
+    files: [
+      'src/features/delivery/components/**/*.{ts,tsx}',
+      'src/features/media/components/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    rules: {
+      'react/jsx-no-literals': [
+        'error',
+        {
+          noStrings: true,
+          ignoreProps: true,
+          noAttributeStrings: false,
+        },
+      ],
+    },
+  },
 );

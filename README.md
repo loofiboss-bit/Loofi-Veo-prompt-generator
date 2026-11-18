@@ -20,7 +20,7 @@
 
 [![Release](https://img.shields.io/github/v/release/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/latest)
 [![Validate](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml/badge.svg)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/actions/workflows/validate.yml)
-[![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Fedora-3b82f6?style=flat-square&labelColor=0f172a)](#install-v1600)
+[![Platforms](<https://img.shields.io/badge/platform-Fedora%20RPM%20(Primary)%20%7C%20Windows%20(Optional)-3b82f6?style=flat-square&labelColor=0f172a>)](#install-v2211)
 [![License](https://img.shields.io/github/license/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/loofiboss-bit/Loofi-Veo-prompt-generator?style=flat-square&labelColor=0f172a&color=3b82f6)](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/forks)
@@ -29,7 +29,46 @@
 The download counter counts all release assets, including checksums and metadata; it is not a count
 of unique users or installations.
 
-## v16: your clips to a finished video
+## v22.0: AI Video Iteration & Creative Loop
+
+Loofi Creator Studio v22.0 evolves the studio into an intelligent, coherent creative environment where creators can iterate, analyze, and refine generated videos using natural language instructions.
+
+- **AI Video Iteration:** Natural language multi-turn video edits powered by Gemini Omni 1.1 Flash via the stateful Interactions API (`previous_interaction_id`), honoring all model limits (3–10s, 360p–4K, 16:9/9:16).
+- **Smart Version Control:** Non-destructive version lineage (`v1`, `v2`, `v3`) with full instruction history, source media protection, and built-in side-by-side A/B comparison.
+- **Intelligent Creative Assistant:** Voluntary, reviewable AI suggestions for camera composition, lighting & visual continuity, goal deviation detection, and tailored next-turn instructions.
+- **Unified Creative Workflow:** Effortless 7-step cycle connecting Idea → Prompt Studio → Video Generation → AI Analysis → Version Comparison → Storyboard Timeline → Final Export.
+- **Timeline Integration & Version Badges:** Seamless version transfer to Storyboard takes and clear timeline clip version indicators (`[v2]`, `[v3]`).
+- **Fedora KDE/Wayland Performance:** Optimized memory management, low-CPU overhead, and CSS GPU-accelerated rendering, tailored for Linux creators.
+
+## v21: Polish, Design Harmony & Production Trust
+
+Loofi Creator Studio v21 introduces an intuitive guided delivery flow, unified media library protection, complete plugin worker sandboxing, and refined design consistency across the studio.
+
+- **Guided 4-Step Delivery Pipeline:** A clear sequential export stepper (Check delivery → Review delivery → Export video → Save files) with real-time preflights, cancellation, and soft recommendations.
+- **Unified Media Library & Deletion Guards:** Filter media by All, Video, Audio, Images, References, and Generated with live counts. Assets actively placed on timeline tracks or Production Bible profiles are protected from accidental deletion.
+- **Plugin Sandbox Isolation:** External plugins run with strict process isolation inside dedicated Web Workers with zero dynamic code evaluation (`wasm-unsafe-eval` CSP).
+- **Consolidated Save Status:** Top-bar status chip (`saved`, `saving`, `conflict`, `error`) with 1-click save, eliminating redundant intrusive banners.
+- **Fast Project Shortcuts:** "Continue editing" button in the Projects hub automatically routes to your active timeline or studio.
+
+## Capability Matrix
+
+| Capability                                   |  Local (No Account / No Key)  |     Desktop App (Electron)      |     API Key Required     | Experimental (Labs) |
+| :------------------------------------------- | :---------------------------: | :-----------------------------: | :----------------------: | :-----------------: |
+| **Video & Music Prompt Compilation**         |        ✅ Full offline        |             ✅ Yes              |     ❌ Not required      |       ❌ Core       |
+| **Local Timeline Editor & Multi-track**      |        ✅ Full offline        |             ✅ Yes              |     ❌ Not required      |       ❌ Core       |
+| **SRT Subtitle Import & Sync**               |        ✅ Full offline        |             ✅ Yes              |     ❌ Not required      |       ❌ Core       |
+| **H.264/AAC MP4 & Package Export**           | ✅ Local Canvas/MediaRecorder |     ✅ Native ffmpeg/canvas     |     ❌ Not required      |       ❌ Core       |
+| **Arena 8-Target Comparison**                |        ✅ Full offline        |             ✅ Yes              |     ❌ Not required      |       ❌ Core       |
+| **Production Bible & Continuity Profiles**   |  ✅ Local sha256 & IndexedDB  |             ✅ Yes              |     ❌ Not required      |       ❌ Core       |
+| **Portable `.loofi-project` & OTIO Bundles** |        ✅ Full offline        |             ✅ Yes              |     ❌ Not required      |       ❌ Core       |
+| **Local Whisper Audio Transcription**        |   ❌ (Needs Desktop model)    | ✅ Local model (after download) |       ❌ No cloud        |       ❌ Core       |
+| **AI Prompt Improvement (Ollama)**           |   ✅ Local Ollama instance    |             ✅ Yes              |    ❌ Local endpoint     |     ❌ Optional     |
+| **AI Prompt Improvement (Gemini)**           |         ❌ Cloud API          |             ✅ Yes              |    🔑 Gemini API Key     |     ❌ Optional     |
+| **Veo API / Lyria Cloud Generation**         |         ❌ Cloud API          |             ✅ Yes              | 🔑 Google Cloud / Vertex |  🧪 Approval-gated  |
+| **3D Camera Staging & Previz**               |        ✅ Full offline        |       ✅ WebGL / Three.js       |     ❌ Not required      |   🧪 Experimental   |
+| **Sandboxed External Plugins**               |    ✅ Isolated Web Workers    |     ✅ Isolated Web Workers     |     ❌ Not required      |   🧪 Experimental   |
+
+## Your clips to a finished video
 
 Loofi Creator Studio v16 adds reliable local editing, atomic project document persistence, linked captions, and verified offline MP4 delivery up to three minutes.
 
@@ -43,7 +82,18 @@ work with **Load latest** and **Save as copy**. Projects exposes search, sorting
 backup recovery. Native jobs survive navigation; rendering interrupted by app exit is marked failed.
 Local media, editing and supported desktop export require no account, key or external request.
 
+Start surfaces the active project's next action and known recovery needs. Expand examples or recipes
+when needed. The timeline's source preview aids editing; **Open delivery review** reaches the rendered
+preview for checking the final mix, transitions and captions. Caption suggestions flag overlaps,
+lines over 42 grapheme clusters and reading speeds over 20 per second for optional manual review.
+
+The delivery steps distinguish rendering from saving the selected output. A saved filename records a
+successful save at that time; the file may subsequently have been moved or deleted. Earlier jobs are
+labelled as previous deliveries when they cannot be matched to the current edit.
+
 See [the v16 workflow and qualification boundaries](docs/CREATOR_V16.md).
+Source-only stabilization and reproducible performance checks are documented in
+[v16 stabilization](docs/V16_STABILIZATION.md).
 
 ## Why creators use it
 
@@ -96,66 +146,52 @@ schemas are preserved. Legacy routes `/director`, `/composer`, and `/optimize` r
 
 ## Prompt Studio
 
-The workbench keeps the idea, basic settings and **Build copy-ready pack** together. Expand
-**Templates and history** for Templates, Previous packs and Revisions; scene and music details
-remain optional. Wide workspaces show editor and output side by side. Narrow workspaces use
-**Editor / Result**, switching to Result when a pack is built. **Copy prompt** is the main action;
-**Copy options** contains the other output formats.
+Start with an idea, select a target and choose **Create with Gemini**. One approved AI request
+returns editable scene details and three target-tailored variants. The recommended variant opens
+automatically. Manual details are preserved exactly; individual field protection controls let you
+explicitly allow regeneration. **Undo AI creation** restores the saved pre-generation revision.
+**Build copy-ready pack** remains the offline, zero-token alternative.
 
-The sidebar groups creation, libraries and follow-up. **Quick navigation** (Ctrl/Cmd+K) reaches
-the same seven workspaces. Settings returns to the workspace you came from. Assets starts with
-the media library; continuity profiles have their own tab. Reference and timeline controls open
-the contextual asset drawer. See [the workbench design contract](DESIGN.md).
+Expand **Scene details** for camera optics/composition, character consistency, environment, light,
+style and sound. Existing creative presets fill empty fields. Saved characters supply Visual DNA
+without replacing an authored subject. Regenerating one unlocked scene field leaves the other
+fields unchanged and marks the existing output as outdated until rebuilt. Variant refinement can
+make the selected prompt more cinematic, realistic, dynamic or detailed.
 
-Describe your idea, choose the target, mode, duration and references, then select **Build copy-ready
-pack**. Compilation runs locally. Each pack has three editable variants with synchronized copy
-fields. Project history, version comparison and a complete local template library are available in Studio. Scene details and handoff notes
-expand when needed.
+Wide workspaces show editor and result side by side; narrow workspaces use **Editor / Result**.
+**Copy prompt** copies the selected version; **Copy options** exposes settings and the complete
+handoff. **Templates and history** contains reusable templates, earlier packs and revisions.
 
-Video targets Flow, Kling, Runway, Sora, Luma, Wan and Hailuo use manual copy handoffs. Suno uses **Copy Style**,
-**Copy Lyrics**, **Copy All**, or **Copy & Open Suno**; it has no automated provider integration.
-Only **Veo API** exposes an internal production handoff, with supported request combinations checked
-before creating a plan. A plan does not submit a paid request: review its cost and approve it in
-Production first.
+Current manual handoffs cover Flow/Veo 3.1 Lite/Fast/Quality, Gemini Omni 1.1 Flash, Kling 4.0,
+Runway Gen-4.5, Luma Ray3.2, Wan 3.0 and MiniMax-H3. Model profiles determine modes, duration,
+aspect ratio, writing rules, audio and negative-prompt support. Unverified features are not treated
+as supported; audio for non-audio targets stays in post-production notes. Wan's older open-weight
+workflow remains an explicit legacy profile. See [the dated target reference](docs/PROMPT_STUDIO_TARGETS.md).
 
-Music templates are local lyric suggestions. AI enhancement requires a configured Gemini or Ollama
-provider. Section rewriting keeps the requested language and preserves other sections, including
-locks. Late AI responses are ignored after input changes.
+Sora and shut-down Gemini API Veo Preview bindings are unavailable for new generation. Existing
+prompt text, history and exports remain readable. Choose an active target explicitly before
+creating a replacement; no paid provider or target is silently substituted. Video-model services
+with their own APIs still use manual handoff here unless an existing integration is qualified.
 
-Drafts, variant edits and section locks autosave after 500 ms to the active project document.
-**Saving**, **Saved**, and **Not saved** report the real persistence result; memory fallback cannot
-claim a durable save. Project switching waits for pending draft writes.
+Music retains independent lyrics, section locks and editable variants. Suno v6/v6-wild (Pro or
+Premier), v6-mini and existing saved profiles are available as manual handoffs. Expansion preserves
+locked lyric sections. Concise style text is guidance rather than an undocumented 200-character
+hard limit.
 
-## New in v14.2.1
+AI uses the existing Gemini/Ollama provider boundary, cancellation and cost approvals. A missing
+key or invalid response preserves the draft and offers the local workflow. Late answers cannot
+replace a newer project, idea or settings. Scene changes and generated output are saved together
+before display; save failures retain the previous content. Model, style and language are saved
+with the project. **Saving**, **Saved**, and **Not saved** reflect the persistence result.
 
-- Follow a responsive workbench with shared navigation, Quick navigation and contextual assets.
-- See accurate scene readiness and the next action; recover known jobs without a new paid request.
-- Read local, AI and combined review findings and confirm manual review when needed.
-- Import external video results against immutable prompt variants, review locally and place on a scene.
-- Deliver the selected video/audio timeline as an OTIO ZIP with relative media and provenance;
-  complete project backup remains separate and strict.
+## Release History & Foundations
 
-See [connected creator-flow contracts](docs/CREATOR_FLOW.md) for persistence and review rules.
+For complete historical progression, see [Release notes](docs/wiki/Release-Notes.md) and [CHANGELOG.md](CHANGELOG.md).
 
-## v14.1 prompt quality foundations
-
-- **Compare in Arena** compiles all eight video targets from the same brief with the same compiler
-  as Studio. Copy packages match Studio exactly; this is a prompt comparison, not a video-quality benchmark.
-- **Readiness checks** distinguish documented constraints, writing advice and unconfirmed compatibility.
-  Checks update after editing any variant; **Open control** selects the affected field or variant.
-  Quoted dialogue is preserved. Manual copy remains available; internal Veo requests remain approval-gated.
-- **Versions and comparison** saves both workspaces, outputs, variant selection and lyric locks in the
-  project. Restore saves the current work before creating a restored version. Identical snapshots are deduplicated.
-- AI enhancement and section rewriting propose changes for **Accept changes** or **Reject changes**.
-  The draft stays unchanged until acceptance, locked sections stay byte-identical, and edits invalidate pending proposals.
-- **Studio template library** saves complete video or music inputs for reuse between projects, with
-  search, target filtering, preview, update and delete. Re-select images and clips in each project.
-  Older video templates remain available as read-only entries.
-
-Changing brief inputs keeps the previous output visible until rebuilding. Rebuild, model change,
-template application, AI acceptance and restore require a durable checkpoint first; a storage failure
-blocks replacement. Project archives retain revisions and their referenced local media. Creative Pack
-schema 5 supports revisions without changing the documented project schema 11 or existing storage keys.
+- **v21.0:** Guided delivery, coordinated saves, media guards, recovery navigation and caption review.
+- **v20.0:** Project-safe editing, field-level music/video AI improvement, local Whisper transcription, and cost locking.
+- **v19.0:** Pro A/B take review, cinematic AST conflict linter, and multi-shot batch controls.
+- **v16.0–v18.0:** Multi-track local editing, atomic document persistence, and verified offline MP4 delivery.
 
 ## Portable projects and production
 
@@ -188,22 +224,16 @@ See [v14 implementation notes](docs/V14_IMPLEMENTATION.md) for contracts and ver
 - Desktop credentials stay in the operating-system vault and never enter renderer state.
 - `.loofi-project` schema 11 and Creative Pack schema 5 preserve older project data and unknown fields.
 
-## Install v16.0.0
+## Install v22.1.1
 
-Download the [v16.0.0 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0)
+Download the [v22.1.1 GitHub Release](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1)
 and verify the asset against `SHA256SUMS.txt` before installing.
 
-### Windows
+### Fedora Linux (Primary Target — Fedora 44 & Fedora 45 x86_64)
 
-Use the NSIS installer (`Loofi-Flow-Veo-Studio-16.0.0-win-x64-setup.exe`) for a normal installation, or the portable EXE (`Loofi-Flow-Veo-Studio-16.0.0-win-x64-portable.exe`) without installation.
+The primary supported platform for Loofi Creator Studio is **Fedora Linux** (Fedora 44 and Fedora 45 on x86_64 / Wayland / KDE).
 
-### Fedora RPM from GitHub
-
-```bash
-sudo dnf install ./Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.rpm
-```
-
-### Fedora COPR
+#### Fedora COPR (Recommended)
 
 ```bash
 sudo dnf copr enable loofitheboss/loofi-creator-studio
@@ -211,26 +241,44 @@ sudo dnf install veo-prompt-generator
 ```
 
 The [COPR project](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-creator-studio/)
-publishes the Fedora 44 x86_64 package. Its source helper downloads the matching GitHub RPM and
-checks `SHA256SUMS.txt` before COPR builds the package. The current package is
-`14.1.0-2.fc44`; run `sudo dnf upgrade veo-prompt-generator` if an older package is
-already installed.
+publishes verified packages for Fedora 44 and Fedora 45 x86_64. Package availability follows COPR metadata; run `sudo dnf upgrade veo-prompt-generator`
+if an older package is already installed.
 
-### Linux AppImage
+#### Fedora RPM from GitHub
 
 ```bash
-chmod +x Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.AppImage
-./Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.AppImage
+sudo dnf install ./Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.rpm
 ```
 
-## v15: from an idea to a video
+#### Linux AppImage
+
+```bash
+chmod +x Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.AppImage
+./Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.AppImage
+```
+
+### Windows (Optional / Manual Build Only)
+
+Windows binaries are not built or published by automated CI. Loofi Creator Studio prioritizes native Fedora Linux RPM and AppImage workflows. Users who want Windows binaries can build them manually:
+
+```bash
+# On a Windows x64 machine:
+npm ci
+npm run build
+npx electron-builder --win
+```
+
+Output binaries will be generated in `release/`:
+
+- NSIS installer: `Loofi-Flow-Veo-Studio-22.1.1-win-x64-setup.exe`
+- Portable executable: `Loofi-Flow-Veo-Studio-22.1.1-win-x64-portable.exe`
+
+## Offline Video & Publication Guides
 
 See the [local verification report and demonstration](docs/CREATOR_V15_VERIFICATION.md) for real rendered files, five AI-driven scenarios and platform qualification boundaries.
 
-Creator Studio adds Start, twelve local recipes, three reusable offline examples,
-My style, captions and a desktop video/publication-package export workflow. Native export includes
-a reviewed rendering bundle for
-the running platform, with no startup download or separate system FFmpeg requirement.
+Creator Studio provides local recipes, reusable offline examples,
+captions and a desktop video/publication-package export workflow:
 
 - [Export your first offline video](docs/guides/FIRST_OFFLINE_VIDEO.md)
 - [Add captions and your own style](docs/guides/CAPTIONS_AND_STYLE.md)
@@ -276,6 +324,7 @@ npm run screenshots
 - [Suno handoff](docs/wiki/Suno-Handoff.md)
 - [Production workflow](docs/wiki/Production-Workflow.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](ROADMAP.md)
 - [Release process and evidence](docs/RELEASE.md)
 - [Installation and updates](docs/wiki/Installation-and-Updates.md)
 - [Release notes](docs/wiki/Release-Notes.md)

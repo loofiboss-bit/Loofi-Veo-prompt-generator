@@ -1,11 +1,12 @@
 # Prepare a publication package
 
 **Result:** one ZIP containing your verified video, subtitle sidecar, first-frame cover, publication
-text and delivery report. You choose where to publish it. This is a v15 development feature.
+text and delivery report. You choose where to publish it. These instructions describe source
+behavior and do not announce a new package or public release.
 
 1. Open the finished project in **Timeline** or **Production → Export** and find **Export video**.
 2. Choose the final ratio, resolution, crop, caption output and style. Preview the safe margins.
-   Keep the timeline at or below 60 seconds.
+   Keep the timeline at or below 180 seconds.
 3. Edit **Publication title** and **Description** to describe the actual video. These fields work
    locally. You do not need AI to write or save them.
 4. Optionally choose **Request publication text proposal**. Only the displayed title and description

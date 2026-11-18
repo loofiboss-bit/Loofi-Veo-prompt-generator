@@ -31,6 +31,7 @@ import Icon from '@shared/components/ui/Icon';
 import { useAppStore } from '@core/store/useAppStore';
 import { useDiagnosticsStore } from '@core/store/useDiagnosticsStore';
 import { LabsPanel } from './components/LabsPanel';
+import { CreatorStyleSettings } from './components/CreatorStyleSettings';
 
 function isValidUrl(str: string): boolean {
   try {
@@ -46,7 +47,15 @@ interface SettingsPageProps {
   embedded?: boolean;
 }
 
-const SETTINGS_TABS = ['general', 'updates', 'desktop', 'plugins', 'registry', 'support'] as const;
+const SETTINGS_TABS = [
+  'general',
+  'creatorStyles',
+  'updates',
+  'desktop',
+  'plugins',
+  'registry',
+  'support',
+] as const;
 
 type SettingsTab = (typeof SETTINGS_TABS)[number];
 
@@ -56,6 +65,7 @@ function isSettingsTab(value: string | null): value is SettingsTab {
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) => {
   const { t, i18n } = useTranslation('settings');
+  const { t: creatorT } = useTranslation('creator');
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = (location.state as { returnTo?: unknown } | null)?.returnTo;
@@ -127,6 +137,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
 
   const tabs = [
     { key: 'general' as const, label: t('general'), icon: 'settings' as const },
+    {
+      key: 'creatorStyles' as const,
+      label: creatorT('style.title', 'My style'),
+      icon: 'settings' as const,
+    },
     { key: 'updates' as const, label: t('updates'), icon: 'cloud-download' as const },
     { key: 'desktop' as const, label: t('desktop'), icon: 'layers' as const },
     { key: 'plugins' as const, label: t('plugins'), icon: 'code' as const },
@@ -545,6 +560,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ embedded = false }) 
           )}
 
           {activeTab === 'updates' && <UpdateSettings />}
+          {activeTab === 'creatorStyles' && <CreatorStyleSettings />}
           {activeTab === 'desktop' && <DesktopSettings />}
           {activeTab === 'plugins' && <PluginList />}
           {activeTab === 'registry' && <MarketplacePanel />}

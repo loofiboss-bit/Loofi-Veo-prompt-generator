@@ -71,7 +71,7 @@ artifact transport. Fresh remote CI and canonical tag qualification establish pu
 
 ## Demonstration assets
 
-- [60-second edited demonstration](../assets/videos/creator-v15-demo.mp4)
+- Offline 60-second creator demonstration (archived in the v15 release artifacts; source tree cleaned of tracked MP4 binaries, reproducible locally via `node scripts/verify-creator-desktop.mjs`)
 - [Start](../assets/screenshots/15-creator-start.png)
 - [Delivery](../assets/screenshots/16-creator-delivery.png)
 - [Verified Unicode subtitles](../assets/screenshots/17-creator-unicode.png)

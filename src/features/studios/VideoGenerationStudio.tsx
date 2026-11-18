@@ -179,6 +179,8 @@ const VideoGenerationStudio: React.FC<VideoGenerationStudioProps> = ({
 
     if (taskId) {
       setActiveTab('queue');
+    } else {
+      onClose();
     }
   };
 

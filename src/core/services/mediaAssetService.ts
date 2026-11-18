@@ -64,7 +64,7 @@ class MediaAssetService {
       const stored = await window.electron.importDesktopMedia({ key, bytes, mimeType: file.type });
       if (stored.sha256 !== hash || stored.sizeBytes !== file.size)
         throw new Error('The saved media did not match the original file. Please retry.');
-      url = stored.localUrl;
+      url = stored.displayUrl ?? stored.localUrl;
     } else {
       await this.storeBlob(key, file);
       url = (await this.getObjectUrl(key))!;

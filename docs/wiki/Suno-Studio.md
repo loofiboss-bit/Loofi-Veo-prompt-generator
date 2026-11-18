@@ -13,3 +13,7 @@ It creates structured Custom Mode handoffs with:
 
 Use descriptive style terms instead of naming real artists or real voices. Suno account access and
 private APIs are outside the app's scope.
+
+Music detail expansion shows proposed field changes before you accept or reject the whole proposal.
+If the brief changes after a build, rebuild the pack or explicitly choose to use the earlier result
+before copying it or opening Suno.

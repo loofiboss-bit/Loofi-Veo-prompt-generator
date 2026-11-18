@@ -33,6 +33,27 @@ const takeContentChanged = (take: ProductionTake, updates: Partial<ProductionTak
   ('continuitySnapshot' in updates &&
     updates.continuitySnapshot?.snapshotHash !== take.continuitySnapshot?.snapshotHash);
 
+export function getProductionReviewInputIdentity(
+  shot: ProductionShot,
+  take: ProductionTake,
+): string {
+  return JSON.stringify({
+    shotId: shot.id,
+    prompt: shot.prompt,
+    negativePrompt: shot.negativePrompt,
+    camera: shot.camera,
+    generationRequest: shot.generationRequest,
+    shotContinuitySnapshotHash: shot.continuitySnapshot?.snapshotHash,
+    takeId: take.id,
+    mediaKey: take.localMediaKey,
+    providerMediaUri: take.providerMediaUri,
+    createdAt: take.createdAt,
+    request: take.request,
+    continuitySnapshotHash: take.continuitySnapshot?.snapshotHash,
+    referenceAssetIds: take.continuitySnapshot?.referenceAssetIds,
+  });
+}
+
 const RUN_STORE = createStore('veo-production-runs', 'production-runs-v1');
 const RUN_PREFIX = 'production-run:';
 
@@ -766,6 +787,63 @@ class ProductionRunService {
     return createdTake;
   }
 
+  /** Appends an externally or iteratively generated take (e.g. Omni Flash revision) onto a shot. */
+  async appendTakeToShot(
+    runId: string,
+    shotId: number,
+    take: ProductionTake,
+  ): Promise<ProductionRun> {
+    return this.mutateRun(runId, (run) => {
+      if (!run.shots.some((shot) => shot.id === shotId)) {
+        throw new Error(`Production shot ${shotId} was not found.`);
+      }
+      const shots = run.shots.map((shot) =>
+        shot.id === shotId
+          ? {
+              ...shot,
+              status: this.deriveShotStatus(take.status),
+              takes: [...shot.takes, take],
+            }
+          : shot,
+      );
+      return {
+        ...run,
+        status: this.deriveRunStatus(shots, run.status),
+        shots,
+      };
+    });
+  }
+
+  /** Comparison notes are editorial metadata, never a take or review transition. */
+  async saveComparisonNotes(
+    runId: string,
+    shotId: number,
+    takeId: string,
+    notes: string,
+  ): Promise<ProductionRun> {
+    return this.mutateRun(runId, (run) => {
+      if (
+        !run.shots.some(
+          (shot) => shot.id === shotId && shot.takes.some((take) => take.id === takeId),
+        )
+      )
+        throw new Error('The comparison result is unavailable.');
+      return {
+        ...run,
+        shots: run.shots.map((shot) =>
+          shot.id === shotId
+            ? {
+                ...shot,
+                takes: shot.takes.map((take) =>
+                  take.id === takeId ? { ...take, comparisonNotes: notes } : take,
+                ),
+              }
+            : shot,
+        ),
+      };
+    });
+  }
+
   async updateTake(
     runId: string,
     shotId: number,
@@ -816,8 +894,22 @@ class ProductionRunService {
     shotId: number,
     takeId: string,
     review: ShotReviewResult,
+    expectedInputIdentity?: string,
   ): Promise<ProductionRun> {
     return this.mutateRun(runId, (run) => {
+      const shot = run.shots.find((item) => item.id === shotId);
+      if (!shot) {
+        throw new Error(`Production shot ${shotId} was not found.`);
+      }
+      const take = shot.takes.find((item) => item.id === takeId);
+      if (!take) throw new Error(`Production take ${takeId} was not found.`);
+      if (
+        expectedInputIdentity &&
+        getProductionReviewInputIdentity(shot, take) !== expectedInputIdentity
+      )
+        throw new Error(
+          'The take or review inputs changed while review was running. Review again.',
+        );
       const approvalIndex = run.approvals.findIndex(
         (approval) =>
           approval.status === 'active' &&
@@ -828,10 +920,6 @@ class ProductionRunService {
       );
       if (approvalIndex < 0) {
         throw new Error('No active review approval is available for this shot.');
-      }
-      const shot = run.shots.find((item) => item.id === shotId);
-      if (!shot) {
-        throw new Error(`Production shot ${shotId} was not found.`);
       }
       assertCurrentContinuitySnapshot(shot);
       const currentSnapshotHash = shot.continuitySnapshot?.snapshotHash;

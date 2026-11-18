@@ -154,10 +154,13 @@ export const useDirectorsChain = ({
         count: 1,
       },
       inputImage,
+      (msg, type) => addToast(msg, type),
     );
 
     if (!taskId) {
-      throw new Error('Failed to start video generation task');
+      throw new Error(
+        'Legacy quick generation cannot approve a paid call automatically. Open Create to review and approve the maximum charge.',
+      );
     }
 
     // Wait for Completion (Polling Pattern)

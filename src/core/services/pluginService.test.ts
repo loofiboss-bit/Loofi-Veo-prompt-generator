@@ -622,4 +622,30 @@ describe('PluginService', () => {
 
     expect(pluginService.getStudios()).toHaveLength(2);
   });
+
+  // ─── P0.3 Fail-closed trust & sandbox enforcement ─────────────────
+
+  it('rejects loading plugins with invalid signature evaluation', async () => {
+    vi.spyOn(pluginCrypto, 'determinePluginTrustLevel').mockResolvedValueOnce('invalid');
+
+    const result = await pluginService.load({ ...mockManifest, id: 'invalid-sig-plugin' });
+    expect(result.success).toBe(false);
+    expect(result.error?.message).toContain('failed cryptographic signature verification');
+  });
+
+  it('refuses activating an external plugin without an active isolated worker sandbox', async () => {
+    const result = await pluginService.load({ ...mockManifest, id: 'unsandboxed-external' });
+    expect(result.success).toBe(true);
+
+    await expect(pluginService.activate('unsandboxed-external')).rejects.toThrow(
+      /isolated worker sandbox/,
+    );
+  });
+
+  it('does not treat placeholder development public key as trusted', async () => {
+    const { isKeyTrusted } = await import('@core/config/trustedKeys');
+    expect(
+      isKeyTrusted('MCowBQYDK2VwAyEAPlaceholderKeyForDevelopmentDoNotUseInProduction00='),
+    ).toBe(false);
+  });
 });

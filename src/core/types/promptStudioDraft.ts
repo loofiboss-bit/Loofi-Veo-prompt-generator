@@ -6,6 +6,13 @@ import type {
 
 /** Versioned, project-owned Studio input and editable output. */
 export interface PromptStudioDraftV1 {
+  aiSettings?: {
+    model: string;
+    stylePreset: string;
+    language: 'en' | 'sv';
+  };
+  fieldOrigins?: Record<string, 'manual' | 'ai' | 'default'>;
+  lockedFields?: string[];
   schemaVersion: 1;
   projectId: string;
   mode: 'video' | 'music';

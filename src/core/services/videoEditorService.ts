@@ -32,7 +32,7 @@ const loadFFmpeg = async (): Promise<FFmpegInstance> => {
   const { toBlobURL } = await import('@ffmpeg/util');
   ffmpeg = new FFmpeg();
   ffmpeg.on('log', ({ message }) => logger.debug(`FFmpeg: ${message}`, 'videoEditorService'));
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  const baseURL = './ffmpeg';
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
@@ -206,6 +206,18 @@ export const stitchVideos = async (
 // ... (Keep existing simple renderers like audio visualizer locally or move them too if desired)
 // For now, keeping renderAudioVisualizer local as it's often used for quick previews.
 
+export const escapeDrawText = (text: string): string => {
+  return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:').replace(/%/g, '\\%');
+};
+
+export const sanitizeHexColor = (color: string, defaultColor: string = '000000'): string => {
+  const clean = color.replace(/^#/, '').replace(/^0x/i, '');
+  if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
+    return clean;
+  }
+  return defaultColor;
+};
+
 export const renderTitleCard = async (
   text: string,
   duration: number = 3,
@@ -217,27 +229,31 @@ export const renderTitleCard = async (
   try {
     await instance.readFile('font.ttf');
   } catch {
-    const fontUrl = 'https://cdn.jsdelivr.net/gh/webfontkit/roboto/src/hinted/Roboto-Regular.ttf';
+    const fontUrl = './creator-fonts/NotoSans.ttf';
     const fontData = await (await getFetchFile())(fontUrl);
     await instance.writeFile('font.ttf', fontData);
   }
 
   const outputName = `title_${Date.now()}.mp4`;
-  const bgColor = styles.background.replace('#', '0x');
-  const safeTextColor = `0x${styles.color.replace('#', '')}FF`;
-  const safeText = text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:');
+  const cleanBg = sanitizeHexColor(styles.background, '000000');
+  const cleanFg = sanitizeHexColor(styles.color, 'FFFFFF');
+  const bgColor = `0x${cleanBg}`;
+  const safeTextColor = `0x${cleanFg}FF`;
+  const safeText = escapeDrawText(text);
+  const safeDuration = Math.max(0.1, Number(duration) || 3);
+  const safeFontSize = Math.max(1, Math.min(1000, Number(styles.fontSize) || 48));
 
   const cmd = [
     '-f',
     'lavfi',
     '-i',
-    `color=c=${bgColor}:s=1920x1080:d=${duration}`,
+    `color=c=${bgColor}:s=1920x1080:d=${safeDuration}`,
     '-vf',
-    `drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=${safeTextColor}:fontsize=${styles.fontSize}:x=(w-text_w)/2:y=(h-text_h)/2`,
+    `drawtext=fontfile=font.ttf:text='${safeText}':fontcolor=${safeTextColor}:fontsize=${safeFontSize}:x=(w-text_w)/2:y=(h-text_h)/2`,
     '-c:v',
     'libx264',
     '-t',
-    `${duration}`,
+    `${safeDuration}`,
     '-pix_fmt',
     'yuv420p',
     outputName,

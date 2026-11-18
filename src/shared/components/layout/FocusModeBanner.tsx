@@ -1,10 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 /**
  * Subtle in-workspace reminder that advanced surfaces are intentionally hidden.
  */
 export function FocusModeBanner() {
+  const { t } = useTranslation('common');
   const { focusMode, updateSettings } = useSettingsStore();
 
   if (!focusMode) {
@@ -14,19 +16,21 @@ export function FocusModeBanner() {
   return (
     <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-blue-800/40 bg-blue-950/20 px-4 py-3 text-sm text-blue-200">
       <div className="min-w-0">
-        <p className="font-medium">Focus Mode is on</p>
+        <p className="font-medium">{t('focusMode.activeTitle', 'Focus Mode is on')}</p>
         <p className="text-xs text-blue-300/80">
-          Advanced studios and collaboration surfaces are hidden so you can stay on the main prompt
-          flow.
+          {t(
+            'focusMode.activeDescription',
+            'Advanced studios and collaboration surfaces are hidden so you can stay on the main prompt flow.',
+          )}
         </p>
       </div>
       <button
         type="button"
         onClick={() => updateSettings({ focusMode: false })}
         className="shrink-0 rounded-lg border border-blue-700/40 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-colors hover:bg-blue-900/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-        aria-label="Exit Focus Mode"
+        aria-label={t('focusMode.exit', 'Exit Focus Mode')}
       >
-        Exit Focus Mode
+        {t('focusMode.exit', 'Exit Focus Mode')}
       </button>
     </div>
   );

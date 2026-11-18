@@ -26,6 +26,27 @@ describe('promptStudioDraftService', () => {
     mocks.load.mockResolvedValue({ studioDraft: saved });
     expect(await promptStudioDraftService.load('a')).toBe(saved);
   });
+  it('creates current defaults without migrating saved legacy targets or settings', async () => {
+    const fresh = createPromptStudioDraft('new');
+    expect(fresh).toMatchObject({
+      video: { profileId: 'flow-veo-3.1-lite' },
+      music: { targetProfile: 'suno-v6' },
+      aiSettings: { model: 'gemini-3.8-flash', stylePreset: 'auto', language: 'en' },
+      lockedFields: [],
+      fieldOrigins: {},
+    });
+    const saved = {
+      ...fresh,
+      projectId: 'old',
+      video: { ...fresh.video, target: 'sora' as const },
+      music: { ...fresh.music, targetProfile: 'suno-v5.5' as const },
+      fieldOrigins: { camera: 'manual' as const },
+      lockedFields: ['camera'],
+    };
+    mocks.load.mockResolvedValue({ studioDraft: saved });
+    expect(await promptStudioDraftService.load('old')).toBe(saved);
+  });
+
   it('never imports a draft belonging to a different project', async () => {
     mocks.load.mockResolvedValue({ studioDraft: createPromptStudioDraft('b') });
     expect(await promptStudioDraftService.load('a')).toMatchObject({

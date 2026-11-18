@@ -15,6 +15,7 @@
  */
 
 import { logger } from '@core/services/loggerService';
+import type { LocationProfile, Asset, Shot, TimelineTrack, TimelineClip } from '@core/types';
 
 // ─── Event Map ───────────────────────────────────────────────────────────────
 
@@ -29,10 +30,21 @@ export interface StoreMediatorEvents {
   'project:saved': { projectId: string };
   'project:closed': undefined;
 
+  // Location domain
+  'locations:updated': { locations: LocationProfile[] };
+
+  // Asset domain
+  'asset:upserted': { asset: Asset };
+
   // Timeline domain
   'timeline:shotAdded': { shotId: number };
   'timeline:shotRemoved': { shotId: number };
   'timeline:clipMoved': { clipId: string; trackId: string };
+  'timeline:synced': {
+    shots: Shot[];
+    tracks: TimelineTrack[];
+    clips: TimelineClip[];
+  };
 
   // History domain
   'history:entryAdded': { entryId: string };
@@ -58,6 +70,21 @@ export interface StoreMediatorEvents {
   // Settings domain
   'settings:changed': { key: string; value: unknown };
 
+  // Location domain
+  'location:bankChanged': { locations: import('@core/types').LocationProfile[] };
+
+  // Studio Result domain
+  'studioResult:assetsSynchronized': {
+    projectId: string;
+    assets: import('@core/types').Asset[];
+  };
+  'studioResult:timelineAccepted': {
+    projectId: string;
+    shots: import('@core/types').Shot[];
+    tracks: import('@core/types').TimelineTrack[];
+    clips: import('@core/types').TimelineClip[];
+  };
+
   // Collaboration domain
   'collaboration:peerJoined': { peerId: string };
   'collaboration:peerLeft': { peerId: string };
@@ -80,7 +107,9 @@ interface MediatorOptions {
 
 class StoreMediator {
   private listeners = new Map<EventName, Set<EventHandler<EventName>>>();
+  private activeEvents = new Set<EventName>();
   private readonly maxListeners: number;
+  private readonly maxEmitDepth: number = 8;
   private readonly debug: boolean;
 
   constructor(options: MediatorOptions = {}) {
@@ -123,6 +152,11 @@ class StoreMediator {
     event: E,
     ...args: EventPayload<E> extends undefined ? [] : [EventPayload<E>]
   ): void {
+    if (this.activeEvents.has(event) || this.activeEvents.size >= this.maxEmitDepth) {
+      logger.warn(`StoreMediator: re-entrant or cyclic emit blocked for "${String(event)}"`);
+      return;
+    }
+
     const handlers = this.listeners.get(event);
 
     if (this.debug) {
@@ -133,12 +167,17 @@ class StoreMediator {
 
     const payload = args[0] as EventPayload<E>;
 
-    for (const handler of handlers) {
-      try {
-        (handler as EventHandler<E>)(payload);
-      } catch (error) {
-        logger.error(`StoreMediator: error in handler for "${event}"`, undefined, error);
+    this.activeEvents.add(event);
+    try {
+      for (const handler of [...handlers]) {
+        try {
+          (handler as EventHandler<E>)(payload);
+        } catch (error) {
+          logger.error(`StoreMediator: error in handler for "${event}"`, undefined, error);
+        }
       }
+    } finally {
+      this.activeEvents.delete(event);
     }
   }
 

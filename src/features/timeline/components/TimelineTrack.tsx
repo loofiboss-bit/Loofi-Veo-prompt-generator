@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Asset, ClipTransition, Shot, TimelineClip, TimelineTrack } from '@core/types';
 import { useAppStore } from '@core/store/useAppStore';
 
@@ -45,6 +46,8 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
 }) => {
   const updateShotTransition = useAppStore((state) => state.updateShotTransition);
   const setTimelineClipTransition = useAppStore((state) => state.setTimelineClipTransition);
+  const updateTimelineTrack = useAppStore((state) => state.updateTimelineTrack);
+  const { t } = useTranslation('creator');
   const orderedClips = React.useMemo(
     () => [...clips].sort((a, b) => a.startTime - b.startTime),
     [clips],
@@ -107,6 +110,28 @@ const TimelineTrackView: React.FC<TimelineTrackProps> = ({
               className={`h-full w-3/4 ${track.type === 'audio' ? 'bg-fuchsia-500' : 'bg-cyan-500'}`}
             />
           </div>
+        </div>
+        <div className="mt-1 flex gap-1">
+          <button
+            type="button"
+            aria-pressed={track.active !== false}
+            aria-label={`${track.label}: ${track.active === false ? t('v16.trackEnable', 'Enable track') : t('v16.trackDisable', 'Disable track')}`}
+            className="rounded border border-slate-700 px-1.5 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700"
+            onClick={() => updateTimelineTrack(track.id, { active: track.active === false })}
+          >
+            {track.active === false ? t('v16.trackOff', 'Off') : t('v16.trackOn', 'On')}
+          </button>
+          {track.type === 'audio' && (
+            <button
+              type="button"
+              aria-pressed={track.muted === true}
+              aria-label={`${track.label}: ${track.muted ? t('v16.trackUnmute', 'Unmute track') : t('v16.trackMute', 'Mute track')}`}
+              className="rounded border border-slate-700 px-1.5 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700"
+              onClick={() => updateTimelineTrack(track.id, { muted: track.muted !== true })}
+            >
+              {track.muted ? t('v16.trackMuted', 'Muted') : t('v16.trackSoundOn', 'Sound on')}
+            </button>
+          )}
         </div>
       </div>
 

@@ -9,6 +9,53 @@ const model = (id: string) => {
 };
 
 describe('ElectronBridgeAdapter', () => {
+  it('does not request approval or dispatch when already cancelled', async () => {
+    const bridge: PrivilegedProviderBridge = {
+      approveProviderCost: vi.fn(),
+      testProviderConnection: vi.fn(),
+      executeProvider: vi.fn(),
+    };
+    const controller = new AbortController();
+    controller.abort();
+    const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
+
+    await expect(
+      adapter.execute({
+        operation: 'plan',
+        model: model('gemini-3.1-pro'),
+        prompt: 'Do not send this.',
+        signal: controller.signal,
+        costContext: {
+          approvedCeilingUsd: 0.02,
+          estimatedInputTokens: 100,
+          estimatedOutputTokens: 1_000,
+        },
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(bridge.approveProviderCost).not.toHaveBeenCalled();
+    expect(bridge.executeProvider).not.toHaveBeenCalled();
+  });
+
+  it.each(['veo-3.1-fast', 'gemini-omni-flash'])(
+    'rejects retired %s before native approval or provider dispatch',
+    async (id) => {
+      const bridge: PrivilegedProviderBridge = {
+        approveProviderCost: vi.fn(),
+        testProviderConnection: vi.fn(),
+        executeProvider: vi.fn(),
+        executeInteraction: vi.fn(),
+      };
+      const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
+      expect(adapter.supports(model(id))).toBe(false);
+      await expect(
+        adapter.execute({ operation: 'video', model: model(id), prompt: 'A quiet landscape.' }),
+      ).rejects.toThrow('shut down');
+      expect(bridge.approveProviderCost).not.toHaveBeenCalled();
+      expect(bridge.executeProvider).not.toHaveBeenCalled();
+      expect(bridge.executeInteraction).not.toHaveBeenCalled();
+    },
+  );
+
   it('passes provider IDs to the privileged bridge without credentials', async () => {
     const bridge: PrivilegedProviderBridge = {
       approveProviderCost: vi.fn().mockResolvedValue('approval-token'),
@@ -26,15 +73,21 @@ describe('ElectronBridgeAdapter', () => {
         estimatedOutputTokens: 1_000,
       },
     });
-    expect(bridge.executeProvider).toHaveBeenCalledWith({
-      provider: 'gemini-api',
-      providerModelId: 'gemini-3.1-pro-preview',
-      operation: 'plan',
-      prompt: 'Plan.',
-      inputs: undefined,
-      interactionId: undefined,
-      approvalToken: 'approval-token',
-    });
+    expect(bridge.executeProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: expect.any(String),
+        provider: 'gemini-api',
+        providerModelId: 'gemini-3.1-pro-preview',
+        operation: 'plan',
+        prompt: 'Plan.',
+        inputs: undefined,
+        interactionId: undefined,
+        approvalToken: 'approval-token',
+      }),
+    );
+    expect(bridge.approveProviderCost).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: expect.any(String) }),
+    );
   });
 
   it('does not claim desktop video support before the paid-job adapter is selected', () => {
@@ -88,15 +141,15 @@ describe('ElectronBridgeAdapter', () => {
       testProviderConnection: vi.fn(),
       executeProvider: vi.fn(),
       executeInteraction: vi.fn().mockResolvedValue({
-        rawModelId: 'gemini-omni-flash-preview',
+        rawModelId: 'gemini-omni-1.1-flash',
         interactionId: 'interaction-child',
       }),
     };
     const adapter = new ElectronBridgeAdapter('gemini-api', bridge);
-    expect(adapter.supports(model('gemini-omni-flash'))).toBe(true);
+    expect(adapter.supports(model('gemini-omni-1.1-flash'))).toBe(true);
     await adapter.execute({
       operation: 'video-edit',
-      model: model('gemini-omni-flash'),
+      model: model('gemini-omni-1.1-flash'),
       prompt: 'Slow the camera.',
       interactionId: 'interaction-parent',
       costContext: {
@@ -109,7 +162,7 @@ describe('ElectronBridgeAdapter', () => {
     expect(bridge.executeProvider).not.toHaveBeenCalled();
     expect(bridge.executeInteraction).toHaveBeenCalledWith(
       expect.objectContaining({
-        providerModelId: 'gemini-omni-flash-preview',
+        providerModelId: 'gemini-omni-1.1-flash',
         interactionId: 'interaction-parent',
       }),
     );

@@ -127,11 +127,12 @@ class ApiHealthMonitorService {
   // ── Recording ────────────────────────────────────────────────────────
 
   /** Record the start of a request (returns a function to call on completion) */
-  startRequest(endpointId: string): (success: boolean) => void {
+  startRequest(endpointId: string): (success: boolean | null) => void {
     this.registerEndpoint(endpointId);
     const startTime = performance.now();
 
-    return (success: boolean) => {
+    return (success: boolean | null) => {
+      if (success === null) return;
       const durationMs = performance.now() - startTime;
       this.recordLatency(endpointId, durationMs, success);
     };

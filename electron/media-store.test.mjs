@@ -215,3 +215,97 @@ test('reads only checksum verified local media by key or durable desktop referen
   await fs.writeFile(record.path, 'corrupt');
   await assert.rejects(store.read('portable:take'), /checksum/);
 });
+
+test('resolves metadata and verified paths without buffering bytes in memory', async (t) => {
+  const store = await fixture(t, () => {
+    throw new Error('Network must not be used');
+  });
+  const record = await store.importBytes({
+    key: 'metadata-test',
+    bytes: Buffer.from('metadata-test-payload'),
+    mimeType: 'video/mp4',
+  });
+  const resolved = await store.resolve('metadata-test');
+  assert.ok(resolved);
+  assert.equal(resolved.key, 'metadata-test');
+  assert.equal(resolved.mimeType, 'video/mp4');
+  assert.equal(resolved.sha256, record.sha256);
+  assert.equal(resolved.sizeBytes, 'metadata-test-payload'.length);
+  assert.equal(resolved.path, record.path);
+  assert.equal(resolved.bytes, undefined);
+  assert.equal(await store.resolve('missing:key'), null);
+  await fs.writeFile(record.path, 'corrupted-data');
+  await assert.rejects(store.resolve('metadata-test'), /checksum/);
+});
+
+test('uses in-memory write-through index and skips per-range hashing when verifyChecksum is false', async (t) => {
+  const store = await fixture(t, () => {
+    throw new Error('Network must not be used');
+  });
+  const record = await store.importBytes({
+    key: 'cached-index-key',
+    bytes: Buffer.from('range-playback-bytes'),
+    mimeType: 'video/mp4',
+  });
+
+  // Warm the index once, then verify subsequent playback resolutions avoid directory scans
+  await store.records();
+  let readdirCalls = 0;
+  t.mock.method(fsNode.promises, 'readdir', async () => {
+    readdirCalls += 1;
+    return [];
+  });
+
+  const fastResolved = await store.resolve('cached-index-key', { verifyChecksum: false });
+  assert.equal(fastResolved.key, 'cached-index-key');
+  assert.equal(fastResolved.path, record.path);
+  assert.equal(readdirCalls, 0);
+
+  // Corrupting bytes still fails strict verification while fast playback skips per-chunk hashing
+  await fs.writeFile(record.path, 'corrupted-chunk');
+  const fastOnSeek = await store.resolve('cached-index-key', { verifyChecksum: false });
+  assert.equal(fastOnSeek.path, record.path);
+  await assert.rejects(store.resolve('cached-index-key'), /checksum/);
+});
+
+test('bounds concurrent video derivative FFmpeg tasks and prioritizes high-priority jobs', async () => {
+  const { FFmpegTaskQueue } = require('./ffmpeg-queue.cjs');
+  const queue = new FFmpegTaskQueue(2);
+  let active = 0;
+  let peak = 0;
+  const order = [];
+  const releaseCallbacks = [];
+
+  const launch = (id, priority) =>
+    queue.enqueue(
+      () =>
+        new Promise((resolve) => {
+          active += 1;
+          peak = Math.max(peak, active);
+          order.push(id);
+          releaseCallbacks.push(() => {
+            active -= 1;
+            resolve(id);
+          });
+        }),
+      { priority },
+    );
+
+  const p1 = launch('n1', 'normal');
+  const p2 = launch('n2', 'normal');
+  const p3 = launch('n3', 'normal');
+  const pHigh = launch('h1', 'high');
+  await new Promise((r) => setTimeout(r, 10));
+  assert.equal(peak, 2);
+  releaseCallbacks.shift()();
+  await p1;
+  await new Promise((r) => setTimeout(r, 10));
+  assert.equal(order[2], 'h1');
+  releaseCallbacks.shift()();
+  releaseCallbacks.shift()();
+  await Promise.all([p2, pHigh]);
+  await new Promise((r) => setTimeout(r, 10));
+  releaseCallbacks.shift()();
+  await p3;
+  assert.equal(peak, 2);
+});

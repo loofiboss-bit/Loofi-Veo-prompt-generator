@@ -73,7 +73,7 @@ describe('v11 .loofi-project bundle', () => {
     expect(manifest).toMatchObject({
       format: 'loofi-project',
       schemaVersion: 11,
-      pricingEffectiveDates: ['2026-08-01'],
+      pricingEffectiveDates: ['2026-08-01', '2026-12-01', '2027-01-01'],
       migrationHistory: [{ from: '7', to: '8', migratedAt: 123 }],
     });
     expect(projectJson.project).not.toHaveProperty('characterBank');

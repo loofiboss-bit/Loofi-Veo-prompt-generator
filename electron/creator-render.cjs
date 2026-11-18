@@ -1,11 +1,23 @@
 'use strict';
 const fs = require('node:fs/promises');
+const nodeFs = require('node:fs');
+const { pipeline } = require('node:stream/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const { FFmpegTaskQueue } = require('./ffmpeg-queue.cjs');
 const exec = promisify(execFile);
 const VERSION = '9.0.2';
+const PROGRESS_THROTTLE_MS = 150;
+const SEGMENT_CHUNK_SIZE = 40;
+const DEFAULT_RENDER_LIMITS = {
+  maxClips: 500,
+  defaultMaxDurationSeconds: 180,
+  maxExtendedDurationSeconds: 1800,
+  maxCaptions: 5000,
+  maxPlanBytes: 16 * 1024 * 1024,
+};
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const MEDIA_FORMATS =
   'mov,matroska,webm,avi,wav,mp3,flac,ogg,image2,png_pipe,jpeg_pipe,gif,bmp_pipe,webp_pipe';
@@ -23,21 +35,40 @@ function planHash(plan) {
   const { contentHash: _hash, ...snapshot } = plan;
   return crypto.createHash('sha256').update(canonical(snapshot)).digest('hex');
 }
+async function sha256File(filePath) {
+  const hash = crypto.createHash('sha256');
+  const stream = nodeFs.createReadStream(filePath);
+  for await (const chunk of stream) hash.update(chunk);
+  return hash.digest('hex');
+}
 function text(value, limit = 4000) {
   return typeof value === 'string' && value.length <= limit && !value.includes('\0');
 }
 function number(value, min, max) {
   return Number.isFinite(value) && value >= min && value <= max;
 }
-function validatePlan(input) {
-  if (!input || JSON.stringify(input).length > 2000000) throw new Error('Invalid render plan.');
+function validatePlan(input, customLimits) {
+  const limits = { ...DEFAULT_RENDER_LIMITS, ...(customLimits || {}) };
+  if (!input || JSON.stringify(input).length > limits.maxPlanBytes)
+    throw new Error('Invalid render plan.');
   const p = JSON.parse(JSON.stringify(input));
+  const maxDurationSeconds =
+    typeof p.maxDurationSeconds === 'number' &&
+    number(
+      p.maxDurationSeconds,
+      limits.defaultMaxDurationSeconds,
+      limits.maxExtendedDurationSeconds,
+    )
+      ? p.maxDurationSeconds
+      : (customLimits?.maxDurationSeconds ?? limits.defaultMaxDurationSeconds);
   if (
+    (p.clientRequestId !== undefined &&
+      (typeof p.clientRequestId !== 'string' || !/^[\w:-]{1,180}$/.test(p.clientRequestId))) ||
     p.schemaVersion !== 1 ||
     !text(p.projectId, 180) ||
     !p.projectId ||
     !text(p.projectName, 300) ||
-    !number(p.durationSeconds, 1 / 30, 180) ||
+    !number(p.durationSeconds, 1 / 30, maxDurationSeconds) ||
     p.fps !== 30 ||
     (p.purpose !== undefined && !['preview', 'delivery'].includes(p.purpose)) ||
     !['9:16', '16:9', '1:1'].includes(p.aspectRatio) ||
@@ -50,11 +81,31 @@ function validatePlan(input) {
   )
     throw new Error('Invalid render settings.');
   if (
+    p.audioProcessing !== undefined &&
+    (typeof p.audioProcessing !== 'object' ||
+      p.audioProcessing === null ||
+      Array.isArray(p.audioProcessing) ||
+      (p.audioProcessing.normalizeLoudness !== undefined &&
+        typeof p.audioProcessing.normalizeLoudness !== 'boolean') ||
+      (p.audioProcessing.speechDucking !== undefined &&
+        typeof p.audioProcessing.speechDucking !== 'boolean') ||
+      (p.audioProcessing.duckingGainDb !== undefined &&
+        !number(p.audioProcessing.duckingGainDb, -40, 0)))
+  )
+    throw new Error('Invalid audio processing settings.');
+  if (p.coverTimestamp !== undefined && !number(p.coverTimestamp, 0, p.durationSeconds))
+    throw new Error('Invalid cover timestamp.');
+  if (
+    p.coverAssetId !== undefined &&
+    (!text(p.coverAssetId, 180) || !/^[\w.:-]+$/.test(p.coverAssetId))
+  )
+    throw new Error('Invalid cover asset identity.');
+  if (
     !Array.isArray(p.clips) ||
     !p.clips.length ||
-    p.clips.length > 120 ||
+    p.clips.length > limits.maxClips ||
     !Array.isArray(p.captions) ||
-    p.captions.length > 500
+    p.captions.length > limits.maxCaptions
   )
     throw new Error('Invalid timeline.');
   if (
@@ -74,8 +125,8 @@ function validatePlan(input) {
       !text(c.mediaId, 180) ||
       !/^[\w.:-]+$/.test(c.mediaId) ||
       !['video', 'image', 'audio'].includes(c.type) ||
-      !number(c.startTime, 0, 180) ||
-      !number(c.duration, 1 / 30, 180) ||
+      !number(c.startTime, 0, maxDurationSeconds) ||
+      !number(c.duration, 1 / 30, maxDurationSeconds) ||
       c.startTime + c.duration > p.durationSeconds + 0.001 ||
       !number(c.offset, 0, 86400) ||
       !number(c.volume, 0, 4) ||
@@ -175,16 +226,110 @@ function ass(p) {
   };
   return `[Script Info]\nScriptType: v4.00+\nPlayResX: ${w}\nPlayResY: ${h}\n[V4+ Styles]\nFormat: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\nStyle: Default,${font},${Math.round(h * 0.048)},&H00${p.captionStyle === 'karaoke' ? highlight : color},&H00${color},&H00111111,&H80111111,-1,0,0,0,100,100,0,0,${background},3,1,2,${margin},${margin},${margin},1\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n${p.captions.map((c) => `Dialogue: 0,${at(c.startTime)},${at(c.endTime)},Default,,0,0,0,,${captionText(c)}`).join('\n')}`;
 }
+function buildBakedVisualFilters(clip) {
+  const filters = [];
+  if (clip.colorGrade && typeof clip.colorGrade === 'object') {
+    const parts = [];
+    if (
+      typeof clip.colorGrade.brightness === 'number' &&
+      Number.isFinite(clip.colorGrade.brightness)
+    )
+      parts.push(`brightness=${Math.max(-1, Math.min(1, clip.colorGrade.brightness))}`);
+    if (typeof clip.colorGrade.contrast === 'number' && Number.isFinite(clip.colorGrade.contrast))
+      parts.push(`contrast=${Math.max(-1000, Math.min(1000, clip.colorGrade.contrast))}`);
+    if (
+      typeof clip.colorGrade.saturation === 'number' &&
+      Number.isFinite(clip.colorGrade.saturation)
+    )
+      parts.push(`saturation=${Math.max(0, Math.min(3, clip.colorGrade.saturation))}`);
+    if (parts.length) filters.push(`eq=${parts.join(':')}`);
+  }
+  if (clip.transform && typeof clip.transform === 'object') {
+    if (
+      typeof clip.transform.scale === 'number' &&
+      Number.isFinite(clip.transform.scale) &&
+      clip.transform.scale > 0 &&
+      clip.transform.scale !== 1
+    ) {
+      const s = Math.max(0.1, Math.min(4, clip.transform.scale));
+      filters.push(`scale=iw*${s}:ih*${s}`);
+    }
+    if (
+      typeof clip.transform.rotation === 'number' &&
+      Number.isFinite(clip.transform.rotation) &&
+      clip.transform.rotation !== 0
+    ) {
+      const radians = ((clip.transform.rotation * Math.PI) / 180).toFixed(6);
+      filters.push(`rotate=${radians}:fillcolor=black@0`);
+    }
+  }
+  if (typeof clip.opacity === 'number' && Number.isFinite(clip.opacity) && clip.opacity < 1) {
+    const alpha = Math.max(0, Math.min(1, clip.opacity)).toFixed(3);
+    filters.push(`colorchannelmixer=aa=${alpha}`);
+  }
+  return filters.length ? `,${filters.join(',')}` : '';
+}
+
+function chunkVisualClips(visuals, chunkSize = SEGMENT_CHUNK_SIZE) {
+  const sorted = [...visuals].sort((a, b) => a.startTime - b.startTime);
+  if (sorted.length <= chunkSize) return [sorted];
+  const chunks = [];
+  let cursor = 0;
+  while (cursor < sorted.length) {
+    let end = Math.min(sorted.length, cursor + chunkSize);
+    while (end < sorted.length && sorted[end].crossfadeSeconds > 0 && end - cursor > 1) {
+      end -= 1;
+    }
+    chunks.push(sorted.slice(cursor, end));
+    cursor = end;
+  }
+  return chunks;
+}
+
 class CreatorRenderEngine {
-  constructor({ root, runtimeRoot, fontsRoot, getMediaStore, onUpdate = () => {} }) {
+  constructor({ root, runtimeRoot, fontsRoot, getMediaStore, onUpdate = () => {}, limits = {} }) {
     this.root = root;
     this.runtimeRoot = runtimeRoot;
     this.fontsRoot = fontsRoot || path.join(runtimeRoot, 'fonts');
     this.getMediaStore = getMediaStore;
     this.onUpdate = onUpdate;
+    this.limits = { ...DEFAULT_RENDER_LIMITS, ...limits };
     this.jobs = new Map();
+    this._proxyQueue = new FFmpegTaskQueue(1);
+    this._idleWaiters = new Set();
   }
-  async initialize() {
+  _hasActiveRender() {
+    return (
+      Boolean(this.starting) ||
+      this.list().some((job) => ['queued', 'rendering', 'verifying'].includes(job.status))
+    );
+  }
+  _notifyRenderIdle() {
+    if (this._hasActiveRender()) return;
+    for (const resolve of [...this._idleWaiters]) {
+      this._idleWaiters.delete(resolve);
+      resolve();
+    }
+  }
+  async _waitForIdleRender() {
+    if (!this._hasActiveRender()) return;
+    await new Promise((resolve) => {
+      this._idleWaiters.add(resolve);
+    });
+  }
+  initialize() {
+    this.readyPromise ||= this._initInternal().catch(() => {
+      this.initializationError =
+        'Local export storage could not be restored. Check folder permissions and free space.';
+    });
+    return this.readyPromise;
+  }
+  async ready() {
+    await this.initialize();
+    if (this.initializationError) throw new Error(this.initializationError);
+    return this;
+  }
+  async _initInternal() {
     let entries;
     try {
       await fs.mkdir(this.root, { recursive: true });
@@ -200,26 +345,29 @@ class CreatorRenderEngine {
         continue;
       }
       if (!/^[a-f\d-]{36}$/.test(name)) continue;
+      let j;
       try {
-        const j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
-        if (['queued', 'rendering', 'verifying'].includes(j.status)) {
-          j.status = 'failed';
-          j.error = 'Rendering interrupted. Retry from the project.';
-          await fs.writeFile(path.join(this.root, name, 'job.json'), JSON.stringify(j), {
-            mode: 0o600,
-          });
-          for (const artifact of await fs.readdir(path.join(this.root, name))) {
-            if (
-              artifact.startsWith('input-') ||
-              ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
-            )
-              await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
-          }
-        }
-        this.jobs.set(j.id, { job: j, directory: path.join(this.root, name) });
-      } catch {
-        /* Incomplete jobs cannot be restored. */
+        j = JSON.parse(await fs.readFile(path.join(this.root, name, 'job.json'), 'utf8'));
+      } catch (error) {
+        if (error instanceof SyntaxError || ['ENOENT', 'ENOTDIR'].includes(error.code)) continue;
+        throw error;
       }
+      if (!j || typeof j !== 'object') continue;
+      if (['queued', 'rendering', 'verifying'].includes(j.status)) {
+        j.status = 'failed';
+        j.error = 'Rendering interrupted. Retry from the project.';
+        await fs.writeFile(path.join(this.root, name, 'job.json'), JSON.stringify(j), {
+          mode: 0o600,
+        });
+        for (const artifact of await fs.readdir(path.join(this.root, name))) {
+          if (
+            artifact.startsWith('input-') ||
+            ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
+          )
+            await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
+        }
+      }
+      this.jobs.set(j.id, { job: j, directory: path.join(this.root, name) });
     }
   }
   async capabilities() {
@@ -235,10 +383,7 @@ class CreatorRenderEngine {
         throw new Error('Verified offline rendering runtime is not provisioned.');
       for (const name of ['ffmpeg', 'ffprobe']) {
         const file = path.join(directory, name + (process.platform === 'win32' ? '.exe' : ''));
-        const hash = crypto
-          .createHash('sha256')
-          .update(await fs.readFile(file))
-          .digest('hex');
+        const hash = await sha256File(file);
         if (hash !== manifest.files[name])
           throw new Error('Rendering runtime integrity check failed.');
       }
@@ -246,7 +391,9 @@ class CreatorRenderEngine {
       return {
         available: true,
         version: VERSION,
-        maxDurationSeconds: 180,
+        maxDurationSeconds: this.limits.maxExtendedDurationSeconds,
+        maxClips: this.limits.maxClips,
+        maxCaptions: this.limits.maxCaptions,
         aspectRatios: ['9:16', '16:9', '1:1'],
         resolutions: ['720p', '1080p'],
         fps: 30,
@@ -256,8 +403,11 @@ class CreatorRenderEngine {
           'dissolve',
           'fade_black',
           'audio-mix',
+          'audio-loudnorm',
+          'speech-ducking',
           'captions',
           'logo',
+          'bake-effects',
         ],
       };
     } catch (error) {
@@ -274,7 +424,28 @@ class CreatorRenderEngine {
   }
   async update(state, values) {
     if (state.cancelled && values.status !== 'cancelled') return;
+    const hasOnlyProgress = Object.keys(values).length === 1 && values.progress !== undefined;
+    if (hasOnlyProgress && state.job.status !== 'rendering') return;
     Object.assign(state.job, values);
+
+    const isPureProgress =
+      values.status === undefined &&
+      values.error === undefined &&
+      values.savedName === undefined &&
+      values.progress !== undefined &&
+      values.progress > 0 &&
+      values.progress < 1;
+
+    const now = Date.now();
+    if (
+      isPureProgress &&
+      state.lastPersistedAt &&
+      now - state.lastPersistedAt < PROGRESS_THROTTLE_MS
+    ) {
+      return;
+    }
+    state.lastPersistedAt = now;
+
     const snapshot = { ...state.job };
     state.persistence = (state.persistence || Promise.resolve())
       .catch(() => {})
@@ -296,7 +467,21 @@ class CreatorRenderEngine {
     }
   }
   async startReserved(input) {
-    const plan = validatePlan(input);
+    const plan = validatePlan(input, this.limits);
+    if (plan.clientRequestId) {
+      if (!/^[\w:-]{1,180}$/.test(plan.clientRequestId))
+        throw new Error('Invalid render request identity.');
+      const existing = [...this.jobs.values()].find(
+        (state) =>
+          state.plan.clientRequestId === plan.clientRequestId &&
+          !['failed', 'cancelled'].includes(state.job.status),
+      );
+      if (existing) {
+        if (existing.plan.contentHash !== plan.contentHash)
+          throw new Error('Render request identity changed.');
+        return { ...existing.job };
+      }
+    }
     const caps = await this.capabilities();
     if (!caps.available) throw new Error(caps.reason);
     if (
@@ -318,6 +503,7 @@ class CreatorRenderEngine {
         purpose: plan.purpose || 'delivery',
         createdAt: Date.now(),
         resolution: plan.resolution,
+        aspectRatio: plan.aspectRatio,
         status: 'queued',
         progress: 0,
       },
@@ -345,7 +531,7 @@ class CreatorRenderEngine {
     if (!['failed', 'cancelled'].includes(job.status))
       throw new Error('Only interrupted jobs can be retried.');
     const snapshot = JSON.parse(await fs.readFile(path.join(state.directory, 'plan.json'), 'utf8'));
-    return this.start(validatePlan(snapshot));
+    return this.start(validatePlan(snapshot, this.limits));
   }
   async preview(id) {
     const state = this.jobs.get(id);
@@ -355,10 +541,7 @@ class CreatorRenderEngine {
     const verified = JSON.parse(
       await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'),
     );
-    const hash = crypto
-      .createHash('sha256')
-      .update(await fs.readFile(output))
-      .digest('hex');
+    const hash = await sha256File(output);
     if (hash !== verified.outputSha256) throw new Error('Delivery checksum verification failed.');
     return { url: pathToFileURL(output).href, contentHash: job.contentHash };
   }
@@ -366,15 +549,164 @@ class CreatorRenderEngine {
     if (!/^[\w.:-]{1,180}$/.test(mediaId)) throw new Error('Invalid media identity.');
     const caps = await this.capabilities();
     if (!caps.available) return { available: false, reason: caps.reason };
-    const record = await this.getMediaStore().read(mediaId);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
     if (!record) return { available: false, reason: 'Registered media is missing.' };
-    const metadata = await this.probe(fileURLToPath(record.localUrl));
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const metadata = await this.probe(filePath);
     return {
       available: true,
       durationSeconds: Number(metadata.format.duration) || undefined,
       mimeType: record.mimeType,
-      sha256: crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex'),
+      sha256:
+        record.sha256 ||
+        (record.bytes
+          ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+          : undefined),
       streamTypes: metadata.streams.map((stream) => stream.codec_type),
+    };
+  }
+  async detectSilence(input) {
+    const mediaId = typeof input === 'string' ? input : input?.mediaId;
+    if (!text(mediaId, 180) || !/^[\w.:-]+$/.test(mediaId))
+      throw new Error('Invalid media identity.');
+    const noiseDb =
+      typeof input?.noiseThresholdDb === 'number' &&
+      input.noiseThresholdDb >= -80 &&
+      input.noiseThresholdDb <= -10
+        ? input.noiseThresholdDb
+        : -35;
+    const minDuration =
+      typeof input?.minDurationSeconds === 'number' &&
+      input.minDurationSeconds >= 0.1 &&
+      input.minDurationSeconds <= 10
+        ? input.minDurationSeconds
+        : 0.5;
+    const caps = await this.capabilities();
+    if (!caps.available) throw new Error(caps.reason);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
+    if (!record) throw new Error('Registered media is missing.');
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const { stderr } = await exec(
+      this.binary('ffmpeg'),
+      [
+        '-hide_banner',
+        '-nostdin',
+        '-protocol_whitelist',
+        'file,pipe',
+        '-format_whitelist',
+        MEDIA_FORMATS,
+        '-i',
+        filePath,
+        '-af',
+        `silencedetect=noise=${noiseDb}dB:d=${minDuration}`,
+        '-f',
+        'null',
+        '-',
+      ],
+      { timeout: 60000, maxBuffer: 2000000, windowsHide: true },
+    );
+    const intervals = [];
+    let currentStart = null;
+    const lines = stderr.split('\n');
+    for (const line of lines) {
+      const startMatch = line.match(/silence_start:\s*(-?[\d.]+)/);
+      if (startMatch) {
+        currentStart = Math.max(0, parseFloat(startMatch[1]));
+      }
+      const endMatch = line.match(
+        /silence_end:\s*(-?[\d.]+)\s*\|\s*silence_duration:\s*(-?[\d.]+)/,
+      );
+      if (endMatch) {
+        const end = parseFloat(endMatch[1]);
+        const dur = parseFloat(endMatch[2]);
+        const start = currentStart !== null ? currentStart : Math.max(0, end - dur);
+        if (dur >= minDuration) {
+          intervals.push({
+            start: Number(start.toFixed(3)),
+            end: Number(end.toFixed(3)),
+            duration: Number(dur.toFixed(3)),
+          });
+        }
+        currentStart = null;
+      }
+    }
+    return intervals;
+  }
+  async extractTimelineAudio(input) {
+    const mediaId = input?.mediaId;
+    const offsetSeconds = input?.offsetSeconds;
+    const durationSeconds = input?.durationSeconds;
+    if (
+      !text(mediaId, 180) ||
+      !/^[\w.:-]+$/.test(mediaId) ||
+      !number(offsetSeconds, 0, 86400) ||
+      !number(durationSeconds, 0.1, 180) ||
+      offsetSeconds + durationSeconds > 86400
+    )
+      throw new Error('Invalid local speech extraction request.');
+    const caps = await this.capabilities();
+    if (!caps.available) throw new Error(caps.reason);
+    const store = this.getMediaStore();
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
+    if (!record) throw new Error('Registered media is missing.');
+    const filePath = record.path || fileURLToPath(record.localUrl);
+    const metadata = await this.probe(filePath);
+    const sourceDuration = Number(metadata.format.duration);
+    if (!metadata.streams.some((stream) => stream.codec_type === 'audio'))
+      throw new Error('Selected clip occurrence has no audio stream.');
+    if (!Number.isFinite(sourceDuration) || offsetSeconds + durationSeconds > sourceDuration + 0.05)
+      throw new Error('Selected audio trim exceeds the verified source duration.');
+    const { stdout } = await exec(
+      this.binary('ffmpeg'),
+      [
+        '-hide_banner',
+        '-nostdin',
+        '-protocol_whitelist',
+        'file,pipe',
+        '-format_whitelist',
+        MEDIA_FORMATS,
+        '-ss',
+        String(offsetSeconds),
+        '-i',
+        filePath,
+        '-t',
+        String(durationSeconds),
+        '-map',
+        '0:a:0',
+        '-vn',
+        '-ac',
+        '1',
+        '-ar',
+        '16000',
+        '-c:a',
+        'pcm_f32le',
+        '-f',
+        'f32le',
+        'pipe:1',
+      ],
+      {
+        timeout: 180000,
+        maxBuffer: 14 * 1024 * 1024,
+        windowsHide: true,
+        encoding: 'buffer',
+      },
+    );
+    if (!Buffer.isBuffer(stdout) || stdout.length < 4 || stdout.length % 4 !== 0)
+      throw new Error('Audio extraction returned an invalid PCM buffer.');
+    const pcm = Uint8Array.from(stdout);
+    return {
+      mediaId,
+      mediaSha256:
+        record.sha256 ||
+        (record.bytes
+          ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+          : await sha256File(filePath)),
+      sampleRate: 16000,
+      channels: 1,
+      durationSeconds: pcm.length / 4 / 16000,
+      pcm: pcm.buffer,
     };
   }
   async proxy(mediaId) {
@@ -382,61 +714,67 @@ class CreatorRenderEngine {
     const caps = await this.capabilities();
     if (!caps.available) throw new Error(caps.reason);
     const store = this.getMediaStore();
-    const record = await store.read(mediaId);
+    const record = store.resolve ? await store.resolve(mediaId) : await store.read(mediaId);
     if (!record || !record.mimeType.startsWith('video/'))
       throw new Error('Video media is missing.');
-    const sha256 = crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex');
+    const sha256 =
+      record.sha256 ||
+      (record.bytes
+        ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+        : undefined);
     const key = `proxy:${sha256}:720-v1`;
     const existing = await store.read(key);
     if (existing) return { key, url: existing.localUrl, sha256 };
-    if (
-      this.proxyRunning ||
-      this.starting ||
-      this.list().some((job) => ['queued', 'rendering', 'verifying'].includes(job.status))
-    )
-      throw new Error('Another render is running. Retry proxy creation when it finishes.');
-    this.proxyRunning = true;
-    const temporary = path.join(this.root, `${crypto.randomUUID()}.proxy.mp4`);
-    try {
-      await exec(
-        this.binary('ffmpeg'),
-        [
-          '-hide_banner',
-          '-nostdin',
-          '-y',
-          '-protocol_whitelist',
-          'file,pipe',
-          '-format_whitelist',
-          MEDIA_FORMATS,
-          '-i',
-          fileURLToPath(record.localUrl),
-          '-vf',
-          'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
-          '-c:v',
-          'libx264',
-          '-preset',
-          'veryfast',
-          '-crf',
-          '28',
-          '-c:a',
-          'aac',
-          temporary,
-        ],
-        { timeout: 600000, maxBuffer: 2000000, windowsHide: true },
-      );
-      const metadata = await this.probe(temporary);
-      if (!metadata.streams.some((stream) => stream.codec_name === 'h264'))
-        throw new Error('Proxy verification failed.');
-      const proxy = await store.importBytes({
-        key,
-        bytes: await fs.readFile(temporary),
-        mimeType: 'video/mp4',
-      });
-      return { key, url: proxy.localUrl, sha256 };
-    } finally {
-      this.proxyRunning = false;
-      await fs.rm(temporary, { force: true });
-    }
+    return this._proxyQueue.enqueue(
+      async () => {
+        const cachedDuringWait = await store.read(key);
+        if (cachedDuringWait) return { key, url: cachedDuringWait.localUrl, sha256 };
+        await this._waitForIdleRender();
+        this.proxyRunning = true;
+        const temporary = path.join(this.root, `${crypto.randomUUID()}.proxy.mp4`);
+        try {
+          await exec(
+            this.binary('ffmpeg'),
+            [
+              '-hide_banner',
+              '-nostdin',
+              '-y',
+              '-protocol_whitelist',
+              'file,pipe',
+              '-format_whitelist',
+              MEDIA_FORMATS,
+              '-i',
+              record.path || fileURLToPath(record.localUrl),
+              '-vf',
+              'scale=720:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
+              '-c:v',
+              'libx264',
+              '-preset',
+              'veryfast',
+              '-crf',
+              '28',
+              '-c:a',
+              'aac',
+              temporary,
+            ],
+            { timeout: 600000, maxBuffer: 2000000, windowsHide: true },
+          );
+          const metadata = await this.probe(temporary);
+          if (!metadata.streams.some((stream) => stream.codec_name === 'h264'))
+            throw new Error('Proxy verification failed.');
+          const proxy = await store.importBytes({
+            key,
+            bytes: await fs.readFile(temporary),
+            mimeType: 'video/mp4',
+          });
+          return { key, url: proxy.localUrl, sha256 };
+        } finally {
+          this.proxyRunning = false;
+          await fs.rm(temporary, { force: true });
+        }
+      },
+      { priority: 'normal' },
+    );
   }
   async cancel(id) {
     const state = this.jobs.get(id);
@@ -547,83 +885,291 @@ class CreatorRenderEngine {
         ...p.clips.filter((c) => c.type !== 'audio').sort((a, b) => a.startTime - b.startTime),
         ...p.clips.filter((c) => c.type === 'audio'),
       ];
+      const speechIntervals = [];
+      if (p.captions && p.captions.length) {
+        for (const cap of p.captions) {
+          if (
+            number(cap.startTime, 0, p.durationSeconds) &&
+            number(cap.endTime, cap.startTime, p.durationSeconds)
+          ) {
+            speechIntervals.push([cap.startTime, cap.endTime]);
+          }
+        }
+      } else {
+        for (const cl of ordered) {
+          if (cl.type === 'video') {
+            speechIntervals.push([cl.startTime, cl.startTime + cl.duration]);
+          }
+        }
+      }
+      const visualClips = ordered.filter((c) => c.type !== 'audio');
+      const useChunkedConcat = visualClips.length > SEGMENT_CHUNK_SIZE;
+      const clipInputIndex = new Map();
+      const inputFiles = [];
+
       for (const c of ordered) {
-        const record = await this.getMediaStore().read(c.mediaId);
+        const store = this.getMediaStore();
+        const record = store.resolve ? await store.resolve(c.mediaId) : await store.read(c.mediaId);
         if (!record) throw new Error(`Missing media for clip ${c.id}.`);
-        if (
-          p.mediaHashes &&
-          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
-            p.mediaHashes[c.mediaId]
-        )
+        const mediaSha256 =
+          record.sha256 ||
+          (record.bytes
+            ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+            : undefined);
+        if (p.mediaHashes && mediaSha256 !== p.mediaHashes[c.mediaId])
           throw new Error(`Media changed after delivery check: ${c.id}.`);
         const ext = c.type === 'image' ? '.png' : c.type === 'audio' ? '.audio' : '.video';
-        const filename = `input-${index}${ext}`;
-        await fs.writeFile(path.join(state.directory, filename), Buffer.from(record.bytes), {
-          mode: 0o600,
-        });
+        const filename = `input-${ordered.indexOf(c) + 1}${ext}`;
+        const inputTarget = path.join(state.directory, filename);
+        if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
+          await fs.copyFile(record.path || fileURLToPath(record.localUrl), inputTarget);
+        } else {
+          await fs.writeFile(inputTarget, Buffer.from(record.bytes), {
+            mode: 0o600,
+          });
+        }
+        if ((await sha256File(inputTarget)) !== (p.mediaHashes?.[c.mediaId] || mediaSha256))
+          throw new Error(`Media changed after delivery check: ${c.id}.`);
         let metadata;
         try {
-          metadata = await this.probe(path.join(state.directory, filename));
+          metadata = await this.probe(inputTarget);
         } catch {
           throw new Error(`Cannot read media for clip ${c.id}. Unsupported or damaged file.`);
         }
-        if (c.type === 'image') args.push('-loop', '1');
-        args.push(
-          '-protocol_whitelist',
-          'file,pipe',
-          '-format_whitelist',
-          MEDIA_FORMATS,
-          '-ss',
-          String(c.offset),
-          '-t',
-          String(c.duration),
-          '-i',
-          filename,
-        );
         if (c.type !== 'image' && !metadata.streams.some((s) => s.codec_type === c.type))
           throw new Error(`Missing ${c.type} stream in clip ${c.id}.`);
         if (c.type !== 'image' && Number(metadata.format.duration) + 0.05 < c.offset + c.duration)
           throw new Error(`Clip exceeds source duration: ${c.id}.`);
-        if (c.type !== 'audio') {
-          count++;
-          const scale =
-            c.crop.mode === 'fill'
-              ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:(iw-ow)*${c.crop.x}:(ih-oh)*${c.crop.y}`
-              : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
-          const fadeIn = c.crossfadeSeconds || c.fadeInSeconds;
-          const fade = `${fadeIn ? `,fade=t=in:st=0:d=${fadeIn}:alpha=1` : ''}${c.fadeOutSeconds ? `,fade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}:alpha=1` : ''}`;
-          filters.push(
-            `[${index}:v]trim=duration=${c.duration},setpts=PTS-STARTPTS,${scale},setsar=1,fps=30,format=rgba${fade},setpts=PTS+${c.startTime}/TB[v${count}]`,
+        inputFiles.push({ clip: c, filename, metadata });
+      }
+
+      if (useChunkedConcat) {
+        const chunks = chunkVisualClips(visualClips, SEGMENT_CHUNK_SIZE);
+        const concatLines = [];
+        let windowStart = 0;
+        for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx += 1) {
+          const chunk = chunks[chunkIdx];
+          const isLast = chunkIdx === chunks.length - 1;
+          const nextStart = isLast ? p.durationSeconds : chunks[chunkIdx + 1][0].startTime;
+          const chunkEnd = Math.max(windowStart + 0.05, Math.min(p.durationSeconds, nextStart));
+          const chunkDuration = chunkEnd - windowStart;
+          const chunkName = `segment-${chunkIdx}.mp4`;
+          const chunkArgs = [
+            '-hide_banner',
+            '-nostdin',
+            '-y',
+            '-filter_complex_threads',
+            '1',
+            '-f',
+            'lavfi',
+            '-i',
+            `color=c=black:s=${w}x${h}:r=30:d=${chunkDuration}`,
+          ];
+          const chunkFilters = ['[0:v]format=rgba[cbase0]'];
+          let chunkBase = 'cbase0';
+          let chunkInput = 1;
+          chunk.forEach((c, pos) => {
+            const info = inputFiles.find((item) => item.clip.id === c.id);
+            if (c.type === 'image') chunkArgs.push('-loop', '1');
+            chunkArgs.push(
+              '-protocol_whitelist',
+              'file,pipe',
+              '-format_whitelist',
+              MEDIA_FORMATS,
+              '-ss',
+              String(c.offset),
+              '-t',
+              String(c.duration),
+              '-i',
+              info.filename,
+            );
+            const scale =
+              c.crop.mode === 'fill'
+                ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:(iw-ow)*${c.crop.x}:(ih-oh)*${c.crop.y}`
+                : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
+            const fadeIn = c.crossfadeSeconds || c.fadeInSeconds;
+            const fade = `${fadeIn ? `,fade=t=in:st=0:d=${fadeIn}:alpha=1` : ''}${c.fadeOutSeconds ? `,fade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}:alpha=1` : ''}`;
+            const baked = buildBakedVisualFilters(c);
+            const relStart = Math.max(0, c.startTime - windowStart);
+            chunkFilters.push(
+              `[${chunkInput}:v]trim=duration=${c.duration},setpts=PTS-STARTPTS,${scale},setsar=1,fps=30,format=rgba${baked}${fade},setpts=PTS+${relStart}/TB[cv${pos + 1}]`,
+            );
+            chunkFilters.push(
+              `[${chunkBase}][cv${pos + 1}]overlay=eof_action=pass:enable='between(t,${relStart},${relStart + c.duration})'[cbase${pos + 1}]`,
+            );
+            chunkBase = `cbase${pos + 1}`;
+            chunkInput += 1;
+          });
+          chunkArgs.push(
+            '-filter_complex',
+            chunkFilters.join(';'),
+            '-map',
+            `[${chunkBase}]`,
+            '-an',
+            '-t',
+            String(chunkDuration),
+            '-r',
+            '30',
+            '-c:v',
+            'libx264',
+            '-preset',
+            'veryfast',
+            '-crf',
+            '18',
+            '-pix_fmt',
+            'yuv420p',
+            chunkName,
           );
-          filters.push(
-            `[${base}][v${count}]overlay=eof_action=pass:enable='between(t,${c.startTime},${c.startTime + c.duration})'[base${count}]`,
-          );
-          base = `base${count}`;
+          await this.run(state, chunkArgs, false);
+          concatLines.push(`file '${chunkName}'`);
+          windowStart = chunkEnd;
         }
-        if (c.type !== 'image' && metadata.streams.some((s) => s.codec_type === 'audio')) {
-          const label = `a${index}`;
-          const fadeIn = c.fadeInSeconds ? `,afade=t=in:st=0:d=${c.fadeInSeconds}` : '';
-          const fadeOut = c.fadeOutSeconds
-            ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
-            : '';
-          filters.push(
-            `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
-          );
-          audio.push(`[${label}]`);
+        await fs.writeFile(path.join(state.directory, 'concat.txt'), concatLines.join('\n'));
+        // Reset base input args to concat visual stream + audio-only inputs
+        args.length = 0;
+        args.push(
+          '-hide_banner',
+          '-nostdin',
+          '-y',
+          '-filter_complex_threads',
+          '1',
+          '-f',
+          'concat',
+          '-safe',
+          '0',
+          '-i',
+          'concat.txt',
+        );
+        filters.length = 0;
+        filters.push('[0:v]format=rgba[base0]');
+        base = 'base0';
+        index = 1;
+        for (const info of inputFiles) {
+          const c = info.clip;
+          if (c.type !== 'image' && info.metadata.streams.some((s) => s.codec_type === 'audio')) {
+            args.push(
+              '-protocol_whitelist',
+              'file,pipe',
+              '-format_whitelist',
+              MEDIA_FORMATS,
+              '-ss',
+              String(c.offset),
+              '-t',
+              String(c.duration),
+              '-i',
+              info.filename,
+            );
+            clipInputIndex.set(c.id, index);
+            const label = `a${index}`;
+            const fadeIn = c.fadeInSeconds ? `,afade=t=in:st=0:d=${c.fadeInSeconds}` : '';
+            const fadeOut = c.fadeOutSeconds
+              ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
+              : '';
+            let ducking = '';
+            if (
+              c.type === 'audio' &&
+              p.audioProcessing?.speechDucking &&
+              speechIntervals.length > 0
+            ) {
+              const duckDb =
+                typeof p.audioProcessing.duckingGainDb === 'number'
+                  ? p.audioProcessing.duckingGainDb
+                  : -12;
+              const duckFactor = Math.pow(10, duckDb / 20).toFixed(4);
+              const conditions = speechIntervals.map(([s, e]) => `between(t,${s},${e})`).join('+');
+              ducking = `,volume='if(${conditions},${duckFactor},1)':eval=frame`;
+            }
+            filters.push(
+              `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut}${ducking},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
+            );
+            audio.push(`[${label}]`);
+            index += 1;
+          }
         }
-        index++;
+      } else {
+        for (const info of inputFiles) {
+          const c = info.clip;
+          const metadata = info.metadata;
+          if (c.type === 'image') args.push('-loop', '1');
+          args.push(
+            '-protocol_whitelist',
+            'file,pipe',
+            '-format_whitelist',
+            MEDIA_FORMATS,
+            '-ss',
+            String(c.offset),
+            '-t',
+            String(c.duration),
+            '-i',
+            info.filename,
+          );
+          if (c.type !== 'audio') {
+            count++;
+            const scale =
+              c.crop.mode === 'fill'
+                ? `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}:(iw-ow)*${c.crop.x}:(ih-oh)*${c.crop.y}`
+                : `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
+            const fadeIn = c.crossfadeSeconds || c.fadeInSeconds;
+            const fade = `${fadeIn ? `,fade=t=in:st=0:d=${fadeIn}:alpha=1` : ''}${c.fadeOutSeconds ? `,fade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}:alpha=1` : ''}`;
+            const baked = buildBakedVisualFilters(c);
+            filters.push(
+              `[${index}:v]trim=duration=${c.duration},setpts=PTS-STARTPTS,${scale},setsar=1,fps=30,format=rgba${baked}${fade},setpts=PTS+${c.startTime}/TB[v${count}]`,
+            );
+            filters.push(
+              `[${base}][v${count}]overlay=eof_action=pass:enable='between(t,${c.startTime},${c.startTime + c.duration})'[base${count}]`,
+            );
+            base = `base${count}`;
+          }
+          if (c.type !== 'image' && metadata.streams.some((s) => s.codec_type === 'audio')) {
+            const label = `a${index}`;
+            const fadeIn = c.fadeInSeconds ? `,afade=t=in:st=0:d=${c.fadeInSeconds}` : '';
+            const fadeOut = c.fadeOutSeconds
+              ? `,afade=t=out:st=${Math.max(0, c.duration - c.fadeOutSeconds)}:d=${c.fadeOutSeconds}`
+              : '';
+            let ducking = '';
+            if (
+              c.type === 'audio' &&
+              p.audioProcessing?.speechDucking &&
+              speechIntervals.length > 0
+            ) {
+              const duckDb =
+                typeof p.audioProcessing.duckingGainDb === 'number'
+                  ? p.audioProcessing.duckingGainDb
+                  : -12;
+              const duckFactor = Math.pow(10, duckDb / 20).toFixed(4);
+              const conditions = speechIntervals.map(([s, e]) => `between(t,${s},${e})`).join('+');
+              ducking = `,volume='if(${conditions},${duckFactor},1)':eval=frame`;
+            }
+            filters.push(
+              `[${index}:a]atrim=duration=${c.duration},asetpts=PTS-STARTPTS,aresample=48000,volume=${c.volume}${fadeIn}${fadeOut}${ducking},adelay=${Math.round(c.startTime * 1000)}:all=1[${label}]`,
+            );
+            audio.push(`[${label}]`);
+          }
+          index++;
+        }
       }
       if (p.style?.logoAssetId) {
-        const record = await this.getMediaStore().read(p.style.logoAssetId);
+        const store = this.getMediaStore();
+        const record = store.resolve
+          ? await store.resolve(p.style.logoAssetId)
+          : await store.read(p.style.logoAssetId);
         if (!record || !record.mimeType.startsWith('image/'))
           throw new Error('Style logo media is missing or invalid.');
-        if (
-          p.mediaHashes &&
-          crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex') !==
-            p.mediaHashes[p.style.logoAssetId]
-        )
+        const logoSha256 =
+          record.sha256 ||
+          (record.bytes
+            ? crypto.createHash('sha256').update(Buffer.from(record.bytes)).digest('hex')
+            : undefined);
+        if (p.mediaHashes && logoSha256 !== p.mediaHashes[p.style.logoAssetId])
           throw new Error('Style logo changed after delivery check.');
-        await fs.writeFile(path.join(state.directory, 'logo.png'), Buffer.from(record.bytes));
+        const logoTarget = path.join(state.directory, 'logo.png');
+        if (record.path || (record.localUrl && record.localUrl.startsWith('file:'))) {
+          await fs.copyFile(record.path || fileURLToPath(record.localUrl), logoTarget);
+        } else {
+          await fs.writeFile(logoTarget, Buffer.from(record.bytes));
+        }
+        if ((await sha256File(logoTarget)) !== (p.mediaHashes?.[p.style.logoAssetId] || logoSha256))
+          throw new Error('Style logo changed after delivery check.');
         args.push(
           '-protocol_whitelist',
           'file,pipe',
@@ -652,13 +1198,18 @@ class CreatorRenderEngine {
       filters.push(
         `${audio.join('')}[silence]amix=inputs=${audio.length + 1}:normalize=0,alimiter=limit=0.95[amixed]`,
       );
+      let masterAudio = 'amixed';
+      if (p.audioProcessing?.normalizeLoudness) {
+        filters.push('[amixed]loudnorm=I=-14:TP=-1.5:LRA=11[anorm]');
+        masterAudio = 'anorm';
+      }
       args.push(
         '-filter_complex',
         filters.join(';'),
         '-map',
         `[${base}]`,
         '-map',
-        '[amixed]',
+        `[${masterAudio}]`,
         '-t',
         String(p.durationSeconds),
         '-r',
@@ -700,11 +1251,21 @@ class CreatorRenderEngine {
       )
         throw new Error('Export verification failed.');
       await this.run(state, ['-nostdin', '-v', 'error', '-i', 'output.mp4', '-f', 'null', '-']);
-      await this.run(state, ['-nostdin', '-y', '-i', 'output.mp4', '-frames:v', '1', 'cover.png']);
-      state.outputSha256 = crypto
-        .createHash('sha256')
-        .update(await fs.readFile(path.join(state.directory, 'output.mp4')))
-        .digest('hex');
+      const coverTimestamp =
+        typeof p.coverTimestamp === 'number' && Number.isFinite(p.coverTimestamp)
+          ? Math.max(0, Math.min(p.durationSeconds, p.coverTimestamp))
+          : 0;
+      await this.run(state, [
+        '-nostdin',
+        '-y',
+        ...(coverTimestamp > 0 ? ['-ss', String(coverTimestamp)] : []),
+        '-i',
+        'output.mp4',
+        '-frames:v',
+        '1',
+        'cover.png',
+      ]);
+      state.outputSha256 = await sha256File(path.join(state.directory, 'output.mp4'));
       await fs.writeFile(
         path.join(state.directory, 'verification.json'),
         JSON.stringify({
@@ -727,11 +1288,18 @@ class CreatorRenderEngine {
         });
     } finally {
       for (const name of await fs.readdir(state.directory)) {
-        if (name.startsWith('input-') || name === 'logo.png' || name === 'fonts')
+        if (
+          name.startsWith('input-') ||
+          name.startsWith('segment-') ||
+          name === 'concat.txt' ||
+          name === 'logo.png' ||
+          name === 'fonts'
+        )
           await fs.rm(path.join(state.directory, name), { force: true, recursive: true });
       }
       if (state.cancelled || state.job.status === 'failed')
         await fs.rm(path.join(state.directory, 'output.mp4'), { force: true });
+      this._notifyRenderIdle();
     }
   }
   async save(id, destination, asPackage = false) {
@@ -742,14 +1310,12 @@ class CreatorRenderEngine {
       state.outputSha256 ||
       JSON.parse(await fs.readFile(path.join(state.directory, 'verification.json'), 'utf8'))
         .outputSha256;
-    if (
-      crypto
-        .createHash('sha256')
-        .update(await fs.readFile(path.join(state.directory, 'output.mp4')))
-        .digest('hex') !== verification
-    )
+    if ((await sha256File(path.join(state.directory, 'output.mp4'))) !== verification)
       throw new Error('Rendered video integrity verification failed. Retry export.');
     const temporary = `${destination}.${crypto.randomUUID()}.partial`;
+    const sourceStreams = [];
+    let archiveStream;
+    let sourceError;
     try {
       if (asPackage) {
         const JSZip = require('jszip');
@@ -758,8 +1324,17 @@ class CreatorRenderEngine {
           ['output.mp4', 'video.mp4'],
           ['captions.srt', 'captions.srt'],
           ['cover.png', 'cover.png'],
-        ])
-          zip.file(target, await fs.readFile(path.join(state.directory, source)));
+        ]) {
+          const filePath = path.join(state.directory, source);
+          await fs.access(filePath);
+          const stream = nodeFs.createReadStream(filePath);
+          sourceStreams.push(stream);
+          stream.on('error', (error) => {
+            sourceError = error;
+            archiveStream?.destroy(error);
+          });
+          zip.file(target, stream);
+        }
         const p =
           state.plan ||
           JSON.parse(await fs.readFile(path.join(state.directory, 'plan.json'), 'utf8'));
@@ -780,10 +1355,17 @@ class CreatorRenderEngine {
             2,
           ),
         );
-        await fs.writeFile(temporary, await zip.generateAsync({ type: 'nodebuffer' }), {
-          flag: 'wx',
+        if (sourceError) throw sourceError;
+        archiveStream = zip.generateNodeStream({
+          type: 'nodebuffer',
+          streamFiles: true,
+          compression: 'STORE',
+        });
+        const writeStream = nodeFs.createWriteStream(temporary, {
+          flags: 'wx',
           mode: 0o600,
         });
+        await pipeline(archiveStream, writeStream);
       } else
         await fs.copyFile(
           path.join(state.directory, 'output.mp4'),
@@ -791,14 +1373,34 @@ class CreatorRenderEngine {
           require('node:fs').constants.COPYFILE_EXCL,
         );
       const handle = await fs.open(temporary, 'r+');
-      await handle.sync();
-      await handle.close();
+      try {
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
       await fs.rename(temporary, destination);
-      await this.update(state, { savedName: path.basename(destination) });
+      try {
+        await this.update(state, { savedName: path.basename(destination) });
+      } catch {
+        console.warn('Delivery saved, but local export metadata could not be updated.');
+      }
       return { saved: true, name: path.basename(destination) };
     } finally {
+      for (const stream of sourceStreams) stream.destroy();
       await fs.rm(temporary, { force: true });
     }
   }
 }
-module.exports = { CreatorRenderEngine, validatePlan, planHash, canonical, dimensions, srt, ass };
+module.exports = {
+  CreatorRenderEngine,
+  validatePlan,
+  planHash,
+  canonical,
+  dimensions,
+  srt,
+  ass,
+  DEFAULT_RENDER_LIMITS,
+  SEGMENT_CHUNK_SIZE,
+  buildBakedVisualFilters,
+  chunkVisualClips,
+};

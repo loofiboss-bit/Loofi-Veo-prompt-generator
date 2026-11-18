@@ -11,7 +11,9 @@ select **Start creating**. Provider credentials are only needed when you choose 
 In Prompt Studio, enter an idea and select **Build copy-ready pack**. Local compilation needs no
 network. Choose one of the three variants, edit its text directly and use its copy actions. Expand
 **Scene details** for video direction or **Advanced handoff notes** for music details. History and
-saved templates are available in the same workspace.
+saved templates are available in the same workspace. Brief changes mark the previous pack as
+outdated and identify changed fields. Rebuild it, or explicitly choose the earlier result when copying
+or opening it in Suno. An outdated video pack cannot be sent to internal generation.
 
 The status beside your project reports **Saving**, **Saved**, or **Not saved**. Draft input, variants,
 selection and lyric locks save after 500 ms. Project changes wait for pending writes. If saving fails,
@@ -29,7 +31,7 @@ prompts describe continuity from a previous clip. Internal extension requires a 
 artifact and is blocked when that artifact is missing.
 
 **Veo API** is the internal production target. Supported durations are 4, 6 or 8 seconds, subject to
-mode-specific constraints. **Generate in app** creates a local plan with the selected variant and
+mode-specific constraints; the duration control explains these choices. **Generate in app** creates a local plan with the selected variant and
 references. It does not submit a paid request. In Production, review the request and sourced maximum
 charge, then approve before generating. Unsupported combinations are stopped before submission.
 
@@ -87,7 +89,8 @@ Documented constraints can block internal generation; writing advice and unconfi
 are clearly distinguished. **Open control** selects the relevant field or variant without changing its value.
 Quoted dialogue is supported. You can still copy a manual pack while reviewing warnings.
 
-**Enhance with AI** and **Rewrite section** show proposed differences. Review all three variants and
+**Enhance with AI**, scene and music detail expansion, and **Rewrite section** show proposed
+differences. Review changed fields in an expansion and accept or reject the complete proposal. Review all three variants and
 choose **Accept changes** or **Reject changes**. Your existing draft stays unchanged until acceptance.
 Locked lyric sections are preserved exactly. Changing the draft or switching project invalidates the proposal.
 

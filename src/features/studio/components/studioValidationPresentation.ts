@@ -33,6 +33,9 @@ export function studioCheckDetail(check: PromptValidationCheck, t: TFunction<'st
   };
   const providerKey = providerKeys[check.id];
   const id = check.id.replace(/^variant-\d+-/, '');
+  if (id === 'cinematic-lighting-conflict' && check.detail.includes('Low-angle sunset')) {
+    return check.detail;
+  }
   return t(
     providerKey ? `providerValidation.${providerKey}` : `validation.${id}.detail.${check.status}`,
     { defaultValue: check.detail },

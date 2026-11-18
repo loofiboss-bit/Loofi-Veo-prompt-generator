@@ -93,12 +93,20 @@ export const buildFlowVeoScenePack = (
       ? 'veo-api-prompt'
       : (state.flowVeoOutputMode ?? 'flow-scene-pack'));
   const shotCards = createShotCards(state, options);
+  const audioNotes = [
+    state.voiceOver ? `Voice: "${state.voiceOver}"` : '',
+    state.ambientSound && state.ambientSound !== 'None' ? `Ambiance: ${state.ambientSound}` : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
+
   const oneShotPrompt = [
     sentence(state.idea, 'A cinematic Flow/Veo video scene.'),
     state.environment ? `Setting: ${state.environment}.` : '',
     state.characterVisualDNA ? `Character continuity: ${state.characterVisualDNA}.` : '',
     `Style: ${state.artStyle === 'Custom' ? state.customArtStyle : state.artStyle}.`,
     `Camera: ${state.cameraMovement}, ${state.cameraDistance}, ${state.lensType}.`,
+    audioNotes ? `Audio: ${audioNotes}.` : '',
     `Format: ${state.aspectRatio}, ${state.resolution}, ${getDurationSeconds(state)} seconds.`,
     state.negativePrompt ? `Avoid: ${state.negativePrompt}.` : '',
   ]

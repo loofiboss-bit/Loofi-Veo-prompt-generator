@@ -137,6 +137,25 @@ describe('portable project transfer', () => {
     network.mockRestore();
   });
 
+  it('restores the desktop streaming URL when reopening a project', async () => {
+    const restored = structuredClone(project);
+    window.electron = {
+      readDesktopMedia: vi.fn().mockResolvedValue({
+        bytes: new ArrayBuffer(1),
+        mimeType: 'video/mp4',
+        localUrl: 'file:///private/video.mp4',
+        displayUrl: 'loofi-media://media/stored-a',
+      }),
+    } as unknown as NonNullable<typeof window.electron>;
+    try {
+      await hydrateProjectMedia(restored);
+      expect(state.assets[0].url).toBe('loofi-media://media/stored-a');
+      expect(restored.storyboard.shots[0].generatedVideoUrl).toBe('loofi-media://media/stored-a');
+    } finally {
+      delete window.electron;
+    }
+  });
+
   it('round trips linked captions without treating caption resource identities as media', async () => {
     const document = structuredClone(project);
     document.documentRevision = 42;
@@ -237,6 +256,7 @@ describe('portable project transfer', () => {
       ],
     } as unknown as ProductionRun;
     const sourceTake = run.shots[0].takes[0];
+    sourceTake.comparisonNotes = 'Keep the restrained camera motion';
     sourceTake.manualReview = {
       contextIdentity: manualReviewContext(run.shots[0], sourceTake),
       confirmedAt: 1,
@@ -281,6 +301,7 @@ describe('portable project transfer', () => {
     expect(imported.approvals[0].status).toBe('revoked');
     expect(imported.shots[0].takes[0].status).toBe('recovery-required');
     expect(imported.shots[0].takes[0].taskId).toBeUndefined();
+    expect(imported.shots[0].takes[0].comparisonNotes).toBe('Keep the restrained camera motion');
     expect(imported.shots[0].takes[0].localMediaUrl).toMatch(/^blob:/);
     expect(imported.shots[0].takes[0].manualReview?.contextIdentity).toBe(
       manualReviewContext(imported.shots[0], imported.shots[0].takes[0]),
@@ -484,6 +505,7 @@ describe('portable project transfer', () => {
           assetId: 'a-video',
           artifactId: 'frozen-artifact',
           storyboardShotId: 1,
+          comparisonNotes: 'Compare the framing before acceptance',
           variantIndex: 0,
           artifactSnapshot: { id: 'frozen-artifact', projectId: 'a', prompt: 'Frozen prompt' },
         },
@@ -502,10 +524,12 @@ describe('portable project transfer', () => {
           assetId: string;
           artifactId: string;
           storyboardShotId: number;
+          comparisonNotes?: string;
           artifactSnapshot: { id: string; projectId: string; prompt: string };
         }[];
       }
     ).studioResults[0];
+    expect(result.comparisonNotes).toBe('Compare the framing before acceptance');
     expect(result.id).not.toBe('external-result');
     expect(result.projectId).toBe(restored.id);
     expect(result.assetId).toBe(state.assets[0].id);
@@ -582,7 +606,6 @@ describe('portable project transfer', () => {
           variantIndex: 0,
           artifactSnapshot: { prompt: 'Exactly copied prompt' },
         },
-        { id: 'unused-result', assetId: 'missing-external' },
       ],
       storyboard: {
         ...project.storyboard,

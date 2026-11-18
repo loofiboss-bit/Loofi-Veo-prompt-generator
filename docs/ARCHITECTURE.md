@@ -1,29 +1,105 @@
 # Loofi Creator Studio Architecture
 
-> v14 qualification: the advanced modules described below are implementation components, not a
-> claim that their complete user workflows are qualified. ComfyUI rendering, Live audio, LAN
-> collaboration and Foley generation are disabled experiments. FCPXML import is unverified.
-> [V14_IMPLEMENTATION.md](V14_IMPLEMENTATION.md) describes the current persistence, recovery,
-> capability and portable export contracts.
+> **Current source:** package version 20.0.0. The v20 scope from PR #96 is documented in
+> `CHANGELOG.md`. Public publication and physical platform qualification require their own dated
+> evidence. Historical milestone records below remain dated snapshots.
+
+## v20: Creator Studio reliability
+
+- Project saves await durable media bytes and the merged media catalog before writing the project
+  document and reporting a saved state. The Zustand storage adapter reads both legacy state objects
+  and `{ state, version }` envelopes; catalog additions and tombstones merge atomically.
+- Timeline take references are frozen before new accepted takes are offered. Acceptance does not
+  place media; explicit append/replace operations preserve existing trim, audio, transition and
+  caption links and form single undo steps.
+- Lyric locks use section occurrence identities while honoring legacy all-occurrences locks. Prompt
+  dialogue is treated as protected text segments. Local Whisper transcription is an explicit,
+  desktop-only model installation plus a worker that receives only FFmpeg-extracted clip audio.
+- Timeline source playback shares a playhead and Web Audio output; project-scoped export batches and
+  an idempotent cost ledger survive navigation. Native delivery review remains the check for the
+  frozen output that will be saved.
+- The cost ledger uses the dedicated `veo-cost-tracking` IndexedDB database. A read-only probe
+  migrates legacy cost history and budgets without upgrading the shared database or overwriting
+  newer ledger data.
+- Production review resolves registered local video and reference bytes before calling Gemini and
+  rejects review results after project or source inputs change. Estimates, approved ceilings and
+  verified provider charges remain separate values.
+
+## v19–v20: Reviewable Video Production
+
+Selective video edits use a temporary, typed proposal against the actual selected variant, not a
+fresh compilation of the brief. The proposal captures project identity, draft revision, selected
+variant, operation token and original field text. Gemini/Ollama responses are validated locally;
+only explicitly requested prompt fields can be proposed. Acceptance checkpoints the original,
+persists the next draft, then applies all selected fields together after checking the context again.
+`editStudioVariant` rebuilds the copy fields and shared validation without changing other variants.
+
+`studioValidationService` adapts the existing cinematic linter into per-variant heuristic warnings.
+Studio and Arena consume the same compiler validation. Generic token and hardware estimates are
+excluded from these model-compatibility results; canonical provider checks retain their own rules.
+
+The shared video comparison is presentation-only. Production and external-result adapters supply
+playable media and immutable source snapshots, while retaining their existing review and placement
+actions. Playback uses a common time bounded by the shorter clip and one audible side. Optional
+`comparisonNotes` round-trips in existing records. Narrow service methods save notes without
+deriving scene/run status or changing media identity, approval or manual-review confirmation.
+
+Paid Veo/Lyria submission builders are shared by approval and execution. Electron main snapshots
+and serializes the outgoing body before its native approval dialog, and binds a version-2 SHA-256
+digest to the operation, model, endpoint and exact serialized body, including inline media bytes.
+Execution checks that binding before a new POST and sends the approved serialization. Existing
+provider operations may poll/download without reapproval. Unsent legacy approvals require an
+explicit new approval, and ambiguous submissions without an operation identity are never resent.
+Extension references bind the submitted provider URI, not mutable remote content behind that URI.
+The additive `hashVersion` does not change existing project or archive schema identities.
+
+## v20: Music Editing, Cancellation and Result Feedback
+
+`proposeMusicVariantEdit` receives the selected artifact variant as currently edited, the requested
+fields and the creative brief as context. It returns a temporary field patch with a typed proposal
+contract; the review accepts fields independently through `editStudioVariant`. Occurrence-specific
+lyric locks are preserved exactly and ambiguous section-structure changes are rejected. Instrumental
+mode cannot request lyric changes. Full-package optimization remains a separate operation.
+
+Video prompt edits preserve ordered quoted text and supplied dialogue by default. A validated proposal
+that changes or omits protected dialogue is rejected before review; rewriting requires an explicit
+user choice. Local target-grammar rules operate only on unprotected segments. Proposal acceptance
+checkpoints and flushes the current draft, then verifies project, revision, selected variant and
+operation identity. Persistence completes before the accepted artifact is exposed, so a failed save
+leaves the editable prompt unchanged.
+
+Studio editing requests accept an optional `AbortSignal`. Electron assigns request IDs bound to the
+originating IPC sender and forwards cancellation to the actual fetch or SDK request. Cancellation
+stops retries and late responses cannot replace a newer proposal. It stops the client's wait; a Gemini
+request already sent may still be billed. Ollama structured edit calls use the requested JSON schema
+and validate locally without a provider fallback on malformed output.
+
+Production and imported-result feedback is passed through ephemeral router state containing only
+prompt text, settings, notes and source identity. Studio uses the current selected variant as the edit
+source and the frozen source prompt/settings as context. Project and target must still match; the
+source video is not sent or analyzed. Prompt-only is the default, negative-prompt editing is optional,
+and generation remains a separate cost-approved action. Audio duration is captured before transferring
+the transcription buffer to its worker.
 
 ## 1. Runtime Shape
 
 ```text
-React Feature Pages (Modular Studio, 3D Previz Viewport, Co-Director, Timeline)
-  -> Zustand/Zundo Stores (EditorSession, ProductionRun, JobQueue, Diagnostics)
-  -> Singleton Services (Transpiler, Continuity, ComfyUI, SFX, Collaboration, Previz)
-  -> Typed Preload Boundary (Electron IPC, Keytar, Media Storage)
-  -> Electron Main IPC Modules (paid-job-engine, media-store, window-lifecycle, credentials)
-  -> External Engines (Google Vertex/Gemini Live, Local ComfyUI, LAN WebRTC Mesh)
+React Feature Pages (Modular Studio, 3D Previz Viewport, Co-Director, Timeline, Creator Delivery)
+  -> Zustand/Zundo Stores (EditorSession, ProductionRun, JobQueue, Diagnostics, Delivery)
+  -> Store Mediator (`storeMediator.ts` typed cross-store event bus)
+  -> Singleton Services (Transpiler, Continuity, CreatorDelivery, ComfyUI, SFX, Previz)
+  -> Typed Preload Boundary (Electron IPC, Keytar, Media Storage, Render Jobs)
+  -> Electron Main IPC Modules (paid-job-engine, media-store, window-lifecycle, credentials, creator-render)
+  -> External Engines (Google Vertex/Gemini Live, Local ComfyUI, Bundled FFmpeg, LAN WebRTC Mesh)
 ```
 
-The web renderer remains usable for local planning, prompt transpilation, 3D staging, script breakdown, and NLE export. Paid provider execution is guarded strictly in Electron main, where credentials, approval tokens, pricing mirrors, and durable media writes are enforced. Local ComfyUI generation operates over localhost HTTP without external credentials.
+The web renderer remains usable for local planning, prompt transpilation, 3D staging, script breakdown, and NLE export. Paid provider execution is guarded strictly in Electron main, where credentials, approval tokens, pricing mirrors, and durable media writes are enforced. Local ComfyUI generation operates over localhost HTTP without external credentials. Bundled FFmpeg handles local MP4 exports, speech silence detection, loudness normalization, and caption alignment entirely on device.
 
 ---
 
 ## 2. Product Surfaces & Modular Information Architecture
 
-The application layout centers on seven primary destinations:
+The application layout centers on eight primary destinations:
 
 1. **Prompt Studio** (`/` or `/studio`): Default first-run surface. Modularized into:
    - `VideoPromptStudio.tsx`: Core prompt form, Universal Model Target selector, 3D camera rig binding, reference manager.
@@ -34,8 +110,9 @@ The application layout centers on seven primary destinations:
 3. **Projects** (`/hubs/projects`): Local project library, backups, and `.loofi-project` bundle import/export.
 4. **Assets & Continuity** (`/hubs/assets`): Production Bible v2, 4-angle turnaround sheets, reference hash manager.
 5. **Timeline & Previz** (`/hubs/timeline`): Previz Animatic Player, multi-track audio/video arrangement, OTIO/FCPXML 1.11 export.
-6. **Activity & Jobs** (`/hubs/activity`): Durable queue, ComfyUI render status, and retry controls.
-7. **Settings** (`/settings`): OS vault credentials, ComfyUI local GPU setup, and system diagnostics.
+6. **Creator Delivery** (`/delivery` or within Timeline): Native FFmpeg delivery pipeline, multi-format rendering (9:16, 16:9, 1:1), linked captions, EBU R128 loudness normalization, and speech ducking.
+7. **Activity & Jobs** (`/hubs/activity`): Durable queue, ComfyUI render status, and retry controls.
+8. **Settings** (`/settings`): OS vault credentials, ComfyUI local GPU setup, and system diagnostics.
 
 Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to `/create`.
 
@@ -98,6 +175,17 @@ Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to
 - **Style Presets**: Villeneuve, Anderson, Nolan, Fincher, and Cyberpunk Neon Noir.
 - **Animatic**: Canvas-based 2D motion simulation, BPM beat-sync grid snapping, and Web Speech API zero-cost scratch voiceover.
 
+### 3.8 Creator Delivery & Smart Local Editing (v17.0.0 Baseline)
+
+- **Service**: `creatorDeliveryService.ts` / `creator-render.cjs`
+- **Capabilities**:
+  - Local MP4 video rendering with bundled FFmpeg (`720p` / `1080p`, 30 fps, H.264/AAC).
+  - Web Audio API microphone voiceover recording directly into the dialogue timeline track.
+  - Offline silence detection with `silencedetect` filter, interactive review modal, and non-destructive ripple cuts.
+  - Local speech-to-text transcription and linked caption generation with atomic split/merge/shift and SRT import.
+  - Broadcast-standard EBU R128 loudness normalization (`-14 LUFS`) and dynamic sidechain music ducking (`-14 dB`).
+  - Save-on-close flush resilience guaranteeing uncommitted debounced autosaves flush to disk before window unload.
+
 ---
 
 ## 4. Continuity Studio & Production Bible v2
@@ -139,3 +227,20 @@ Studio revisions use the canonical project document service's serialized writes.
 - **Node Test Runner**: Electron main IPC, price mirror, durable jobs, and media store.
 - **Playwright**: End-to-end browser workflows, RTL layout, accessibility compliance, and screenshot regression.
 - **CI Release Smoke**: RPM dependency metadata checks, package build, AppImage extraction smoke, Windows smoke.
+
+---
+
+## 8. v18+ Architecture CI Gates, Job FSM & Cost Security (Phase 4 Qualified)
+
+- **Persistent Paid-Job State Machine (FSM)**:
+  - Explicit lifecycle states: `DRAFT -> QUOTED -> APPROVED -> DISPATCHING -> RUNNING -> COMPLETED | FAILED | CANCELLED`.
+  - Disk journaling via `DesktopPaidJobFsm` and `paidJobFsmService`: in-flight jobs recover cleanly upon Electron or window restart.
+  - Crash recovery guarantees that any jobs interrupted in `DISPATCHING` or `RUNNING` transition to `RECOVERED_FAILED` or resume state, preventing double-dispatching and duplicate credit consumption.
+- **Payload-Hashed Cost Approval Gate**:
+  - Bound approval tokens: every cost authorization token is cryptographically bound to a deterministic SHA-256 hash of `prompt + model + duration + resolution + count`.
+  - Parameter tamper resistance: any client-side or in-flight mutation of job parameters immediately breaks hash equality, triggering `ERR_PAYLOAD_TAMPERED` and invalidating the quote approval prior to submission.
+- **Zero Circular Dependencies**:
+  - Automated CI gate via `npm run check:circular` (`npx madge --circular --extensions ts,tsx src/`).
+  - Architecture contracts enforce 0 circular dependencies across all 1000+ TypeScript/React files.
+- **Non-Blocking Persistence & Main-Thread Benchmark Ceiling**:
+  - Store snapshotting and dirty-check overhead (`captureProjectDocumentFromStores` / `buildProjectDocument`) are guarded by automated benchmarks asserting execution under `< 5ms` for full 20-shot, multi-track timeline documents.

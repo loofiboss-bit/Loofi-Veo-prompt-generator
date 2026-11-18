@@ -1,26 +1,40 @@
 import { useEffect, useId, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import type { PromptArtifactV1 } from '@core/types';
+import type { PromptArtifactV1, VideoPromptArtifactInput } from '@core/types';
 import type { ExternalStudioResultV1 } from '@core/types/externalStudioResult';
+import { ROUTES } from '@core/config/routes';
 import { useExternalStudioResultStore } from '@core/store/useExternalStudioResultStore';
 import { useAppStore } from '@core/store/useAppStore';
+import {
+  VideoResultCompare,
+  type VideoComparisonResult,
+} from '@shared/components/VideoResultCompare';
+import { videoIterationService } from '@core/services/videoIterationService';
+import type { VideoIterationSession } from '@core/types/videoIteration';
+import { VideoIterationPanel } from './VideoIterationPanel';
 
 interface ExternalStudioResultsProps {
   projectId: string;
   artifact: PromptArtifactV1 | null;
   variantIndex: 0 | 1 | 2;
   disabled?: boolean;
+  isStale?: boolean;
 }
 
 function ExternalResultCard({
   result,
+  comparisonNotes,
   disabled,
+  showMedia = true,
 }: {
   result: ExternalStudioResultV1;
+  comparisonNotes?: string;
   disabled: boolean;
+  showMedia?: boolean;
 }) {
   const { t } = useTranslation('studio');
+  const navigate = useNavigate();
   const asset = useExternalStudioResultStore((s) => s.assets[result.id]);
   const pending = useExternalStudioResultStore((s) => s.pending);
   const confirm = useExternalStudioResultStore((s) => s.confirm);
@@ -29,7 +43,35 @@ function ExternalResultCard({
   const [notes, setNotes] = useState(result.manualReview?.notes ?? '');
   const notesId = useId();
   const [shot, setShot] = useState('');
+  const [isIterating, setIsIterating] = useState(false);
+  const [iterationSession, setIterationSession] = useState<VideoIterationSession | null>(null);
   const reviewed = result.manualReview?.assetId === result.assetId;
+
+  const handleToggleIteration = async () => {
+    if (!iterationSession && asset) {
+      const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
+      const duration = Math.min(15, Math.max(3, Math.round(result.durationSeconds || 5)));
+      const session = await videoIterationService.getOrCreateSession({
+        projectId: result.projectId,
+        artifactId: result.artifactId,
+        variantIndex: result.variantIndex,
+        baseAsset: {
+          id: result.assetId,
+          url: asset.url,
+          name: result.assetName,
+          durationSeconds: duration,
+        },
+        initialPrompt: result.variantSnapshot.prompt,
+        settings: {
+          aspectRatio: (input?.aspectRatio as '16:9' | '9:16') ?? '16:9',
+          durationSeconds: duration,
+          modelId: 'gemini-omni-1.2-flash',
+        },
+      });
+      setIterationSession(session);
+    }
+    setIsIterating((prev) => !prev);
+  };
   return (
     <article className="space-y-3 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-4">
       <h3 className="font-semibold text-[var(--color-text-primary)]">
@@ -39,14 +81,16 @@ function ExternalResultCard({
         {result.assetName} · {result.durationSeconds.toFixed(1)} s
       </p>
       {asset ? (
-        <video
-          controls
-          src={asset.url}
-          className="max-h-72 w-full rounded"
-          aria-label={result.assetName}
-        >
-          <track kind="captions" />
-        </video>
+        showMedia ? (
+          <video
+            controls
+            src={asset.url}
+            className="max-h-72 w-full rounded"
+            aria-label={result.assetName}
+          >
+            <track kind="captions" />
+          </video>
+        ) : null
       ) : (
         <div>
           <p role="status">{t('externalResults.unavailable')}</p>
@@ -91,6 +135,49 @@ function ExternalResultCard({
         onChange={(e) => setNotes(e.target.value)}
         className="mt-1 w-full rounded border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-2 text-[var(--color-text-primary)]"
       />
+      {result.sourceSnapshot.kind === 'video' && result.sourceSnapshot.target !== 'suno' ? (
+        <button
+          type="button"
+          disabled={disabled || pending || !comparisonNotes?.trim()}
+          onClick={() => {
+            const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
+            navigate(`${ROUTES.STUDIO}?mode=video`, {
+              state: {
+                kind: 'studio-feedback',
+                source: {
+                  projectId: result.projectId,
+                  sourceKind: 'external-result',
+                  sourceId: result.id,
+                  artifactId: result.artifactId,
+                  variantIndex: result.variantIndex,
+                  target: result.sourceSnapshot.target,
+                  prompt: result.variantSnapshot.prompt,
+                  negativePrompt: result.variantSnapshot.negativePrompt,
+                  settings: JSON.stringify(
+                    {
+                      mode: input.mode,
+                      aspectRatio: input.aspectRatio,
+                      durationSeconds: input.durationSeconds,
+                      firstFrameAssetId: input.firstFrameAssetId,
+                      lastFrameAssetId: input.lastFrameAssetId,
+                      referenceAssetIds: input.referenceAssetIds,
+                      extensionSourceTakeId: input.extensionSourceTakeId,
+                    },
+                    null,
+                    2,
+                  ),
+                  notes: comparisonNotes,
+                },
+              },
+            });
+          }}
+          className="rounded border border-blue-600 px-3 py-2 disabled:opacity-50"
+        >
+          {t('externalResults.improvePromptFromNotes', {
+            defaultValue: 'Improve prompt from notes',
+          })}
+        </button>
+      ) : null}
       <button
         type="button"
         disabled={disabled || pending || !asset}
@@ -119,11 +206,48 @@ function ExternalResultCard({
       <button
         type="button"
         disabled={disabled || pending || !asset || !reviewed}
-        onClick={() => void accept(result.id, shot ? Number(shot) : undefined)}
+        onClick={() => {
+          const app = useAppStore.getState();
+          void accept(result.id, shot ? Number(shot) : undefined, {
+            editorSnapshot: {
+              shots: app.sbShots,
+              timeline: {
+                clips: app.clips,
+                tracks: app.tracks,
+                zoomLevel: app.zoomLevel,
+                currentTime: app.currentTime,
+              },
+            },
+          });
+        }}
         className="studio-primary disabled:opacity-50"
       >
         {t('externalResults.useTimeline')}
       </button>
+      {asset && (
+        <button
+          type="button"
+          disabled={disabled || pending}
+          onClick={handleToggleIteration}
+          data-testid="toggle-video-iteration-btn"
+          className="rounded border border-fuchsia-500/50 bg-fuchsia-950/30 px-3 py-2 text-fuchsia-200 hover:bg-fuchsia-900/40 disabled:opacity-50 transition-colors font-medium ml-2"
+        >
+          {isIterating ? t('videoIteration.hideCompare') : t('videoIteration.iterateButton')}
+        </button>
+      )}
+      {isIterating && iterationSession && (
+        <div
+          className="mt-4 border-t border-[var(--color-border-primary)] pt-4"
+          data-testid="video-iteration-wrapper"
+        >
+          <VideoIterationPanel
+            initialSession={iterationSession}
+            idea={result.variantSnapshot.prompt}
+            onSessionUpdated={setIterationSession}
+            disabled={disabled || pending}
+          />
+        </div>
+      )}
     </article>
   );
 }
@@ -133,6 +257,7 @@ export function ExternalStudioResults({
   artifact,
   variantIndex,
   disabled = false,
+  isStale = false,
 }: ExternalStudioResultsProps) {
   const { t } = useTranslation('studio');
   const state = useExternalStudioResultStore();
@@ -140,15 +265,52 @@ export function ExternalStudioResults({
     void useExternalStudioResultStore.getState().hydrate(projectId);
   }, [projectId]);
   const canImport = artifact?.kind === 'video' && artifact.target !== 'veo-api';
+  const currentResults = state.projectId === projectId ? state.results : [];
+  const playable: VideoComparisonResult[] = currentResults
+    .filter((result) => state.assets[result.id]?.url)
+    .map((result) => {
+      const input = result.sourceSnapshot.input as VideoPromptArtifactInput;
+      return {
+        id: result.id,
+        label: result.assetName,
+        src: state.assets[result.id].url,
+        prompt: result.variantSnapshot.prompt,
+        negativePrompt: result.variantSnapshot.negativePrompt,
+        settings: JSON.stringify(
+          {
+            target: result.target,
+            mode: input.mode,
+            aspectRatio: input.aspectRatio,
+            durationSeconds: input.durationSeconds,
+            firstFrameAssetId: input.firstFrameAssetId,
+            lastFrameAssetId: input.lastFrameAssetId,
+            referenceAssetIds: input.referenceAssetIds,
+            extensionSourceTakeId: input.extensionSourceTakeId,
+          },
+          null,
+          2,
+        ),
+        comparisonNotes: result.comparisonNotes,
+      };
+    });
   if (!artifact && !state.pending && state.results.length === 0 && !state.error) return null;
   return (
     <section
       className="space-y-4 rounded-xl border border-[var(--color-border-primary)] p-4"
       aria-label={t('externalResults.title')}
     >
-      <h2 className="font-semibold text-[var(--color-text-primary)]">
-        {t('externalResults.title')}
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-[var(--color-text-primary)]">
+          {t('externalResults.title')}
+        </h2>
+        {isStale && (
+          <span className="text-xs text-amber-400">
+            {t('externalResults.boundToLastCompiled', {
+              defaultValue: 'Bound to last compiled prompt',
+            })}
+          </span>
+        )}
+      </div>
       {canImport && (
         <label className="block text-sm text-[var(--color-text-primary)]">
           {t('externalResults.import')}
@@ -171,8 +333,27 @@ export function ExternalStudioResults({
           {state.error}
         </p>
       )}
-      {state.projectId === projectId &&
-        state.results.map((result) => (
+      <VideoResultCompare
+        contextId={projectId}
+        results={playable}
+        disabled={disabled || state.pending}
+        onSaveNotes={(id, notes) => state.saveComparisonNotes(id, notes)}
+        renderDetails={(item, { notes }) => {
+          const result = currentResults.find((candidate) => candidate.id === item.id);
+          return result ? (
+            <ExternalResultCard
+              key={result.id}
+              result={result}
+              comparisonNotes={notes}
+              disabled={disabled}
+              showMedia={false}
+            />
+          ) : null;
+        }}
+      />
+      {currentResults
+        .filter((result) => !state.assets[result.id]?.url)
+        .map((result) => (
           <ExternalResultCard key={result.id} result={result} disabled={disabled} />
         ))}
       {!state.pending && state.results.length === 0 && (

@@ -14,6 +14,7 @@ const readString = (value: unknown, key: string): string => {
 
 export const classifyProviderFailure = (error: unknown): ProviderFailureKind => {
   if (error instanceof ProviderExecutionError) return error.kind;
+  if (readString(error, 'name') === 'AbortError') return 'cancelled';
   const status = readNumber(error, 'status') ?? readNumber(error, 'statusCode');
   const code = readString(error, 'code').toLowerCase();
   const message = (error instanceof Error ? error.message : String(error)).toLowerCase();

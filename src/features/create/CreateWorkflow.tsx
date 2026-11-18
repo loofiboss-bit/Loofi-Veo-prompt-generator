@@ -10,9 +10,26 @@ import { GenerateStep } from './steps/GenerateStep';
 import { ReviewExportStep } from './steps/ReviewExportStep';
 import { ShotsStep } from './steps/ShotsStep';
 
-export function CreateWorkflow({ activeStep = 'generate' }: { activeStep?: ProductionStepId }) {
+export function CreateWorkflow({
+  activeStep = 'generate',
+  onNavigateStep,
+}: {
+  activeStep?: ProductionStepId;
+  onNavigateStep?: (step: ProductionStepId) => void;
+}) {
   const { t } = useTranslation('create');
   const workflow = useCreateWorkflow();
+
+  const handleGoToBrief = () => {
+    if (onNavigateStep) {
+      onNavigateStep('brief');
+    } else {
+      const briefButton = document.querySelector<HTMLButtonElement>(
+        'nav.creator-workflow-nav button',
+      );
+      briefButton?.click();
+    }
+  };
 
   return (
     <div data-production-step={activeStep} className="min-h-full text-slate-100">
@@ -36,6 +53,15 @@ export function CreateWorkflow({ activeStep = 'generate' }: { activeStep?: Produ
             <Icon name="film" className="mx-auto h-10 w-10 text-blue-300" />
             <h2 className="mt-3 text-xl font-semibold">{t('empty.title')}</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-slate-400">{t('empty.description')}</p>
+            <div className="mt-5 flex justify-center">
+              <button
+                type="button"
+                onClick={handleGoToBrief}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+              >
+                {t('actions.createPlan', 'Create New Plan')}
+              </button>
+            </div>
           </section>
         ) : (
           <>

@@ -4,12 +4,13 @@ import type { PromptState } from '@core/types';
 
 describe('modelProfiles', () => {
   it('defines the v5 Flow/Veo profile set', () => {
-    expect(MODEL_PROFILES).toHaveLength(5);
+    expect(MODEL_PROFILES).toHaveLength(6);
     expect(MODEL_PROFILES.map((profile) => profile.id)).toEqual([
       'flow-veo-cinematic',
       'flow-veo-social',
       'flow-veo-abstract',
       'flow-veo-fast-draft',
+      'gemini-omni-direct',
       'veo-api-production',
     ]);
   });
@@ -28,7 +29,7 @@ describe('modelProfiles', () => {
   });
 
   it('returns profiles by target workflow', () => {
-    expect(getProfilesByModel('flow-veo')).toHaveLength(4);
+    expect(getProfilesByModel('flow-veo')).toHaveLength(5);
     expect(getProfilesByModel('veo-api')).toHaveLength(1);
   });
 

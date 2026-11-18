@@ -182,6 +182,7 @@ async function projectState(page) {
   });
 }
 async function example(session, index = 0) {
+  await session.page.locator('summary').filter({ hasText: 'Try it offline' }).click();
   const buttons = session.page.getByRole('button', { name: 'Open example', exact: true });
   await buttons.nth(index).click();
   await session.page.getByRole('heading', { name: 'Export video', exact: true }).waitFor();
@@ -205,12 +206,10 @@ async function save(session, job, packageOutput = false) {
       exact: true,
     })
     .click();
-  await session.page.waitForFunction(
-    () =>
-      document.body.textContent.includes('saved') ||
-      document.body.textContent.includes('delivery.mp4') ||
-      document.body.textContent.includes('publication.zip'),
-  );
+  await session.page
+    .getByText(packageOutput ? 'publication.zip' : 'delivery.mp4', { exact: true })
+    .first()
+    .waitFor();
   await fs.access(destination);
   if (packageOutput) {
     const zip = await JSZip.loadAsync(await fs.readFile(destination));
@@ -431,6 +430,108 @@ await scenario('05-error-recovery', async (session) => {
     unsupportedEffectReported: true,
     cancellationRecovered: true,
   };
+});
+await scenario('06-import-trim-review-reopen', async (session) => {
+  const fixture = path.join(root, 'public/creator-examples/social.mp4');
+  await session.page.getByLabel('Choose local media', { exact: true }).setInputFiles(fixture);
+  await session.page.locator('.local-editor-workspace').waitFor();
+  const sourceVideo = session.page.locator('.local-editor-source video');
+  await sourceVideo.waitFor();
+  await sourceVideo.evaluate(async (element) => {
+    element.muted = true;
+    await element.play();
+    element.pause();
+  });
+  const clip = session.page.getByRole('button', { name: /^social\.mp4 clip,/ });
+  await clip.waitFor();
+  await clip.press('Enter');
+  await session.page.getByRole('slider', { name: 'Playhead', exact: true }).fill('2');
+  await session.page.getByRole('button', { name: 'Trim end to playhead', exact: true }).click();
+  await session.page.getByRole('button', { name: 'Add caption', exact: true }).click();
+  await session.page.getByLabel('Text', { exact: true }).first().fill('A reviewed local caption');
+  await session.page.getByLabel('Output', { exact: true }).selectOption('burn-in');
+
+  await session.page.getByRole('button', { name: 'Check delivery', exact: true }).click();
+  await session.page
+    .getByText('Delivery checks passed. Review the rendered video before saving.', { exact: true })
+    .waitFor();
+  await session.page.getByRole('button', { name: 'Review delivery', exact: true }).click();
+  try {
+    await session.page.waitForFunction(
+      () => window.__creatorVerificationJobs.some((job) => job.purpose === 'preview'),
+      undefined,
+      { timeout: 45000 },
+    );
+  } catch {
+    const messages = await session.page
+      .locator('[role="alert"], [role="status"]')
+      .allTextContents();
+    throw new Error(`Review did not start: ${messages.join(' | ')}`);
+  }
+  await session.page.waitForFunction(
+    () =>
+      window.__creatorVerificationJobs.some(
+        (job) => job.purpose === 'preview' && ['complete', 'failed'].includes(job.status),
+      ),
+    undefined,
+    { timeout: 180000 },
+  );
+  const preview = await session.page.evaluate(() =>
+    window.__creatorVerificationJobs.findLast((job) => job.purpose === 'preview'),
+  );
+  assert.equal(preview.status, 'complete', preview.error);
+  await session.page.getByText('This review matches the current edit.', { exact: true }).waitFor();
+  const previewVideo = session.page.locator('#timeline-delivery-panel video').last();
+  await previewVideo.waitFor();
+  await previewVideo.evaluate(async (element) => {
+    element.muted = true;
+    await element.play();
+    element.pause();
+  });
+  const delivery = await render(session);
+  const original = await projectState(session.page);
+  assert.ok(original.project && original.clips.some((item) => item.type === 'video'));
+  assert.equal(original.clips.find((item) => item.type === 'video').duration, 2);
+  assert.ok(original.clips.some((item) => item.caption?.text === 'A reviewed local caption'));
+
+  await close(session);
+  const reopened = await launch('06-import-trim-review-reopen', true);
+  try {
+    await reopened.page.goto(`${server}/#/timeline`, { waitUntil: 'domcontentloaded' });
+    await reopened.page.locator('.local-editor-workspace').waitFor();
+    await reopened.page.getByRole('slider', { name: 'Playhead', exact: true }).fill('0');
+    const reopenedVideo = reopened.page.locator('.local-editor-source video');
+    await reopenedVideo.waitFor();
+    await reopenedVideo.evaluate(async (element) => {
+      element.muted = true;
+      await element.play();
+      element.pause();
+    });
+    await reopened.page.getByLabel('Text', { exact: true }).first().waitFor();
+    assert.equal(
+      await reopened.page.getByLabel('Text', { exact: true }).first().inputValue(),
+      'A reviewed local caption',
+    );
+    const state = await projectState(reopened.page);
+    assert.equal(state.id, original.id);
+    assert.equal(state.clips.find((item) => item.type === 'video').duration, 2);
+    const savedJob = await reopened.page.evaluate(
+      (id) => window.electron.getTimelineRenderJob(id),
+      delivery.job.id,
+    );
+    assert.equal(savedJob?.savedName, 'delivery.mp4');
+    await snapshot(reopened, 'reopened');
+    return {
+      ...delivery.file,
+      source: 'public/creator-examples/social.mp4',
+      trimmedDuration: 2,
+      captionsReopened: true,
+      previewVerified: true,
+      saveMetadataReopened: true,
+    };
+  } finally {
+    await close(reopened);
+  }
 });
 report.completedAt = new Date().toISOString();
 report.passed = report.scenarios.filter((scenario) => scenario.status === 'passed').length;

@@ -7,25 +7,78 @@ import {
   optimizeVideoPromptArtifact,
 } from './promptStudioService';
 import { editStudioVariant } from './promptStudioEditingService';
+import { validateStudioVideo } from './studioValidationService';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 
 const input: VideoPromptArtifactInput = {
   idea: 'A courier walks',
-  target: 'veo-api',
+  target: 'flow-veo',
   mode: 'text-to-video',
   durationSeconds: 8,
   aspectRatio: '16:9',
 };
 describe('Studio validation', () => {
-  it('marks broad manual model labels unconfirmed instead of claiming compatibility', () => {
+  it.each([
+    ['camera-conflict', 'Static tripod with a whip pan'],
+    ['lighting-conflict', 'Midnight darkness under direct midday sun'],
+    ['composition-conflict', 'Macro lens showing a vast sweeping vista'],
+    ['focus-conflict', 'f/1.4 shallow depth of field with f/16 deep focus'],
+    ['temporal-conflict', '240fps extreme slow motion in a fast-forward hyperlapse'],
+  ])('reports %s as local guidance for the edited variant', (category, prompt) => {
+    const original = compileVideoPromptArtifact(input);
+    const edited = editStudioVariant(original, 1, { prompt });
+    expect(
+      edited.validation.find((entry) => entry.id === `variant-1-cinematic-${category}`),
+    ).toMatchObject({
+      status: 'warning',
+      evidence: 'heuristic',
+      action: { field: 'variant', variantIndex: 1 },
+    });
+    expect(edited.primary).toEqual(original.primary);
+    expect(edited.alternatives[1]).toEqual(original.alternatives[1]);
+    expect(edited.validation.some((entry) => entry.status === 'blocked')).toBe(false);
+    const corrected = editStudioVariant(edited, 1, { prompt: 'A slow dolly follows a courier' });
+    expect(corrected.validation.some((entry) => entry.id.includes('cinematic-'))).toBe(false);
+  });
+
+  it('checks compiled camera direction without changing quoted dialogue or copy text', () => {
+    const artifact = compileVideoPromptArtifact({
+      ...input,
+      camera: 'Static tripod with a whip pan',
+      dialogue: '"Keep the camera still"',
+    });
+    expect(artifact.validation).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'variant-0-cinematic-camera-conflict', status: 'warning' }),
+      ]),
+    );
+    const primary = artifact.primary as VideoPromptVariant;
+    expect(primary.prompt).toContain('"Keep the camera still"');
+    expect(primary.copyPrompt).toBe(primary.prompt);
+  });
+
+  it('does not promote generic linter hardware estimates into model requirements', () => {
+    const artifact = editStudioVariant(
+      compileVideoPromptArtifact({ ...input, target: 'kling', durationSeconds: 10 }),
+      0,
+      { prompt: 'A clear scene. '.repeat(200) },
+    );
+    expect(artifact.validation.some((entry) => entry.id.includes('HW-'))).toBe(false);
+    expect(artifact.validation.some((entry) => /280|cross-attention/.test(entry.detail))).toBe(
+      false,
+    );
+    expect(artifact.validation.some((entry) => entry.status === 'blocked')).toBe(false);
+  });
+
+  it('documents concrete manual profiles without claiming live qualification', () => {
     const check = compileVideoPromptArtifact({ ...input, target: 'runway-gen3' }).validation.find(
       (entry) => entry.id === 'target-compatibility',
     );
     expect(check).toMatchObject({
       status: 'warning',
-      evidence: 'unknown',
+      evidence: 'documented',
       action: { field: 'target' },
-      verifiedDate: '2026-10-08',
+      verifiedDate: '2026-10-29',
     });
   });
   it('uses provider request validation with field actions and documented sources', () => {
@@ -41,7 +94,7 @@ describe('Studio validation', () => {
           status: 'blocked',
           evidence: 'documented',
           action: { field: 'durationSeconds' },
-          sourceUrl: 'https://ai.google.dev/gemini-api/docs/veo',
+          sourceUrl: 'https://support.google.com/flow/answer/16352836?hl=en',
         }),
       ]),
     );
@@ -60,7 +113,7 @@ describe('Studio validation', () => {
     expect(artifact.input).toMatchObject({ mode: 'first-last-frames', durationSeconds: 10 });
     expect(
       artifact.validation.some(
-        (entry) => entry.action?.field === 'firstFrameAssetId' && entry.status === 'blocked',
+        (entry) => entry.action?.field === 'firstFrameAssetId' && entry.status === 'warning',
       ),
     ).toBe(true);
   });
@@ -122,6 +175,13 @@ describe('Studio validation', () => {
       'pass',
     );
   });
+  it('marks retired saved targets as blocked without altering their text', () => {
+    const checks = validateStudioVideo({ ...input, target: 'sora' }, []);
+    expect(checks.find((check) => check.id === 'target-compatibility')).toMatchObject({
+      status: 'blocked',
+      action: { field: 'target' },
+    });
+  });
   it('preserves quoted optimizer output and revalidates the proposal', async () => {
     const original = useSettingsStore.getState().promptGenerationProvider;
     useSettingsStore.setState({ promptGenerationProvider: 'ollama' });
@@ -137,5 +197,20 @@ describe('Studio validation', () => {
     } finally {
       useSettingsStore.setState({ promptGenerationProvider: original });
     }
+  });
+
+  it('merges multiple cinematic rules of the same category without duplicate check IDs', () => {
+    const artifact = editStudioVariant(compileVideoPromptArtifact(input), 0, {
+      prompt:
+        'Pitch black midnight darkness with golden hour sunset, direct midday sun, and high noon sun',
+    });
+    const lightingChecks = artifact.validation.filter(
+      (entry) => entry.id === 'variant-0-cinematic-lighting-conflict',
+    );
+    expect(lightingChecks).toHaveLength(1);
+    expect(lightingChecks[0].detail).toContain('Pitch black');
+    expect(lightingChecks[0].detail).toContain('Low-angle sunset');
+    const allIds = artifact.validation.map((entry) => entry.id);
+    expect(new Set(allIds).size).toBe(allIds.length);
   });
 });

@@ -5,6 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
+// Existing transport cases exercise the adapter before its documented retirement.
+// The current-date cases below independently enforce the shutdown boundary.
+test.beforeEach((context) => context.mock.method(Date, 'now', () => Date.UTC(2026, 9, 21)));
+
 const require = createRequire(import.meta.url);
 const {
   PaidJobEngine,
@@ -14,60 +18,76 @@ const {
   extractMusicOutput,
   validatePaidTask,
 } = require('./paid-job-engine.cjs');
+const { createPaidSubmission, computePaidSubmissionHash } = require('./paid-job-submission.cjs');
 
-const task = (overrides = {}) => ({
-  id: 'job-1',
-  status: 'Queued',
-  videoUrl: null,
-  prompt: 'A cinematic sunrise.',
-  settings: { veoModel: 'fast', resolution: '720p', aspectRatio: '16:9' },
-  request: {
-    mode: 'text-to-video',
-    modelId: 'veo-3.1-fast',
+const approve = (task) => {
+  const approvedSubmission = createPaidSubmission(task);
+  return {
+    ...task,
+    approvedSubmission,
+    costApproval: {
+      ...task.costApproval,
+      hashVersion: 2,
+      payloadHash: computePaidSubmissionHash(approvedSubmission),
+    },
+  };
+};
+
+const task = (overrides = {}) =>
+  approve({
+    id: 'job-1',
+    status: 'Queued',
+    videoUrl: null,
     prompt: 'A cinematic sunrise.',
-    aspectRatio: '16:9',
-    resolution: '720p',
-    durationSeconds: 8,
-    referenceAssetIds: [],
-  },
-  costApproval: {
-    approvalId: 'approval-1',
-    modelId: 'veo-3.1-fast',
-    maximumChargeUsd: 0.8,
-    currency: 'USD',
-    confidence: 'exact',
-    sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
-    verifiedDate: '2026-08-01',
-    approvedAt: 1,
-  },
-  timestamp: 1,
-  ...overrides,
-});
+    settings: { veoModel: 'fast', resolution: '720p', aspectRatio: '16:9' },
+    request: {
+      mode: 'text-to-video',
+      modelId: 'veo-3.1-fast',
+      prompt: 'A cinematic sunrise.',
+      aspectRatio: '16:9',
+      resolution: '720p',
+      durationSeconds: 8,
+      referenceAssetIds: [],
+    },
+    costApproval: {
+      approvalId: 'approval-1',
+      modelId: 'veo-3.1-fast',
+      maximumChargeUsd: 0.8,
+      currency: 'USD',
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+    ...overrides,
+  });
 
-const musicTask = (overrides = {}) => ({
-  id: 'music-job-1',
-  jobKind: 'music',
-  status: 'Queued',
-  prompt: 'A warm instrumental theme.',
-  request: {
-    modelId: 'lyria-3-clip-preview',
+const musicTask = (overrides = {}) =>
+  approve({
+    id: 'music-job-1',
+    jobKind: 'music',
+    status: 'Queued',
     prompt: 'A warm instrumental theme.',
-    responseFormat: 'mp3',
-    images: [],
-  },
-  costApproval: {
-    approvalId: 'music-approval-1',
-    modelId: 'lyria-3-clip-preview',
-    maximumChargeUsd: 0.04,
-    currency: 'USD',
-    confidence: 'exact',
-    sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
-    verifiedDate: '2026-08-01',
-    approvedAt: 1,
-  },
-  timestamp: 1,
-  ...overrides,
-});
+    request: {
+      modelId: 'lyria-3-clip-preview',
+      prompt: 'A warm instrumental theme.',
+      responseFormat: 'mp3',
+      images: [],
+    },
+    costApproval: {
+      approvalId: 'music-approval-1',
+      modelId: 'lyria-3-clip-preview',
+      maximumChargeUsd: 0.04,
+      currency: 'USD',
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+    ...overrides,
+  });
 
 async function fixture(t) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'veo-paid-job-'));
@@ -106,6 +126,18 @@ test('persists operation acknowledgement before polling and completes without du
   assert.equal(calls.filter((call) => call.init.method === 'POST').length, 1);
   assert.equal(calls[0].init.headers['x-goog-api-key'], 'secret');
   assert.equal(calls[0].url.includes('secret'), false);
+});
+
+test('rejects Omni video on the durable Veo submission boundary', () => {
+  const input = task();
+  assert.throws(
+    () =>
+      validatePaidTask({
+        ...input,
+        request: { ...input.request, modelId: 'gemini-omni-1.1-flash' },
+      }),
+    /model/,
+  );
 });
 
 test('rejects malformed or unsupported paid submissions at the IPC engine boundary', () => {
@@ -236,11 +268,16 @@ test('resumes a known operation after restart without another paid submission', 
 
 test('cancels an active paid job and persists the user decision', async (t) => {
   const store = await fixture(t);
+  let dispatched;
+  const started = new Promise((resolve) => {
+    dispatched = resolve;
+  });
   const engine = new PaidJobEngine({
     store,
     getApiKey: async () => 'secret',
     fetchImpl: async (_url, init = {}) =>
       new Promise((_resolve, reject) => {
+        dispatched();
         if (init.signal.aborted) {
           reject(new DOMException('Aborted', 'AbortError'));
           return;
@@ -251,11 +288,21 @@ test('cancels an active paid job and persists the user decision', async (t) => {
       }),
   });
   await engine.submit(task());
-  while (!engine.active.has('job-1')) await new Promise((resolve) => setTimeout(resolve, 1));
+  await started;
   assert.equal(await engine.cancel('job-1'), true);
   await engine.active.get('job-1');
   assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
   assert.equal(await engine.retry('job-1'), false);
+});
+
+test('cancels and dismisses an idle job in RecoveryRequired or MediaAtRisk status', async (t) => {
+  const store = await fixture(t);
+  await store.put(task({ id: 'job-idle', status: 'RecoveryRequired', error: 'stuck' }));
+  const engine = new PaidJobEngine({ store });
+  assert.equal(await engine.cancel('job-idle'), true);
+  const updated = await store.get('job-idle');
+  assert.equal(updated.status, 'Error');
+  assert.equal(updated.error, 'Cancelled by user');
 });
 
 test('retries a known operation after an offline polling failure without resubmitting', async (t) => {
@@ -641,4 +688,511 @@ test('resumes a durable approved queue entry but never replays its uncertain sub
   assert.equal((await store.get('job-1')).status, 'RecoveryRequired');
   await engine.resumeAll();
   assert.equal(posts, 1);
+});
+
+for (const kind of ['video', 'music']) {
+  for (const condition of ['legacy', 'missing hash', 'tampered payload', 'tampered snapshot']) {
+    test(`does not POST an unsent ${kind} job with ${condition}`, async (t) => {
+      const store = await fixture(t);
+      const input = kind === 'music' ? musicTask() : task();
+      if (condition === 'legacy') {
+        delete input.costApproval.hashVersion;
+        delete input.costApproval.payloadHash;
+        delete input.approvedSubmission;
+      } else if (condition === 'missing hash') {
+        delete input.costApproval.payloadHash;
+      } else if (condition === 'tampered payload') {
+        input.request.prompt += ' Unapproved change.';
+      } else {
+        input.approvedSubmission = { ...input.approvedSubmission, body: '{}' };
+      }
+      let posts = 0;
+      const engine = new PaidJobEngine({
+        store,
+        getApiKey: async () => 'secret',
+        fetchImpl: async () => {
+          posts += 1;
+          throw new Error('must not POST');
+        },
+        storeMedia: async () => {
+          throw new Error('must not store');
+        },
+      });
+      await store.put(input);
+      await engine.resumeAll();
+      assert.equal(posts, 0);
+      assert.equal((await store.get(input.id)).status, 'Error');
+      assert.equal((await engine.run(input)).status, 'Error');
+      assert.equal(posts, 0);
+    });
+  }
+}
+
+test('sends exactly the native-approved snapshot despite mutation of the caller task', async (t) => {
+  const store = await fixture(t);
+  const input = task();
+  const expected = input.approvedSubmission;
+  let dispatched;
+  const started = new Promise((resolve) => {
+    dispatched = resolve;
+  });
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => {
+      input.request.prompt = 'Late renderer edit.';
+      return 'secret';
+    },
+    fetchImpl: async (url, init) => {
+      assert.equal(url, expected.url);
+      assert.equal(init.body, expected.body);
+      dispatched();
+      throw new Error('lost acknowledgement');
+    },
+  });
+  await engine.submit(input);
+  await started;
+  await engine.active.get(input.id);
+  assert.equal((await store.get(input.id)).status, 'RecoveryRequired');
+});
+
+test('checks approval again after persisting the submission marker and before POST', async (t) => {
+  const store = await fixture(t);
+  let posts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    onUpdate: (job) => {
+      if (job.status === 'Submitting') job.request.aspectRatio = '9:16';
+    },
+    fetchImpl: async () => {
+      posts += 1;
+      throw new Error('must not POST');
+    },
+  });
+  assert.equal((await engine.run(task())).status, 'Error');
+  assert.equal(posts, 0);
+});
+
+test('legacy operations retain GET recovery without a v2 approval', async (t) => {
+  const store = await fixture(t);
+  const legacy = task({ status: 'Polling', providerOperationName: 'operations/legacy' });
+  delete legacy.costApproval;
+  delete legacy.approvedSubmission;
+  await store.put(legacy);
+  let posts = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    sleep: async () => {},
+    fetchImpl: async (_url, init = {}) => {
+      if (init.method === 'POST') posts += 1;
+      return new Response(
+        JSON.stringify({
+          done: true,
+          response: { generatedVideos: [{ video: { uri: 'https://media/legacy.mp4' } }] },
+        }),
+      );
+    },
+    cacheVideo: async ({ key }) => ({ key, localUrl: 'file:///legacy.mp4', mimeType: 'video/mp4' }),
+  });
+  await engine.resumeAll();
+  await engine.active.get(legacy.id);
+  assert.equal(posts, 0);
+  assert.equal((await store.get(legacy.id)).status, 'Complete');
+});
+
+test('blocks a new Gemini Veo submission after retirement before credentials or network use', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 9, 29));
+  const store = await fixture(t);
+  let keyReads = 0;
+  let fetches = 0;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => {
+      keyReads += 1;
+      return 'mock-key';
+    },
+    fetchImpl: async () => {
+      fetches += 1;
+      throw new Error('Unexpected network');
+    },
+  });
+  await assert.rejects(engine.submit(task()), /shut down on 2026-10-22/);
+  assert.equal(keyReads, 0);
+  assert.equal(fetches, 0);
+  assert.equal(await store.get('job-1'), undefined);
+});
+
+test('blocks a previously queued unsent Gemini Veo job after retirement', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 9, 29));
+  const store = await fixture(t);
+  let fetches = 0;
+  const job = task();
+  await store.put(job);
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'mock-key',
+    fetchImpl: async () => {
+      fetches += 1;
+      throw new Error('Unexpected network');
+    },
+  });
+  const result = await engine.run(job);
+  assert.equal(result.status, 'Error');
+  assert.match(result.error, /shut down on 2026-10-22/);
+  assert.equal(fetches, 0);
+});
+
+test('can recover an acknowledged operation after retirement without submitting again', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 9, 29));
+  const store = await fixture(t);
+  const calls = [];
+  const job = task({ status: 'Polling', providerOperationName: 'operations/historical' });
+  await store.put(job);
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'mock-key',
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method });
+      return new Response(
+        JSON.stringify({ done: true, error: { message: 'Historical provider result' } }),
+      );
+    },
+  });
+  const result = await engine.run(job);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].method, undefined);
+  assert.match(calls[0].url, /operations\/historical$/);
+  assert.match(result.error, /Historical provider result/);
+});
+
+test('persists PaidJobFSM transitions to PaidJobJournal and prevents DISPATCHING double-POST on crash recovery', async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'veo-paid-fsm-journal-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const store = new PaidJobStore(path.join(directory, 'jobs.json'));
+  const { PaidJobJournal } = require('./paid-job-fsm.cjs');
+  const journal = new PaidJobJournal(path.join(directory, 'paid-jobs.jsonl'));
+
+  const fetchImpl = async (_url, init = {}) => {
+    if (init.method === 'POST') return new Response(JSON.stringify({ name: 'operations/fsm-1' }));
+    return new Response(
+      JSON.stringify({
+        done: true,
+        response: { generatedVideos: [{ video: { uri: 'https://media/fsm-1.mp4' } }] },
+      }),
+    );
+  };
+  const engine = new PaidJobEngine({
+    store,
+    journal,
+    getApiKey: async () => 'secret',
+    fetchImpl,
+    sleep: async () => {},
+    cacheVideo: async ({ key }) => ({
+      key,
+      localUrl: 'file:///local/fsm-1.mp4',
+      path: '/local/fsm-1.mp4',
+      mimeType: 'video/mp4',
+    }),
+  });
+  const submitted = await engine.submit(task());
+  await engine.active.get(submitted.id);
+  const persisted = await store.get('job-1');
+  assert.equal(persisted.state, 'COMPLETED');
+  const entries = await journal.readAll();
+  assert.deepEqual(
+    entries.map((entry) => entry.to),
+    ['QUOTED', 'APPROVED', 'DISPATCHING', 'RUNNING', 'COMPLETED'],
+  );
+
+  // Ambiguous DISPATCHING job without operation ID must recover to FAILED/RecoveryRequired without POSTing.
+  let crashPosts = 0;
+  await store.put(
+    task({
+      id: 'crash-dispatch-1',
+      status: 'Submitting',
+      state: 'DISPATCHING',
+    }),
+  );
+  const recoveryEngine = new PaidJobEngine({
+    store,
+    journal,
+    getApiKey: async () => 'secret',
+    fetchImpl: async () => {
+      crashPosts += 1;
+      throw new Error('must not dispatch');
+    },
+  });
+  await recoveryEngine.resumeAll();
+  assert.equal(crashPosts, 0);
+  const recovered = await store.get('crash-dispatch-1');
+  assert.equal(recovered.state, 'FAILED');
+  assert.equal(recovered.status, 'RecoveryRequired');
+});
+
+test('executes Vertex Veo 3.1 GA with Bearer auth past preview shutdown date', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 10, 15));
+  const store = await fixture(t);
+  const calls = [];
+  const vertexJob = approve({
+    id: 'vertex-job-1',
+    status: 'Queued',
+    videoUrl: null,
+    prompt: 'Ocean cliffs at golden hour.',
+    provider: 'vertex-ai',
+    providerProfile: {
+      provider: 'vertex-ai',
+      projectId: 'loofi-prod-123',
+      location: 'us-central1',
+    },
+    settings: { veoModel: 'quality', resolution: '1080p', aspectRatio: '16:9' },
+    request: {
+      mode: 'text-to-video',
+      modelId: 'veo-3.1-quality',
+      provider: 'vertex-ai',
+      prompt: 'Ocean cliffs at golden hour.',
+      aspectRatio: '16:9',
+      resolution: '1080p',
+      durationSeconds: 8,
+      referenceAssetIds: [],
+    },
+    costApproval: {
+      approvalId: 'app-vertex',
+      modelId: 'veo-3.1-quality',
+      maximumChargeUsd: 3.2,
+      currency: 'USD',
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+  });
+
+  const engine = new PaidJobEngine({
+    store,
+    getVertexAccessToken: async () => 'oauth-token-xyz',
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, init });
+      if (init.method === 'POST') {
+        return new Response(
+          JSON.stringify({
+            name: 'projects/loofi-prod-123/locations/us-central1/publishers/google/models/veo-3.1-generate-001/operations/op-1',
+          }),
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          done: true,
+          response: {
+            videos: [
+              {
+                bytesBase64Encoded: Buffer.from('mp4-bytes').toString('base64'),
+                mimeType: 'video/mp4',
+              },
+            ],
+          },
+        }),
+      );
+    },
+    storeMedia: async ({ key }) => ({
+      key,
+      localUrl: 'loofi-media://media/vertex-job-1',
+      path: '/local/vertex.mp4',
+      mimeType: 'video/mp4',
+    }),
+  });
+
+  await engine.submit(vertexJob);
+  await engine.active.get('vertex-job-1');
+  const completed = await store.get('vertex-job-1');
+  assert.equal(completed.status, 'Complete');
+  assert.equal(completed.state, 'COMPLETED');
+  assert.equal(calls[0].init.headers.authorization, 'Bearer oauth-token-xyz');
+  assert.match(calls[0].url, /veo-3\.1-generate-001:predictLongRunning$/);
+  assert.match(
+    calls[1].url,
+    /us-central1-aiplatform\.googleapis\.com\/v1\/projects\/loofi-prod-123/,
+  );
+});
+
+test('executes Gemini Omni 1.2 Flash durably and resumes acknowledged interactions without double-POST', async (t) => {
+  t.mock.method(Date, 'now', () => Date.UTC(2026, 10, 15));
+  const store = await fixture(t);
+  const calls = [];
+  const omniJob = approve({
+    id: 'omni-job-1',
+    status: 'Queued',
+    videoUrl: null,
+    prompt: 'Add gentle mist.',
+    settings: { resolution: '720p', aspectRatio: '16:9' },
+    request: {
+      modelId: 'gemini-omni-1.2-flash',
+      prompt: 'Add gentle mist.',
+      aspectRatio: '16:9',
+      resolution: '720p',
+      durationSeconds: 8,
+    },
+    costApproval: {
+      approvalId: 'app-omni',
+      modelId: 'gemini-omni-1.2-flash',
+      maximumChargeUsd: 0.9,
+      currency: 'USD',
+      confidence: 'upper-bound',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+  });
+
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret-key',
+    sleep: async () => {},
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url, method: init.method });
+      if (init.method === 'POST') {
+        return new Response(JSON.stringify({ id: 'int-bg-1', status: 'in_progress' }));
+      }
+      return new Response(
+        JSON.stringify({
+          id: 'int-bg-1',
+          status: 'completed',
+          outputs: [
+            {
+              type: 'video',
+              data: Buffer.from('omni-mp4').toString('base64'),
+              mime_type: 'video/mp4',
+            },
+          ],
+        }),
+      );
+    },
+    storeMedia: async ({ key }) => ({
+      key,
+      localUrl: 'loofi-media://media/omni-job-1',
+      path: '/local/omni.mp4',
+      mimeType: 'video/mp4',
+    }),
+  });
+
+  await engine.submit(omniJob);
+  await engine.active.get('omni-job-1');
+  const completed = await store.get('omni-job-1');
+  assert.equal(completed.status, 'Complete');
+  assert.equal(completed.state, 'COMPLETED');
+  assert.equal(completed.providerInteractionId, 'int-bg-1');
+  assert.equal(calls.filter((c) => c.method === 'POST').length, 1);
+  assert.match(calls[1].url, /\/interactions\/int-bg-1$/);
+
+  // Recovery resume for an interrupted Omni interaction must only GET, never POST.
+  await store.put({
+    ...omniJob,
+    id: 'omni-resume-1',
+    status: 'Polling',
+    state: 'DISPATCHING',
+    providerInteractionId: 'int-bg-resume',
+  });
+  let resumePosts = 0;
+  const resumeEngine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret-key',
+    sleep: async () => {},
+    fetchImpl: async (_url, init = {}) => {
+      if (init.method === 'POST') resumePosts += 1;
+      return new Response(
+        JSON.stringify({
+          id: 'int-bg-resume',
+          status: 'completed',
+          outputs: [{ type: 'video', data: Buffer.from('ok').toString('base64') }],
+        }),
+      );
+    },
+    storeMedia: async ({ key }) => ({
+      key,
+      localUrl: 'loofi-media://resumed',
+      mimeType: 'video/mp4',
+    }),
+  });
+  await resumeEngine.resumeAll();
+  await resumeEngine.active.get('omni-resume-1');
+  assert.equal(resumePosts, 0);
+  assert.equal((await store.get('omni-resume-1')).status, 'Complete');
+});
+
+test('externalizes inline base64 job payloads into media storage and verifies restored bytes before dispatch', async (t) => {
+  const store = await fixture(t);
+  const mediaBlobs = new Map();
+  const base64Frame = Buffer.from('fake-png-frame-bytes').toString('base64');
+  const jobWithImages = approve({
+    id: 'ext-job-1',
+    status: 'Queued',
+    videoUrl: null,
+    prompt: 'Animate character portrait.',
+    settings: { veoModel: 'fast', resolution: '720p', aspectRatio: '16:9' },
+    request: {
+      mode: 'image-to-video',
+      modelId: 'veo-3.1-fast',
+      prompt: 'Animate character portrait.',
+      aspectRatio: '16:9',
+      resolution: '720p',
+      durationSeconds: 8,
+      firstFrameAssetId: 'frame-1',
+      referenceAssetIds: [],
+    },
+    executionInputs: {
+      firstFrame: { data: base64Frame, mimeType: 'image/png' },
+    },
+    costApproval: {
+      approvalId: 'app-ext',
+      modelId: 'veo-3.1-fast',
+      maximumChargeUsd: 0.8,
+      currency: 'USD',
+      confidence: 'exact',
+      sourceUrl: 'https://ai.google.dev/gemini-api/docs/pricing',
+      verifiedDate: '2026-08-01',
+      approvedAt: 1,
+    },
+    timestamp: 1,
+  });
+  const expectedBody = jobWithImages.approvedSubmission.body;
+  let dispatchedBody = null;
+  const engine = new PaidJobEngine({
+    store,
+    getApiKey: async () => 'secret',
+    sleep: async () => {},
+    storeMedia: async ({ key, bytes }) => {
+      mediaBlobs.set(key, Buffer.from(bytes));
+      return { key, localUrl: `loofi-media://media/${key}`, mimeType: 'image/png' };
+    },
+    readMedia: async (key) => mediaBlobs.get(key) ?? null,
+    cacheVideo: async ({ key }) => ({
+      key,
+      localUrl: 'file:///local/ext.mp4',
+      path: '/local/ext.mp4',
+      mimeType: 'video/mp4',
+    }),
+    fetchImpl: async (_url, init = {}) => {
+      if (init.method === 'POST') {
+        dispatchedBody = init.body;
+        return new Response(JSON.stringify({ name: 'operations/ext-1' }));
+      }
+      return new Response(
+        JSON.stringify({
+          done: true,
+          response: { generatedVideos: [{ video: { uri: 'https://media/ext.mp4' } }] },
+        }),
+      );
+    },
+  });
+
+  await engine.submit(jobWithImages);
+  const rawDisk = await fs.readFile(store.filePath, 'utf8');
+  assert.equal(rawDisk.includes(base64Frame), false);
+  await engine.active.get('ext-job-1');
+  assert.equal(dispatchedBody, expectedBody);
+  assert.equal((await store.get('ext-job-1')).status, 'Complete');
 });

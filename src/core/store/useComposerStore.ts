@@ -74,6 +74,9 @@ export interface ComposerStoreState {
   // Z-index counter
   nextZIndex: number;
 
+  // Monotonic version counter for document persistence
+  mutationVersion: number;
+
   // Panel visibility
   isPanelOpen: boolean;
 }
@@ -152,6 +155,13 @@ export type ComposerStore = ComposerStoreState & ComposerStoreActions;
 
 // ─── Initial State ───────────────────────────────────────────────────────────
 
+const COMPOSER_DOCUMENT_KEYS = ['blocks', 'connections', 'snapshots', 'timelineLinks'] as const;
+
+function hasComposerDocumentMutation(update: unknown): boolean {
+  if (!update || typeof update !== 'object') return false;
+  return COMPOSER_DOCUMENT_KEYS.some((key) => key in (update as Record<string, unknown>));
+}
+
 export const INITIAL_COMPOSER_STATE: ComposerStoreState = {
   blocks: [],
   connections: [],
@@ -170,6 +180,7 @@ export const INITIAL_COMPOSER_STATE: ComposerStoreState = {
   timelineLinks: [],
   autoSyncTimeline: false,
   nextZIndex: 1,
+  mutationVersion: 0,
   isPanelOpen: false,
 };
 
@@ -177,395 +188,415 @@ export const INITIAL_COMPOSER_STATE: ComposerStoreState = {
 
 export const useComposerStore = create<ComposerStore>()(
   temporal(
-    (set, get) => ({
-      ...INITIAL_COMPOSER_STATE,
+    (baseSet, get) => {
+      const set: typeof baseSet = (next, replace) => {
+        (baseSet as (...args: unknown[]) => void)((state: ComposerStore) => {
+          const patch =
+            typeof next === 'function'
+              ? (next as (s: ComposerStore) => Partial<ComposerStore>)(state)
+              : next;
+          if (patch && hasComposerDocumentMutation(patch) && patch.mutationVersion === undefined) {
+            return {
+              ...patch,
+              mutationVersion: (state.mutationVersion ?? 0) + 1,
+            };
+          }
+          return patch;
+        }, replace);
+      };
 
-      // ── Panel ──
+      return {
+        ...INITIAL_COMPOSER_STATE,
 
-      openPanel: () => set({ isPanelOpen: true }),
-      closePanel: () => set({ isPanelOpen: false }),
+        // ── Panel ──
 
-      // ── Block Operations ──
+        openPanel: () => set({ isPanelOpen: true }),
+        closePanel: () => set({ isPanelOpen: false }),
 
-      addBlock: (type, position) => {
-        const state = get();
-        const pos = state.snapToGrid
-          ? composerService.snapPosition(position, state.gridSize)
-          : position;
+        // ── Block Operations ──
 
-        const block = composerService.createBlock(type, pos, state.nextZIndex);
-        if (!block) return null;
+        addBlock: (type, position) => {
+          const state = get();
+          const pos = state.snapToGrid
+            ? composerService.snapPosition(position, state.gridSize)
+            : position;
 
-        set({
-          blocks: [...state.blocks, block],
-          nextZIndex: state.nextZIndex + 1,
-          selectedBlockIds: [block.id],
-          selectedConnectionIds: [],
-        });
+          const block = composerService.createBlock(type, pos, state.nextZIndex);
+          if (!block) return null;
 
-        return block.id;
-      },
-
-      removeBlock: (blockId) => {
-        const state = get();
-        set({
-          blocks: removeBlockById(state.blocks, blockId),
-          connections: removeConnectionsByBlockId(state.connections, blockId),
-          selectedBlockIds: state.selectedBlockIds.filter((id) => id !== blockId),
-          timelineLinks: state.timelineLinks.filter((l) => l.blockId !== blockId),
-        });
-      },
-
-      removeSelectedBlocks: () => {
-        const state = get();
-        set({
-          blocks: removeBlocksBySelectedIds(state.blocks, state.selectedBlockIds),
-          connections: removeConnectionsBySelectedBlockIds(
-            state.connections,
-            state.selectedBlockIds,
-          ),
-          selectedBlockIds: [],
-          timelineLinks: removeTimelineLinksBySelectedBlockIds(
-            state.timelineLinks,
-            state.selectedBlockIds,
-          ),
-        });
-      },
-
-      updateBlockPosition: (blockId, position) => {
-        const state = get();
-        const block = state.blocks.find((b) => b.id === blockId);
-        if (!block || block.isLocked) return;
-
-        const pos = state.snapToGrid
-          ? composerService.snapPosition(position, state.gridSize)
-          : position;
-
-        set({
-          blocks: state.blocks.map((b) => (b.id === blockId ? { ...b, position: pos } : b)),
-        });
-      },
-
-      updateBlockField: (blockId, field, value) => {
-        set({
-          blocks: get().blocks.map((b) =>
-            b.id === blockId ? { ...b, fields: { ...b.fields, [field]: value } } : b,
-          ),
-        });
-      },
-
-      updateBlockLabel: (blockId, label) => {
-        set({
-          blocks: get().blocks.map((b) => (b.id === blockId ? { ...b, label } : b)),
-        });
-      },
-
-      toggleBlockCollapse: (blockId) => {
-        set({
-          blocks: get().blocks.map((b) =>
-            b.id === blockId ? { ...b, isCollapsed: !b.isCollapsed } : b,
-          ),
-        });
-      },
-
-      toggleBlockDisabled: (blockId) => {
-        set({
-          blocks: get().blocks.map((b) =>
-            b.id === blockId ? { ...b, isDisabled: !b.isDisabled } : b,
-          ),
-        });
-      },
-
-      toggleBlockLock: (blockId) => {
-        set({
-          blocks: get().blocks.map((b) => (b.id === blockId ? { ...b, isLocked: !b.isLocked } : b)),
-        });
-      },
-
-      duplicateBlock: (blockId) => {
-        const state = get();
-        const original = state.blocks.find((b) => b.id === blockId);
-        if (!original) return null;
-
-        const newBlock = composerService.createBlock(
-          original.type,
-          { x: original.position.x + 40, y: original.position.y + 40 },
-          state.nextZIndex,
-        );
-        if (!newBlock) return null;
-
-        // Copy field values from original
-        newBlock.fields = { ...original.fields };
-        newBlock.label = original.label ? `${original.label} (copy)` : undefined;
-
-        set({
-          blocks: [...state.blocks, newBlock],
-          nextZIndex: state.nextZIndex + 1,
-          selectedBlockIds: [newBlock.id],
-        });
-
-        return newBlock.id;
-      },
-
-      bringToFront: (blockId) => {
-        const state = get();
-        set({
-          blocks: state.blocks.map((b) =>
-            b.id === blockId ? { ...b, zIndex: state.nextZIndex } : b,
-          ),
-          nextZIndex: state.nextZIndex + 1,
-        });
-      },
-
-      // ── Connection Operations ──
-
-      startConnection: (sourceBlockId, sourcePortId) => {
-        const block = get().blocks.find((b) => b.id === sourceBlockId);
-        if (!block) return;
-        set({
-          pendingConnection: {
-            sourceBlockId,
-            sourcePortId,
-            mousePosition: block.position,
-          },
-        });
-      },
-
-      updatePendingConnection: (mousePosition) => {
-        const pending = get().pendingConnection;
-        if (!pending) return;
-        set({
-          pendingConnection: { ...pending, mousePosition },
-        });
-      },
-
-      completeConnection: (targetBlockId, targetPortId) => {
-        const state = get();
-        const pending = state.pendingConnection;
-        if (!pending) return false;
-
-        const validation = composerService.canConnect(
-          state.blocks,
-          state.connections,
-          pending.sourceBlockId,
-          pending.sourcePortId,
-          targetBlockId,
-          targetPortId,
-        );
-
-        if (!validation.valid) {
-          set({ pendingConnection: null });
-          return false;
-        }
-
-        const newConnection: BlockConnection = {
-          id: composerService.generateConnectionId(),
-          sourceBlockId: pending.sourceBlockId,
-          sourcePortId: pending.sourcePortId,
-          targetBlockId,
-          targetPortId,
-          style: state.connectionStyle,
-          isActive: true,
-        };
-
-        set({
-          connections: [...state.connections, newConnection],
-          pendingConnection: null,
-        });
-
-        return true;
-      },
-
-      cancelConnection: () => {
-        set({ pendingConnection: null });
-      },
-
-      removeConnection: (connectionId) => {
-        const state = get();
-        set({
-          connections: removeConnectionById(state.connections, connectionId),
-          selectedConnectionIds: state.selectedConnectionIds.filter((id) => id !== connectionId),
-        });
-      },
-
-      removeSelectedConnections: () => {
-        const state = get();
-        set({
-          connections: removeConnectionsBySelectedIds(
-            state.connections,
-            state.selectedConnectionIds,
-          ),
-          selectedConnectionIds: [],
-        });
-      },
-
-      // ── Selection ──
-
-      selectBlock: (blockId, addToSelection = false) => {
-        const state = get();
-        if (addToSelection) {
           set({
-            selectedBlockIds: toggleSelectionId(state.selectedBlockIds, blockId),
-          });
-        } else {
-          set({
-            selectedBlockIds: [blockId],
+            blocks: [...state.blocks, block],
+            nextZIndex: state.nextZIndex + 1,
+            selectedBlockIds: [block.id],
             selectedConnectionIds: [],
           });
-        }
-      },
 
-      selectConnection: (connectionId, addToSelection = false) => {
-        const state = get();
-        if (addToSelection) {
+          return block.id;
+        },
+
+        removeBlock: (blockId) => {
+          const state = get();
           set({
-            selectedConnectionIds: toggleSelectionId(state.selectedConnectionIds, connectionId),
+            blocks: removeBlockById(state.blocks, blockId),
+            connections: removeConnectionsByBlockId(state.connections, blockId),
+            selectedBlockIds: state.selectedBlockIds.filter((id) => id !== blockId),
+            timelineLinks: state.timelineLinks.filter((l) => l.blockId !== blockId),
           });
-        } else {
+        },
+
+        removeSelectedBlocks: () => {
+          const state = get();
           set({
-            selectedConnectionIds: [connectionId],
+            blocks: removeBlocksBySelectedIds(state.blocks, state.selectedBlockIds),
+            connections: removeConnectionsBySelectedBlockIds(
+              state.connections,
+              state.selectedBlockIds,
+            ),
             selectedBlockIds: [],
+            timelineLinks: removeTimelineLinksBySelectedBlockIds(
+              state.timelineLinks,
+              state.selectedBlockIds,
+            ),
           });
-        }
-      },
+        },
 
-      selectAll: () => {
-        const state = get();
-        set({
-          selectedBlockIds: state.blocks.map((b) => b.id),
-          selectedConnectionIds: state.connections.map((c) => c.id),
-        });
-      },
+        updateBlockPosition: (blockId, position) => {
+          const state = get();
+          const block = state.blocks.find((b) => b.id === blockId);
+          if (!block || block.isLocked) return;
 
-      clearSelection: () => {
-        set({ selectedBlockIds: [], selectedConnectionIds: [] });
-      },
+          const pos = state.snapToGrid
+            ? composerService.snapPosition(position, state.gridSize)
+            : position;
 
-      selectBlocksInRect: (x1, y1, x2, y2) => {
-        const state = get();
-        const selected = selectBlockIdsInRect(state.blocks, x1, y1, x2, y2);
+          set({
+            blocks: state.blocks.map((b) => (b.id === blockId ? { ...b, position: pos } : b)),
+          });
+        },
 
-        set({ selectedBlockIds: selected });
-      },
+        updateBlockField: (blockId, field, value) => {
+          set({
+            blocks: get().blocks.map((b) =>
+              b.id === blockId ? { ...b, fields: { ...b.fields, [field]: value } } : b,
+            ),
+          });
+        },
 
-      // ── Viewport ──
+        updateBlockLabel: (blockId, label) => {
+          set({
+            blocks: get().blocks.map((b) => (b.id === blockId ? { ...b, label } : b)),
+          });
+        },
 
-      setViewport: (viewport) => {
-        set({ viewport: { ...get().viewport, ...viewport } });
-      },
+        toggleBlockCollapse: (blockId) => {
+          set({
+            blocks: get().blocks.map((b) =>
+              b.id === blockId ? { ...b, isCollapsed: !b.isCollapsed } : b,
+            ),
+          });
+        },
 
-      zoomIn: () => {
-        const zoom = Math.min(get().viewport.zoom + 0.1, 3);
-        set({ viewport: { ...get().viewport, zoom } });
-      },
+        toggleBlockDisabled: (blockId) => {
+          set({
+            blocks: get().blocks.map((b) =>
+              b.id === blockId ? { ...b, isDisabled: !b.isDisabled } : b,
+            ),
+          });
+        },
 
-      zoomOut: () => {
-        const zoom = Math.max(get().viewport.zoom - 0.1, 0.2);
-        set({ viewport: { ...get().viewport, zoom } });
-      },
+        toggleBlockLock: (blockId) => {
+          set({
+            blocks: get().blocks.map((b) =>
+              b.id === blockId ? { ...b, isLocked: !b.isLocked } : b,
+            ),
+          });
+        },
 
-      zoomToFit: () => {
-        const viewport = calculateZoomToFitViewport(get().blocks);
-        set({ viewport });
-      },
+        duplicateBlock: (blockId) => {
+          const state = get();
+          const original = state.blocks.find((b) => b.id === blockId);
+          if (!original) return null;
 
-      resetViewport: () => {
-        set({ viewport: { panX: 0, panY: 0, zoom: 1 } });
-      },
+          const newBlock = composerService.createBlock(
+            original.type,
+            { x: original.position.x + 40, y: original.position.y + 40 },
+            state.nextZIndex,
+          );
+          if (!newBlock) return null;
 
-      // ── Settings ──
+          // Copy field values from original
+          newBlock.fields = { ...original.fields };
+          newBlock.label = original.label ? `${original.label} (copy)` : undefined;
 
-      toggleSnapToGrid: () => set({ snapToGrid: !get().snapToGrid }),
-      setGridSize: (size) => set({ gridSize: clampGridSize(size) }),
-      toggleMinimap: () => set({ showMinimap: !get().showMinimap }),
-      toggleAutoLayout: () => set({ autoLayout: !get().autoLayout }),
-      setConnectionStyle: (style) => set({ connectionStyle: style }),
+          set({
+            blocks: [...state.blocks, newBlock],
+            nextZIndex: state.nextZIndex + 1,
+            selectedBlockIds: [newBlock.id],
+          });
 
-      // ── Layout ──
+          return newBlock.id;
+        },
 
-      applyAutoLayout: () => {
-        const state = get();
-        const layouted = composerService.autoLayoutBlocks(state.blocks, state.connections);
-        set({ blocks: layouted });
-      },
+        bringToFront: (blockId) => {
+          const state = get();
+          set({
+            blocks: state.blocks.map((b) =>
+              b.id === blockId ? { ...b, zIndex: state.nextZIndex } : b,
+            ),
+            nextZIndex: state.nextZIndex + 1,
+          });
+        },
 
-      // ── Evaluation ──
+        // ── Connection Operations ──
 
-      evaluate: (variables = {}) => {
-        const state = get();
-        const result = composerService.evaluateGraph(state.blocks, state.connections, variables);
-        set({ lastEvaluation: result });
-        return result;
-      },
+        startConnection: (sourceBlockId, sourcePortId) => {
+          const block = get().blocks.find((b) => b.id === sourceBlockId);
+          if (!block) return;
+          set({
+            pendingConnection: {
+              sourceBlockId,
+              sourcePortId,
+              mousePosition: block.position,
+            },
+          });
+        },
 
-      // ── Snapshots ──
+        updatePendingConnection: (mousePosition) => {
+          const pending = get().pendingConnection;
+          if (!pending) return;
+          set({
+            pendingConnection: { ...pending, mousePosition },
+          });
+        },
 
-      saveSnapshot: (name) => {
-        const state = get();
-        const snapshot: ComposerSnapshot = buildSnapshot(name, state.blocks, state.connections);
-        set({ snapshots: [...state.snapshots, snapshot] });
-      },
+        completeConnection: (targetBlockId, targetPortId) => {
+          const state = get();
+          const pending = state.pendingConnection;
+          if (!pending) return false;
 
-      loadSnapshot: (snapshotId) => {
-        const snapshot = get().snapshots.find((s) => s.id === snapshotId);
-        if (!snapshot) return;
-        set({
-          blocks: deepClone(snapshot.blocks),
-          connections: deepClone(snapshot.connections),
-          selectedBlockIds: [],
-          selectedConnectionIds: [],
-          lastEvaluation: null,
-        });
-      },
+          const validation = composerService.canConnect(
+            state.blocks,
+            state.connections,
+            pending.sourceBlockId,
+            pending.sourcePortId,
+            targetBlockId,
+            targetPortId,
+          );
 
-      deleteSnapshot: (snapshotId) => {
-        set({ snapshots: get().snapshots.filter((s) => s.id !== snapshotId) });
-      },
+          if (!validation.valid) {
+            set({ pendingConnection: null });
+            return false;
+          }
 
-      // ── Timeline Integration ──
+          const newConnection: BlockConnection = {
+            id: composerService.generateConnectionId(),
+            sourceBlockId: pending.sourceBlockId,
+            sourcePortId: pending.sourcePortId,
+            targetBlockId,
+            targetPortId,
+            style: state.connectionStyle,
+            isActive: true,
+          };
 
-      linkBlockToShot: (blockId, shotId, clipId) => {
-        const state = get();
-        const link: TimelineLink = { blockId, shotId, clipId, syncMode: 'bidirectional' };
-        set({ timelineLinks: upsertTimelineLink(state.timelineLinks, link) });
-      },
+          set({
+            connections: [...state.connections, newConnection],
+            pendingConnection: null,
+          });
 
-      unlinkBlock: (blockId) => {
-        const state = get();
-        set({
-          timelineLinks: removeTimelineLinksByBlockId(state.timelineLinks, blockId),
-        });
-      },
+          return true;
+        },
 
-      toggleAutoSync: () => set({ autoSyncTimeline: !get().autoSyncTimeline }),
+        cancelConnection: () => {
+          set({ pendingConnection: null });
+        },
 
-      // ── Bulk ──
+        removeConnection: (connectionId) => {
+          const state = get();
+          set({
+            connections: removeConnectionById(state.connections, connectionId),
+            selectedConnectionIds: state.selectedConnectionIds.filter((id) => id !== connectionId),
+          });
+        },
 
-      clearCanvas: () => {
-        set({
-          blocks: [],
-          connections: [],
-          selectedBlockIds: [],
-          selectedConnectionIds: [],
-          pendingConnection: null,
-          lastEvaluation: null,
-          timelineLinks: [],
-          nextZIndex: 1,
-        });
-      },
+        removeSelectedConnections: () => {
+          const state = get();
+          set({
+            connections: removeConnectionsBySelectedIds(
+              state.connections,
+              state.selectedConnectionIds,
+            ),
+            selectedConnectionIds: [],
+          });
+        },
 
-      importGraph: (blocks, connections) => {
-        const maxZ = blocks.reduce((max, b) => Math.max(max, b.zIndex), 0);
-        set({
-          blocks,
-          connections,
-          selectedBlockIds: [],
-          selectedConnectionIds: [],
-          lastEvaluation: null,
-          nextZIndex: maxZ + 1,
-        });
-      },
-    }),
+        // ── Selection ──
+
+        selectBlock: (blockId, addToSelection = false) => {
+          const state = get();
+          if (addToSelection) {
+            set({
+              selectedBlockIds: toggleSelectionId(state.selectedBlockIds, blockId),
+            });
+          } else {
+            set({
+              selectedBlockIds: [blockId],
+              selectedConnectionIds: [],
+            });
+          }
+        },
+
+        selectConnection: (connectionId, addToSelection = false) => {
+          const state = get();
+          if (addToSelection) {
+            set({
+              selectedConnectionIds: toggleSelectionId(state.selectedConnectionIds, connectionId),
+            });
+          } else {
+            set({
+              selectedConnectionIds: [connectionId],
+              selectedBlockIds: [],
+            });
+          }
+        },
+
+        selectAll: () => {
+          const state = get();
+          set({
+            selectedBlockIds: state.blocks.map((b) => b.id),
+            selectedConnectionIds: state.connections.map((c) => c.id),
+          });
+        },
+
+        clearSelection: () => {
+          set({ selectedBlockIds: [], selectedConnectionIds: [] });
+        },
+
+        selectBlocksInRect: (x1, y1, x2, y2) => {
+          const state = get();
+          const selected = selectBlockIdsInRect(state.blocks, x1, y1, x2, y2);
+
+          set({ selectedBlockIds: selected });
+        },
+
+        // ── Viewport ──
+
+        setViewport: (viewport) => {
+          set({ viewport: { ...get().viewport, ...viewport } });
+        },
+
+        zoomIn: () => {
+          const zoom = Math.min(get().viewport.zoom + 0.1, 3);
+          set({ viewport: { ...get().viewport, zoom } });
+        },
+
+        zoomOut: () => {
+          const zoom = Math.max(get().viewport.zoom - 0.1, 0.2);
+          set({ viewport: { ...get().viewport, zoom } });
+        },
+
+        zoomToFit: () => {
+          const viewport = calculateZoomToFitViewport(get().blocks);
+          set({ viewport });
+        },
+
+        resetViewport: () => {
+          set({ viewport: { panX: 0, panY: 0, zoom: 1 } });
+        },
+
+        // ── Settings ──
+
+        toggleSnapToGrid: () => set({ snapToGrid: !get().snapToGrid }),
+        setGridSize: (size) => set({ gridSize: clampGridSize(size) }),
+        toggleMinimap: () => set({ showMinimap: !get().showMinimap }),
+        toggleAutoLayout: () => set({ autoLayout: !get().autoLayout }),
+        setConnectionStyle: (style) => set({ connectionStyle: style }),
+
+        // ── Layout ──
+
+        applyAutoLayout: () => {
+          const state = get();
+          const layouted = composerService.autoLayoutBlocks(state.blocks, state.connections);
+          set({ blocks: layouted });
+        },
+
+        // ── Evaluation ──
+
+        evaluate: (variables = {}) => {
+          const state = get();
+          const result = composerService.evaluateGraph(state.blocks, state.connections, variables);
+          set({ lastEvaluation: result });
+          return result;
+        },
+
+        // ── Snapshots ──
+
+        saveSnapshot: (name) => {
+          const state = get();
+          const snapshot: ComposerSnapshot = buildSnapshot(name, state.blocks, state.connections);
+          set({ snapshots: [...state.snapshots, snapshot] });
+        },
+
+        loadSnapshot: (snapshotId) => {
+          const snapshot = get().snapshots.find((s) => s.id === snapshotId);
+          if (!snapshot) return;
+          set({
+            blocks: deepClone(snapshot.blocks),
+            connections: deepClone(snapshot.connections),
+            selectedBlockIds: [],
+            selectedConnectionIds: [],
+            lastEvaluation: null,
+          });
+        },
+
+        deleteSnapshot: (snapshotId) => {
+          set({ snapshots: get().snapshots.filter((s) => s.id !== snapshotId) });
+        },
+
+        // ── Timeline Integration ──
+
+        linkBlockToShot: (blockId, shotId, clipId) => {
+          const state = get();
+          const link: TimelineLink = { blockId, shotId, clipId, syncMode: 'bidirectional' };
+          set({ timelineLinks: upsertTimelineLink(state.timelineLinks, link) });
+        },
+
+        unlinkBlock: (blockId) => {
+          const state = get();
+          set({
+            timelineLinks: removeTimelineLinksByBlockId(state.timelineLinks, blockId),
+          });
+        },
+
+        toggleAutoSync: () => set({ autoSyncTimeline: !get().autoSyncTimeline }),
+
+        // ── Bulk ──
+
+        clearCanvas: () => {
+          set({
+            blocks: [],
+            connections: [],
+            selectedBlockIds: [],
+            selectedConnectionIds: [],
+            pendingConnection: null,
+            lastEvaluation: null,
+            timelineLinks: [],
+            nextZIndex: 1,
+          });
+        },
+
+        importGraph: (blocks, connections) => {
+          const maxZ = blocks.reduce((max, b) => Math.max(max, b.zIndex), 0);
+          set({
+            blocks,
+            connections,
+            selectedBlockIds: [],
+            selectedConnectionIds: [],
+            lastEvaluation: null,
+            nextZIndex: maxZ + 1,
+          });
+        },
+      };
+    },
     {
       partialize: (state) => ({
         blocks: state.blocks,
@@ -579,3 +610,20 @@ export const useComposerStore = create<ComposerStore>()(
     },
   ),
 );
+
+const rawComposerSetState = useComposerStore.setState;
+useComposerStore.setState = (next, replace) => {
+  const current = useComposerStore.getState();
+  const patch = typeof next === 'function' ? next(current) : next;
+  if (patch && hasComposerDocumentMutation(patch) && patch.mutationVersion === undefined) {
+    (rawComposerSetState as (...args: unknown[]) => void)(
+      {
+        ...patch,
+        mutationVersion: (current.mutationVersion ?? 0) + 1,
+      },
+      replace,
+    );
+  } else {
+    (rawComposerSetState as (...args: unknown[]) => void)(next, replace);
+  }
+};

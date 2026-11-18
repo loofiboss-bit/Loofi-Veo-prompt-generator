@@ -1,13 +1,25 @@
 'use strict';
 
+const crypto = require('crypto');
+const { createPaidSubmission, computePaidSubmissionHash } = require('./paid-job-submission.cjs');
 const PRICING_SOURCE_URL = 'https://ai.google.dev/gemini-api/docs/pricing';
 const PRICING_VERIFIED_DATE = '2026-08-01';
+const MICRODOLLAR_TOLERANCE = 1e-6;
+const PROVIDER_PRICING_VERIFIED_DATES = Object.freeze({
+  'gemini-3.8-flash': '2026-10-28',
+  'gemini-4-argon': '2026-10-28',
+});
 
 // Security boundary mirror of src/core/models/catalog.ts. A contract test keeps the values aligned.
 const VIDEO_USD_PER_SECOND = Object.freeze({
   'veo-3.1-quality': Object.freeze({ '720p': 0.4, '1080p': 0.4, '4k': 0.6 }),
   'veo-3.1-fast': Object.freeze({ '720p': 0.1, '1080p': 0.12, '4k': 0.3 }),
   'veo-3.1-lite': Object.freeze({ '720p': 0.05, '1080p': 0.08 }),
+});
+const CANONICAL_VEO_MODEL_ALIASES = Object.freeze({
+  'veo-3.1-generate-001': 'veo-3.1-quality',
+  'veo-3.1-fast-generate-001': 'veo-3.1-fast',
+  'veo-3.1-lite-generate-001': 'veo-3.1-lite',
 });
 
 const MUSIC_USD_PER_REQUEST = Object.freeze({
@@ -16,6 +28,8 @@ const MUSIC_USD_PER_REQUEST = Object.freeze({
 });
 
 const TEXT_USD_PER_MILLION_TOKENS = Object.freeze({
+  'gemini-3.8-flash': Object.freeze({ input: 1.5, output: 7.5 }),
+  'gemini-4-argon': Object.freeze({ input: 4, output: 20 }),
   'gemini-3.6-flash': Object.freeze({ input: 1.5, output: 7.5 }),
   'gemini-3.5-flash': Object.freeze({ input: 1.5, output: 9 }),
   'gemini-3.5-flash-lite': Object.freeze({ input: 0.3, output: 2.5 }),
@@ -47,9 +61,23 @@ const PROVIDER_PRICING = Object.freeze({
     output: 12,
     images: Object.freeze({ '1k': 0.134, '2k': 0.134, '4k': 0.24 }),
   }),
+  'gemini-nano-banana-2.1': Object.freeze({
+    input: 0.3,
+    images: Object.freeze({ '1k': 0.039, '2k': 0.078 }),
+  }),
   'gemini-3.1-flash-tts-preview': Object.freeze({
     input: 1,
     audioOutput: 20,
+    audioTokensPerSecond: 25,
+  }),
+  'gemini-3.8-flash-tts': Object.freeze({
+    input: 1,
+    audioOutput: 20,
+    audioTokensPerSecond: 25,
+  }),
+  'gemini-3.8-flash-lite-tts': Object.freeze({
+    input: 0.5,
+    audioOutput: 10,
     audioTokensPerSecond: 25,
   }),
   'gemini-omni-flash-preview': Object.freeze({
@@ -57,7 +85,51 @@ const PROVIDER_PRICING = Object.freeze({
     videoOutput: 17.5,
     videoTokensPerSecond: Object.freeze({ '720p': 5792 }),
   }),
+  'gemini-omni-1.2-flash': Object.freeze({
+    input: 1.5,
+    videoOutput: 17.5,
+    videoTokensPerSecond: Object.freeze({
+      '360p': 2896,
+      '720p': 5792,
+      '1080p': 13032,
+      '4k': 52128,
+    }),
+  }),
+  'gemini-omni-1.1-flash': Object.freeze({
+    input: 1.5,
+    videoOutput: 17.5,
+    videoTokensPerSecond: Object.freeze({
+      '360p': 2896,
+      '720p': 5792,
+      '1080p': 13032,
+      '4k': 52128,
+    }),
+  }),
 });
+
+function computeJobPayloadHash({ prompt, model, duration, resolution, count = 1 }) {
+  const normalized = [
+    String(prompt || '').trim(),
+    String(model || '').trim(),
+    Number.isFinite(duration) ? Number(duration) : 0,
+    String(resolution || '').trim(),
+    Number.isFinite(count) ? Number(count) : 1,
+  ].join('::');
+
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+}
+
+function extractJobPayloadFields(task) {
+  const request = task?.request || {};
+  const settings = task?.settings || {};
+  return {
+    prompt: request.prompt || task?.prompt || '',
+    model: request.modelId || settings.veoModel || '',
+    duration: request.durationSeconds ?? settings.durationSeconds ?? 0,
+    resolution: request.resolution || settings.resolution || '',
+    count: request.sampleCount || request.count || 1,
+  };
+}
 
 function calculateMaximumCharge(task) {
   const request = task?.request;
@@ -68,14 +140,52 @@ function calculateMaximumCharge(task) {
     }
     return requestPrice;
   }
-  const rate = VIDEO_USD_PER_SECOND[request?.modelId]?.[request?.resolution];
+  if (request?.modelId === 'gemini-omni-1.2-flash') {
+    const prices = PROVIDER_PRICING['gemini-omni-1.2-flash'];
+    const duration = request?.durationSeconds;
+    const resolution = request?.resolution;
+    const tokensPerSecond = prices?.videoTokensPerSecond?.[resolution];
+    if (
+      !Number.isFinite(duration) ||
+      duration <= 0 ||
+      !Number.isFinite(tokensPerSecond) ||
+      !Number.isFinite(prices?.videoOutput)
+    ) {
+      throw new Error('No trusted paid-job price is available for this model and resolution.');
+    }
+    const inputs = task.executionInputs || {};
+    const inputChars =
+      Number(inputs.firstFrame?.byteLength || inputs.firstFrame?.data?.length || 0) +
+      Number(inputs.lastFrame?.byteLength || inputs.lastFrame?.data?.length || 0) +
+      (Array.isArray(inputs.referenceImages)
+        ? inputs.referenceImages.reduce(
+            (sum, img) => sum + Number(img?.byteLength || img?.data?.length || 0),
+            0,
+          )
+        : 0);
+    const minTokens = Math.max(
+      1000,
+      Math.ceil((String(request?.prompt || task?.prompt || '').length + inputChars) / 3),
+    );
+    const estimatedInputTokens = Number.isFinite(
+      task.costApproval?.calculationInputs?.estimatedInputTokens,
+    )
+      ? Math.max(minTokens, task.costApproval.calculationInputs.estimatedInputTokens)
+      : minTokens;
+    return (
+      (estimatedInputTokens * prices.input + duration * tokensPerSecond * prices.videoOutput) /
+      1_000_000
+    );
+  }
+  const pricingModelId = CANONICAL_VEO_MODEL_ALIASES[request?.modelId] || request?.modelId;
+  const rate = VIDEO_USD_PER_SECOND[pricingModelId]?.[request?.resolution];
   if (!Number.isFinite(rate) || rate <= 0 || !Number.isFinite(request?.durationSeconds)) {
     throw new Error('No trusted paid-job price is available for this model and resolution.');
   }
   return rate * request.durationSeconds;
 }
 
-function validateCostApproval(task) {
+function validateCostApproval(task, options = {}) {
   const approval = task?.costApproval;
   if (!approval || typeof approval !== 'object') {
     throw new Error('An auditable cost approval is required for paid execution.');
@@ -96,9 +206,19 @@ function validateCostApproval(task) {
   if (
     !Number.isFinite(approval.maximumChargeUsd) ||
     approval.maximumChargeUsd <= 0 ||
-    approval.maximumChargeUsd + Number.EPSILON < calculatedMaximumChargeUsd
+    approval.maximumChargeUsd + MICRODOLLAR_TOLERANCE < calculatedMaximumChargeUsd
   ) {
     throw new Error('The approved maximum charge is below the trusted conservative estimate.');
+  }
+  const expectedPayloadHash =
+    approval.hashVersion === 2
+      ? computePaidSubmissionHash(createPaidSubmission(task))
+      : computeJobPayloadHash(extractJobPayloadFields(task));
+  if (approval.payloadHash && approval.payloadHash !== expectedPayloadHash) {
+    throw new Error('Payload hash mismatch: job parameters were modified after cost approval.');
+  }
+  if (options.requirePayloadHash && !approval.payloadHash) {
+    throw new Error('Cost approval must contain a cryptographic payloadHash.');
   }
   return calculatedMaximumChargeUsd;
 }
@@ -169,6 +289,23 @@ function calculateProviderMaximumCharge(input) {
     ) {
       throw new Error('The provider video calculation is incomplete.');
     }
+    const cfg = input.config && typeof input.config === 'object' ? input.config : null;
+    if (cfg && cfg.duration !== undefined) {
+      const cfgDuration =
+        typeof cfg.duration === 'number'
+          ? cfg.duration
+          : Number(String(cfg.duration).trim().replace(/s$/i, ''));
+      if (!Number.isFinite(cfgDuration) || cfgDuration !== duration) {
+        throw new Error(
+          'Provider video config duration does not match approved calculation inputs.',
+        );
+      }
+    }
+    if (cfg && cfg.resolution !== undefined && cfg.resolution !== resolution) {
+      throw new Error(
+        'Provider video config resolution does not match approved calculation inputs.',
+      );
+    }
     maximumChargeUsd += (duration * tokensPerSecond * prices.videoOutput) / 1_000_000;
   } else {
     throw new Error('Unsupported paid provider operation.');
@@ -176,7 +313,7 @@ function calculateProviderMaximumCharge(input) {
   return maximumChargeUsd;
 }
 
-function validateProviderCostApproval(input) {
+function validateProviderCostApproval(input, options = {}) {
   const approval = input?.costApproval;
   if (!approval || typeof approval !== 'object') {
     throw new Error('An auditable cost approval is required for provider execution.');
@@ -186,7 +323,8 @@ function validateProviderCostApproval(input) {
     approval.currency !== 'USD' ||
     !['exact', 'upper-bound'].includes(approval.confidence) ||
     approval.sourceUrl !== PRICING_SOURCE_URL ||
-    approval.verifiedDate !== PRICING_VERIFIED_DATE
+    approval.verifiedDate !==
+      (PROVIDER_PRICING_VERIFIED_DATES[input.providerModelId] || PRICING_VERIFIED_DATE)
   ) {
     throw new Error('The provider cost approval does not match trusted pricing metadata.');
   }
@@ -194,9 +332,25 @@ function validateProviderCostApproval(input) {
   if (
     !Number.isFinite(approval.maximumChargeUsd) ||
     approval.maximumChargeUsd <= 0 ||
-    approval.maximumChargeUsd + Number.EPSILON < calculatedMaximumChargeUsd
+    approval.maximumChargeUsd + MICRODOLLAR_TOLERANCE < calculatedMaximumChargeUsd
   ) {
     throw new Error('The approved provider maximum is below the trusted conservative estimate.');
+  }
+  const calculation = approval?.calculationInputs || {};
+  const providerExpectedHash = computeJobPayloadHash({
+    prompt: input.prompt || '',
+    model: input.providerModelId || '',
+    duration: calculation.videoDurationSeconds || calculation.audioOutputSeconds || 0,
+    resolution: calculation.videoResolution || calculation.imageResolution || '',
+    count: calculation.imageCount || 1,
+  });
+  if (approval.payloadHash && approval.payloadHash !== providerExpectedHash) {
+    throw new Error(
+      'Payload hash mismatch: provider job parameters were modified after cost approval.',
+    );
+  }
+  if (options.requirePayloadHash && !approval.payloadHash) {
+    throw new Error('Provider cost approval must contain a cryptographic payloadHash.');
   }
   return calculatedMaximumChargeUsd;
 }
@@ -208,6 +362,8 @@ module.exports = {
   MUSIC_USD_PER_REQUEST,
   TEXT_USD_PER_MILLION_TOKENS,
   PROVIDER_PRICING,
+  computeJobPayloadHash,
+  extractJobPayloadFields,
   calculateMaximumCharge,
   calculateProviderMaximumCharge,
   validateCostApproval,

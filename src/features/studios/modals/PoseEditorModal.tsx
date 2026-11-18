@@ -6,7 +6,6 @@ interface PoseEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (base64Pose: string) => void;
-  initialPose?: string; // Optional: load existing pose image to trace (future feature), currently unused
 }
 
 interface Point {

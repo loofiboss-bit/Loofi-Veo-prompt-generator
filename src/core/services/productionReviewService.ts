@@ -1,5 +1,4 @@
 import { analyzeVideo } from '@core/services/gemini/geminiVisionService';
-import { logger } from '@core/services/loggerService';
 import type {
   ProductionReviewDimension,
   ProductionReviewFinding,
@@ -57,27 +56,26 @@ class ProductionReviewService {
     let proposedRevisionPrompt: string | undefined;
     let source: ShotReviewResult['source'] = 'local';
 
-    if (input.useGemini && input.video) {
-      try {
-        const semantic = await this.getGeminiReview(input);
-        dimensions = this.mergeDimensions(localDimensions, semantic.dimensions ?? []);
-        findings = this.normalizeFindings(semantic.findings ?? []);
-        continuity = this.mergeContinuity(continuity, semantic.continuity);
-        proposedRevisionPrompt = semantic.proposedRevisionPrompt;
-        source = 'mixed';
-      } catch (error) {
-        logger.warn(
-          'ProductionReviewService',
-          'Gemini review unavailable; using local review',
-          error,
+    if (input.useGemini) {
+      if (!input.video?.data || !input.video.mimeType.startsWith('video/'))
+        throw new Error(
+          'AI review requires readable local video. Relink it or choose manual review.',
         );
-        findings.push({
-          id: crypto.randomUUID(),
-          severity: 'warning',
-          category: 'prompt-adherence',
-          message: 'Semantic review was unavailable. Review this take manually before acceptance.',
-        });
-      }
+      const semantic = await this.getGeminiReview(input);
+      if (
+        !Array.isArray(semantic.dimensions) ||
+        !semantic.dimensions.some(
+          (dimension) =>
+            DIMENSION_IDS.includes(dimension.id as ProductionReviewDimension['id']) &&
+            Number.isFinite(dimension.score),
+        )
+      )
+        throw new Error('AI review returned no usable findings. Retry or choose manual review.');
+      dimensions = this.mergeDimensions(localDimensions, semantic.dimensions);
+      findings = this.normalizeFindings(semantic.findings ?? []);
+      continuity = this.mergeContinuity(continuity, semantic.continuity);
+      proposedRevisionPrompt = semantic.proposedRevisionPrompt;
+      source = 'mixed';
     }
 
     const overallScore = clampScore(
@@ -226,7 +224,7 @@ dimensions [{id, score, summary}] for prompt-adherence, subject-continuity, comp
 and audio; continuity {subjectIdentity, wardrobeProps, locationLook, shotTransition, summary}; findings [{severity, category, message, timestampSeconds}]; and
 proposedRevisionPrompt. Compare the clip against every supplied continuity reference image for
 subject identity, wardrobe/props, location/look, and shot-to-shot transition. Approved prompt:
-${input.shot.prompt}`,
+${input.take.prompt}`,
       input.referenceImages ?? [],
     );
     const json = response.match(/\{[\s\S]*\}/)?.[0] ?? response;
@@ -239,7 +237,7 @@ ${input.shot.prompt}`,
   ): ProductionReviewDimension[] {
     return local.map((dimension) => {
       const candidate = semantic?.find((item) => item.id === dimension.id);
-      if (!candidate || typeof candidate.score !== 'number') {
+      if (!candidate || typeof candidate.score !== 'number' || !Number.isFinite(candidate.score)) {
         return dimension;
       }
       return {

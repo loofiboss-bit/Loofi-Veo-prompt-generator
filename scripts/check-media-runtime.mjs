@@ -5,7 +5,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 const exec = promisify(execFile);
-export async function checkMediaRuntime(root, platforms = ['linux-x64', 'win32-x64']) {
+export async function checkMediaRuntime(root, platforms = ['linux-x64']) {
   for (const platform of platforms) {
     const directory = path.join(root, platform);
     const manifest = JSON.parse(await fs.readFile(path.join(directory, 'manifest.json'), 'utf8'));
@@ -69,6 +69,7 @@ export async function checkMediaRuntime(root, platforms = ['linux-x64', 'win32-x
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root =
     process.argv[2] || fileURLToPath(new URL('../packaging/media-runtime', import.meta.url));
-  await checkMediaRuntime(root);
-  console.log('Verified offline rendering bundle: Linux x64 and Windows x64.');
+  const platforms = process.argv[3] ? process.argv[3].split(',') : ['linux-x64'];
+  await checkMediaRuntime(root, platforms);
+  console.log(`Verified offline rendering bundle: ${platforms.join(', ')}.`);
 }

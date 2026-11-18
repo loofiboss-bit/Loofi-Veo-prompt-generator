@@ -1,18 +1,14 @@
 import { StateCreator } from 'zustand';
-import {
-  Asset,
-  CharacterProfile,
-  HistoryEntry,
-  CustomPreset,
-  ProductionBible,
-  VisualDNA,
-} from '@core/types';
+import { Asset, CharacterProfile, CustomPreset, ProductionBible, VisualDNA } from '@core/types';
 import { continuityService } from '@core/services/continuityService';
 
 export interface AssetSlice {
   assets: Asset[];
+  /** Per-asset revisions let the persisted catalog merge additions across windows. */
+  assetCatalogRevisions: Record<string, number>;
+  /** Tombstones prevent an older window from restoring a removed catalog entry. */
+  assetCatalogTombstones: Record<string, number>;
   characterBank: CharacterProfile[];
-  history: HistoryEntry[];
   customPresets: CustomPreset[];
   visualDNA: VisualDNA[];
   productionBible: ProductionBible;
@@ -29,10 +25,6 @@ export interface AssetSlice {
   setCharacterBank: (characters: CharacterProfile[]) => void;
 
   // Data Actions
-  addToHistory: (entry: HistoryEntry) => void;
-  clearHistory: () => void;
-  deleteHistoryEntry: (id: string) => void;
-
   addPreset: (preset: CustomPreset) => void;
   updatePreset: (preset: CustomPreset) => void;
   deletePreset: (id: string) => void;
@@ -45,8 +37,9 @@ export interface AssetSlice {
 
 export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
   assets: [],
+  assetCatalogRevisions: {},
+  assetCatalogTombstones: {},
   characterBank: [],
-  history: [],
   customPresets: [],
   visualDNA: [],
   productionBible: {
@@ -56,10 +49,41 @@ export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
     updatedAt: 0,
   },
 
-  addAsset: (asset) => set((state) => ({ assets: [asset, ...state.assets] })),
+  addAsset: (asset) =>
+    set((state) => {
+      const revision =
+        Math.max(
+          Date.now(),
+          state.assetCatalogRevisions[asset.id] ?? 0,
+          state.assetCatalogTombstones[asset.id] ?? 0,
+        ) + 1;
+      return {
+        assets: [asset, ...state.assets.filter((item) => item.id !== asset.id)],
+        assetCatalogRevisions: { ...state.assetCatalogRevisions, [asset.id]: revision },
+        assetCatalogTombstones: Object.fromEntries(
+          Object.entries(state.assetCatalogTombstones).filter(([id]) => id !== asset.id),
+        ),
+      };
+    }),
   updateAsset: (id, updates) =>
-    set((state) => ({ assets: state.assets.map((a) => (a.id === id ? { ...a, ...updates } : a)) })),
-  removeAsset: (id) => set((state) => ({ assets: state.assets.filter((a) => a.id !== id) })),
+    set((state) => {
+      if (!state.assets.some((asset) => asset.id === id)) return state;
+      const revision = Math.max(Date.now(), state.assetCatalogRevisions[id] ?? 0) + 1;
+      return {
+        assets: state.assets.map((asset) => (asset.id === id ? { ...asset, ...updates } : asset)),
+        assetCatalogRevisions: { ...state.assetCatalogRevisions, [id]: revision },
+      };
+    }),
+  removeAsset: (id) =>
+    set((state) => {
+      if (!state.assets.some((asset) => asset.id === id)) return state;
+      const revision = Math.max(Date.now(), state.assetCatalogRevisions[id] ?? 0) + 1;
+      return {
+        assets: state.assets.filter((asset) => asset.id !== id),
+        assetCatalogRevisions: { ...state.assetCatalogRevisions, [id]: revision },
+        assetCatalogTombstones: { ...state.assetCatalogTombstones, [id]: revision },
+      };
+    }),
 
   addCharacter: (character) =>
     set((state) => ({
@@ -110,11 +134,6 @@ export const createAssetSlice: StateCreator<AssetSlice> = (set) => ({
         state.productionBible,
       ),
     })),
-
-  addToHistory: (entry) => set((state) => ({ history: [entry, ...state.history].slice(0, 50) })),
-  clearHistory: () => set({ history: [] }),
-  deleteHistoryEntry: (id) =>
-    set((state) => ({ history: state.history.filter((h) => h.id !== id) })),
 
   addPreset: (preset) => set((state) => ({ customPresets: [preset, ...state.customPresets] })),
   updatePreset: (preset) =>

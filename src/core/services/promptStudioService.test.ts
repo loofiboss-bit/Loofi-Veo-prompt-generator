@@ -12,16 +12,19 @@ import {
   shortenLyrics,
   updateLyricsSection,
   validatePromptArtifact,
+  normalizeVideoPromptInput,
+  toVideoPromptState,
+  createGeneratedVideoArtifact,
 } from './promptStudioService';
 import type { HistoryEntry, MusicPromptVariant, VideoPromptVariant } from '@core/types';
 
 describe('promptStudioService', () => {
   it.each([
-    ['text-to-video', 'one focused, continuous scene'],
-    ['image-to-video', 'Describe motion only'],
-    ['first-last-frames', 'start frame (opening frame)'],
+    ['text-to-video', 'A determined courier'],
+    ['image-to-video', 'walks toward a flickering train entrance'],
+    ['first-last-frames', 'Transition from opening frame to train doors closing'],
     ['ingredients', 'Reference roles: hero=character, prop=object'],
-    ['extend', 'Continue seamlessly from the previous clip'],
+    ['extend', 'Continue the supplied clip with consistent identity and motion'],
   ] as const)('compiles the %s recipe', (mode, expected) => {
     const artifact = compileVideoPromptArtifact({
       idea: 'A courier crosses a rainy neon street',
@@ -41,6 +44,7 @@ describe('promptStudioService', () => {
       endFrame: 'train doors closing',
       previousClip: 'the courier turns the corner',
       referenceRoles: 'hero=character, prop=object',
+      negativePrompt: 'unwanted captions',
     });
 
     expect(artifact.schemaVersion).toBe(1);
@@ -57,7 +61,7 @@ describe('promptStudioService', () => {
     const artifact = compileVideoPromptArtifact({
       idea: 'A quiet conversation in a studio',
       mode: 'text-to-video',
-      target: 'veo-api',
+      target: 'flow-veo',
       aspectRatio: '16:9',
       durationSeconds: 6,
       dialogue: 'My name is Clara.',
@@ -154,6 +158,103 @@ describe('promptStudioService', () => {
     expect(compileSunoPackArtifact(pack).kind).toBe('music');
   });
 
+  it('preserves authored whitespace and detailed legacy controls through compilation and production mapping', () => {
+    const input = {
+      idea: '  A courier  ',
+      target: 'flow-veo' as const,
+      mode: 'text-to-video' as const,
+      aspectRatio: '16:9' as const,
+      durationSeconds: 8,
+      subject: '  Red coat  ',
+      creativeDetails: {
+        lensType: '50mm',
+        cameraDistance: 'close-up',
+        compositionalGuide: 'rule of thirds',
+        characterVisualDNA: 'scar above left brow',
+        weather: 'rain',
+        timeOfDay: 'dusk',
+      },
+    };
+    expect(normalizeVideoPromptInput(input).subject).toBe('  Red coat  ');
+    const artifact = compileVideoPromptArtifact(input);
+    expect(artifact.input).toMatchObject(input);
+    expect((artifact.primary as VideoPromptVariant).prompt).toContain('50mm');
+    expect(toVideoPromptState(input)).toMatchObject({
+      characterArchetype: '  Red coat  ',
+      lensType: '50mm',
+      characterVisualDNA: 'scar above left brow',
+      weather: 'rain',
+      timeOfDay: 'dusk',
+    });
+  });
+
+  it('retains long music style descriptions instead of silently truncating an undocumented limit', () => {
+    const instruments = Array.from({ length: 35 }, (_, index) => `instrument-${index}`).join(', ');
+    const artifact = compileMusicPromptArtifact({
+      topic: 'Home',
+      language: 'English',
+      instruments,
+    });
+    expect((artifact.primary as MusicPromptVariant).styleOfMusic).toContain('instrument-34');
+    expect((artifact.primary as MusicPromptVariant).styleOfMusic.length).toBeGreaterThan(200);
+    expect(validatePromptArtifact(artifact)).toEqual([]);
+  });
+
+  it('builds a prepared single-call pack with model provenance and no unsupported negative section', async () => {
+    const artifact = await createGeneratedVideoArtifact(
+      {
+        idea: 'A waving figure',
+        target: 'runway-gen3',
+        mode: 'text-to-video',
+        aspectRatio: '16:9',
+        durationSeconds: 8,
+        audio: 'gentle bells',
+      },
+      {
+        primary: 'The figure waves.',
+        cinematic: 'A close shot of the figure waving.',
+        controlFocused: 'The figure waves slowly.',
+        negativePrompt: 'blur',
+      },
+      'gemini-3.8-flash',
+      ['Consider a locked camera for a steadier greeting'],
+    );
+    expect(artifact.provenance.modelId).toBe('gemini-3.8-flash');
+    for (const variant of [artifact.primary, ...artifact.alternatives] as VideoPromptVariant[]) {
+      expect(variant.copyAll).toContain('AI suggestion: Consider a locked camera');
+      expect(variant.copySettingsChecklist).toBe(variant.settingsChecklist.join('\n'));
+    }
+    expect((artifact.primary as VideoPromptVariant).negativePrompt).toBe('');
+    expect((artifact.primary as VideoPromptVariant).copyAll).not.toContain('Negative prompt:');
+    expect((artifact.primary as VideoPromptVariant).settingsChecklist.join(' ')).toContain(
+      'gentle bells',
+    );
+    expect(validatePromptArtifact(artifact)).toEqual([]);
+  });
+
+  it.each(['sora', 'veo-api'] as const)(
+    'keeps saved %s text readable while refusing new compilation',
+    (target) => {
+      const history = {
+        id: 'old',
+        timestamp: 1,
+        prompt: 'My original saved text',
+        params: { idea: 'Old idea', targetModel: 'veo-api' },
+      } as unknown as HistoryEntry;
+      const archived = compileVideoHistoryArtifact(history);
+      expect((archived.primary as VideoPromptVariant).copyPrompt).toBe(history.prompt);
+      expect(() =>
+        compileVideoPromptArtifact({
+          idea: 'New',
+          target,
+          mode: 'text-to-video',
+          aspectRatio: '16:9',
+          durationSeconds: 8,
+        }),
+      ).toThrow(/retired/);
+    },
+  );
+
   it('rejects malformed optimizer JSON instead of silently replacing the local draft', async () => {
     await expect(
       optimizeVideoPromptArtifact(
@@ -192,15 +293,61 @@ describe('promptStudioService', () => {
     expect(validatePromptArtifact(artifact)).toEqual([]);
   });
 
-  it('compiles universal targets (kling, runway, sora, luma) into valid artifacts with model-specific syntax', () => {
-    const targets = [
-      'kling',
-      'runway-gen3',
-      'sora',
-      'luma-ray',
-      'wan-video',
-      'minimax-hailuo',
-    ] as const;
+  it('updates all 3 variants when an optimizer returns a 3-variant cinematic pack', async () => {
+    const artifact = await optimizeVideoPromptArtifact(
+      {
+        idea: 'A programmer gets rejected for vibecoding',
+        mode: 'text-to-video',
+        target: 'flow-veo',
+        aspectRatio: '16:9',
+        durationSeconds: 8,
+      },
+      {
+        optimizeVideo: async () => ({
+          primary: 'Primary prompt with 5-pillar structure.',
+          cinematic: 'Cinematic texture with 35mm lens and soft lighting.',
+          controlFocused: 'Locked dolly movement on slider, continuous 8s action.',
+          negativePrompt: 'morphing, jitter, blurry',
+        }),
+        optimizeMusic: async () => ({}),
+      },
+    );
+    expect((artifact.primary as VideoPromptVariant).prompt).toBe(
+      'Primary prompt with 5-pillar structure.',
+    );
+    expect((artifact.alternatives[0] as VideoPromptVariant).prompt).toBe(
+      'Cinematic texture with 35mm lens and soft lighting.',
+    );
+    expect((artifact.alternatives[1] as VideoPromptVariant).prompt).toBe(
+      'Locked dolly movement on slider, continuous 8s action.',
+    );
+    expect((artifact.primary as VideoPromptVariant).negativePrompt).toBe(
+      'morphing, jitter, blurry',
+    );
+    expect(validatePromptArtifact(artifact)).toEqual([]);
+  });
+
+  it('rejects full-package video optimization that changes supplied dialogue', async () => {
+    await expect(
+      optimizeVideoPromptArtifact(
+        {
+          idea: 'A runner crosses a quiet park',
+          mode: 'text-to-video',
+          target: 'flow-veo',
+          aspectRatio: '16:9',
+          durationSeconds: 8,
+          dialogue: 'Hello from the other side.',
+        },
+        {
+          optimizeVideo: async () => ({ prompt: 'A runner crosses a quiet park silently.' }),
+          optimizeMusic: async () => ({}),
+        },
+      ),
+    ).rejects.toThrow(/changed or omitted protected dialogue/);
+  });
+
+  it('compiles active universal targets into source-backed artifacts', () => {
+    const targets = ['kling', 'runway-gen3', 'luma-ray', 'wan-video', 'minimax-hailuo'] as const;
 
     for (const target of targets) {
       const artifact = compileVideoPromptArtifact({
@@ -208,7 +355,7 @@ describe('promptStudioService', () => {
         mode: 'text-to-video',
         target,
         aspectRatio: '16:9',
-        durationSeconds: 8,
+        durationSeconds: target === 'luma-ray' ? 5 : target === 'wan-video' ? 30 : 8,
         camera: 'slow tracking pan',
       });
 
@@ -220,8 +367,46 @@ describe('promptStudioService', () => {
         'warning',
       );
       expect(artifact.validation.find((c) => c.id === 'target-compatibility')?.evidence).toBe(
-        'unknown',
+        'documented',
       );
     }
   });
+});
+
+describe('image-to-video motion across all Studio and Arena compiler targets', () => {
+  const targets = [
+    'flow-veo',
+    'kling',
+    'runway-gen3',
+    'luma-ray',
+    'wan-video',
+    'minimax-hailuo',
+  ] as const;
+  it.each(targets)(
+    'uses the primary field as motion for every %s variant and prioritizes explicit action',
+    (target) => {
+      const input = {
+        idea: 'The bird flaps its wings and leaves the frame',
+        mode: 'image-to-video' as const,
+        target,
+        aspectRatio: '16:9' as const,
+        durationSeconds: 8 as const,
+        subject: 'STATIC SUBJECT',
+        lighting: 'STATIC LIGHTING',
+      };
+      for (const action of [undefined, 'The bird tilts its head twice']) {
+        const artifact = compileVideoPromptArtifact({ ...input, action });
+        for (const variant of [
+          artifact.primary,
+          ...artifact.alternatives,
+        ] as VideoPromptVariant[]) {
+          expect(variant.prompt).toContain(action ?? input.idea);
+          expect(variant.prompt).not.toContain('STATIC SUBJECT');
+          expect(variant.prompt).not.toContain('STATIC LIGHTING');
+          if (action) expect(variant.prompt).not.toContain(input.idea);
+          expect(variant.copyPrompt).toBe(variant.prompt);
+        }
+      }
+    },
+  );
 });

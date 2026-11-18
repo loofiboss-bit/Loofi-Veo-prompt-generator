@@ -35,8 +35,20 @@ describe('MODEL_CATALOG', () => {
       expect(getModel(modelId)?.pricing.flatRequestUsd).toBe(price);
     }
   });
-  it('does not permit shut-down models in the executable catalog', () => {
-    expect(MODEL_CATALOG.filter((model) => model.lifecycle === 'shut-down')).toEqual([]);
+  it('uses the published post-promotion Standard ceilings for new text models', () => {
+    expect(getModel('gemini-4-argon')?.pricing).toMatchObject({
+      source: { verifiedDate: '2026-10-28', effectiveDate: '2026-12-01' },
+      tokenTiers: [{ inputPerMillionUsd: { text: 4 }, outputPerMillionUsd: { text: 20 } }],
+    });
+    expect(getModel('gemini-3.8-flash')?.pricing).toMatchObject({
+      source: { verifiedDate: '2026-10-28', effectiveDate: '2027-01-01' },
+      tokenTiers: [{ inputPerMillionUsd: { text: 1.5 }, outputPerMillionUsd: { text: 7.5 } }],
+    });
+  });
+
+  it('retains shut-down aliases for persisted metadata but rejects execution', () => {
+    expect(getModel('gemini-omni-flash')?.lifecycle).toBe('shut-down');
+    expect(() => resolveProviderModelId('gemini-omni-flash')).toThrow('shut down');
   });
 
   it('assigns every executable model a unique lifecycle entry', () => {
@@ -80,10 +92,20 @@ describe('MODEL_CATALOG', () => {
   });
 
   it('records current stable general and image models', () => {
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.8-flash')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-4-argon')?.lifecycle).toBe('stable');
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.6-flash')?.lifecycle).toBe(
       'stable',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'gemini-3.5-flash-lite')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-nano-banana-2.1')?.lifecycle).toBe(
+      'stable',
+    );
+    expect(MODEL_CATALOG.find((model) => model.id === 'gemini-omni-1.1-flash')?.lifecycle).toBe(
       'stable',
     );
     expect(MODEL_CATALOG.find((model) => model.id === 'nano-banana-pro')?.lifecycle).toBe('stable');
@@ -124,6 +146,18 @@ describe('MODEL_CATALOG', () => {
   it('maps retired persisted IDs to actionable current replacements', () => {
     expect(resolveCanonicalModelId('gemini-2.0-flash')).toBe('gemini-3.5-flash-lite');
     expect(resolveCanonicalModelId('veo-3.1-lite-generate-preview')).toBe('veo-3.1-lite');
+  });
+
+  it('retains preview identities for saved projects but blocks their Gemini execution only', () => {
+    expect(getProviderBinding('veo-3.1-fast', 'gemini-api')).toMatchObject({
+      lifecycle: 'shut-down',
+      sunsetDate: '2026-10-22',
+    });
+    expect(() => resolveProviderModelId('veo-3.1-fast')).toThrow('shut down');
+    expect(() => resolveProviderModelId('veo-3.1-fast-generate-preview', 'gemini-api')).toThrow(
+      'shut down',
+    );
+    expect(resolveProviderModelId('veo-3.1-fast', 'vertex-ai')).toBe('veo-3.1-fast-generate-001');
   });
 
   it('preserves unknown IDs for project migration diagnostics', () => {

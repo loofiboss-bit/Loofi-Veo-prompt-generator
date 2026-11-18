@@ -10,15 +10,25 @@ export function ModelDecision({ request }: { request: VeoGenerationRequest }) {
     videoDurationSeconds: request.durationSeconds,
     videoResolution: request.resolution,
   });
-  const decision = routeModel({
-    operation: 'video',
-    mode: model.id.includes('quality') ? 'quality' : model.id.includes('lite') ? 'economy' : 'fast',
-    requiresReferenceImages: request.referenceAssetIds.length > 0,
-    requiresFirstLastFrame: Boolean(request.firstFrameAssetId || request.lastFrameAssetId),
-    requiresExtension: request.mode === 'extension',
-    requires4k: request.resolution === '4k',
-  });
-  const fallback = decision.model.id === model.id ? decision.fallback : undefined;
+  let decision: ReturnType<typeof routeModel> | null = null;
+  try {
+    decision = routeModel({
+      operation: 'video',
+      provider: model.provider,
+      mode: model.id.includes('quality')
+        ? 'quality'
+        : model.id.includes('lite')
+          ? 'economy'
+          : 'fast',
+      requiresReferenceImages: request.referenceAssetIds.length > 0,
+      requiresFirstLastFrame: Boolean(request.firstFrameAssetId || request.lastFrameAssetId),
+      requiresExtension: request.mode === 'extension',
+      requires4k: request.resolution === '4k',
+    });
+  } catch {
+    decision = null;
+  }
+  const fallback = decision?.model.id === model.id ? decision.fallback : undefined;
   const constraints = [
     `${model.capabilities.supportedDurationsSeconds?.join('/')}s`,
     model.capabilities.supportedAspectRatios?.join(', '),
@@ -42,7 +52,7 @@ export function ModelDecision({ request }: { request: VeoGenerationRequest }) {
         </span>
       </div>
       <p className="mt-1 text-slate-400">
-        {decision.model.id === model.id
+        {decision && decision.model.id === model.id
           ? decision.reason
           : 'Explicitly selected because it supports this shot’s requested controls.'}
       </p>

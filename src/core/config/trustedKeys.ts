@@ -30,17 +30,17 @@ export interface TrustedKeyEntry {
 /**
  * Set of trusted public keys shipped with the application.
  *
- * Note: The development key is a placeholder for testing.
- * Production keys should be generated securely and added during releases.
+ * Security invariant: development placeholder keys MUST remain `isActive: false`
+ * so untrusted actors cannot forge `'trusted'` signatures with known public keys.
  */
 export const TRUSTED_PUBLIC_KEYS: readonly TrustedKeyEntry[] = [
   {
-    name: 'Veo Studio Official',
-    // Placeholder key for development — replace with real Ed25519 public key before production
+    name: 'Veo Studio Official (Placeholder)',
+    // Inactive placeholder key — replace with a real production Ed25519 public key before release
     publicKey: 'MCowBQYDK2VwAyEAPlaceholderKeyForDevelopmentDoNotUseInProduction00=',
     addedAt: 1739491200000, // 2025-02-14T00:00:00Z
-    isActive: true,
-    description: 'Official Veo Studio plugin signing key',
+    isActive: false,
+    description: 'Inactive development placeholder key (disabled for production security)',
   },
 ] as const;
 

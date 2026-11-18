@@ -7,15 +7,8 @@ import { LocalLLMAdapter } from './adapters/LocalLLMAdapter';
 import { logger } from './loggerService';
 import { getAiClientAsync, getPromptModel } from './gemini/aiClient';
 
-/**
- * Replaces {{KEY}} in text with values from the variables object.
- */
-export const interpolateVariables = (text: string, variables: Record<string, string>): string => {
-  if (!text) return '';
-  return text.replace(/\{\{\s*([A-Z0-9_]+)\s*\}\}/g, (match, key) => {
-    return variables[key] || match; // Return original {{KEY}} if missing, to signal error to user
-  });
-};
+import { interpolateVariables } from '@core/utils/interpolateVariables';
+export { interpolateVariables };
 
 /**
  * Factory function to get the appropriate adapter.

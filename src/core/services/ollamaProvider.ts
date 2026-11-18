@@ -40,6 +40,10 @@ export interface OllamaConfig {
   model: string;
   /** Request timeout in milliseconds (default: 120000 = 2 minutes) */
   timeoutMs?: number;
+  /** Optional cancellation signal for the generation request. */
+  signal?: AbortSignal;
+  /** Optional JSON Schema for OpenAI-compatible constrained output. */
+  jsonSchema?: Record<string, unknown>;
 }
 
 function normalizeOllamaBaseUrl(baseUrl: string): string {
@@ -118,9 +122,22 @@ export async function generatePromptWithOllama(
   const normalizedBaseUrl = normalizeOllamaBaseUrl(resolvedConfig.baseUrl);
   const url = `${getChatCompletionsBaseUrl(normalizedBaseUrl)}/chat/completions`;
   const timeoutMs = resolvedConfig.timeoutMs ?? 120_000;
+  if (resolvedConfig.signal?.aborted) {
+    throw (
+      resolvedConfig.signal.reason ?? new DOMException('Ollama request cancelled.', 'AbortError')
+    );
+  }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromCaller = () =>
+    controller.abort(
+      resolvedConfig.signal?.reason ?? new DOMException('Ollama request cancelled.', 'AbortError'),
+    );
+  resolvedConfig.signal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timeout = setTimeout(
+    () => controller.abort(new DOMException('Ollama request timed out.', 'TimeoutError')),
+    timeoutMs,
+  );
 
   try {
     const res = await fetch(url, {
@@ -130,6 +147,18 @@ export async function generatePromptWithOllama(
         model: resolvedConfig.model,
         messages: [{ role: 'user', content: userInput }],
         stream: false,
+        ...(resolvedConfig.jsonSchema
+          ? {
+              response_format: {
+                type: 'json_schema',
+                json_schema: {
+                  name: 'structured_response',
+                  strict: true,
+                  schema: resolvedConfig.jsonSchema,
+                },
+              },
+            }
+          : {}),
       }),
       signal: controller.signal,
     });
@@ -152,6 +181,7 @@ export async function generatePromptWithOllama(
     return text;
   } finally {
     clearTimeout(timeout);
+    resolvedConfig.signal?.removeEventListener('abort', abortFromCaller);
   }
 }
 

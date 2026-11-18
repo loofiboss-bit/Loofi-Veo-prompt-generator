@@ -103,4 +103,14 @@ describe('usePromptOptions', () => {
     expect(firstLabel).toContain('(en)');
     expect(secondLabel).toContain('(sv)');
   });
+
+  it('should gracefully handle non-dictionary languages (ja, ar) without throwing', () => {
+    const { result: jaResult } = renderHook(() => usePromptOptions('ja' as unknown as Language));
+    expect(jaResult.current.modelOptions.length).toBeGreaterThan(0);
+    expect(jaResult.current.artStyleOptions.length).toBeGreaterThan(0);
+
+    const { result: arResult } = renderHook(() => usePromptOptions('ar' as unknown as Language));
+    expect(arResult.current.modelOptions.length).toBeGreaterThan(0);
+    expect(arResult.current.artStyleOptions.length).toBeGreaterThan(0);
+  });
 });

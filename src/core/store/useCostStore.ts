@@ -11,6 +11,8 @@ import { costTrackingService } from '@core/services/costTrackingService';
 interface CostState {
   /** Recent cost records */
   recentRecords: CostRecord[];
+  persistenceError?: string;
+  initialize: () => Promise<void>;
   /** Total lifetime cost */
   lifetimeCost: number;
   /** Monthly budget (0 = unlimited) */
@@ -32,7 +34,23 @@ interface CostState {
 export const useCostStore = create<CostState>((set) => {
   const state = costTrackingService.getState();
 
+  const refresh = () => {
+    const value = costTrackingService.getState();
+    set({
+      recentRecords: value.sessionRecords.slice(-20),
+      lifetimeCost: value.lifetimeTotalUsd,
+      monthlyBudget: value.monthlyBudgetUsd,
+      withinBudget: costTrackingService.isWithinBudget(),
+      persistenceError: value.persistenceError,
+    });
+  };
+  let unsubscribe: (() => void) | undefined;
   return {
+    initialize: async () => {
+      unsubscribe ??= costTrackingService.subscribe(refresh);
+      await costTrackingService.hydrate();
+      refresh();
+    },
     recentRecords: state.sessionRecords.slice(-20),
     lifetimeCost: state.lifetimeTotalUsd,
     monthlyBudget: state.monthlyBudgetUsd,

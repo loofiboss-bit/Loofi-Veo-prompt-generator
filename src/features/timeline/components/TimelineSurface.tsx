@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { TimelineClip, TimelineState } from '@core/types';
 import { useAppStore } from '@core/store/useAppStore';
+import { usePlaybackStore } from '@core/store/usePlaybackStore';
 import * as geminiService from '@core/services/geminiService';
 import { logger } from '@core/services/loggerService';
 import Icon from '@shared/components/ui/Icon';
@@ -34,7 +36,41 @@ interface TimelineSurfaceProps {
 const HEADER_WIDTH = 192;
 const TRACK_HEIGHT = 96;
 
-export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
+const formatTimelineClock = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+const PlayheadTimecode: React.FC<{ fallbackTime: number }> = ({ fallbackTime }) => {
+  const liveTime = usePlaybackStore((state) => (state.isPlaying ? state.currentTime : null));
+  return (
+    <span data-testid="playhead-timecode" className="font-mono text-xs text-cyan-400">
+      {formatTimelineClock(liveTime ?? fallbackTime)}
+    </span>
+  );
+};
+
+const PlayheadCursor: React.FC<{
+  zoomLevel: number;
+  isRecording?: boolean;
+  fallbackTime: number;
+}> = ({ zoomLevel, isRecording, fallbackTime }) => {
+  const liveTime = usePlaybackStore((state) => (state.isPlaying ? state.currentTime : null));
+  const displayTime = liveTime ?? fallbackTime;
+  return (
+    <div
+      className={`pointer-events-none absolute top-0 bottom-0 z-50 w-px transition-colors ${isRecording ? 'bg-red-500' : 'bg-white'}`}
+      style={{ left: `${displayTime * zoomLevel + HEADER_WIDTH}px` }}
+    >
+      <div
+        className={`-mt-1.5 h-3 w-3 -translate-x-1.5 rotate-45 transform ${isRecording ? 'bg-red-500' : 'bg-white'}`}
+      />
+    </div>
+  );
+};
+
+const TimelineSurfaceComponent: React.FC<TimelineSurfaceProps> = ({
   timelineState,
   onClipUpdate: _onClipUpdate,
   onSeek,
@@ -68,9 +104,24 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
     addShot,
     updateShot,
     addTimelineClip,
-    promptState,
+    aspectRatio,
     assets,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((state) => ({
+      updateTimelineClip: state.updateTimelineClip,
+      splitTimelineClip: state.splitTimelineClip,
+      setZoomLevel: state.setZoomLevel,
+      removeTimelineClip: state.removeTimelineClip,
+      shiftTrackClips: state.shiftTrackClips,
+      sbShots: state.sbShots,
+      sbGlobalContext: state.sbGlobalContext,
+      addShot: state.addShot,
+      updateShot: state.updateShot,
+      addTimelineClip: state.addTimelineClip,
+      aspectRatio: state.promptState?.aspectRatio ?? '16:9',
+      assets: state.assets,
+    })),
+  );
 
   const { tracks, clips, zoomLevel, currentTime } = timelineState;
   const safeShots = useMemo(() => sbShots ?? [], [sbShots]);
@@ -195,7 +246,7 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
       addTimelineClip(newClip);
 
       await startVideoGeneration(prompt, {
-        aspectRatio: promptState.aspectRatio,
+        aspectRatio,
         resolution: '720p',
         veoModel: 'fast',
         count: 1,
@@ -222,6 +273,10 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
     splitTimelineClip(clip.id, relTime);
   };
 
+  const getActivePlayheadTime = () => {
+    const playback = usePlaybackStore.getState();
+    return playback.isPlaying ? playback.currentTime : currentTime;
+  };
   const selectedClip = clips.find((clip) => clip.id === selectedClipId);
   const canEditAtPlayhead =
     !!selectedClip &&
@@ -231,7 +286,7 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
     if (snapEnabled && changes.startTime !== undefined) {
       const points = [
         0,
-        currentTime,
+        getActivePlayheadTime(),
         ...clips
           .filter((clip) => clip.id !== id)
           .flatMap((clip) => [clip.startTime, clip.startTime + clip.duration]),
@@ -289,7 +344,7 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
     <div className="flex h-full min-w-0 flex-col bg-slate-950 select-none">
       <div className="flex min-h-10 min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-slate-700 bg-slate-900 px-3 py-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-cyan-400">{formatTime(currentTime)}</span>
+          <PlayheadTimecode fallbackTime={currentTime} />
           <div className="flex rounded-lg bg-slate-800 p-0.5">
             <button
               onClick={() => setActiveTool('select')}
@@ -315,62 +370,68 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
             onClick={() => setRippleEnabled(!rippleEnabled)}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${rippleEnabled ? 'border border-fuchsia-500/30 bg-fuchsia-900/20 text-fuchsia-400' : 'text-slate-500 hover:text-slate-300'}`}
             aria-pressed={rippleEnabled}
-            title="Magnetic Timeline (Ripple Edit)"
+            title={t('timeline.magneticTitle', 'Magnetic Timeline (Ripple Edit)')}
           >
             <Icon name="layers" className="h-3.5 w-3.5" />
-            Magnetic
+            {t('timeline.magnetic', 'Magnetic')}
           </button>
           <button
             aria-pressed={snapEnabled}
             onClick={() => setSnapEnabled(!snapEnabled)}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${snapEnabled ? 'bg-cyan-900/20 text-cyan-400' : 'text-slate-500 hover:text-slate-300'}`}
           >
-            <Icon name="activity" className="h-3.5 w-3.5" /> Snap
+            <Icon name="activity" className="h-3.5 w-3.5" /> {t('timeline.snap', 'Snap')}
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             disabled={!canEditAtPlayhead}
-            onClick={() =>
-              selectedClip &&
-              splitTimelineClip(selectedClip.id, currentTime - selectedClip.startTime)
-            }
+            onClick={() => {
+              const activeTime = getActivePlayheadTime();
+              if (selectedClip) {
+                splitTimelineClip(selectedClip.id, activeTime - selectedClip.startTime);
+              }
+            }}
             className="text-xs text-slate-300 disabled:opacity-40"
           >
             {t('timeline.splitPlayhead', 'Split at playhead')}
           </button>
           <button
             disabled={!canEditAtPlayhead}
-            onClick={() =>
-              selectedClip &&
-              updateTimelineClip(
-                selectedClip.id,
-                {
-                  startTime: currentTime,
-                  offset:
-                    selectedClip.type === 'text'
-                      ? 0
-                      : selectedClip.offset + currentTime - selectedClip.startTime,
-                  duration: selectedClip.startTime + selectedClip.duration - currentTime,
-                },
-                rippleEnabled,
-              )
-            }
+            onClick={() => {
+              const activeTime = getActivePlayheadTime();
+              if (selectedClip) {
+                updateTimelineClip(
+                  selectedClip.id,
+                  {
+                    startTime: activeTime,
+                    offset:
+                      selectedClip.type === 'text'
+                        ? 0
+                        : selectedClip.offset + activeTime - selectedClip.startTime,
+                    duration: selectedClip.startTime + selectedClip.duration - activeTime,
+                  },
+                  rippleEnabled,
+                );
+              }
+            }}
             className="text-xs text-slate-300 disabled:opacity-40"
           >
             {t('timeline.trimStart', 'Trim start to playhead')}
           </button>
           <button
             disabled={!canEditAtPlayhead}
-            onClick={() =>
-              selectedClip &&
-              updateTimelineClip(
-                selectedClip.id,
-                { duration: currentTime - selectedClip.startTime },
-                rippleEnabled,
-              )
-            }
+            onClick={() => {
+              const activeTime = getActivePlayheadTime();
+              if (selectedClip) {
+                updateTimelineClip(
+                  selectedClip.id,
+                  { duration: activeTime - selectedClip.startTime },
+                  rippleEnabled,
+                );
+              }
+            }}
             className="text-xs text-slate-300 disabled:opacity-40"
           >
             {t('timeline.trimEnd', 'Trim end to playhead')}
@@ -430,14 +491,11 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
             height: `${tracks.length * TRACK_HEIGHT}px`,
           }}
         >
-          <div
-            className={`pointer-events-none absolute top-0 bottom-0 z-50 w-px transition-colors ${isRecording ? 'bg-red-500' : 'bg-white'}`}
-            style={{ left: `${currentTime * zoomLevel + HEADER_WIDTH}px` }}
-          >
-            <div
-              className={`-mt-1.5 h-3 w-3 -translate-x-1.5 rotate-45 transform ${isRecording ? 'bg-red-500' : 'bg-white'}`}
-            />
-          </div>
+          <PlayheadCursor
+            zoomLevel={zoomLevel}
+            isRecording={isRecording}
+            fallbackTime={currentTime}
+          />
 
           {visibleTracks.map(({ track, trackIndex }) => (
             <div
@@ -514,4 +572,6 @@ export const TimelineSurface: React.FC<TimelineSurfaceProps> = ({
   );
 };
 
-export default React.memo(TimelineSurface);
+export const TimelineSurface = React.memo(TimelineSurfaceComponent);
+
+export default TimelineSurface;

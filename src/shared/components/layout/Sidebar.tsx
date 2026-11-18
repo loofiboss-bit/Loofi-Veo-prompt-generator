@@ -247,7 +247,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           />
           {!isCollapsed && (
             <span className="flex-1 text-left text-sm font-medium">
-              {focusMode ? 'Exit Focus' : 'Focus Mode'}
+              {focusMode
+                ? t('sidebar.exitFocus', 'Exit Focus Mode')
+                : t('sidebar.focusMode', 'Focus Mode')}
             </span>
           )}
         </button>

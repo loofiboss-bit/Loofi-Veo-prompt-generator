@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { ToastMessage } from '@core/types';
+import { ROUTES } from '@core/config/routes';
 import { useVideoStore } from '@core/store/useVideoStore';
 import { videoGenerationService } from '@core/services/videoGenerationService';
 
@@ -10,16 +11,18 @@ export const useVideoGeneration = (
 
   const addToQueue = useCallback(
     async (
-      prompts: string[],
-      settings: Record<string, unknown>,
-      image?: { data: string; mimeType: string },
+      _prompts: string[],
+      _settings: Record<string, unknown>,
+      _image?: { data: string; mimeType: string },
     ) => {
-      return videoGenerationService.addToQueue(
-        prompts,
-        settings as unknown as Parameters<typeof videoGenerationService.addToQueue>[1],
-        image,
-        addToast,
+      addToast(
+        'Legacy quick generation cannot approve a paid call automatically. Open Create to review and approve the maximum charge.',
+        'info',
       );
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.hash = `#${ROUTES.CREATE}`;
+      }
+      return null;
     },
     [addToast],
   );
@@ -36,20 +39,15 @@ export const useVideoGeneration = (
       },
       image?: { data: string; mimeType: string },
     ) => {
-      const count = settings.count || 1;
-      const prompts = Array(count).fill(prompt);
-
-      // If we are regenerating a specific take group, pass it. Otherwise generate new.
-      // The addToQueue logic handles fallback generation if undefined.
       const id = await videoGenerationService.startGeneration(
         prompt,
         settings,
         image,
         (message, type) => addToast(message, type),
       );
-      return id || (await addToQueue(prompts, settings, image)) || '';
+      return id ?? '';
     },
-    [addToQueue, addToast],
+    [addToast],
   );
 
   const isAnyGenerating = useMemo(

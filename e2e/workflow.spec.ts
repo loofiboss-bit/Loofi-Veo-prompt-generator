@@ -22,7 +22,7 @@ test.describe('Copy-ready creator workflow', () => {
     expect(requests.filter((url) => /googleapis|suno|runway|kling/i.test(url))).toEqual([]);
   });
 
-  for (const target of ['flow-veo', 'kling', 'runway-gen3', 'sora', 'luma-ray']) {
+  for (const target of ['kling', 'runway-gen3', 'wan-video', 'luma-ray']) {
     test(`${target} remains manual with no internal generation action`, async ({ page }) => {
       await blockExternalRequests(page);
       await page.goto('/');
@@ -34,17 +34,23 @@ test.describe('Copy-ready creator workflow', () => {
       await expect(page.getByRole('button', { name: 'Generate in app', exact: true })).toHaveCount(
         0,
       );
+      await expect(
+        page.getByRole('button', { name: 'Prepare in Production', exact: true }),
+      ).toBeVisible();
       await page.getByText('Copy options', { exact: true }).click();
       await expect(
-        page.getByRole('button', { name: 'Copy handoff', exact: true }).first(),
+        page.getByRole('button', { name: /Copy full (?:package|handoff)/i }).first(),
       ).toBeVisible();
     });
   }
-  test('Veo API exposes a separate approval-gated production handoff', async ({ page }) => {
+
+  test('flow-veo exposes an approval-gated Vertex production handoff without network traffic', async ({
+    page,
+  }) => {
     const requests = await blockExternalRequests(page);
     await page.goto('/');
     await dismissModals(page);
-    await page.getByLabel(/^Target(?: |$)/).selectOption('veo-api');
+    await page.getByLabel(/^Target(?: |$)/).selectOption('flow-veo');
     await page.getByLabel(/^Core idea/).fill('A lone cyclist by the ocean');
     await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Generate in app', exact: true })).toBeVisible();

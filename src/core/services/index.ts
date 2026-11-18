@@ -43,6 +43,7 @@ export * from './performanceProfiler';
 export * from './productionReviewService';
 export * from './productionRunService';
 export * from './projectAnalysisService';
+export * from './projectSaveCoordinator';
 export * from './projectService';
 export * from './promptBuilder';
 export * from './promptStudioService';

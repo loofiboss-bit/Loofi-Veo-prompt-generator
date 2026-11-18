@@ -130,6 +130,13 @@ describe('ModalManager', () => {
     expect(busyElements.length).toBeGreaterThan(0);
   });
 
+  it('should render loading state when isShortcutsOpen is true', () => {
+    useAppStore.setState({ isShortcutsOpen: true });
+    const { container } = render(<ModalManager {...defaultProps} />);
+    const busyElements = container.querySelectorAll('[aria-busy="true"]');
+    expect(busyElements.length).toBeGreaterThan(0);
+  });
+
   it('should render more content when multiple modals are open', () => {
     useAppStore.setState({ isHistoryOpen: true, isTemplatesOpen: true });
     const { container } = render(<ModalManager {...defaultProps} />);

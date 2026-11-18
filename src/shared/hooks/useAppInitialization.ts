@@ -89,7 +89,7 @@ interface UseAppInitializationOptions {
   _hasHydrated: boolean;
   hasSeenWelcome: boolean;
   currentProjectId: string | null;
-  promptIdea: string;
+  promptIdea?: string;
   setNewProjectWizardOpen: (open: boolean) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }

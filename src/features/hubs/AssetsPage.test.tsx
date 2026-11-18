@@ -5,7 +5,8 @@ import { AssetsPage } from './AssetsPage';
 
 const { appState, runState } = vi.hoisted(() => ({
   appState: {
-    assets: [],
+    assets: [] as unknown[],
+    clips: [] as unknown[],
     productionBible: { profiles: [], updatedAt: 0 },
     setProductionBible: vi.fn(),
     removeAsset: vi.fn(),
@@ -49,5 +50,36 @@ describe('AssetsPage navigation', () => {
       'aria-selected',
       'true',
     );
+  });
+
+  it('filters assets by type and blocks deletion of assets placed on timeline', async () => {
+    appState.assets = [
+      { id: 'video-1', name: 'clip1.mp4', type: 'video', mimeType: 'video/mp4' },
+      { id: 'image-1', name: 'bg.png', type: 'image', mimeType: 'image/png' },
+    ];
+    appState.clips = [
+      { id: 'c-1', resourceId: 'video-1', trackId: 't-1', startTime: 0, duration: 5 },
+    ];
+
+    const { user } = render(<AssetsPage />);
+    expect(screen.getByRole('heading', { name: 'clip1.mp4' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'bg.png' })).toBeInTheDocument();
+
+    // Check usage badge for video-1
+    expect(screen.getByText(/Used in 1 clip\(s\)/i)).toBeInTheDocument();
+
+    // The remove button for video-1 should be disabled
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove' });
+    expect(removeButtons[0]).toBeDisabled();
+    expect(removeButtons[1]).not.toBeDisabled();
+
+    // Filter by Images
+    await user.click(screen.getByRole('tab', { name: /^Images/i }));
+    expect(screen.queryByRole('heading', { name: 'clip1.mp4' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'bg.png' })).toBeInTheDocument();
+
+    // Reset appState
+    appState.assets = [];
+    appState.clips = [];
   });
 });

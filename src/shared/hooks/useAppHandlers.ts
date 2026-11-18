@@ -7,6 +7,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import {
   HistoryEntry,
@@ -28,10 +29,15 @@ import * as geminiService from '@core/services/geminiService';
 import { performanceService } from '@core/services/performanceService';
 import { useAppStore } from '@core/store/useAppStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
-import { useProjectStore } from '@core/store/useProjectStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
+import { useProjectStore } from '@core/store/useProjectStore';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { ProjectTemplate } from '@core/config/projectTemplates';
+
+const EMPTY_ERRORS: Record<string, string> = {};
+const noopSetErrors: React.Dispatch<React.SetStateAction<Record<string, string>>> = () => {};
+const noopBool = () => {};
+const noopStr = () => {};
 
 // Helper to safely truncate text to defined limits
 const truncateText = (text: string, limit?: number) => {
@@ -45,12 +51,12 @@ const truncateText = (text: string, limit?: number) => {
 };
 
 interface UseAppHandlersOptions {
-  promptState: PromptState;
+  promptState?: PromptState;
   setPromptState: (update: Partial<PromptState>, mode?: 'replace') => void;
   generatedPrompt: VeoPromptResponse | null;
   setGeneratedPrompt: (prompt: VeoPromptResponse | null) => void;
-  errors: Record<string, string>;
-  setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  errors?: Record<string, string>;
+  setErrors?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 
   // Generation state
@@ -68,13 +74,13 @@ interface UseAppHandlersOptions {
   setUploadedImageUrl: (url: string | null) => void;
 
   // Edit state
-  isEditing: boolean;
-  setIsEditing: (editing: boolean) => void;
-  resetEditHistory: (initial: string) => void;
+  isEditing?: boolean;
+  setIsEditing?: (editing: boolean) => void;
+  resetEditHistory?: (initial: string) => void;
 
   // Enhance state
-  isEnhancingIdea: boolean;
-  setIsEnhancingIdea: (enhancing: boolean) => void;
+  isEnhancingIdea?: boolean;
+  setIsEnhancingIdea?: (enhancing: boolean) => void;
 
   // External refs
   ideaInputRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -90,12 +96,12 @@ interface UseAppHandlersOptions {
 
 export function useAppHandlers(opts: UseAppHandlersOptions) {
   const {
-    promptState,
+    promptState: explicitPromptState,
     setPromptState,
     generatedPrompt,
     setGeneratedPrompt,
-    errors,
-    setErrors,
+    errors = EMPTY_ERRORS,
+    setErrors = noopSetErrors,
     addToast,
     promptVariations,
     isGeneratingVariations,
@@ -108,19 +114,47 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     uploadedImageUrl,
     setUploadedImageUrl,
     isEditing: _isEditing,
-    setIsEditing,
+    setIsEditing = noopBool,
     isEnhancingIdea: _isEnhancingIdea,
-    setIsEnhancingIdea,
-    resetEditHistory,
+    setIsEnhancingIdea = noopBool,
+    resetEditHistory = noopStr,
     ideaInputRef,
     openStudioSafely,
     currentProjectName,
     currentProjectId,
   } = opts;
 
-  const store = useAppStore();
-  const projectStore = useProjectStore();
-  const historyStore = useHistoryStore();
+  const getPromptState = useCallback(
+    () => explicitPromptState ?? useAppStore.getState().promptState,
+    [explicitPromptState],
+  );
+  const store = useAppStore(
+    useShallow((s) => ({
+      resetAll: s.resetAll,
+      setNewProjectWizardOpen: s.setNewProjectWizardOpen,
+      closeModal: s.closeModal,
+      addPreset: s.addPreset,
+      deletePreset: s.deletePreset,
+      updatePreset: s.updatePreset,
+      addVisualDNA: s.addVisualDNA,
+      deleteVisualDNA: s.deleteVisualDNA,
+      applyTemplate: s.applyTemplate,
+    })),
+  );
+  const historyStore = useHistoryStore(
+    useShallow((s) => ({
+      addEntry: s.addEntry,
+      clearHistory: s.clearHistory,
+      deleteEntry: s.deleteEntry,
+    })),
+  );
+  const projectStore = useProjectStore(
+    useShallow((s) => ({
+      clearCurrentProject: s.clearCurrentProject,
+      setCurrentProject: s.setCurrentProject,
+      refreshProjects: s.refreshProjects,
+    })),
+  );
   const { setLocations } = useLocationStore();
   const { t, i18n } = useTranslation(['common', 'toasts', 'errors']);
   const errorsBundle = useMemo(
@@ -144,7 +178,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
 
       setPromptState(newStateUpdate);
 
-      const updatedState = { ...promptState, ...newStateUpdate };
+      const updatedState = { ...getPromptState(), ...newStateUpdate };
       const newErrors = { ...errors };
 
       const currentFieldError = validateField(key, value, updatedState, errorsBundle);
@@ -156,7 +190,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
 
       setErrors(newErrors);
     },
-    [promptState, setPromptState, errorsBundle, errors, setErrors],
+    [getPromptState, setPromptState, errorsBundle, errors, setErrors],
   );
 
   const handleCheckboxChange = useCallback(
@@ -173,12 +207,12 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       const mixKey = name.replace('audioMix.', '') as keyof PromptState['audioMix'];
       setPromptState({
         audioMix: {
-          ...promptState.audioMix,
+          ...getPromptState().audioMix,
           [mixKey]: parseInt(value, 10),
         },
       });
     },
-    [promptState.audioMix, setPromptState],
+    [getPromptState, setPromptState],
   );
 
   // --- Image/Audio ---
@@ -272,22 +306,22 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       addToast(t('toasts:errorNoPromptToSave'), 'error');
       return;
     }
-    const newEntry: HistoryEntry = {
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-      params: promptState,
+    void historyStore.addEntry({
+      projectId: currentProjectId ?? 'default',
+      params: getPromptState(),
       prompt: generatedPrompt.prompt,
-      groundingChunks: generatedPrompt.groundingChunks,
-    };
-    store.addToHistory(newEntry);
+      metadata: {},
+      tags: [],
+      favorite: false,
+    });
     addToast(t('toasts:toastHistorySaved'), 'success');
-  }, [promptState, generatedPrompt, addToast, t, store]);
+  }, [getPromptState, generatedPrompt, currentProjectId, addToast, t, historyStore]);
 
   // --- Sharing & export ---
 
   const handleShare = useCallback(() => {
     const url = new URL(window.location.href);
-    const stateToShare = { ...promptState, generatedPrompt };
+    const stateToShare = { ...getPromptState(), generatedPrompt };
     const jsonStr = JSON.stringify(stateToShare);
     const encodedState = btoa(
       Array.from(new TextEncoder().encode(jsonStr), (byte) => String.fromCharCode(byte)).join(''),
@@ -299,7 +333,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
         .then(() => addToast(t('toasts:toastShareLink'), 'success'))
         .catch(() => addToast('Failed to copy share link to clipboard', 'error'));
     }
-  }, [promptState, generatedPrompt, addToast, t]);
+  }, [getPromptState, generatedPrompt, addToast, t]);
 
   const handleDownloadPrompt = useCallback(
     (promptText: string) => {
@@ -336,16 +370,17 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   // --- Enhance idea ---
 
   const handleEnhanceIdea = useCallback(async () => {
-    if (!promptState.idea.trim()) return;
+    const currentPrompt = getPromptState();
+    if (!currentPrompt.idea.trim()) return;
     setIsEnhancingIdea(true);
     try {
       const context =
-        promptState.artStyle === 'Custom' ? promptState.customArtStyle : promptState.artStyle;
-      const enhanced = await geminiService.enhancePrompt(promptState.idea, context);
+        currentPrompt.artStyle === 'Custom' ? currentPrompt.customArtStyle : currentPrompt.artStyle;
+      const enhanced = await geminiService.enhancePrompt(currentPrompt.idea, context);
 
       setPromptState({ idea: enhanced });
 
-      const newState = { ...promptState, idea: enhanced };
+      const newState = { ...currentPrompt, idea: enhanced };
       const error = validateField('idea', enhanced, newState, errorsBundle);
       setErrors((prev) => {
         const next = { ...prev };
@@ -360,14 +395,14 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     } finally {
       setIsEnhancingIdea(false);
     }
-  }, [promptState, setPromptState, setIsEnhancingIdea, addToast, errorsBundle, setErrors]);
+  }, [getPromptState, setPromptState, setIsEnhancingIdea, addToast, errorsBundle, setErrors]);
 
   // --- Example usage ---
 
   const handleUseExample = useCallback(
     (example: ExamplePrompt) => {
       setPromptState(
-        { ...INITIAL_STATE, language: promptState.language, ...example.params },
+        { ...INITIAL_STATE, language: getPromptState().language, ...example.params },
         'replace',
       );
       setGeneratedPrompt({ prompt: example.prompt, groundingChunks: example.groundingChunks });
@@ -377,7 +412,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       ideaInputRef.current?.focus();
     },
     [
-      promptState.language,
+      getPromptState,
       setPromptState,
       addToast,
       t,
@@ -400,11 +435,15 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
         setStoryboardImages([]);
         addToast(t('toasts:toastHistoryLoaded'), 'info');
       },
-      handleClearHistory: () => store.clearHistory(),
-      handleDeleteHistoryEntry: (id: string) => store.deleteHistoryEntry(id),
+      handleClearHistory: () => {
+        void historyStore.clearHistory();
+      },
+      handleDeleteHistoryEntry: (id: string) => {
+        void historyStore.deleteEntry(id);
+      },
       handleUsePresetOrTemplate: (preset: PromptTemplate | CustomPreset) => {
         setPromptState(
-          { ...INITIAL_STATE, language: promptState.language, ...preset.params },
+          { ...INITIAL_STATE, language: getPromptState().language, ...preset.params },
           'replace',
         );
         setGeneratedPrompt(null);
@@ -424,7 +463,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
         const newPreset: CustomPreset = {
           id: Date.now().toString(),
           name: name.trim(),
-          params: promptState,
+          params: getPromptState(),
         };
         store.addPreset(newPreset);
         addToast(t('toasts:toastPresetSaved'), 'success');
@@ -504,7 +543,7 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       handleUpdateSpatialMotion: (gridId: string, motion: string) => {
         setPromptState({
           spatialMotions: {
-            ...promptState.spatialMotions,
+            ...getPromptState().spatialMotions,
             [gridId]: motion,
           },
         });
@@ -535,15 +574,14 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       generatedPrompt,
     }),
     // Large dependency list is acceptable — this is a memoized bag.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Large memoized handler bag; listed deps cover all state that should trigger recalculation
     [
-      promptState,
+      getPromptState,
       generatedPrompt,
       addToast,
       t,
       store,
-      projectStore,
       historyStore,
+      projectStore,
       setLocations,
       promptVariations,
       isGeneratingVariations,

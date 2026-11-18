@@ -241,13 +241,17 @@ class OptimizationOrchestratorService {
       };
     }
 
-    const currentValue = promptState[patch.field];
+    const promptStateRecord = promptState as unknown as Record<string, unknown>;
+    const currentValue = promptStateRecord[patch.field];
     const nextValue =
       patch.append && typeof currentValue === 'string' && typeof patch.value === 'string'
         ? appendValue(currentValue, patch.value)
         : patch.value;
 
-    if (PROMPT_TEXT_FIELDS.includes(patch.field) || patch.field === 'customArtStyle') {
+    if (
+      PROMPT_TEXT_FIELDS.includes(patch.field as keyof PromptState) ||
+      patch.field === 'customArtStyle'
+    ) {
       return {
         promptStatePatch: {
           [patch.field]: nextValue,

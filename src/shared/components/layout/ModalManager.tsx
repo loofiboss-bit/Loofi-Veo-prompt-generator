@@ -1,15 +1,16 @@
 import React from 'react';
 import { useAppStore } from '@core/store/useAppStore';
+import { useHistoryStore } from '@core/store/useHistoryStore';
 import { performanceProfiler } from '@core/services/performanceProfiler';
 import { useLocationStore } from '@core/store/useLocationStore';
 import { pluginService } from '@core/services/pluginService';
-import ShortcutsModal from '@features/settings/ShortcutsModal';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import AppDialog from '@shared/components/ui/AppDialog';
-import TutorialGuide from '@features/onboarding/TutorialGuide';
 import { StudioSkeleton, ModalSkeleton, TimelineSkeleton } from '@shared/components/ui/Skeleton';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
 
+const ShortcutsModal = React.lazy(() => import('@features/settings/ShortcutsModal'));
+const TutorialGuide = React.lazy(() => import('@features/onboarding/TutorialGuide'));
 const HistoryPanel = React.lazy(() => import('@features/history/HistoryPanel'));
 const TemplatesPanel = React.lazy(() => import('@features/prompt/TemplatesPanel'));
 const VariationsPanel = React.lazy(() => import('@shared/components/VariationsPanel'));
@@ -159,6 +160,7 @@ const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
 
 const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
   const store = useAppStore();
+  const historyEntries = useHistoryStore((state) => state.entries);
   const _locationStore = useLocationStore();
   const [pluginStudios, setPluginStudios] = React.useState(pluginService.getStudios());
 
@@ -179,12 +181,16 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
 
   return (
     <>
-      <ErrorBoundary panelId="modal-shortcuts-panel">
-        <ShortcutsModal
-          isOpen={store.isShortcutsOpen}
-          onClose={() => store.closeModal('isShortcutsOpen')}
-        />
-      </ErrorBoundary>
+      {store.isShortcutsOpen && (
+        <React.Suspense fallback={<ModalSkeleton />}>
+          <ErrorBoundary panelId="modal-shortcuts-panel">
+            <ShortcutsModal
+              isOpen={store.isShortcutsOpen}
+              onClose={() => store.closeModal('isShortcutsOpen')}
+            />
+          </ErrorBoundary>
+        </React.Suspense>
+      )}
 
       {store.isHistoryOpen && (
         <React.Suspense fallback={<ModalSkeleton />}>
@@ -473,16 +479,18 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
         </React.Suspense>
       )}
 
-      <ErrorBoundary panelId="modal-tutorial-guide-panel">
-        <TutorialGuide
-          isActive={false} // Tutorial logic needs to be connected to store later if moved completely
-          steps={[]}
-          currentStepIndex={0}
-          onNext={() => {}}
-          onPrev={() => {}}
-          onFinish={() => {}}
-        />
-      </ErrorBoundary>
+      <React.Suspense fallback={null}>
+        <ErrorBoundary panelId="modal-tutorial-guide-panel">
+          <TutorialGuide
+            isActive={false} // Tutorial logic needs to be connected to store later if moved completely
+            steps={[]}
+            currentStepIndex={0}
+            onNext={() => {}}
+            onPrev={() => {}}
+            onFinish={() => {}}
+          />
+        </ErrorBoundary>
+      </React.Suspense>
 
       {store.isSearchOpen && (
         <React.Suspense fallback={<ModalSkeleton />}>
@@ -490,7 +498,7 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
             <GlobalSearchModal
               isOpen={store.isSearchOpen}
               onClose={() => store.closeModal('isSearchOpen')}
-              history={store.history}
+              history={historyEntries}
               presets={store.customPresets}
               templates={getPromptTemplates(store.promptState.language)}
               onSelectHistory={handlers.handleUseHistoryEntry}

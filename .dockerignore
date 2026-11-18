@@ -149,7 +149,6 @@ Gemfile.lock
 .commitlint.config.js
 eslint.config.js
 .eslintignore
-postcss.config.js
 tsconfig.tsbuildinfo
 
 # ============================================================================

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOtioTimeline, exportOtioJson } from './otioExportService';
+import { buildOtioTimeline, exportOtioJson, exportOtioWithSrt } from './otioExportService';
 import type { Shot, TimelineState } from '@core/types';
 
 describe('otioExportService', () => {
@@ -150,5 +150,55 @@ describe('otioExportService', () => {
     const clip = result.tracks.children[0].children[0];
     if (clip.OTIO_SCHEMA === 'Clip.1')
       expect(clip.media_reference?.target_url).toBe('assets/music.wav');
+  });
+
+  it('exports caption tracks as OTIO timed markers and companion SRT sidecar', () => {
+    const timeline = {
+      tracks: [
+        { id: 'v', type: 'video', label: 'Video' },
+        { id: 't', type: 'text', label: 'Captions' },
+      ],
+      clips: [
+        {
+          id: 'v1',
+          resourceId: 'video',
+          trackId: 'v',
+          type: 'video',
+          label: 'Opening',
+          startTime: 0,
+          duration: 5,
+          offset: 0,
+        },
+        {
+          id: 'c1',
+          resourceId: 'cap-1',
+          trackId: 't',
+          type: 'text',
+          label: 'Hello world',
+          startTime: 1,
+          duration: 2,
+          offset: 0,
+          caption: { id: 'cap-1', text: 'Hello world', startTime: 1, endTime: 3, style: 'pop' },
+        },
+      ],
+    } as unknown as TimelineState;
+
+    const bundled = exportOtioWithSrt({
+      shots: [],
+      timeline,
+      fps: 24,
+      mediaPaths: { video: 'assets/video.mp4' },
+      requireMedia: true,
+    });
+    expect(bundled.markerCount).toBe(1);
+    expect(bundled.srtContent).toContain('00:00:01,000 --> 00:00:03,000');
+    expect(bundled.srtContent).toContain('Hello world');
+
+    const parsed = JSON.parse(bundled.otioJson);
+    const videoTrack = parsed.tracks.children[0];
+    expect(videoTrack.markers).toHaveLength(1);
+    expect(videoTrack.markers[0].name).toBe('Hello world');
+    expect(videoTrack.markers[0].marked_range.start_time).toEqual({ value: 24, rate: 24 });
+    expect(videoTrack.children[0].markers).toHaveLength(1);
   });
 });

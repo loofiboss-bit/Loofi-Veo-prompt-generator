@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 
@@ -8,6 +8,7 @@ import { useAppStore } from '@core/store/useAppStore';
 import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
 import { projectDocumentService } from '@core/services/projectDocumentService';
+import { projectSaveCoordinator } from '@core/services/projectSaveCoordinator';
 import { productionRunService } from '@core/services/productionRunService';
 import { hydrateProjectMedia } from '@core/services/projectTransferService';
 import { CreateWorkflow } from './CreateWorkflow';
@@ -15,14 +16,37 @@ import {
   PRODUCTION_STEPS,
   useProductionWorkflow,
 } from '@features/production/hooks/useProductionWorkflow';
-import { AssetsStep } from '@features/production/steps/AssetsStep';
-import { BriefStep } from '@features/production/steps/BriefStep';
-import { ExportStep } from '@features/production/steps/ExportStep';
-import { GenerateStep } from '@features/production/steps/GenerateStep';
-import { ReviewStep } from '@features/production/steps/ReviewStep';
-import { ScenesStep } from '@features/production/steps/ScenesStep';
-import { MusicGenerator } from './components/MusicGenerator';
+import { StudioSkeleton } from '@shared/components/ui/Skeleton';
 import { ContinuitySummary } from './components/ContinuitySummary';
+
+const AssetsStep = React.lazy(() =>
+  import('@features/production/steps/AssetsStep').then((m) => ({ default: m.AssetsStep })),
+);
+const BriefStep = React.lazy(() =>
+  import('@features/production/steps/BriefStep').then((m) => ({ default: m.BriefStep })),
+);
+const ExportStep = React.lazy(() =>
+  import('@features/production/steps/ExportStep').then((m) => ({ default: m.ExportStep })),
+);
+const GenerateStep = React.lazy(() =>
+  import('@features/production/steps/GenerateStep').then((m) => ({ default: m.GenerateStep })),
+);
+const ReviewStep = React.lazy(() =>
+  import('@features/production/steps/ReviewStep').then((m) => ({ default: m.ReviewStep })),
+);
+const ScenesStep = React.lazy(() =>
+  import('@features/production/steps/ScenesStep').then((m) => ({ default: m.ScenesStep })),
+);
+const MusicGenerator = React.lazy(() =>
+  import('./components/MusicGenerator').then((m) => ({ default: m.MusicGenerator })),
+);
+
+function StepFocus({ step }: { step: string }) {
+  useEffect(() => {
+    document.getElementById(`${step}-step-title`)?.focus();
+  }, [step]);
+  return null;
+}
 
 export function CreatePage() {
   const { t } = useTranslation('create');
@@ -59,10 +83,7 @@ export function CreatePage() {
             throw new Error('Save the current Studio draft before changing projects.');
           if (!stillOpening()) return;
           const current = projects.projects.find((item) => item.id === projects.currentProjectId);
-          if (current)
-            await projectDocumentService.save(
-              useEditorSessionStore.getState().captureCurrentProjectDocument(current),
-            );
+          if (current) await projectSaveCoordinator.flushBeforeProjectChange(current.id);
           const document = await projectDocumentService.load(run.projectId);
           if (!document || cancelled) throw new Error('Linked project is unavailable.');
           if (!stillOpening()) return;
@@ -101,7 +122,9 @@ export function CreatePage() {
   useEffect(() => {
     if (actionFocus) document.getElementById(`production-shot-${actionFocus.shotId}`)?.focus();
   }, [actionFocus, workflow.currentStep]);
-  const content = <CreateWorkflow activeStep={workflow.currentStep} />;
+  const content = (
+    <CreateWorkflow activeStep={workflow.currentStep} onNavigateStep={workflow.setCurrentStep} />
+  );
   const activeContent = {
     brief: <BriefStep>{content}</BriefStep>,
     scenes: <ScenesStep>{content}</ScenesStep>,
@@ -192,7 +215,10 @@ export function CreatePage() {
             </button>
           </div>
         )}
-        {activeContent}
+        <Suspense fallback={<StudioSkeleton />}>
+          <StepFocus key={workflow.currentStep} step={workflow.currentStep} />
+          {activeContent}
+        </Suspense>
       </div>
       <footer className="mt-6 border-t border-slate-800 px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-wrap justify-between items-center gap-2">

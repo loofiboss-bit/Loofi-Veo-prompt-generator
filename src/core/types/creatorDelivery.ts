@@ -1,4 +1,4 @@
-import type { Caption, TimelineClip, TimelineTrack } from './index';
+import type { Caption, TimelineClip, TimelineTrack } from './timeline';
 
 export type CreatorAspectRatio = '9:16' | '16:9' | '1:1';
 export interface CreatorStyleProfileV1 {
@@ -28,6 +28,11 @@ export interface CreatorCropV1 {
   x: number;
   y: number;
 }
+export interface CreatorAudioProcessingV1 {
+  normalizeLoudness?: boolean;
+  speechDucking?: boolean;
+  duckingGainDb?: number;
+}
 export interface CreatorDeliveryV1 {
   schemaVersion: 1;
   editorMode?: 'delivery' | 'advanced';
@@ -39,7 +44,14 @@ export interface CreatorDeliveryV1 {
   captionStyle: 'classic' | 'pop' | 'karaoke';
   safeMargin: number;
   crops: Record<string, CreatorCropV1>;
+  formatCrops?: Partial<Record<CreatorAspectRatio, Record<string, CreatorCropV1>>>;
+  batchFormats?: CreatorAspectRatio[];
   audioFades?: Record<string, { inSeconds: number; outSeconds: number }>;
+  audioProcessing?: CreatorAudioProcessingV1;
+  coverTimestamp?: number;
+  coverAssetId?: string;
+  bakeEffects?: boolean;
+  maxDurationSeconds?: number;
   title: string;
   description: string;
   updatedAt: number;
@@ -56,9 +68,23 @@ export interface TimelineRenderClipV1 {
   fadeInSeconds?: number;
   fadeOutSeconds?: number;
   crossfadeSeconds?: number;
+  opacity?: number;
+  colorGrade?: {
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+  };
+  transform?: {
+    scale?: number;
+    rotation?: number;
+    x?: number;
+    y?: number;
+  };
   crop: CreatorCropV1;
 }
 export interface TimelineRenderPlanV1 {
+  /** Idempotent local batch submission identity, included in the frozen content hash. */
+  clientRequestId?: string;
   schemaVersion: 1;
   mediaHashes?: Record<string, string>;
   purpose?: 'preview' | 'delivery';
@@ -66,6 +92,7 @@ export interface TimelineRenderPlanV1 {
   projectName: string;
   contentHash: string;
   durationSeconds: number;
+  maxDurationSeconds?: number;
   fps: 30;
   aspectRatio: CreatorAspectRatio;
   resolution: '720p' | '1080p';
@@ -75,6 +102,9 @@ export interface TimelineRenderPlanV1 {
   captionStyle: 'classic' | 'pop' | 'karaoke';
   safeMargin: number;
   style?: CreatorStyleProfileV1;
+  audioProcessing?: CreatorAudioProcessingV1;
+  coverTimestamp?: number;
+  coverAssetId?: string;
   title: string;
   description: string;
 }
@@ -93,6 +123,7 @@ export interface TimelineRenderJobV1 {
   purpose?: 'preview' | 'delivery';
   projectId: string;
   contentHash: string;
+  aspectRatio?: CreatorAspectRatio;
   status: 'queued' | 'rendering' | 'verifying' | 'complete' | 'failed' | 'cancelled';
   progress: number;
   error?: string;

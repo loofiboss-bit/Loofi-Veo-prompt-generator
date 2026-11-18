@@ -1,5 +1,42 @@
 # Release Notes
 
+## v21.0.0 — Polish & Trust
+
+- Follow four delivery steps with explicit checks, review, export and confirmed file saves.
+- Coordinate project saves and recover conflicts before copying, exporting or handing off work.
+- Filter media and protect assets still used by timeline clips or production profiles.
+- Continue projects from Start with recovery actions for missing media and save errors.
+- Review optional caption suggestions and use improved keyboard navigation across six locales.
+- Refresh Gemini model routing and compatible dependency security fixes.
+
+[Download v21.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0).
+See [upgrade notes](../releases/RELEASE-NOTES-v21.0.0.md) and the [release process](../RELEASE.md).
+
+## v20.0.0 — Project-Safe Editing & Reviewed Delivery
+
+- Save media, catalog and project data in durable order, with edit-preserving timeline placement.
+- Review selected music/video fields, preserve occurrence-specific lyric locks and protect dialogue.
+- Cancel AI requests and use production or imported-result notes as context for prompt proposals.
+- Install a checksum-verified desktop-local Whisper model explicitly, with no cloud fallback.
+- Mix source audio during timeline playback, recover project render batches and review delivery before saving.
+- Keep persistent cost history and budgets, with estimates, approval ceilings and verified charges shown separately.
+- Choose three Start destinations, recent projects and a next action across six updated locales.
+
+[Download v20.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0).
+See [release notes and upgrade boundaries](../releases/RELEASE-NOTES-v20.0.0.md) and the
+[release process](../RELEASE.md) for automated and physical qualification boundaries.
+
+## v16.0.1 — Verified Performance and Reliable Export
+
+- Reuse 3D resources through playback while preserving preview/export camera orientation.
+- Verify copied originals and logos, preserve existing destinations on ZIP errors, and report recovery failures accurately.
+- Load optional integrations on demand and retain granular local store subscriptions.
+- Measure actual production APIs and paired packaged startup instead of synthetic speedup claims.
+- Remove the exact historical credential through an owner-authorized history rewrite; an authenticated Google lookup confirms the old key is already purged.
+
+[Download v16.0.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.1).
+See [verification](../V16_STABILIZATION.md) and [history cleanup boundaries](../HISTORY_SANITIZATION.md).
+
 ## v16.0.0 — Local Creator Editing
 
 Create and deliver short videos completely offline from your own clips, audio, and images. Features a local timeline editor, atomic IndexedDB document persistence, conflict recovery, linked captions, debounced autosave, and verified 180-second H.264/AAC MP4 exports.

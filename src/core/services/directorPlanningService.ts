@@ -15,6 +15,7 @@ import {
   veoGenerationService,
 } from '@core/services/veoGenerationService';
 import { continuityService } from '@core/services/continuityService';
+import { continuitySeedRegistry } from '@core/services/continuitySeedRegistry';
 import { studioVideoRequest } from '@core/config/studioCapabilities';
 
 const supportedDuration = (duration: number): 4 | 6 | 8 => {
@@ -51,8 +52,9 @@ class DirectorPlanningService {
       input.productionBible ?? continuityService.normalizeBible({}, createdAt).productionBible;
     const shots: ProductionShot[] = scenePack.shotCards.map((card, index) => {
       const sourceShot = input.shots?.[index];
+      const shotIdValue = sourceShot?.id ?? index + 1;
       const durationSeconds = resolution === '720p' ? supportedDuration(card.durationSeconds) : 8;
-      const generationRequest = studioRequest ?? {
+      const baseRequest = studioRequest ?? {
         mode: 'text-to-video' as const,
         modelId,
         prompt: card.prompt,
@@ -63,15 +65,26 @@ class DirectorPlanningService {
         durationSeconds,
         referenceAssetIds: [],
       };
+      const deterministicSeed =
+        baseRequest.seed ??
+        continuitySeedRegistry.generateSeed({
+          projectId: input.projectId,
+          shotId: shotIdValue,
+          variantIndex: input.sourceVariantIndex ?? 0,
+        });
+      const generationRequest = { ...baseRequest, seed: deterministicSeed };
 
       const shot: ProductionShot = {
-        id: sourceShot?.id ?? index + 1,
+        id: shotIdValue,
         sourceShotId: sourceShot?.id,
         title: card.title,
         prompt: studioRequest?.prompt ?? card.prompt,
         negativePrompt: studioRequest?.negativePrompt ?? card.negativePrompt,
         camera: input.studioInput?.camera ?? card.camera,
-        durationSeconds: studioRequest?.durationSeconds ?? card.durationSeconds,
+        durationSeconds:
+          input.studioInput?.durationSeconds ??
+          studioRequest?.durationSeconds ??
+          card.durationSeconds,
         status: 'awaiting-approval',
         generationRequest,
         takes: [],
@@ -84,7 +97,12 @@ class DirectorPlanningService {
           locks: {},
         },
       };
-      const compiled = continuityService.compileShot({ shot, bible, assets: input.assets ?? [] });
+      const compiled = continuityService.compileShot({
+        shot,
+        bible,
+        assets: input.assets ?? [],
+        projectId: input.projectId,
+      });
       return {
         ...shot,
         generationRequest: compiled.request,
@@ -93,7 +111,10 @@ class DirectorPlanningService {
       };
     });
     const estimatedUsd = shots.reduce(
-      (sum, shot) => sum + veoGenerationService.estimateCost(shot.generationRequest),
+      (sum, shot) =>
+        shot.generationRequest.executionMode === 'external-manual-slot'
+          ? sum
+          : sum + veoGenerationService.estimateCost(shot.generationRequest),
       0,
     );
 

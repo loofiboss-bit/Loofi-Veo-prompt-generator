@@ -2,6 +2,7 @@
 
 import { readdir } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +23,11 @@ async function discover(directory) {
 const files = await discover(path.join(root, 'electron'));
 if (files.length === 0) throw new Error('No native desktop tests were discovered.');
 
-const child = spawn(process.execPath, ['--test', ...files], { cwd: root, stdio: 'inherit' });
+const concurrency = Math.max(1, Math.min(4, os.availableParallelism?.() ?? os.cpus().length));
+const child = spawn(process.execPath, ['--test', `--test-concurrency=${concurrency}`, ...files], {
+  cwd: root,
+  stdio: 'inherit',
+});
 child.on('error', (error) => {
   console.error(error);
   process.exitCode = 1;

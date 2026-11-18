@@ -4,37 +4,66 @@ import { useTranslation } from 'react-i18next';
 import { CREATOR_RECIPES, CREATOR_RECIPE_LABELS } from '@core/config/creatorRecipes';
 import { ROUTES } from '@core/config/routes';
 import { useCreatorStore } from '@core/store/useCreatorStore';
-import type { CreatorStyleProfileV1 } from '@core/types/creatorDelivery';
 import { useAppStore } from '@core/store/useAppStore';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
+import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
+import { useProductionRunStore } from '@core/store/useProductionRunStore';
+import { useTimelineRecoveryStore } from '@core/store/useTimelineRecoveryStore';
+import { usePromptStudioDraftStore } from '@core/store/usePromptStudioDraftStore';
 import { WelcomeModal } from '@features/onboarding/WelcomeModal';
 import './creator.css';
-const newStyle = (name = 'My style'): CreatorStyleProfileV1 => ({
-  schemaVersion: 1,
-  id: crypto.randomUUID(),
-  name,
-  primaryColor: '#173d56',
-  textColor: '#ffffff',
-  fontFamily: 'Noto Sans',
-  creativeDescription: '',
-  updatedAt: Date.now(),
-});
 export function StartPage() {
   const { t } = useTranslation('creator');
   const navigate = useNavigate();
   const localFiles = useRef<HTMLInputElement>(null);
+  const recipesDetails = useRef<HTMLDetailsElement>(null);
   const [searchParams] = useSearchParams();
   const state = useCreatorStore();
-  const assets = useAppStore((store) => store.assets);
   const [recipeId, setRecipeId] = useState(
     searchParams.get('mode') === 'music' ? 'ambient-visual' : CREATOR_RECIPES[0].id,
   );
   const [idea, setIdea] = useState(t('start.defaultIdea', 'A small creative moment worth sharing'));
   const [name, setName] = useState(t('start.defaultProjectTitle', 'My short video'));
-  const [style, setStyle] = useState(() => newStyle(t('style.defaultName', 'My style')));
-  const [previewStyle, setPreviewStyle] = useState(false);
   const [welcome, setWelcome] = useState(false);
   const [startView, setStartView] = useState(
     localStorage.getItem('creator-default-start-view') === '/studio' ? '/studio' : '/start',
+  );
+  const currentProjectId = useProjectStore((store) => store.currentProjectId);
+  const projects = useProjectStore((store) => store.projects);
+  const currentProject = projects.find((project) => project.id === currentProjectId);
+  const saveStatus = useProjectSaveStore((store) =>
+    currentProjectId ? store.projects[currentProjectId]?.status : undefined,
+  );
+  const draftError = usePromptStudioDraftStore(
+    (store) => store.draft?.projectId === currentProjectId && store.status === 'error',
+  );
+  const editorMode = useEditorSessionStore((store) =>
+    store.projectSnapshot?.id === currentProjectId
+      ? store.projectSnapshot.creatorDelivery?.editorMode
+      : undefined,
+  );
+  const clips = useAppStore((store) => store.clips);
+  const assets = useAppStore((store) => store.assets);
+  const shots = useAppStore((store) => store.sbShots);
+  const mutationVersion = useAppStore((store) => store.mutationVersion);
+  const activeRun = useProductionRunStore((store) => store.activeRun);
+  const recovery = useTimelineRecoveryStore((store) => store.recovery);
+  const knownMissingMedia =
+    recovery?.projectId === currentProjectId &&
+    recovery.mutationVersion === mutationVersion &&
+    recovery.clips === clips &&
+    recovery.assets === assets &&
+    recovery.shots === shots &&
+    recovery.run === (activeRun?.projectId === currentProjectId ? activeRun : null) &&
+    recovery.missingMedia.length > 0;
+  const hasTimelineMedia = useAppStore((store) =>
+    store.assets.some(
+      (asset) =>
+        asset.type === 'video' ||
+        asset.type === 'audio' ||
+        (asset.type === 'image' && editorMode === 'delivery'),
+    ),
   );
   const recipe = CREATOR_RECIPES.find((item) => item.id === recipeId)!;
   useEffect(() => {
@@ -43,6 +72,23 @@ export function StartPage() {
   const create = async (offline = false, selected = recipe) => {
     if (await state.create(selected, idea, name, offline))
       navigate(offline ? ROUTES.TIMELINE : ROUTES.STUDIO);
+  };
+  const openProject = async (projectId: string) => {
+    if (!(await state.open(projectId))) return;
+    const app = useAppStore.getState();
+    navigate(
+      app.clips.length > 0 ||
+        app.assets.some(
+          (asset) =>
+            asset.type === 'video' ||
+            asset.type === 'audio' ||
+            (asset.type === 'image' &&
+              useEditorSessionStore.getState().projectSnapshot?.creatorDelivery?.editorMode ===
+                'delivery'),
+        )
+        ? ROUTES.TIMELINE
+        : ROUTES.STUDIO,
+    );
   };
   return (
     <section className="creator-start" aria-labelledby="creator-start-title">
@@ -55,7 +101,65 @@ export function StartPage() {
             'Turn an idea into a short video. Work locally, bring your own media, and use AI only when you choose.',
           )}
         </p>
-        <div className="creator-actions">
+        {currentProject && (
+          <section aria-labelledby="current-project-title" className="creator-current-project">
+            <h2 id="current-project-title">{currentProject.name}</h2>
+            <p>
+              {saveStatus === 'conflict' || saveStatus === 'error'
+                ? t('recent.resolveSave', 'Resolve the project save issue before continuing.')
+                : draftError
+                  ? t(
+                      'recent.resolveDraft',
+                      'Resolve the Studio draft save issue before continuing.',
+                    )
+                  : knownMissingMedia
+                    ? t(
+                        'recent.missingMedia',
+                        'Some timeline media is missing. Relink it before export.',
+                      )
+                    : clips.length > 0
+                      ? t('recent.ready', 'Media is available — arrange and export')
+                      : hasTimelineMedia
+                        ? t('recent.addMedia', 'Next: arrange your media on the timeline')
+                        : t('recent.addIdea', 'Next: add your idea')}
+            </p>
+            {saveStatus === 'conflict' || saveStatus === 'error' ? (
+              <button
+                className="studio-primary"
+                onClick={() => {
+                  const recovery = document.getElementById('project-save-recovery');
+                  recovery?.scrollIntoView?.({ block: 'center' });
+                  recovery?.focus();
+                }}
+              >
+                {t('recent.reviewSave', 'Review save issue')}
+              </button>
+            ) : draftError ? (
+              <button className="studio-primary" onClick={() => navigate(ROUTES.STUDIO)}>
+                {t('recent.reviewDraft', 'Review Studio draft')}
+              </button>
+            ) : knownMissingMedia ? (
+              <button
+                className="studio-primary"
+                onClick={() => navigate(ROUTES.TIMELINE, { state: { showMediaRecovery: true } })}
+              >
+                {t('recent.relinkMedia', 'Relink missing media')}
+              </button>
+            ) : (
+              <button
+                className="studio-primary"
+                onClick={() =>
+                  navigate(clips.length > 0 || hasTimelineMedia ? ROUTES.TIMELINE : ROUTES.STUDIO)
+                }
+              >
+                {clips.length > 0 || hasTimelineMedia
+                  ? t('recent.continueTimeline', 'Continue in timeline')
+                  : t('recent.continueStudio', 'Continue in Prompt Studio')}
+              </button>
+            )}
+          </section>
+        )}
+        <div className="space-y-4">
           <input
             ref={localFiles}
             type="file"
@@ -73,38 +177,108 @@ export function StartPage() {
                 });
             }}
           />
-          <button
-            className="studio-primary"
-            disabled={state.busy}
-            onClick={() => localFiles.current?.click()}
+          <div
+            className="creator-grid"
+            role="group"
+            aria-label={t('start.goals', 'Choose how to begin')}
           >
-            {t('v16.createFromFiles', 'Create from your own clips')}
-          </button>
-          <button
-            className="studio-primary"
-            disabled={state.busy}
-            onClick={() => document.getElementById('recipe-title')?.focus()}
-          >
-            {t('start.create', 'Create new')}
-          </button>
-          <button
-            disabled={state.busy}
-            onClick={() => document.getElementById('examples-title')?.focus()}
-          >
-            {t('start.example', 'Try an example')}
-          </button>
-          <button onClick={() => navigate(ROUTES.PROJECTS)}>
-            {t('start.continue', 'Continue a project')}
-          </button>
-          <button onClick={() => setWelcome(true)}>{t('start.help', 'Show welcome guide')}</button>
+            <article>
+              <h2>{t('start.ownClipsTitle', 'My clips')}</h2>
+              <p>
+                {t(
+                  'start.ownClipsDescription',
+                  'Import a video, audio, or image and edit locally.',
+                )}
+              </p>
+              <button
+                className="studio-primary"
+                disabled={state.busy}
+                onClick={() => localFiles.current?.click()}
+              >
+                {t('start.ownClips', 'Use my own clips')}
+              </button>
+            </article>
+            <article>
+              <h2>{t('start.videoPromptsTitle', 'Video prompts / AI video')}</h2>
+              <p>
+                {t(
+                  'start.videoPromptsDescription',
+                  'Shape a prompt, review it, and choose when to generate.',
+                )}
+              </p>
+              <button
+                className="studio-primary"
+                onClick={() => navigate(`${ROUTES.STUDIO}?mode=video`)}
+              >
+                {t('start.videoPrompts', 'Open video prompts')}
+              </button>
+            </article>
+            <article>
+              <h2>{t('start.musicLyricsTitle', 'Music and lyrics')}</h2>
+              <p>
+                {t(
+                  'start.musicLyricsDescription',
+                  'Draft music style and lyrics, then copy or review them.',
+                )}
+              </p>
+              <button
+                className="studio-primary"
+                onClick={() => navigate(`${ROUTES.STUDIO}?mode=music`)}
+              >
+                {t('start.musicLyrics', 'Open music and lyrics')}
+              </button>
+            </article>
+          </div>
+          <div className="creator-actions">
+            <button
+              disabled={state.busy}
+              onClick={() => {
+                if (!recipesDetails.current) return;
+                recipesDetails.current.open = true;
+                recipesDetails.current.querySelector<HTMLElement>('summary')?.focus();
+              }}
+            >
+              {t('recipes.title', 'Browse recipes')}
+            </button>
+            <button onClick={() => navigate(ROUTES.PROJECTS)}>
+              {t('start.continue', 'Continue a project')}
+            </button>
+            <button onClick={() => setWelcome(true)}>
+              {t('start.help', 'Show welcome guide')}
+            </button>
+          </div>
         </div>
       </header>
       {state.error && <p role="alert">{state.error}</p>}
       {state.notice && <p role="status">{state.notice}</p>}
-      <section aria-labelledby="examples-title">
-        <h2 id="examples-title" tabIndex={-1}>
-          {t('examples.title', 'Try it offline — no account or API key')}
-        </h2>
+      <section aria-labelledby="recent-projects-title">
+        <h2 id="recent-projects-title">{t('recent.title', 'Recent projects')}</h2>
+        <div className="creator-grid">
+          {state.recent.map(({ project }) => (
+            <article key={project.id}>
+              <h3>{project.name}</h3>
+              <p>
+                {t(
+                  'v16.openRecent',
+                  'Open your project to continue editing or prepare a delivery.',
+                )}
+              </p>
+              <button disabled={state.busy} onClick={() => void openProject(project.id)}>
+                {t('start.continue', 'Continue a project')}
+              </button>
+            </article>
+          ))}
+        </div>
+        {!state.recent.length ? (
+          <p>{t('recent.empty', 'Your saved projects will appear here.')}</p>
+        ) : null}
+      </section>
+      <details className="creator-start-disclosure" aria-labelledby="examples-title">
+        <summary>
+          <h2 id="examples-title">
+            {t('examples.title', 'Try it offline — no account or API key')}
+          </h2>
+        </summary>
         <p>
           {t(
             'examples.description',
@@ -129,11 +303,15 @@ export function StartPage() {
             </article>
           ))}
         </div>
-      </section>
-      <section aria-labelledby="recipe-title">
-        <h2 id="recipe-title" tabIndex={-1}>
-          {t('recipes.title', 'Start with a creative recipe')}
-        </h2>
+      </details>
+      <details
+        ref={recipesDetails}
+        className="creator-start-disclosure"
+        aria-labelledby="recipe-title"
+      >
+        <summary>
+          <h2 id="recipe-title">{t('recipes.title', 'Start with a creative recipe')}</h2>
+        </summary>
         <div className="creator-grid">
           {CREATOR_RECIPES.map((item) => (
             <button
@@ -195,186 +373,25 @@ export function StartPage() {
             </button>
           </div>
         </div>
-      </section>
-      <section>
-        <h2>{t('recent.title', 'Recent projects')}</h2>
-        <div className="creator-grid">
-          {state.recent.map(({ project, previewUrl }) => (
-            <article key={project.id}>
-              {previewUrl && (
-                <video muted playsInline preload="metadata" controls src={previewUrl} />
-              )}
-              <h3>{project.name}</h3>
-              <p>
-                {t(
-                  'v16.openRecent',
-                  'Open your project to continue editing or prepare a delivery.',
-                )}
-              </p>
-              <button
-                disabled={state.busy}
-                onClick={() =>
-                  void state.open(project.id).then((ok) => {
-                    if (ok)
-                      navigate(
-                        useAppStore.getState().clips.length ? ROUTES.TIMELINE : ROUTES.STUDIO,
-                      );
-                  })
-                }
-              >
-                {t('start.continue', 'Continue a project')}
-              </button>
-            </article>
-          ))}
-        </div>
-        {!state.recent.length && (
-          <p>{t('recent.empty', 'Your saved projects will appear here.')}</p>
-        )}
-      </section>
-      <section>
-        <h2>{t('style.title', 'My style')}</h2>
+      </details>
+      <section aria-labelledby="creator-more-title">
+        <h2 id="creator-more-title">{t('start.moreTools', 'More ways to work')}</h2>
         <p>
           {t(
-            'style.description',
-            'Save your colors, font and creative direction. Applying a style saves a separate snapshot in the project.',
+            'start.moreToolsDescription',
+            'Offline examples and editable recipes are available when you want a starting point.',
           )}
         </p>
         <div className="creator-actions">
-          {state.profiles.map((profile) => (
-            <button
-              key={profile.id}
-              onClick={() => {
-                setStyle(structuredClone(profile));
-                setPreviewStyle(false);
-              }}
-            >
-              {profile.name}
-            </button>
-          ))}
-          <button
-            onClick={() => {
-              setStyle(newStyle(t('style.defaultName', 'My style')));
-              setPreviewStyle(false);
-            }}
-          >
-            {t('style.new', 'New style')}
+          <button onClick={() => navigate(`${ROUTES.SETTINGS}?tab=creatorStyles`)}>
+            {t('style.manageInSettings', 'Manage styles in Settings')}
           </button>
-        </div>
-        <div className="creator-editor">
-          <label>
-            {t('style.name', 'Style name')}
-            <input
-              value={style.name}
-              onChange={(event) => setStyle({ ...style, name: event.target.value })}
-            />
-          </label>
-          <label>
-            {t('style.primary', 'Primary color')}
-            <input
-              type="color"
-              value={style.primaryColor}
-              onChange={(event) => setStyle({ ...style, primaryColor: event.target.value })}
-            />
-          </label>
-          <label>
-            {t('style.text', 'Text color')}
-            <input
-              type="color"
-              value={style.textColor}
-              onChange={(event) => setStyle({ ...style, textColor: event.target.value })}
-            />
-          </label>
-          <label>
-            {t('style.font', 'Font')}
-            <select
-              aria-label={t('style.font', 'Font')}
-              value={style.fontFamily}
-              onChange={(event) =>
-                setStyle({
-                  ...style,
-                  fontFamily: event.target.value as CreatorStyleProfileV1['fontFamily'],
-                })
-              }
-            >
-              <option>Noto Sans</option>
-              <option>Noto Serif</option>
-            </select>
-          </label>
-          <label>
-            {t('style.logo', 'Logo from media library')}
-            <select
-              aria-label={t('style.logo', 'Logo from media library')}
-              value={style.logoAssetId ?? ''}
-              onChange={(event) =>
-                setStyle({ ...style, logoAssetId: event.target.value || undefined })
-              }
-            >
-              <option value="">{t('style.noLogo', 'No logo')}</option>
-              {assets
-                .filter((asset) => asset.type === 'image')
-                .map((asset) => (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label>
-            {t('style.direction', 'Creative direction')}
-            <textarea
-              value={style.creativeDescription}
-              onChange={(event) => setStyle({ ...style, creativeDescription: event.target.value })}
-            />
-          </label>
-          <div className="creator-actions">
-            <button
-              disabled={state.busy}
-              onClick={() => void state.saveStyle({ ...style, updatedAt: Date.now() })}
-            >
-              {t('style.save', 'Save style')}
-            </button>
-            <button onClick={() => setPreviewStyle(true)}>
-              {t('style.preview', 'Preview on current project')}
-            </button>
-          </div>
-          {previewStyle && (
-            <div>
-              <div
-                className="creator-style-preview"
-                style={{
-                  background: style.primaryColor,
-                  color: style.textColor,
-                  fontFamily: style.fontFamily,
-                }}
-              >
-                {style.logoAssetId && (
-                  <img
-                    alt={t('style.logoPreview', 'Logo preview')}
-                    src={assets.find((asset) => asset.id === style.logoAssetId)?.url}
-                  />
-                )}
-                <strong>{name}</strong>
-                <p>{style.creativeDescription}</p>
-                <p>{t('style.captionPreview', 'A caption that is easy to read')}</p>
-              </div>
-              <p>
-                {t(
-                  'style.confirmDescription',
-                  'Apply these colors, font, logo and creative direction to the current project? Existing continuity profiles remain available.',
-                )}
-              </p>
-              <button
-                disabled={state.busy}
-                onClick={() =>
-                  void state.applyStyle({ ...style, updatedAt: Date.now() }).then((ok) => {
-                    if (ok) setPreviewStyle(false);
-                  })
-                }
-              >
-                {t('style.confirm', 'Apply to this project')}
-              </button>
-            </div>
-          )}
+          <button onClick={() => navigate(ROUTES.STUDIO)}>
+            {t('start.studio', 'Prompt Studio')}
+          </button>
+          <button onClick={() => navigate(ROUTES.CREATE)}>
+            {t('start.production', 'Production')}
+          </button>
         </div>
       </section>
       <footer>

@@ -16,6 +16,7 @@ export interface ExternalStudioResultV1 {
   updatedAt: number;
   sourceSnapshot: PromptArtifactV1;
   variantSnapshot: VideoPromptVariant;
+  comparisonNotes?: string;
   manualReview?: { confirmedAt: string; notes: string; assetId: string; mediaHash?: string };
   storyboardShotId?: number;
 }

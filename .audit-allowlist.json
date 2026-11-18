@@ -3,6 +3,24 @@
   "description": "Audit allowlist for known-accepted npm advisories. Each entry must have a justification and expiration date.",
   "allowedAdvisories": [
     {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify via jsPDF used only for local PDF export; no untrusted HTML input processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify via jsPDF used only for local PDF export; no untrusted HTML input processed.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify via jsPDF used only for local PDF export; no untrusted HTML input processed.",
+      "expires": "2027-05-19"
+    },
+    {
       "id": 1103308,
       "package": "jspdf",
       "justification": "jsPDF used only for local PDF export; no user-supplied HTML/untrusted input processed. Monitoring for upstream fix.",
@@ -60,6 +78,84 @@
       "id": 1113324,
       "package": "jspdf",
       "justification": "GIF-dimension DoS advisory accepted short-term; app does not process untrusted GIF payloads for server-side workflows.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify SAFE_FOR_TEMPLATES bypass advisory accepted short-term for local PDF export flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify IN_PLACE advisory accepted short-term for local PDF export flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify SMIL attributeName advisory accepted short-term for local PDF export flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "jspdf",
+      "justification": "Transitive dompurify vulnerability via jspdf accepted short-term for local PDF export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "jspdf",
+      "justification": "Transitive dompurify vulnerability via jspdf accepted short-term for local PDF export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "jspdf",
+      "justification": "Transitive dompurify vulnerability via jspdf accepted short-term for local PDF export.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "Dev/CLI dependency cross-origin header advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "Dev/CLI dependency sensitive headers advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Dev tool Vite launch-editor advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Dev tool Vite launch-editor advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Dev tool Vite launch-editor advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Dev tool Vite middleware advisory accepted short-term.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Dev tool Vite server fs.allow advisory accepted short-term.",
       "expires": "2027-05-19"
     },
     {
@@ -361,8 +457,116 @@
       "package": "tailwindcss",
       "justification": "Transitive build-time dev dependency via braces (tailwindcss/lint-staged). Not in production bundle.",
       "expires": "2027-05-19"
+    },
+    {
+      "id": 1242880,
+      "package": "dompurify",
+      "justification": "DOMPurify SAFE_FOR_TEMPLATES advisory accepted; local desktop app, no untrusted HTML template parsing.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242881,
+      "package": "dompurify",
+      "justification": "DOMPurify IN_PLACE advisory accepted; local desktop app, no untrusted HTML event handler parsing.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242882,
+      "package": "dompurify",
+      "justification": "DOMPurify SMIL attributeName advisory accepted; local desktop app.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242604,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency via axios in dev/build tools. Local desktop app flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242605,
+      "package": "follow-redirects",
+      "justification": "Transitive dependency via axios in dev/build tools. Local desktop app flow.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242660,
+      "package": "vite",
+      "justification": "Vite dev server launch-editor advisory; dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242624,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242653,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242726,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1242732,
+      "package": "vite",
+      "justification": "Dev tool only, not exposed in production build.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243070,
+      "package": "electron",
+      "justification": "Upstream eMudhra intermediate certificate mitigation advisory; app communicates only with local IPC and user-configured provider endpoints.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243078,
+      "package": "undici",
+      "justification": "Transitive EventSource parser DoS advisory in Node/build tooling; app does not consume untrusted third-party EventSource streams.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243079,
+      "package": "undici",
+      "justification": "Transitive EventSource parser DoS advisory in Node/build tooling; app does not consume untrusted third-party EventSource streams.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243081,
+      "package": "undici",
+      "justification": "Transitive Subresource Integrity token casing advisory in Node/build tooling; not used for untrusted remote script verification.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243113,
+      "package": "undici",
+      "justification": "Transitive content-encoding DoS advisory in Node/build tooling; local desktop app only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243114,
+      "package": "undici",
+      "justification": "Transitive content-encoding DoS advisory in Node/build tooling; local desktop app only.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1243066,
+      "package": "zod",
+      "justification": "Oversized constrained collection DoS advisory; schemas validate bounded local project documents and IPC payloads.",
+      "expires": "2027-05-19"
+    },
+    {
+      "id": 1244007,
+      "package": "joi",
+      "justification": "Transitive dev-only dependency via wait-on for local Electron dev server startup; not bundled in production runtime.",
+      "expires": "2027-05-19"
     }
   ],
-  "lastReviewed": "2026-10-07",
+  "lastReviewed": "2026-10-24",
   "reviewedBy": "loofi"
 }

@@ -18,6 +18,11 @@ export interface QualityDimension {
   suggestions: string[];
 }
 
+interface SectionScoreResult {
+  dimension: QualityDimension;
+  metCriteria: string[];
+}
+
 // Reusable worker instance for prompt analysis offloading
 let promptWorker: Worker | null = null;
 let workerIdCounter = 0;
@@ -94,13 +99,10 @@ export const terminatePromptWorker = (): void => {
   }
 };
 
-export const calculatePromptQuality = (state: PromptState): QualityScore => {
-  let score = 0;
-  const suggestions: string[] = [];
-  const metCriteria: string[] = [];
-  const breakdown: QualityDimension[] = [];
+// ─── Section Scoring Helpers ─────────────────────────────────────────────
 
-  // 1. Core Content (Max 30)
+function scoreCoreContent(state: PromptState): SectionScoreResult {
+  const metCriteria: string[] = [];
   const coreDim: QualityDimension = {
     name: 'Core Content',
     score: 0,
@@ -108,6 +110,7 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     criteria: [],
     suggestions: [],
   };
+
   if (state.idea && state.idea.length > 10) {
     coreDim.score += 15;
     if (state.idea.length > 50) {
@@ -116,7 +119,6 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
       metCriteria.push('Rich Core Concept');
     } else {
       coreDim.suggestions.push('Expand your core idea for more detail');
-      suggestions.push('Expand your core idea for more detail');
       coreDim.criteria.push('Basic Concept');
       metCriteria.push('Basic Concept');
     }
@@ -128,12 +130,13 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     }
   } else {
     coreDim.suggestions.push('Add a core idea');
-    suggestions.push('Add a core idea');
   }
-  score += coreDim.score;
-  breakdown.push(coreDim);
 
-  // 2. Visual Style (Max 20)
+  return { dimension: coreDim, metCriteria };
+}
+
+function scoreVisualStyle(state: PromptState): SectionScoreResult {
+  const metCriteria: string[] = [];
   const visualDim: QualityDimension = {
     name: 'Visual Style',
     score: 0,
@@ -141,6 +144,7 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     criteria: [],
     suggestions: [],
   };
+
   if (state.artStyle && state.artStyle !== 'Cinematic') {
     visualDim.score += 8;
     visualDim.criteria.push('Specific Art Style');
@@ -164,12 +168,13 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
   }
   if (visualDim.score === 0) {
     visualDim.suggestions.push('Define a specific visual style or effect');
-    suggestions.push('Define a specific visual style or effect');
   }
-  score += visualDim.score;
-  breakdown.push(visualDim);
 
-  // 3. Cinematic Properties (Max 20)
+  return { dimension: visualDim, metCriteria };
+}
+
+function scoreCinematicProperties(state: PromptState): SectionScoreResult {
+  const metCriteria: string[] = [];
   const cameraDim: QualityDimension = {
     name: 'Cinematic Properties',
     score: 0,
@@ -177,6 +182,7 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     criteria: [],
     suggestions: [],
   };
+
   if (state.cameraMovement && state.cameraMovement !== 'Static shot') {
     cameraDim.score += 5;
     cameraDim.criteria.push('Camera Movement');
@@ -193,15 +199,17 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     cameraDim.score += 5;
     cameraDim.criteria.push('Composition Guide');
   }
-  if (cameraDim.score > 0) metCriteria.push('Camera Direction');
-  else {
+  if (cameraDim.score > 0) {
+    metCriteria.push('Camera Direction');
+  } else {
     cameraDim.suggestions.push('Add camera movement or lens details');
-    suggestions.push('Add camera movement or lens details');
   }
-  score += cameraDim.score;
-  breakdown.push(cameraDim);
 
-  // 4. Environment & Lighting (Max 20)
+  return { dimension: cameraDim, metCriteria };
+}
+
+function scoreEnvironmentAndLighting(state: PromptState): SectionScoreResult {
+  const metCriteria: string[] = [];
   const envDim: QualityDimension = {
     name: 'Environment & Lighting',
     score: 0,
@@ -209,6 +217,7 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     criteria: [],
     suggestions: [],
   };
+
   if (state.environment && state.environment.length > 5) {
     envDim.score += 5;
     envDim.criteria.push('Environment');
@@ -231,15 +240,17 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     envDim.criteria.push('Sensory Details');
     metCriteria.push('Sensory Details');
   }
-  if (envDim.score > 0) metCriteria.push('Environment & Lighting');
-  else {
+  if (envDim.score > 0) {
+    metCriteria.push('Environment & Lighting');
+  } else {
     envDim.suggestions.push('Specify time of day, weather, or lighting');
-    suggestions.push('Specify time of day, weather, or lighting');
   }
-  score += envDim.score;
-  breakdown.push(envDim);
 
-  // 5. Character & Constraints (Max 15)
+  return { dimension: envDim, metCriteria };
+}
+
+function scoreCharacterAndConstraints(state: PromptState): SectionScoreResult {
+  const metCriteria: string[] = [];
   const charDim: QualityDimension = {
     name: 'Character & Constraints',
     score: 0,
@@ -247,6 +258,7 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
     criteria: [],
     suggestions: [],
   };
+
   if (state.characterActions && state.characterActions.length > 5) {
     charDim.score += 4;
     charDim.criteria.push('Character Action');
@@ -277,27 +289,51 @@ export const calculatePromptQuality = (state: PromptState): QualityScore => {
   }
   if (charDim.score === 0) {
     charDim.suggestions.push('Add character actions or negative constraints');
-    suggestions.push('Add character actions or negative constraints');
   }
-  score += charDim.score;
-  breakdown.push(charDim);
+
+  return { dimension: charDim, metCriteria };
+}
+
+function determineTierAndColor(normalizedScore: number): {
+  tier: QualityScore['tier'];
+  color: QualityScore['color'];
+} {
+  if (normalizedScore >= 90) {
+    return { tier: 'Masterpiece', color: 'cyan' };
+  }
+  if (normalizedScore >= 70) {
+    return { tier: 'Cinematic', color: 'green' };
+  }
+  if (normalizedScore >= 40) {
+    return { tier: 'Enhanced', color: 'yellow' };
+  }
+  return { tier: 'Basic', color: 'red' };
+}
+
+export const calculatePromptQuality = (state: PromptState): QualityScore => {
+  const sections = [
+    scoreCoreContent(state),
+    scoreVisualStyle(state),
+    scoreCinematicProperties(state),
+    scoreEnvironmentAndLighting(state),
+    scoreCharacterAndConstraints(state),
+  ];
+
+  let rawScore = 0;
+  const suggestions: string[] = [];
+  const metCriteria: string[] = [];
+  const breakdown: QualityDimension[] = [];
+
+  for (const { dimension, metCriteria: sectionMetCriteria } of sections) {
+    rawScore += dimension.score;
+    suggestions.push(...dimension.suggestions);
+    metCriteria.push(...sectionMetCriteria);
+    breakdown.push(dimension);
+  }
 
   // Determine Tier (adjusted thresholds for expanded max of 105)
-  const normalizedScore = Math.min(Math.round((score / 105) * 100), 100);
-
-  let tier: QualityScore['tier'] = 'Basic';
-  let color: QualityScore['color'] = 'red';
-
-  if (normalizedScore >= 90) {
-    tier = 'Masterpiece';
-    color = 'cyan';
-  } else if (normalizedScore >= 70) {
-    tier = 'Cinematic';
-    color = 'green';
-  } else if (normalizedScore >= 40) {
-    tier = 'Enhanced';
-    color = 'yellow';
-  }
+  const normalizedScore = Math.min(Math.round((rawScore / 105) * 100), 100);
+  const { tier, color } = determineTierAndColor(normalizedScore);
 
   return { score: normalizedScore, tier, color, suggestions, metCriteria, breakdown };
 };

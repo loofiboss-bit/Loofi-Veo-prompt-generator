@@ -97,7 +97,9 @@ describe('productionReviewService', () => {
     expect(local.continuity?.summary).toContain('reference hashes verified');
     expect(local.continuity?.summary).toContain('profile versions pinned');
 
-    mockAnalyzeVideo.mockResolvedValue(JSON.stringify({ dimensions: [] }));
+    mockAnalyzeVideo.mockResolvedValue(
+      JSON.stringify({ dimensions: [{ id: 'composition', score: 90 }] }),
+    );
     await productionReviewService.reviewTake({
       shot: continuityShot,
       take: continuityTake,
@@ -138,15 +140,22 @@ describe('productionReviewService', () => {
     expect(review.proposedRevisionPrompt).toContain('tracking motion');
   });
 
-  it('falls back to local review when Gemini fails', async () => {
-    mockAnalyzeVideo.mockRejectedValue(new Error('offline'));
-    const review = await productionReviewService.reviewTake({
-      shot,
-      take,
-      video: { data: 'base64', mimeType: 'video/mp4' },
-      useGemini: true,
-    });
-    expect(review.source).toBe('local');
-    expect(review.findings[0].message).toContain('unavailable');
+  it('reports requested AI review failure instead of fabricating local completion', async () => {
+    mockAnalyzeVideo.mockRejectedValueOnce(new Error('Provider failed'));
+    await expect(
+      productionReviewService.reviewTake({
+        shot,
+        take,
+        useGemini: true,
+        video: { data: 'dm8=', mimeType: 'video/mp4' },
+      }),
+    ).rejects.toThrow('Provider failed');
+  });
+
+  it('requires readable video for explicit AI review', async () => {
+    await expect(
+      productionReviewService.reviewTake({ shot, take, useGemini: true }),
+    ).rejects.toThrow('readable local video');
+    expect(mockAnalyzeVideo).not.toHaveBeenCalled();
   });
 });

@@ -4,35 +4,39 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v16.0.0 Local Creator Editing & Delivery
+## v21.0.0 Polish & Trust
 
-v16 connects personal clip imports, durable timeline editing, linked captions, atomic IndexedDB document persistence, conflict recovery, and verified offline MP4 delivery up to three minutes. Bundled source-built FFmpeg resources support Linux and Windows without external dependencies. Existing project and archive formats remain compatible.
+v21 adds a guided four-step delivery workflow, coordinated project saves, recoverable save conflicts,
+media-library filtering and deletion guards, optional caption suggestions, and clearer navigation.
+Render completion and confirmed file saves are shown separately. Updated translations and keyboard
+focus handling cover all six app languages. Existing project and archive formats remain supported.
 
-See [v16 workflow](CREATOR_V16.md), [timeline editing](V16_TIMELINE_EDITING.md), and [local verification](CREATOR_V16_VERIFICATION.md).
+See [v21 release notes](releases/RELEASE-NOTES-v21.0.0.md),
+[v16 workflow](CREATOR_V16.md), and [timeline editing](V16_TIMELINE_EDITING.md).
+Historical v17 publication evidence remains in [release verification](V17_0_0_RELEASE.md).
 
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v16.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0)
-only after Windows/Linux builds and packaged smoke tests succeed. Tag existence alone does not
+[v22.1.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1)
+after Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
-Expected desktop assets:
+Expected official release assets:
 
-| Target                | Asset                                                |
-| --------------------- | ---------------------------------------------------- |
-| Windows x64 installer | `Loofi-Flow-Veo-Studio-16.0.0-win-x64-setup.exe`     |
-| Windows x64 portable  | `Loofi-Flow-Veo-Studio-16.0.0-win-x64-portable.exe`  |
-| Fedora RPM            | `Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.rpm`      |
-| Linux AppImage        | `Loofi-Flow-Veo-Studio-16.0.0-linux-x86_64.AppImage` |
+| Target         | Asset                                                | Status                       |
+| -------------- | ---------------------------------------------------- | ---------------------------- |
+| Fedora RPM     | `Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.rpm`      | Primary (CI Built & Tested)  |
+| Linux AppImage | `Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.AppImage` | Primary (CI Built & Tested)  |
+| Windows x64    | `Loofi-Flow-Veo-Studio-22.1.1-win-x64-setup.exe`     | Optional (Manual Build Only) |
 
-The release also includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`,
-`release-manifest.json` and Windows update metadata. Verify published checksums before installation.
-Signing and attestation status are recorded in the manifest; provenance does not imply code signing.
+Windows packages are not built in CI; users or contributors build them manually if needed (`npm run build && npx electron-builder --win`).
+The release includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`, and `release-manifest.json`.
 
-Local implementation evidence records 4,305 unit/integration tests and 120 desktop tests, plus
-seven focused Chromium scenarios, refreshed Ubuntu/Linux visual baselines, and isolated packaged Linux exports. The current PR and tag
-workflow must pass independently; these counts do not certify human onboarding or physical platforms.
+The source gate runs unit/integration tests with coverage, native desktop checks and performance
+benchmarks. The final PR checks and canonical tag workflow qualify the exact release commit and packages.
+See [the earlier stabilization report](V16_STABILIZATION.md) for historical benchmarks and dated
+verification evidence.
 
 ## Local release gates
 
@@ -46,7 +50,7 @@ npm run validate:release
 git diff --check
 ```
 
-The release passes all unit and integration test suites, lint (0 warnings), TypeScript strict checks, formatting, production build, RPM dependency metadata validation, and CI package smokes. Physical Wayland input, fractional scaling, screen-reader, reduced-motion, light/dark desktop checks, real OS-vault access, and real Suno profile migration remain manual gates and must be recorded as `NOT RUN` until performed.
+The release passes all unit and integration test suites, lint (0 warnings), TypeScript strict checks, formatting, production build, RPM dependency metadata validation, and CI package smokes. Physical Wayland input, fractional scaling, screen-reader, reduced-motion, light/dark desktop checks, real OS-vault access, and real Suno profile migration are separate evidence boundaries, recorded as `NOT RUN` until performed. Automated checks are the release acceptance requirement.
 
 ## GitHub publication sequence
 
@@ -80,10 +84,10 @@ sha256sum -c SHA256SUMS.txt
 
 ## Fedora COPR publication
 
-The COPR package is a Fedora 44 x86_64 custom-source build. The checked-in
+The COPR package is a Fedora 44 and Fedora 45 x86_64 custom-source build. The checked-in
 [`packaging/copr/fetch-release.sh`](../packaging/copr/fetch-release.sh) downloads the exact GitHub
 RPM, downloads `SHA256SUMS.txt`, fails if the artifact entry is missing or mismatched, and fetches
-the tracked spec. The spec repackages the qualified Electron payload as `veo-prompt-generator`.
+the spec from the matching release tag. The spec repackages the qualified Electron payload as `veo-prompt-generator`.
 
 The bundled Electron/Sharp runtime objects `libc.musl-x86_64.so.1` and
 `libvips-cpp.so.*` are not host package requirements. The spec filters only those two false
@@ -91,11 +95,13 @@ requirements from RPM's automatic ELF scan; GTK, NSS, libsecret, X11, and other 
 requirements remain visible to DNF.
 
 ```bash
-copr-cli add-package-custom loofitheboss/loofi-creator-studio \
+copr-cli edit-package-custom loofitheboss/loofi-creator-studio \
   --name veo-prompt-generator \
-  --script packaging/copr/fetch-release.sh
+  --script packaging/copr/fetch-release.sh \
+  --script-chroot fedora-44-x86_64 \
+  --script-builddeps "curl ca-certificates"
 copr-cli build-package loofitheboss/loofi-creator-studio \
-  --name veo-prompt-generator -r fedora-44-x86_64
+  --name veo-prompt-generator -r fedora-44-x86_64 -r fedora-45-x86_64
 ```
 
 Verify a completed build before telling users to install it:

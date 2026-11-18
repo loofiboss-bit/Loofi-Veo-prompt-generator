@@ -37,6 +37,12 @@ project autosave. Assets starts with the media library and keeps continuity prof
 separate tab. Timeline embeds its player so navigation stays reachable. Reference editors
 and Timeline can open the contextual asset drawer; global Assets navigation opens the page.
 
+Start places the active project and any known recovery action ahead of new-work options; examples
+and recipes are expandable. The timeline offers a direct route to rendered delivery review while
+retaining its distinct editing preview. Caption readability suggestions are local, advisory and
+focus the affected text. Delivery distinguishes current checks, review, rendering and confirmed
+file saving; older or unverifiable outputs remain visibly separate from the current edit.
+
 ## Visual system
 
 Genre: modern-minimal. Structure: workbench. Existing sans and monospace font stacks remain.

@@ -94,7 +94,7 @@ export const INITIAL_STATE: PromptState = {
   audioMix: { voice: 75, ambient: 50, sfx: 50 },
   useImageAsCameo: false,
   language: 'en',
-  model: 'gemini-3.5-flash',
+  model: 'gemini-3.8-flash',
   targetModel: 'flow-veo',
   flowVeoOutputMode: 'flow-scene-pack',
   sunoExportMode: 'custom-mode-prompt',
@@ -114,18 +114,21 @@ export const getLanguageOptions = (): SelectOption[] => [
 ];
 
 export const getModelOptions = (lang: Language): SelectOption[] => {
-  const roleSuffix: Record<Language, Record<string, string>> = {
+  const roleSuffix: Record<string, Record<string, string>> = {
     en: { stable: 'Recommended', preview: 'Preview' },
     sv: { stable: 'Rekommenderad', preview: 'Förhandsvisning' },
     es: { stable: 'Recomendado', preview: 'Vista previa' },
     fr: { stable: 'Recommandé', preview: 'Aperçu' },
     de: { stable: 'Empfohlen', preview: 'Vorschau' },
+    ja: { stable: '推奨', preview: 'プレビュー' },
+    ar: { stable: 'موصى به', preview: 'معاينة' },
   };
+  const activeRoleSuffix = roleSuffix[lang] ?? roleSuffix.en;
   return MODEL_CATALOG.filter(
     (model) => model.capabilities.operations.includes('plan') && model.provider === 'gemini-api',
   ).map((model) => ({
     value: model.id,
-    label: `${model.displayName} (${roleSuffix[lang][model.lifecycle] ?? model.lifecycle})`,
+    label: `${model.displayName} (${activeRoleSuffix[model.lifecycle] ?? model.lifecycle})`,
   }));
 };
 

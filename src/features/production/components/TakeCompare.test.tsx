@@ -1,7 +1,13 @@
 import { fireEvent, render, screen } from '@/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProductionTake } from '@core/types';
 import { TakeCompare } from './TakeCompare';
+
+const mocks = vi.hoisted(() => ({ navigate: vi.fn() }));
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useNavigate: () => mocks.navigate,
+}));
 
 const take = (id: string, score: number): ProductionTake => ({
   id,
@@ -37,6 +43,11 @@ const take = (id: string, score: number): ProductionTake => ({
   createdAt: 1,
 });
 
+beforeEach(() => {
+  mocks.navigate.mockReset();
+  vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+});
+
 describe('TakeCompare', () => {
   it('provides keyboard-accessible A/B playback, notes, and decisions', () => {
     const onKeep = vi.fn();
@@ -54,7 +65,7 @@ describe('TakeCompare', () => {
     expect(screen.getAllByText(/prompt adherence/)).toHaveLength(2);
     expect(screen.getAllByText(/^motion:/)).toHaveLength(2);
     expect(document.querySelectorAll('video')).toHaveLength(2);
-    fireEvent.change(screen.getByLabelText('Comparison notes'), {
+    fireEvent.change(screen.getByLabelText('Comparison notes · A'), {
       target: { value: 'Preserve subject identity.' },
     });
     fireEvent.click(screen.getAllByRole('button', { name: 'Keep' })[0]);
@@ -65,6 +76,47 @@ describe('TakeCompare', () => {
     expect(onRevise).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'a' }),
       'Preserve subject identity.',
+    );
+  });
+  it('opens Studio with the frozen take source and its current comparison notes', () => {
+    const source = take('a', 70);
+    source.sourceArtifactId = 'artifact-a';
+    source.sourceVariantIndex = 2;
+    render(
+      <TakeCompare
+        takes={[source]}
+        projectId="project-a"
+        feedbackTarget="flow-veo"
+        onKeep={vi.fn()}
+        onReject={vi.fn()}
+        onRevise={vi.fn()}
+      />,
+    );
+    const improve = screen.getByRole('button', { name: 'Improve prompt from notes' });
+    expect(improve).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Comparison notes · A'), {
+      target: { value: 'Keep the framing, soften the camera move.' },
+    });
+    fireEvent.click(improve);
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/studio?mode=video',
+      expect.objectContaining({
+        state: {
+          kind: 'studio-feedback',
+          source: expect.objectContaining({
+            projectId: 'project-a',
+            sourceKind: 'production-take',
+            sourceId: 'a',
+            artifactId: 'artifact-a',
+            variantIndex: 2,
+            target: 'flow-veo',
+            prompt: 'Tracking shot',
+            negativePrompt: '',
+            notes: 'Keep the framing, soften the camera move.',
+            settings: expect.stringContaining('"model": "veo-3.1-fast"'),
+          }),
+        },
+      }),
     );
   });
   it('shows local checks without quality scores and requires manual confirmation', () => {
@@ -91,16 +143,32 @@ describe('TakeCompare', () => {
       />,
     );
     expect(screen.queryByText(/Score:/)).toBeNull();
-    expect(screen.getAllByText('Only metadata was checked.')).toHaveLength(2);
+    expect(screen.getAllByText('Only metadata was checked.')).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Keep' })[0]).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Comparison notes'), {
+    fireEvent.change(screen.getByLabelText('Comparison notes · A'), {
       target: { value: 'I watched the video.' },
     });
     fireEvent.click(screen.getAllByRole('button', { name: 'Confirm manual review' })[0]);
     expect(onManualReview).toHaveBeenCalledWith(local, 'I watched the video.');
     const video = document.querySelector('video')!;
     Object.defineProperty(video, 'duration', { value: 8 });
+    fireEvent.loadedMetadata(video);
     fireEvent.click(screen.getAllByRole('button', { name: '2s' })[0]);
     expect(video.currentTime).toBe(2);
+  });
+  it('numbers playable takes using their original shot list index when earlier takes are unplayable', () => {
+    const failedTake = take('take-1-failed', 0);
+    failedTake.status = 'failed';
+    failedTake.localMediaUrl = undefined;
+    const secondTake = take('take-2-ok', 85);
+    render(
+      <TakeCompare
+        takes={[failedTake, secondTake]}
+        onKeep={vi.fn()}
+        onReject={vi.fn()}
+        onRevise={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Take 2')).toBeInTheDocument();
   });
 });

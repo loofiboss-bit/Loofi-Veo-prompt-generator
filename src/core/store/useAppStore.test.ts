@@ -18,6 +18,7 @@ vi.mock('idb-keyval', () => ({
 }));
 
 import { useAppStore, type AppState } from './useAppStore';
+import { storeMediator } from './mediator';
 import { GlobalContext, PromptState, Shot, TimelineTrack, VisualDNA } from '@core/types';
 
 /**
@@ -55,7 +56,6 @@ const LEGACY_PERSISTED_STATE: Partial<AppState> = {
   variables: { HERO: 'Detective John' },
   assets: [],
   characterBank: [],
-  history: [],
   customPresets: [],
   visualDNA: null as unknown as VisualDNA[],
   theme: 'dark',
@@ -201,5 +201,103 @@ describe('useAppStore hydration', () => {
 
     toggleTheme();
     expect(useAppStore.getState().theme).toBe('dark');
+  });
+
+  describe('storeMediator listeners', () => {
+    it('syncs location profiles into productionBible when location:bankChanged is emitted', () => {
+      const location = {
+        id: 'loc-alpine',
+        name: 'Alpine Pass',
+        description: 'Snowy winding road',
+        visualTags: ['snow', 'mountain'],
+      };
+
+      storeMediator.emit('location:bankChanged', { locations: [location] });
+
+      const bible = useAppStore.getState().productionBible;
+      const profile = bible.profiles.find((p) => p.provenance.sourceId === 'loc-alpine');
+      expect(profile).toBeDefined();
+      expect(profile?.name).toBe('Alpine Pass');
+      expect(profile?.kind).toBe('location');
+    });
+
+    it('batch-upserts assets when studioResult:assetsSynchronized is emitted and retires assetSlice.history', () => {
+      const asset = {
+        id: 'asset-synth-1',
+        name: 'Synth Background',
+        type: 'audio' as const,
+        mimeType: 'audio/mpeg',
+        storageKey: 'key-1',
+        data: '',
+        url: 'blob:synth',
+      };
+
+      storeMediator.emit('studioResult:assetsSynchronized', { projectId: 'p1', assets: [asset] });
+      expect(useAppStore.getState().assets.some((a) => a.id === 'asset-synth-1')).toBe(true);
+
+      const updatedAsset = { ...asset, name: 'Synth Background Extended' };
+      storeMediator.emit('studioResult:assetsSynchronized', {
+        projectId: 'p1',
+        assets: [updatedAsset],
+      });
+      const found = useAppStore.getState().assets.find((a) => a.id === 'asset-synth-1');
+      expect(found?.name).toBe('Synth Background Extended');
+      expect('history' in useAppStore.getState()).toBe(false);
+    });
+
+    it('updates sbShots, tracks, and clips when timeline:synced is emitted', () => {
+      const mockShots = [
+        { id: 99, type: 'video' as const, action: 'Synced Action', takes: [] },
+      ] as unknown as Shot[];
+      const mockTracks = [
+        {
+          id: 'video_main',
+          label: 'Video',
+          type: 'video' as const,
+          trackType: 'dialogue' as const,
+          zIndex: 1,
+        },
+      ];
+      const mockClips = [
+        {
+          id: 'clip-99',
+          trackId: 'video_main',
+          resourceId: 'res-99',
+          label: 'Clip 99',
+          startTime: 0,
+          duration: 10,
+          offset: 0,
+          type: 'video' as const,
+        },
+      ];
+
+      storeMediator.emit('timeline:synced', {
+        shots: mockShots,
+        tracks: mockTracks,
+        clips: mockClips,
+      });
+
+      const state = useAppStore.getState();
+      expect(state.sbShots).toEqual(mockShots);
+      expect(state.tracks).toEqual(mockTracks);
+      expect(state.clips).toEqual(mockClips);
+    });
+  });
+
+  describe('temporal O(1) equality performance', () => {
+    it('does not serialize store state via JSON.stringify during non-structural updates', () => {
+      // Prime initial persisted snapshot baseline once, then verify subsequent non-persisted updates skip JSON.stringify
+      useAppStore.getState().setCurrentTime(0);
+      const stringifySpy = vi.spyOn(JSON, 'stringify');
+      const baseHistoryLength = useAppStore.temporal.getState().pastStates.length;
+
+      for (let i = 1; i <= 15; i += 1) {
+        useAppStore.getState().setCurrentTime(i * 0.1);
+      }
+
+      expect(stringifySpy).not.toHaveBeenCalled();
+      expect(useAppStore.temporal.getState().pastStates.length).toBe(baseHistoryLength);
+      stringifySpy.mockRestore();
+    });
   });
 });
