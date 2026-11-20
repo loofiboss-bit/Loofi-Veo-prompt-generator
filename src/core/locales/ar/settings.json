@@ -1,16 +1,29 @@
 {
   "title": "الإعدادات",
   "general": "عام",
-  "appearance": "المظهر",
+  "updates": "التحديثات",
+  "desktop": "تطبيق سطح المكتب",
+  "plugins": "الإضافات",
+  "marketplace": "المتجر",
   "language": "اللغة",
-  "theme": "السمة",
-  "darkMode": "الوضع الداكن",
-  "lightMode": "الوضع الفاتح",
-  "accessibility": "إمكانية الوصول",
-  "about": "حول",
-  "backToWorkspace": "العودة إلى مساحة العمل",
-  "category": "فئة الإعدادات",
+  "languageDescription": "اختر لغة العرض المفضلة لديك.",
+  "theme": "المظهر",
+  "themeDescription": "اختر وضع المظهر.",
+  "accentColor": "لون التمييز",
+  "accentColorDescription": "اختر لون التمييز المفضل لديك.",
+  "darkMode": "داكن",
+  "lightMode": "فاتح",
+  "apiConfiguration": "إعدادات API",
+  "pluginRegistryUrl": "رابط سجل الإضافات",
+  "save": "حفظ",
   "presets": {
-    "default": "الافتراضي (أزرق)"
-  }
+    "default": "الافتراضي (أزرق)",
+    "midnight": "منتصف الليل",
+    "ocean": "المحيط",
+    "forest": "الغابة",
+    "sunset": "الغروب",
+    "amethyst": "الجمشت"
+  },
+  "backToWorkspace": "العودة إلى مساحة العمل",
+  "category": "فئة الإعدادات"
 }

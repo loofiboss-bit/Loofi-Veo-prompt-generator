@@ -82,10 +82,6 @@ vi.mock('./CommandPalette', () => ({
   CommandPalette: () => <div data-testid="command-palette">Command Palette</div>,
 }));
 
-vi.mock('@features/codirector', () => ({
-  AiCoDirectorWidget: () => <div data-testid="ai-codirector-widget">AiCoDirector</div>,
-}));
-
 function createToast(id: string): ToastMessage {
   return {
     id,

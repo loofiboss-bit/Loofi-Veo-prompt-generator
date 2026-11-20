@@ -3,10 +3,8 @@
  * Split from the monolithic geminiService.ts for maintainability.
  * @module core/services/gemini/geminiVisionService
  */
-import { GenerateContentResponse } from '@google/genai';
 import { EditedImageResponse } from '@core/types';
 import { parseAndThrowApiError } from '@core/utils/apiErrors';
-import { retryOperation } from '@core/utils/retry';
 import { logger } from '@core/services/loggerService';
 import { getAiClientAsync, getPromptModel, cleanJson, resilientCall } from './aiClient';
 import { resolveProviderModelId } from '@core/models/catalog';
@@ -132,17 +130,19 @@ export const generateOutpaint = async (
 ): Promise<string> => {
   const ai = await getAiClientAsync();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: DEFAULT_IMAGE_MODEL,
-        contents: {
-          parts: [
-            { inlineData: { mimeType: 'image/png', data: compositeBase64 } },
-            { inlineData: { mimeType: 'image/png', data: maskBase64 } },
-            { text: prompt },
-          ],
-        },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: DEFAULT_IMAGE_MODEL,
+          contents: {
+            parts: [
+              { inlineData: { mimeType: 'image/png', data: compositeBase64 } },
+              { inlineData: { mimeType: 'image/png', data: maskBase64 } },
+              { text: prompt },
+            ],
+          },
+        }),
+      { endpoint: 'gemini-vision', model: DEFAULT_IMAGE_MODEL },
     );
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -194,20 +194,23 @@ export const analyzeVideo = async (
   referenceImages: Array<{ data: string; mimeType: string }> = [],
 ): Promise<string> => {
   const ai = await getAiClientAsync();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: getPromptModel(),
-        contents: {
-          parts: [
-            ...referenceImages.map((image) => ({
-              inlineData: { mimeType: image.mimeType, data: image.data },
-            })),
-            { inlineData: { mimeType, data: base64Video } },
-            { text: prompt },
-          ],
-        },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: {
+            parts: [
+              ...referenceImages.map((image) => ({
+                inlineData: { mimeType: image.mimeType, data: image.data },
+              })),
+              { inlineData: { mimeType, data: base64Video } },
+              { text: prompt },
+            ],
+          },
+        }),
+      { endpoint: 'gemini-vision', model: modelName },
     );
     return response.text || 'No analysis generated.';
   } catch (error) {
@@ -218,20 +221,23 @@ export const analyzeVideo = async (
 
 export const analyzeImageForSFX = async (base64Image: string): Promise<string[]> => {
   const ai = await getAiClientAsync();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: getPromptModel(),
-        contents: {
-          parts: [
-            { inlineData: { mimeType: 'image/png', data: base64Image } },
-            {
-              text: 'List 5 likely sound effects (SFX) that would be heard in this scene. Return as JSON string array.',
-            },
-          ],
-        },
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: {
+            parts: [
+              { inlineData: { mimeType: 'image/png', data: base64Image } },
+              {
+                text: 'List 5 likely sound effects (SFX) that would be heard in this scene. Return as JSON string array.',
+              },
+            ],
+          },
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-vision', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {
@@ -249,6 +255,7 @@ export const analyzeVideoForSFX = async (
   videoFrames: string[],
 ): Promise<Array<{ timestamp: number; description: string }>> => {
   const ai = await getAiClientAsync();
+  const modelName = getPromptModel();
   try {
     // Construct multipart content with all frames
     const parts: Array<{ inlineData?: { mimeType: string; data: string }; text?: string }> = [];
@@ -281,12 +288,14 @@ export const analyzeVideoForSFX = async (
             "description" should be a short prompt to generate that specific sound effect.`,
     });
 
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: getPromptModel(),
-        contents: { parts },
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName,
+          contents: { parts },
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-vision', model: modelName },
     );
 
     return JSON.parse(cleanJson(response.text));
@@ -302,20 +311,23 @@ export const generateAssetTags = async (
   mimeType: string,
 ): Promise<string[]> => {
   const ai = await getAiClientAsync();
+  const modelName = getPromptModel();
   try {
-    const response = await retryOperation<GenerateContentResponse>(() =>
-      ai.models.generateContent({
-        model: getPromptModel(), // Multimodal capable
-        contents: {
-          parts: [
-            { inlineData: { mimeType, data: base64Data } },
-            {
-              text: "Analyze this visual asset. Return a JSON array of 3-5 short, descriptive keywords (lowercase, single words) to categorize it (e.g. ['landscape', 'neon', 'character', 'red']). Return strictly JSON.",
-            },
-          ],
-        },
-        config: { responseMimeType: 'application/json' },
-      }),
+    const response = await resilientCall(
+      () =>
+        ai.models.generateContent({
+          model: modelName, // Multimodal capable
+          contents: {
+            parts: [
+              { inlineData: { mimeType, data: base64Data } },
+              {
+                text: "Analyze this visual asset. Return a JSON array of 3-5 short, descriptive keywords (lowercase, single words) to categorize it (e.g. ['landscape', 'neon', 'character', 'red']). Return strictly JSON.",
+              },
+            ],
+          },
+          config: { responseMimeType: 'application/json' },
+        }),
+      { endpoint: 'gemini-vision', model: modelName },
     );
     return JSON.parse(cleanJson(response.text));
   } catch (error) {

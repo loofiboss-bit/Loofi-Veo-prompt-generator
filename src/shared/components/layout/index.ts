@@ -1,7 +1,5 @@
 // Layout Components
-export { default as Header } from './Header';
 export { Sidebar } from './Sidebar';
-export { default as ActionBar } from './ActionBar';
 export { default as ModalManager } from './ModalManager';
 export { AppOverlays } from './AppOverlays';
 export { AppPanels } from './AppPanels';

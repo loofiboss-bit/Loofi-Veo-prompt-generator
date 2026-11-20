@@ -66,6 +66,10 @@
   padding: 16px;
   background: var(--color-bg-secondary);
 }
+.creator-grid article[data-highlighted='true'] {
+  border-color: var(--color-accent-600);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-600) 28%, transparent);
+}
 .creator-grid video {
   width: 100%;
   max-height: 180px;

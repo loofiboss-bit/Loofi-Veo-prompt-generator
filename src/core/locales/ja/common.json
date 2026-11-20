@@ -102,7 +102,8 @@
     "closeNavigation": "ナビゲーションを閉じる",
     "focusMode": "集中モード",
     "exitFocus": "集中モードを終了",
-    "start": "スタート"
+    "start": "スタート",
+    "director": "ディレクターモード"
   },
   "activity": {
     "queueEyebrow": "永続ジョブ",
@@ -149,7 +150,9 @@
       "optimize": "最適化パネルを開く",
       "optimizeDescription": "最適化提案を確認",
       "collaborate": "コラボを開く",
-      "collaborateDescription": "現在のプロジェクトを共有して共同作業"
+      "collaborateDescription": "現在のプロジェクトを共有して共同作業",
+      "director": "ディレクターモードを開く",
+      "directorDescription": "プロダクション実行の計画・承認・生成・レビュー・書き出し"
     }
   },
   "closeModal": "モーダルを閉じる",
@@ -171,7 +174,30 @@
     "remoteChange": "別のウィンドウでこのプロジェクトが変更されました。",
     "loadLatest": "最新版を読み込む",
     "saveCopy": "コピーとして保存",
-    "backupWarning": "プロジェクトは保存されましたが、自動バックアップに失敗しました："
+    "backupWarning": "プロジェクトは保存されましたが、自動バックアップに失敗しました：",
+    "libraryEyebrow": "プロジェクトライブラリ",
+    "consolidatedDescription": "ローカルプロジェクトを開きます。履歴と再利用可能なテンプレートは各プロジェクトの文脈に保持されます。",
+    "search": "プロジェクトを検索",
+    "sort": "プロジェクトを並べ替え",
+    "modified": "最近の更新",
+    "byName": "名前",
+    "showArchived": "アーカイブ済みを表示",
+    "backups": "自動バックアップ",
+    "backupVerification": "復元時にチェックサムを検証します。復元すると新しいプロジェクトが作成されます。",
+    "noBackups": "利用可能な自動バックアップはありません。",
+    "corruptBackup": "破損したバックアップ",
+    "restoreCopy": "コピーとして復元",
+    "closeBackups": "バックアップを閉じる",
+    "empty": "ローカルプロジェクトがまだありません。「作成」から新しく始めましょう。",
+    "current": "現在のプロジェクト",
+    "open": "プロジェクトを開く",
+    "newName": "新しいプロジェクト名",
+    "saveName": "名前を保存",
+    "cancel": "キャンセル",
+    "rename": "名前を変更",
+    "duplicate": "複製",
+    "unarchive": "アーカイブ解除",
+    "archive": "アーカイブ"
   },
   "assets": {
     "continuityProfiles": "継続性プロファイル",
@@ -194,7 +220,13 @@
     "splitPlayhead": "再生位置で分割",
     "trimStart": "先頭を再生位置までトリミング",
     "trimEnd": "末尾を再生位置までトリミング",
-    "remove": "クリップを削除"
+    "remove": "クリップを削除",
+    "deliveryControls": "これらのコントロールは動画書き出しでサポートされています。",
+    "start": "開始（秒）",
+    "duration": "長さ（秒）",
+    "sourceOffset": "ソースオフセット（秒）",
+    "volume": "音量",
+    "caption": "キャプション"
   },
   "focusMode": {
     "activeTitle": "集中モードが有効です",
@@ -209,5 +241,27 @@
     "filterReference": "参照",
     "filterGenerated": "生成済み",
     "filters": "メディアを絞り込む"
+  },
+  "contextRail": {
+    "localFirst": "ローカルファースト",
+    "toProduction": "プロダクション",
+    "toTimeline": "タイムライン",
+    "toStudio": "Prompt Studio"
+  },
+  "shortcuts": {
+    "title": "キーボードショートカット",
+    "general": "全般",
+    "editing": "編集",
+    "timeline": "タイムラインプレーヤー",
+    "commandPalette": "コマンドパレットを開く",
+    "buildPrompt": "Studioでプロンプトを組み立てる",
+    "openHelp": "ヘルプパネルを開く",
+    "savePreset": "プリセットを保存",
+    "closeDialog": "ダイアログを閉じる",
+    "undo": "元に戻す",
+    "redo": "やり直し",
+    "playPause": "再生 / 一時停止",
+    "shuttle": "逆再生 / 一時停止 / 早送り",
+    "stepFrame": "前へ / 次へステップ"
   }
 }

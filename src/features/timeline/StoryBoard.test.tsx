@@ -70,22 +70,6 @@ vi.mock('../studios/modals/WhiteboardModal', () => ({
   default: () => null,
 }));
 
-vi.mock('../studios/modals/InpaintingModal', () => ({
-  default: () => null,
-}));
-
-vi.mock('../studios/modals/GenerativeCanvasModal', () => ({
-  default: () => null,
-}));
-
-vi.mock('../studios/modals/RecordingBoothModal', () => ({
-  default: () => null,
-}));
-
-vi.mock('../studios/modals/ScriptImportReviewModal', () => ({
-  default: () => null,
-}));
-
 vi.mock('../studios/modals/TitleEditorModal', () => ({
   default: () => null,
 }));
@@ -95,10 +79,6 @@ vi.mock('../studios/modals/PoseEditorModal', () => ({
 }));
 
 vi.mock('@shared/components/MotionCropEditor', () => ({
-  default: () => null,
-}));
-
-vi.mock('../studios/modals/DubbingModal', () => ({
   default: () => null,
 }));
 

@@ -15,7 +15,6 @@ vi.mock('react-i18next', () => ({
 
 const mockStore = {
   resetAll: vi.fn(),
-  setNewProjectWizardOpen: vi.fn(),
   closeModal: vi.fn(),
   addPreset: vi.fn(),
   deletePreset: vi.fn(),
@@ -265,7 +264,6 @@ describe('useAppHandlers', () => {
     expect(opts.setErrors).toHaveBeenCalledWith({});
     expect(opts.resetGenerationState).toHaveBeenCalled();
     expect(mockProjectStore.clearCurrentProject).toHaveBeenCalled();
-    expect(mockStore.setNewProjectWizardOpen).toHaveBeenCalledWith(true);
   });
 
   // ─── handleNewPrompt ────────────────────────────────────────────

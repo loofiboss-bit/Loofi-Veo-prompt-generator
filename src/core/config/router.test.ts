@@ -29,20 +29,12 @@ vi.mock('../../App', () => ({
   App: () => null,
 }));
 
-vi.mock('@features/composer/ComposerPanel', () => ({
-  ComposerPanel: () => null,
-}));
-
 vi.mock('@features/timeline/TimelinePage', () => ({
   TimelinePage: () => null,
 }));
 
 vi.mock('@features/settings/SettingsPage', () => ({
   SettingsPage: () => null,
-}));
-
-vi.mock('@features/optimization', () => ({
-  OptimizePage: () => null,
 }));
 
 vi.mock('@features/director', () => ({

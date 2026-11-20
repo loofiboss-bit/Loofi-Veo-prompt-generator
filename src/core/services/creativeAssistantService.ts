@@ -1,4 +1,10 @@
 import type { CreativeSuggestion } from '@core/types/videoIteration';
+import {
+  i18n,
+  loadLanguageBundle,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from '@core/config/i18n';
 import { cleanJson, getAiClientAsync, getPromptModel, resilientCall } from './gemini/aiClient';
 import { logger } from './loggerService';
 
@@ -32,6 +38,7 @@ export class CreativeAssistantService {
     input: CreativeAnalysisInput,
     signal?: AbortSignal,
   ): Promise<CreativeSuggestion[]> {
+    const resolvedLang = this.resolveLanguageCode(input.language);
     try {
       const client = await getAiClientAsync();
       if (client) {
@@ -45,7 +52,40 @@ export class CreativeAssistantService {
       );
     }
 
+    await this.ensureLocaleLoaded(resolvedLang);
     return this.generateHeuristicSuggestions(input);
+  }
+
+  private resolveLanguageCode(language?: string): string {
+    const candidate = (language || i18n.language || 'en').toLowerCase().slice(0, 2);
+    return SUPPORTED_LANGUAGES.includes(candidate as SupportedLanguage) ? candidate : 'en';
+  }
+
+  private async ensureLocaleLoaded(lang: string): Promise<void> {
+    if (
+      !SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage) ||
+      i18n.hasResourceBundle(lang, 'studio')
+    ) {
+      return;
+    }
+    const bundle = await loadLanguageBundle(lang as SupportedLanguage);
+    for (const [namespace, resources] of Object.entries(bundle)) {
+      i18n.addResourceBundle(lang, namespace, resources, true, true);
+    }
+  }
+
+  private translateHeuristic(
+    key: string,
+    lng: string,
+    defaultValue: string,
+    params?: Record<string, string>,
+  ): string {
+    return i18n.t(`creativeAssistant.heuristics.${key}`, {
+      ns: 'studio',
+      lng,
+      defaultValue,
+      ...(params ?? {}),
+    });
   }
 
   private async generateWithAi(
@@ -96,10 +136,15 @@ Current Version: v${input.currentVersion ?? 1}`;
       typeof response?.text === 'string'
         ? response.text
         : response?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return this.generateHeuristicSuggestions(input);
+    const resolvedLang = this.resolveLanguageCode(input.language);
+    if (!text) {
+      await this.ensureLocaleLoaded(resolvedLang);
+      return this.generateHeuristicSuggestions(input);
+    }
 
     const parsed = JSON.parse(cleanJson(text));
     if (!Array.isArray(parsed) || parsed.length === 0) {
+      await this.ensureLocaleLoaded(resolvedLang);
       return this.generateHeuristicSuggestions(input);
     }
 
@@ -120,33 +165,45 @@ Current Version: v${input.currentVersion ?? 1}`;
     const suggestions: CreativeSuggestion[] = [];
     const prompt = input.currentPrompt.toLowerCase();
     const idea = input.idea.toLowerCase();
-    const isEnglish = Boolean(input.language && input.language.toLowerCase().startsWith('en'));
+    const lng = this.resolveLanguageCode(input.language);
 
     // 1. Camera & Framing check
     if (!prompt.includes('tracking') && !prompt.includes('dolly') && !prompt.includes('pan')) {
       suggestions.push({
         id: `sug-cam-${Date.now()}-1`,
         category: 'camera',
-        title: isEnglish ? 'Add dynamic camera movement' : 'Lägg till dynamisk kamerarörelse',
-        description: isEnglish
-          ? 'A smooth tracking shot or slow dolly push enhances depth perception and kinetic flow.'
-          : 'En mjuk tracking-shot eller långsam dolly framåt förhöjer djupkänslan och rörelsen.',
-        suggestedInstruction: isEnglish
-          ? 'Change the camera movement to a smooth low-angle tracking shot following the main subject.'
-          : 'Gör om kamerarörelsen till en mjuk low-angle tracking shot som följer huvudmotivet.',
+        title: this.translateHeuristic('cameraAdd.title', lng, 'Add dynamic camera movement'),
+        description: this.translateHeuristic(
+          'cameraAdd.description',
+          lng,
+          'A smooth tracking shot or slow dolly push enhances depth perception and kinetic flow.',
+        ),
+        suggestedInstruction: this.translateHeuristic(
+          'cameraAdd.instruction',
+          lng,
+          'Change the camera movement to a smooth low-angle tracking shot following the main subject.',
+        ),
         confidence: 'high',
       });
     } else {
       suggestions.push({
         id: `sug-cam-${Date.now()}-2`,
         category: 'camera',
-        title: isEnglish ? 'Refine depth of field and focus' : 'Förfina skärpedjup och fokus',
-        description: isEnglish
-          ? 'A shallower depth of field separates the hero subject cleanly from the background.'
-          : 'Ett grundare skärpedjup (shallow depth of field) separerar motivet från bakgrunden.',
-        suggestedInstruction: isEnglish
-          ? 'Pull sharp focus on the subject with creamy bokeh and cinematic background blur.'
-          : 'Fokusera skarpt på motivet med mjuk bokeh och cinematisk bakgrundsoskärpa.',
+        title: this.translateHeuristic(
+          'cameraRefine.title',
+          lng,
+          'Refine depth of field and focus',
+        ),
+        description: this.translateHeuristic(
+          'cameraRefine.description',
+          lng,
+          'A shallower depth of field separates the hero subject cleanly from the background.',
+        ),
+        suggestedInstruction: this.translateHeuristic(
+          'cameraRefine.instruction',
+          lng,
+          'Pull sharp focus on the subject with creamy bokeh and cinematic background blur.',
+        ),
         confidence: 'high',
       });
     }
@@ -161,26 +218,42 @@ Current Version: v${input.currentVersion ?? 1}`;
       suggestions.push({
         id: `sug-light-${Date.now()}-1`,
         category: 'lighting',
-        title: isEnglish ? 'Enhance lighting and atmosphere' : 'Förstärk ljussättning och stämning',
-        description: isEnglish
-          ? 'Volumetric lighting and subtle rim light give the scene cinematic presence and texture.'
-          : 'Volymetriskt ljus och sidoljus (rim lighting) ger scenen filmisk närvaro och textur.',
-        suggestedInstruction: isEnglish
-          ? 'Adjust lighting to golden hour with warm volumetric backlight rays and subtle atmospheric haze.'
-          : 'Justera ljussättningen till gyllene timmen med varma motljusstrålar och mjuk rök i luften.',
+        title: this.translateHeuristic(
+          'lightingEnhance.title',
+          lng,
+          'Enhance lighting and atmosphere',
+        ),
+        description: this.translateHeuristic(
+          'lightingEnhance.description',
+          lng,
+          'Volumetric lighting and subtle rim light give the scene cinematic presence and texture.',
+        ),
+        suggestedInstruction: this.translateHeuristic(
+          'lightingEnhance.instruction',
+          lng,
+          'Adjust lighting to golden hour with warm volumetric backlight rays and subtle atmospheric haze.',
+        ),
         confidence: 'high',
       });
     } else {
       suggestions.push({
         id: `sug-light-${Date.now()}-2`,
         category: 'lighting',
-        title: isEnglish ? 'Match visual color continuity' : 'Matcha visuell färgkontinuitet',
-        description: isEnglish
-          ? 'Keep color temperature and highlight contrast consistent so the clip cuts seamlessly into neighboring shots.'
-          : 'Säkerställ jämn färgton och kontrast i högdagrar så klippet binder sömlöst till nästa scen.',
-        suggestedInstruction: isEnglish
-          ? 'Preserve the exact color palette and key-light angle to ensure seamless cut continuity.'
-          : 'Behåll samma färgpalett och ljusvinkel för att säkerställa perfekt klippkontinuitet.',
+        title: this.translateHeuristic(
+          'lightingContinuity.title',
+          lng,
+          'Match visual color continuity',
+        ),
+        description: this.translateHeuristic(
+          'lightingContinuity.description',
+          lng,
+          'Keep color temperature and highlight contrast consistent so the clip cuts seamlessly into neighboring shots.',
+        ),
+        suggestedInstruction: this.translateHeuristic(
+          'lightingContinuity.instruction',
+          lng,
+          'Preserve the exact color palette and key-light angle to ensure seamless cut continuity.',
+        ),
         confidence: 'medium',
       });
     }
@@ -196,15 +269,21 @@ Current Version: v${input.currentVersion ?? 1}`;
         suggestions.push({
           id: `sug-dev-${Date.now()}`,
           category: 'deviation',
-          title: isEnglish
-            ? 'Potential deviation from core idea'
-            : 'Möjlig avvikelse från grundidén',
-          description: isEnglish
-            ? 'Your original concept mentioned night/rain, but the current prompt omits explicit weather atmosphere.'
-            : 'Din ursprungliga idé nämnde natt/regn, men prompten saknar explicit atmosfäriskt väder.',
-          suggestedInstruction: isEnglish
-            ? 'Add a night setting with rain-slicked streets and reflective neon light sources.'
-            : 'Lägg till nattmiljö med regnvåta gator och reflekterande ljuskällor.',
+          title: this.translateHeuristic(
+            'deviation.title',
+            lng,
+            'Potential deviation from core idea',
+          ),
+          description: this.translateHeuristic(
+            'deviation.description',
+            lng,
+            'Your original concept mentioned night/rain, but the current prompt omits explicit weather atmosphere.',
+          ),
+          suggestedInstruction: this.translateHeuristic(
+            'deviation.instruction',
+            lng,
+            'Add a night setting with rain-slicked streets and reflective neon light sources.',
+          ),
           confidence: 'high',
         });
       }
@@ -212,17 +291,28 @@ Current Version: v${input.currentVersion ?? 1}`;
 
     // 4. Neighboring Storyboard Continuity Check (when Storyboard context is present)
     if (input.neighboringShotSummary?.trim()) {
-      const neighbor = input.neighboringShotSummary.trim();
+      const neighbor = input.neighboringShotSummary.trim().slice(0, 60);
+      const neighborInstruction = input.neighboringShotSummary.trim().slice(0, 80);
       suggestions.push({
         id: `sug-cont-${Date.now()}`,
         category: 'lighting',
-        title: isEnglish ? 'Storyboard continuity alignment' : 'Kontinuitet mot Storyboard-scener',
-        description: isEnglish
-          ? `Aligns visual tone with adjacent Storyboard scenes (${neighbor.slice(0, 60)}).`
-          : `Matchar visuell ton mot intilliggande Storyboard-scener (${neighbor.slice(0, 60)}).`,
-        suggestedInstruction: isEnglish
-          ? `Match camera pacing, subject scale, and lighting continuity with adjacent scene: ${neighbor.slice(0, 80)}.`
-          : `Matcha kameratempo, motivskala och ljuskontinuitet med intilliggande scen: ${neighbor.slice(0, 80)}.`,
+        title: this.translateHeuristic(
+          'storyboardContinuity.title',
+          lng,
+          'Storyboard continuity alignment',
+        ),
+        description: this.translateHeuristic(
+          'storyboardContinuity.description',
+          lng,
+          `Aligns visual tone with adjacent Storyboard scenes (${neighbor}).`,
+          { neighbor },
+        ),
+        suggestedInstruction: this.translateHeuristic(
+          'storyboardContinuity.instruction',
+          lng,
+          `Match camera pacing, subject scale, and lighting continuity with adjacent scene: ${neighborInstruction}.`,
+          { neighbor: neighborInstruction },
+        ),
         confidence: 'medium',
       });
     }
@@ -231,13 +321,17 @@ Current Version: v${input.currentVersion ?? 1}`;
     suggestions.push({
       id: `sug-iter-${Date.now()}`,
       category: 'iteration-prompt',
-      title: isEnglish ? 'Cinematic micro-refinement' : 'Cinematisk finjustering',
-      description: isEnglish
-        ? 'Optimized instruction for the next AI iteration of this clip.'
-        : 'Optimerad instruktion för nästa AI-iteration av detta klipp.',
-      suggestedInstruction: isEnglish
-        ? 'Enhance cinematic realism with finer atmospheric particles, natural wind movement in hair/fabric, and subtle film grain.'
-        : 'Förstärk den cinematiska realismen med finare partiklar, naturlig vind i hår/kläder och subtil filmkornighet.',
+      title: this.translateHeuristic('iterationRefine.title', lng, 'Cinematic micro-refinement'),
+      description: this.translateHeuristic(
+        'iterationRefine.description',
+        lng,
+        'Optimized instruction for the next AI iteration of this clip.',
+      ),
+      suggestedInstruction: this.translateHeuristic(
+        'iterationRefine.instruction',
+        lng,
+        'Enhance cinematic realism with finer atmospheric particles, natural wind movement in hair/fabric, and subtle film grain.',
+      ),
       confidence: 'high',
     });
 

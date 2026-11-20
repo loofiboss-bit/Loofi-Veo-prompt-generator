@@ -362,7 +362,8 @@ class CreatorRenderEngine {
         for (const artifact of await fs.readdir(path.join(this.root, name))) {
           if (
             artifact.startsWith('input-') ||
-            ['output.mp4', 'logo.png', 'fonts'].includes(artifact)
+            artifact.startsWith('segment-') ||
+            ['output.mp4', 'logo.png', 'fonts', 'concat.txt'].includes(artifact)
           )
             await fs.rm(path.join(this.root, name, artifact), { recursive: true, force: true });
         }

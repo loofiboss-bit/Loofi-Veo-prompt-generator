@@ -21,14 +21,8 @@ const MODAL_KEYS = [
   'isHistoryOpen',
   'isTemplatesOpen',
   'isSavePresetModalOpen',
-  'isDNAModalOpen',
-  'isCharacterBankOpen',
-  'isLocationBankOpen',
   'isProjectManagerOpen',
-  'isSeriesBibleOpen',
   'isVariablesPanelOpen',
-  'isWizardOpen',
-  'isNewProjectWizardOpen',
   'isSearchOpen',
   'isVariationsOpen',
   'isShortcutsOpen',
@@ -41,14 +35,8 @@ beforeEach(() => {
     isHistoryOpen: false,
     isTemplatesOpen: false,
     isSavePresetModalOpen: false,
-    isDNAModalOpen: false,
-    isCharacterBankOpen: false,
-    isLocationBankOpen: false,
     isProjectManagerOpen: false,
-    isSeriesBibleOpen: false,
     isVariablesPanelOpen: false,
-    isWizardOpen: false,
-    isNewProjectWizardOpen: false,
     isSearchOpen: false,
     isVariationsOpen: false,
     isShortcutsOpen: false,
@@ -112,18 +100,17 @@ describe('uiSlice — openModal / closeModal', () => {
   });
 
   it('can open multiple modals independently', () => {
-    useAppStore.getState().openModal('isDNAModalOpen');
+    useAppStore.getState().openModal('isProjectManagerOpen');
     useAppStore.getState().openModal('isSearchOpen');
     const state = useAppStore.getState();
-    expect(state.isDNAModalOpen).toBe(true);
+    expect(state.isProjectManagerOpen).toBe(true);
     expect(state.isSearchOpen).toBe(true);
     expect(state.isHistoryOpen).toBe(false);
   });
 
   it('closing a modal that is already closed keeps it false', () => {
-    // isWizardOpen starts as false
-    useAppStore.getState().closeModal('isWizardOpen');
-    expect(useAppStore.getState().isWizardOpen).toBe(false);
+    useAppStore.getState().closeModal('isVariablesPanelOpen');
+    expect(useAppStore.getState().isVariablesPanelOpen).toBe(false);
   });
 });
 
@@ -131,7 +118,7 @@ describe('uiSlice — closeAllModals', () => {
   it('closes every modal and resets activeStudio', () => {
     // Open several modals and a studio
     useAppStore.getState().openModal('isHistoryOpen');
-    useAppStore.getState().openModal('isCharacterBankOpen');
+    useAppStore.getState().openModal('isProjectManagerOpen');
     useAppStore.getState().openModal('isShortcutsOpen');
     useAppStore.getState().openStudio('image');
 
@@ -175,18 +162,5 @@ describe('uiSlice — openStudio / closeStudio', () => {
   it('closing studio when none is open keeps null', () => {
     useAppStore.getState().closeStudio();
     expect(useAppStore.getState().activeStudio).toBeNull();
-  });
-});
-
-describe('uiSlice — setNewProjectWizardOpen', () => {
-  it('opens the new project wizard via dedicated setter', () => {
-    useAppStore.getState().setNewProjectWizardOpen(true);
-    expect(useAppStore.getState().isNewProjectWizardOpen).toBe(true);
-  });
-
-  it('closes the new project wizard via dedicated setter', () => {
-    useAppStore.getState().setNewProjectWizardOpen(true);
-    useAppStore.getState().setNewProjectWizardOpen(false);
-    expect(useAppStore.getState().isNewProjectWizardOpen).toBe(false);
   });
 });

@@ -29,11 +29,9 @@ interface ShotCardProps {
   onFoley: (id: number) => void;
   onMagicMask: (id: number) => void;
   onMotionEditor: (id: number) => void;
-  onDubbing: (id: number) => void;
   onUpscale: (shot: Shot) => void;
   onColorMatch: (id: number) => void;
   onColorMatchTarget: (id: number | null) => void;
-  onRecording: (id: number) => void;
 }
 
 const ShotCard: React.FC<ShotCardProps> = React.memo(
@@ -55,11 +53,9 @@ const ShotCard: React.FC<ShotCardProps> = React.memo(
     onFoley,
     onMagicMask,
     onMotionEditor,
-    onDubbing,
     onUpscale,
     onColorMatch,
     onColorMatchTarget,
-    onRecording,
   }) => (
     <div
       className={`bg-slate-900 border ${isSelected ? 'border-cyan-500 ring-1 ring-cyan-500/50' : 'border-slate-800'} rounded-xl p-4 flex gap-4 transition-all hover:border-slate-600`}
@@ -179,16 +175,6 @@ const ShotCard: React.FC<ShotCardProps> = React.memo(
                 <Icon name="move" className="w-4 h-4" />
               </button>
             )}
-            {shot.generatedVideoUrl && shot.dialogueText && (
-              <button
-                onClick={() => onDubbing(shot.id)}
-                className="p-2 bg-emerald-700 hover:bg-emerald-600 rounded-full text-white"
-                title="Global Dub (Translate & Sync)"
-                aria-label="Global Dub (Translate & Sync)"
-              >
-                <Icon name="globe" className="w-4 h-4" />
-              </button>
-            )}
             {shot.generatedVideoUrl && !shot.is4K && !isUpscalingShot && (
               <button
                 onClick={() => onUpscale(shot)}
@@ -212,24 +198,14 @@ const ShotCard: React.FC<ShotCardProps> = React.memo(
             placeholder={t.actionPlaceholder}
             rows={3}
           />
-          <div className="relative">
-            <TextAreaInput
-              label="Dialogue"
-              name={`dialogue-${shot.id}`}
-              value={shot.dialogueText || ''}
-              onChange={(e) => onShotChange(shot.id, 'dialogueText', e.target.value)}
-              placeholder="Spoken lines..."
-              rows={2}
-            />
-            <button
-              onClick={() => onRecording(shot.id)}
-              className="absolute top-0 right-0 mt-8 mr-2 text-slate-400 hover:text-red-400"
-              title="Record Audio"
-              aria-label="Record Audio"
-            >
-              <Icon name="audio" className="w-4 h-4" />
-            </button>
-          </div>
+          <TextAreaInput
+            label="Dialogue"
+            name={`dialogue-${shot.id}`}
+            value={shot.dialogueText || ''}
+            onChange={(e) => onShotChange(shot.id, 'dialogueText', e.target.value)}
+            placeholder="Spoken lines..."
+            rows={2}
+          />
         </div>
 
         {/* Config */}

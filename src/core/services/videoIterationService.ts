@@ -2,6 +2,7 @@ import { getModel } from '@core/models/catalog';
 import { estimateMaximumModelCost } from '@core/models/cost';
 import { getDesktopProviderBridge } from '@core/providers/electronBridgeAdapter';
 import { mediaAssetService } from './mediaAssetService';
+import { projectDocumentService } from './projectDocumentService';
 import { logger } from './loggerService';
 import { createStore, get, set } from 'idb-keyval';
 import type {
@@ -207,9 +208,51 @@ export class VideoIterationService {
     };
   }
 
+  private sanitizeSessionForProject(session: VideoIterationSession): VideoIterationSession {
+    return {
+      ...session,
+      turns: session.turns.map((turn) => ({
+        ...turn,
+        assetUrl: turn.assetUrl?.startsWith('blob:') ? undefined : turn.assetUrl,
+      })),
+    };
+  }
+
+  private async hydrateSessionUrls(
+    session: VideoIterationSession,
+    baseAssetUrl?: string,
+  ): Promise<VideoIterationSession> {
+    const hydratedTurns = await Promise.all(
+      session.turns.map(async (turn) => {
+        const refreshedUrl = await mediaAssetService.getObjectUrl(turn.assetId);
+        let desktopUrl: string | undefined;
+        if (!refreshedUrl && typeof window !== 'undefined' && window.electron?.readDesktopMedia) {
+          try {
+            const desktop = await window.electron.readDesktopMedia(turn.assetId);
+            desktopUrl = desktop?.displayUrl ?? desktop?.localUrl;
+          } catch {
+            // Ignore desktop media read failures here; fallback handles missing URL
+          }
+        }
+        return {
+          ...turn,
+          assetUrl:
+            refreshedUrl ||
+            desktopUrl ||
+            turn.assetUrl ||
+            (turn.version === 1 ? baseAssetUrl : undefined),
+        };
+      }),
+    );
+    return {
+      ...session,
+      turns: hydratedTurns,
+    };
+  }
+
   /**
-   * Loads an existing session from IndexedDB and refreshes transient Blob ObjectURLs,
-   * or creates a new initial session if none exists.
+   * Loads an existing session from the project document or IndexedDB and refreshes
+   * transient Blob/Desktop URLs, or creates a new initial session if none exists.
    */
   async getOrCreateSession(params: {
     projectId: string;
@@ -227,24 +270,17 @@ export class VideoIterationService {
   }): Promise<VideoIterationSession> {
     const sessionId = `iter-session-${params.artifactId}-${params.variantIndex}`;
     try {
-      const existing = await this.getSession(sessionId);
+      const project = await projectDocumentService.load(params.projectId).catch(() => null);
+      const projectSession = project?.videoIterationSessions?.find(
+        (candidate) => candidate.id === sessionId,
+      );
+      const existing = projectSession ?? (await this.getSession(sessionId));
       if (existing && existing.turns.length > 0 && existing.rootAssetId === params.baseAsset.id) {
-        const hydratedTurns = await Promise.all(
-          existing.turns.map(async (turn) => {
-            const refreshedUrl = await mediaAssetService.getObjectUrl(turn.assetId);
-            return {
-              ...turn,
-              assetUrl:
-                refreshedUrl ||
-                turn.assetUrl ||
-                (turn.version === 1 ? params.baseAsset.url : undefined),
-            };
-          }),
-        );
-        return {
-          ...existing,
-          turns: hydratedTurns,
-        };
+        const hydrated = await this.hydrateSessionUrls(existing, params.baseAsset.url);
+        if (!projectSession && project) {
+          await this.syncSessionToProject(existing).catch(() => undefined);
+        }
+        return hydrated;
       }
     } catch (error) {
       logger.warn('Failed to hydrate saved VideoIterationSession, creating fresh session', error);
@@ -474,6 +510,11 @@ export class VideoIterationService {
       }
 
       if (!videoBytesBase64) {
+        if (inputs && inputs.length > 0) {
+          throw new Error(
+            'No video data received from the AI model. Uploading source video for editing or extension is unavailable in the EEA, Switzerland, the UK, and some US states, or the model returned an empty output.',
+          );
+        }
         throw new Error('No video data received from the AI model.');
       }
 
@@ -538,8 +579,33 @@ export class VideoIterationService {
     return (await get<VideoIterationSession>(id, ITERATION_STORE)) ?? null;
   }
 
+  private async syncSessionToProject(session: VideoIterationSession): Promise<void> {
+    const existingProject = await projectDocumentService.load(session.projectId);
+    if (!existingProject) return;
+    const sanitized = this.sanitizeSessionForProject(session);
+    await projectDocumentService.update(session.projectId, async (current) => {
+      const target = current ?? existingProject;
+      const sessions = new Map(
+        (target.videoIterationSessions ?? []).map((item) => [item.id, item]),
+      );
+      const previous = sessions.get(sanitized.id);
+      if (!previous || sanitized.updatedAt >= previous.updatedAt) {
+        sessions.set(sanitized.id, sanitized);
+      }
+      return {
+        ...target,
+        videoIterationSessions: [...sessions.values()],
+      };
+    });
+  }
+
   async saveSession(session: VideoIterationSession): Promise<void> {
     await set(session.id, session, ITERATION_STORE);
+    try {
+      await this.syncSessionToProject(session);
+    } catch (error) {
+      logger.warn('Could not sync video iteration session into project document', error);
+    }
   }
 }
 

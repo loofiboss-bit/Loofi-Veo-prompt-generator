@@ -30,7 +30,7 @@ describe('TutorialOverlay', () => {
 
     render(
       <>
-        <div data-tour-id="app-header">Header target</div>
+        <div data-tour-id="workspace-context-rail">Header target</div>
         <OnboardingProvider>
           <TutorialOverlay />
         </OnboardingProvider>

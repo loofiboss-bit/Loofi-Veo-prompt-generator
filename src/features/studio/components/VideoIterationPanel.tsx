@@ -503,6 +503,15 @@ export const VideoIterationPanel: React.FC<VideoIterationPanelProps> = ({
             </button>
           </div>
 
+          {!activeTurn.interactionId && (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200">
+              {t('videoIteration.eeaUploadNotice', {
+                defaultValue:
+                  'Regional notice: Uploading a source video to Gemini Omni for editing or extension is restricted in the EEA, Switzerland, the UK, and some US states. Text-to-video and manual handoff remain available.',
+              })}
+            </p>
+          )}
+
           {error && (
             <p role="alert" className="text-xs text-rose-400">
               {error}

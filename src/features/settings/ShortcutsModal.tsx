@@ -1,4 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import AppDialog from '@shared/components/ui/AppDialog';
 import Icon from '@shared/components/ui/Icon';
 
 interface ShortcutsModalProps {
@@ -9,87 +11,80 @@ interface ShortcutsModalProps {
 const ShortcutRow: React.FC<{ keys: string[]; label: string }> = ({ keys, label }) => (
   <div className="flex justify-between items-center py-2 border-b border-slate-700/50 last:border-0">
     <span className="text-sm text-slate-300">{label}</span>
-    <div className="flex gap-1">
+    <div className="flex gap-1 shrink-0">
       {keys.map((k, i) => (
-        <span
-          key={i}
+        <kbd
+          key={`${k}-${i}`}
           className="rounded border border-slate-600 bg-slate-700 px-2 py-1 font-mono text-xs font-bold text-blue-400 shadow-sm"
         >
           {k}
-        </span>
+        </kbd>
       ))}
     </div>
   </div>
 );
 
 const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
-  // Close on Escape internally handled by global hook or simple effect
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  const { t } = useTranslation('common');
 
   return (
-    <div
-      className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in-up"
-      onClick={onClose}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onClose();
-      }}
-      role="button"
-      tabIndex={0}
+    <AppDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      size="base"
+      title={
+        <span className="flex items-center gap-2 text-lg font-bold text-slate-100">
+          <Icon name="help" className="h-5 w-5 text-blue-400" />
+          {t('shortcuts.title', 'Keyboard Shortcuts')}
+        </span>
+      }
+      bodyClassName="p-6"
     >
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Stops propagation to prevent backdrop dismiss; presentation-only interaction */}
-      <div
-        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-        role="dialog"
-        tabIndex={-1}
-      >
-        <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
-          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <Icon name="help" className="h-5 w-5 text-blue-400" />
-            Keyboard Shortcuts
-          </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            <Icon name="cancel" className="w-5 h-5" />
-          </button>
-        </div>
+      <div className="grid gap-6">
+        <section>
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            {t('shortcuts.general', 'General')}
+          </h4>
+          <ShortcutRow
+            keys={['Ctrl', 'K']}
+            label={t('shortcuts.commandPalette', 'Open Command Palette')}
+          />
+          <ShortcutRow
+            keys={['Ctrl', 'Enter']}
+            label={t('shortcuts.buildPrompt', 'Build Prompt in Studio')}
+          />
+          <ShortcutRow keys={['?', 'F1']} label={t('shortcuts.openHelp', 'Open Help Panel')} />
+          <ShortcutRow
+            keys={['Ctrl', 'Shift', 'S']}
+            label={t('shortcuts.savePreset', 'Save Preset')}
+          />
+          <ShortcutRow keys={['Esc']} label={t('shortcuts.closeDialog', 'Close Dialog')} />
+        </section>
 
-        <div className="p-6 grid gap-6">
-          <div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              General
-            </h4>
-            <ShortcutRow keys={['?']} label="Show Shortcuts" />
-            <ShortcutRow keys={['Ctrl', 'Enter']} label="Generate Prompt" />
-            <ShortcutRow keys={['Esc']} label="Close Modal" />
-          </div>
+        <section>
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            {t('shortcuts.editing', 'Editing')}
+          </h4>
+          <ShortcutRow keys={['Ctrl', 'Z']} label={t('shortcuts.undo', 'Undo')} />
+          <ShortcutRow keys={['Ctrl', 'Shift', 'Z']} label={t('shortcuts.redo', 'Redo')} />
+        </section>
 
-          <div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Story Board
-            </h4>
-            <ShortcutRow keys={['Shift', 'N']} label="Add New Shot" />
-            <ShortcutRow keys={['Ctrl', 'Enter']} label="Batch Generate Prompts" />
-          </div>
-
-          <div>
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Timeline Player
-            </h4>
-            <ShortcutRow keys={['Space']} label="Play / Pause" />
-            <ShortcutRow keys={['←', '→']} label="Prev / Next Clip" />
-          </div>
-        </div>
+        <section>
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            {t('shortcuts.timeline', 'Timeline Player')}
+          </h4>
+          <ShortcutRow keys={['Space']} label={t('shortcuts.playPause', 'Play / Pause')} />
+          <ShortcutRow
+            keys={['J', 'K', 'L']}
+            label={t('shortcuts.shuttle', 'Reverse / Pause / Forward')}
+          />
+          <ShortcutRow
+            keys={['←', '→']}
+            label={t('shortcuts.stepFrame', 'Step Backward / Forward')}
+          />
+        </section>
       </div>
-    </div>
+    </AppDialog>
   );
 };
 

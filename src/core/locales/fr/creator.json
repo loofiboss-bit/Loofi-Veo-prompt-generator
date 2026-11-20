@@ -23,7 +23,8 @@
     "musicLyricsDescription": "Préparez un style musical et des paroles à copier ou à relire.",
     "musicLyrics": "Ouvrir musique et paroles",
     "moreTools": "Autres façons de travailler",
-    "moreToolsDescription": "Des exemples hors ligne et des recettes modifiables sont disponibles comme point de départ."
+    "moreToolsDescription": "Des exemples hors ligne et des recettes modifiables sont disponibles comme point de départ.",
+    "clipsReadyHint": "Prêt pour le montage local — sélectionnez des fichiers vidéo, audio ou image ci-dessous."
   },
   "examples": {
     "title": "Essayez hors ligne — sans compte ni clé API",

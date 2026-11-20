@@ -125,5 +125,24 @@ _Goal: Intuitive guided delivery, unified media library protection, complete plu
   - Fast "Continue editing" shortcut for the active project in Projects hub, routing to Timeline if clips exist or Studio otherwise.
   - Primary "Open editor & import media" action in empty timeline state.
 - [x] **5.5 Full 6-Language i18n & Scoped Zero-Warning ESLint Guard:**
-  - Translate all lingering hardcoded UI strings (Focus Mode, Magnetic, Snap, Snap Cuts) across English, Swedish, German, French, Spanish, Japanese, and Arabic.
+  - Translate all UI strings across English, Swedish, Spanish, French, Japanese, and Arabic with 100% key parity enforced across all 17 namespaces via `npm run i18n:all:check`.
   - Scoped ESLint rule (`react/jsx-no-literals`) enforcing zero raw strings in key delivery and media components while maintaining the strict 0-warning `.lint-threshold`.
+
+---
+
+## Phase 6: Release 1 Workspace Cohesion, Data Integrity & Performance Hardening (Completed)
+
+_Goal: Eliminate silent edit data loss, unify navigation/shortcuts around active workspaces, retire abandoned UI shells, and enforce strict bundle and localization gates._
+
+- [x] **6.1 Non-Destructive Bridge & Portable Video Iteration Lineage (`videoVersionService.ts`, `videoIterationService.ts`, `projectTransferService.ts`):**
+  - Preserve existing storyboard shot `action`, `duration`, and trimmed timeline clips when applying iterated video takes, and preserve 3–15s Omni durations across bridges.
+  - Persist `VideoIterationSession[]` on canonical project documents (SQLite WAL `meta_json`), rehydrate desktop media assets across sessions and `.loofi-project` bundles, and surface clear EEA/Switzerland/UK upload caveats.
+- [x] **6.2 Resilient Vision & Timeline/Render Hygiene (`geminiVisionService.ts`, `creator-render.cjs`, `timelineSlice.ts`):**
+  - Migrate vision/SFX/auto-tagging endpoints onto `resilientCall` so desktop `maxRetries=0` cost-approval boundaries apply uniformly.
+  - Extend interrupted FFmpeg render recovery to sweep orphaned `segment-*` / `concat.txt` files and remove silent 50-shot truncation in `gcTimeline`.
+- [x] **6.3 Coherent Workspace & Retired Legacy Shells (`AppScaffold.tsx`, `StartPage.tsx`, `ShortcutsModal.tsx`, `ModalManager.tsx`):**
+  - Focus/highlight local clip import when onboarding opens `/start?mode=clips`, upgrade the context row into a responsive Workspace Context Rail, wire `Ctrl+Enter` to Prompt Studio build, and standardize `ShortcutsModal` onto `<AppDialog>`.
+  - Remove legacy `Header`, `ActionBar`, `PromptWorkspace`, `SunoSongStudio`, `OptimizePage`, `AiCoDirectorWidget`, `NewProjectWizard`, `ComposerPanel`, and dead `StoryBoard`/`ShotCard` modals.
+- [x] **6.4 Bundle Budget, Icon Modularity & 6-Locale Parity (`vite.config.ts`, `iconRegistry.ts`, `check-bundle-budget.mjs`, `check-translations.mjs`):**
+  - Exclude unused 24 MB `ort-wasm-simd-threaded.asyncify.wasm` while preserving Whisper ASR (`npm run bundle:check` < 22 MB).
+  - Replace the 1,624-line switch in `Icon.tsx` with data-driven `iconRegistry.ts`, retire legacy `constants/translations.ts`, localize `creativeAssistantService` via i18n, and enforce 100% key parity across 6 languages x 17 namespaces.

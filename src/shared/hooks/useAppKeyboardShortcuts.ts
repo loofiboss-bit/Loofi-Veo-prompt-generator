@@ -18,12 +18,10 @@ interface UseAppKeyboardShortcutsOptions {
   modalState: {
     isHistoryOpen: boolean;
     isTemplatesOpen: boolean;
-    isDNAModalOpen: boolean;
-    isCharacterBankOpen: boolean;
-    isLocationBankOpen: boolean;
     isProjectManagerOpen: boolean;
-    isWizardOpen: boolean;
-    isSeriesBibleOpen: boolean;
+    isShortcutsOpen?: boolean;
+    isSearchOpen?: boolean;
+    isVariablesPanelOpen?: boolean;
   };
 }
 
@@ -40,12 +38,10 @@ export const useAppKeyboardShortcuts = ({
     !activeStudio &&
     !modalState.isHistoryOpen &&
     !modalState.isTemplatesOpen &&
-    !modalState.isDNAModalOpen &&
-    !modalState.isCharacterBankOpen &&
-    !modalState.isLocationBankOpen &&
     !modalState.isProjectManagerOpen &&
-    !modalState.isWizardOpen &&
-    !modalState.isSeriesBibleOpen;
+    !modalState.isShortcutsOpen &&
+    !modalState.isSearchOpen &&
+    !modalState.isVariablesPanelOpen;
 
   useHotkeys(
     {

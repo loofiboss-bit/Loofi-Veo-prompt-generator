@@ -23,7 +23,8 @@
     "musicLyricsDescription": "音楽スタイルと歌詞を作成し、コピーまたは確認します。",
     "musicLyrics": "音楽と歌詞を開く",
     "moreTools": "その他の作業方法",
-    "moreToolsDescription": "必要なときに使えるオフライン例と編集可能なレシピがあります。"
+    "moreToolsDescription": "必要なときに使えるオフライン例と編集可能なレシピがあります。",
+    "clipsReadyHint": "ローカル編集の準備ができました — 下から動画・音声・画像ファイルを選択してください。"
   },
   "examples": {
     "title": "オフラインで試す — アカウントもAPIキーも不要",

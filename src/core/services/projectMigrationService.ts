@@ -50,6 +50,7 @@ export const projectSchemaV18 = z
     studioDraft: z.record(z.string(), z.unknown()).optional(),
     studioRevisions: z.array(z.record(z.string(), z.unknown())).optional().default([]),
     studioResults: z.array(z.record(z.string(), z.unknown())).optional().default([]),
+    videoIterationSessions: z.array(z.record(z.string(), z.unknown())).optional().default([]),
     composer: z.record(z.string(), z.unknown()).optional(),
   })
   .passthrough();

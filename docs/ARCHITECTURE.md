@@ -99,22 +99,18 @@ The web renderer remains usable for local planning, prompt transpilation, 3D sta
 
 ## 2. Product Surfaces & Modular Information Architecture
 
-The application layout centers on eight primary destinations:
+The application shell (`AppScaffold.tsx`) pairs a responsive sidebar with a **Workspace Context Rail** (`project-indicator`, Local-first status badge, contextual Next Action shortcuts, and Command Palette trigger `Ctrl+K`) and routes cleanly across the canonical destinations:
 
-1. **Prompt Studio** (`/` or `/studio`): Default first-run surface. Modularized into:
-   - `VideoPromptStudio.tsx`: Core prompt form, Universal Model Target selector, 3D camera rig binding, reference manager.
-   - `MusicPromptStudio.tsx`: Suno Custom Mode lyrics generator, energy curve designer, section locks.
-   - `PromptVariantCard.tsx`: Reusable cards for Recommended Primary, Cinematic, and Control-focused variants.
-   - `PromptValidationList.tsx`: Real-time pass/warning/block checklists.
-2. **Production** (`/create`): Advanced 6-step pipeline (Brief → Scenes → Assets → Generate → Review → Export).
-3. **Projects** (`/hubs/projects`): Local project library, backups, and `.loofi-project` bundle import/export.
-4. **Assets & Continuity** (`/hubs/assets`): Production Bible v2, 4-angle turnaround sheets, reference hash manager.
-5. **Timeline & Previz** (`/hubs/timeline`): Previz Animatic Player, multi-track audio/video arrangement, OTIO/FCPXML 1.11 export.
-6. **Creator Delivery** (`/delivery` or within Timeline): Native FFmpeg delivery pipeline, multi-format rendering (9:16, 16:9, 1:1), linked captions, EBU R128 loudness normalization, and speech ducking.
-7. **Activity & Jobs** (`/hubs/activity`): Durable queue, ComfyUI render status, and retry controls.
-8. **Settings** (`/settings`): OS vault credentials, ComfyUI local GPU setup, and system diagnostics.
+1. **Start** (`/`, `/start`): Active project recovery, `?mode=clips` local media focus, offline examples, and creative recipes.
+2. **Prompt Studio** (`/studio`): Unified video (`?mode=video`) and music/lyrics (`?mode=music`) authoring workspace, Model Arena comparison, variant editing, AI Video Iteration (`VideoIterationPanel`), and 1-click **Open Timeline** handoff.
+3. **Production** (`/create`, compatibility alias `/director`): Advanced 6-step pipeline (Brief → Scenes → Assets → Generate → Review → Export).
+4. **Projects** (`/projects`): Local project library, SQLite WAL autosave/backups, and `.loofi-project` bundle import/export.
+5. **Assets & Continuity** (`/assets`): Production Bible profiles, 4-angle turnaround sheets, and reference hash manager.
+6. **Timeline & Delivery** (`/timeline`): Non-destructive multi-track editor, local Whisper ASR captioning, bundled FFmpeg MP4 rendering, and OTIO/ZIP delivery.
+7. **Activity & Jobs** (`/activity`): Durable paid-job queue, render job status, and recovery controls.
+8. **Settings** (`/settings`): OS vault credentials, language/theme settings, plugin marketplace, and system diagnostics.
 
-Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to `/create`.
+Legacy routes (`/composer`, `/optimize`) redirect cleanly to `/create`. Shared UI icons compile from data-driven [`iconRegistry.ts`](../src/shared/components/ui/iconRegistry.ts), and abandoned legacy layout shells (`Header`, `ActionBar`, `PromptWorkspace`, `SunoSongStudio`, `OptimizePage`) are removed.
 
 ---
 
@@ -136,14 +132,13 @@ Compatibility routes (`/director`, `/composer`, `/optimize`) redirect cleanly to
 - **Component**: `SpatialCamera3dViewport.tsx` (powered by Three.js)
 - **Optics Engine**: Simulates calibrated focal lengths (16mm–135mm & 2.39:1 Anamorphic) and apertures ($f/1.2$ to $f/16$).
 - **Map Generation**: Renders ControlNet conditioning maps (16-bit linear Depth, Surface Normal, and Wireframe geometry) client-side in the browser.
-- **Bundle Budget**: Total bundle budget configured to 4500 KB to accommodate Three.js and spatial math libraries.
+- **Bundle Budget**: Configured in `vite.config.ts` and enforced via `npm run bundle:check` (< 22 MB total `dist/assets/`). `stripUnusedOnnxAsyncifyWasmPlugin` rewrites unused ONNX `asyncify` references in worker builds while retaining the core `ort-wasm-simd-threaded` WASM runtime for local Whisper ASR.
 
-### 3.3 Multimodal AI Co-Director
+### 3.3 Multimodal Vision & Creative Advisory
 
-- **Service**: `src/features/codirector/`
-- **Model**: Gemini Live (`gemini-3.8-live`)
-- **Transport**: Real-time bidirectional WebSocket with Web Audio API capture and synthesized voice playback.
-- **Tool Boundary**: Co-Director calls structured tools to adjust camera focal length, scene lighting, shot sequencing, and script breakdowns without manual keyboard interaction.
+- **Vision Parity (`geminiVisionService.ts`)**: Outpaint, video analysis, SFX analysis, and auto-tagging route through `resilientCall` so desktop `maxRetries=0` cost-approval boundaries hold uniformly.
+- **Iteration Lineage (`videoIterationService.ts`, `projectDocumentService.ts`)**: `VideoIterationSession` trees persist directly in canonical project documents (SQLite WAL `meta_json`) and travel inside `.loofi-project` bundles while stripping ephemeral `blob:` URLs on save and rehydrating local media assets cleanly.
+- **Localized Creative Assistant (`creativeAssistantService.ts`)**: Offline heuristics resolve through `i18next` across all 6 locales (`en`, `sv`, `es`, `fr`, `ja`, `ar`), enforced at 100% key parity by `npm run i18n:all:check`.
 
 ### 3.4 ComfyUI Local GPU Engine
 

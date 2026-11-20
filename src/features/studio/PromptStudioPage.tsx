@@ -245,6 +245,7 @@ export function PromptStudioPage() {
   const activeAbort = useRef<AbortController | null>(null);
   const aiRequest = useRef(0);
   const historyRequest = useRef(0);
+  const primaryBuildActionRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     let active = true;
@@ -331,6 +332,14 @@ export function PromptStudioPage() {
     };
     window.addEventListener('beforeunload', warnUnsaved);
     return () => window.removeEventListener('beforeunload', warnUnsaved);
+  }, []);
+
+  useEffect(() => {
+    const handlePrimaryAction = () => {
+      primaryBuildActionRef.current();
+    };
+    window.addEventListener('loofi:primary-action', handlePrimaryAction);
+    return () => window.removeEventListener('loofi:primary-action', handlePrimaryAction);
   }, []);
 
   useEffect(() => {
@@ -1647,6 +1656,11 @@ export function PromptStudioPage() {
       />
     </Field>
   );
+  primaryBuildActionRef.current = () => {
+    if (!busy && !changing && targetActive) {
+      build();
+    }
+  };
 
   return (
     <div
@@ -1826,6 +1840,7 @@ export function PromptStudioPage() {
             <Field label={primaryInputLabel}>
               <textarea
                 ref={ideaRef}
+                data-tour-id="core-concept"
                 data-studio-field={mode === 'video' ? 'idea' : 'topic'}
                 aria-label={primaryInputLabel}
                 placeholder={
@@ -2065,6 +2080,7 @@ export function PromptStudioPage() {
                   </button>
                   <button
                     type="button"
+                    data-tour-id="studio-build-button"
                     disabled={busy || changing || !targetActive}
                     onClick={build}
                   >
@@ -2396,7 +2412,7 @@ export function PromptStudioPage() {
               </section>
             ) : null}
             <details className="studio-details studio-library">
-              <summary>{t('templatesHistory')}</summary>
+              <summary data-tour-id="studio-templates-trigger">{t('templatesHistory')}</summary>
               <div className="studio-library-tabs" role="group" aria-label={t('templatesHistory')}>
                 {(['templates', 'history', 'revisions'] as const).map((tab) => (
                   <button
@@ -2560,13 +2576,22 @@ export function PromptStudioPage() {
               ) : null}
               <div className="studio-result-heading">
                 <h2>{STUDIO_CAPABILITIES[currentArtifact.target].label + ' ' + t('handoff')}</h2>
-                <span>
-                  {currentArtifact.provenance.source === 'optimizer'
-                    ? t('variantEdit.aiEdited', { defaultValue: 'Edited with AI' })
-                    : currentArtifact.provenance.source === 'editor'
-                      ? t('editedLocally')
-                      : t('compiledLocally')}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>
+                    {currentArtifact.provenance.source === 'optimizer'
+                      ? t('variantEdit.aiEdited', { defaultValue: 'Edited with AI' })
+                      : currentArtifact.provenance.source === 'editor'
+                        ? t('editedLocally')
+                        : t('compiledLocally')}
+                  </span>
+                  <button
+                    type="button"
+                    className="studio-secondary text-xs"
+                    onClick={() => navigate(ROUTES.TIMELINE)}
+                  >
+                    {t('openTimeline', { defaultValue: 'Open Timeline' })}
+                  </button>
+                </div>
               </div>
               {currentArtifact.validation.some((check) => check.status === 'blocked') ? (
                 <ValidationRail
@@ -2826,7 +2851,7 @@ export function PromptStudioPage() {
                         onClick={() => handleLocalMusicTransform('clean-style')}
                       >
                         {t('variantEdit.cleanStyle', {
-                          defaultValue: 'Clean & Cap Style (≤200)',
+                          defaultValue: 'Clean & Tighten Style',
                         })}
                       </button>
                       <button

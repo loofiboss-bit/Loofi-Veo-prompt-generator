@@ -30,8 +30,29 @@ const unusedPdfOptionalDepsPlugin = () => ({
   },
 });
 
+const stripUnusedOnnxAsyncifyWasmPlugin = () => ({
+  name: 'strip-unused-onnx-asyncify-wasm',
+  apply: 'build' as const,
+  enforce: 'pre' as const,
+  transform(code: string, id: string) {
+    if (!id.includes('onnxruntime-web') || !code.includes('ort-wasm-simd-threaded.asyncify.wasm')) {
+      return null;
+    }
+    return {
+      code: code.replaceAll(
+        /new URL\(\s*["']ort-wasm-simd-threaded\.asyncify\.wasm["']\s*,\s*import\.meta\.url\s*\)/g,
+        'new URL("ort-wasm-simd-threaded.wasm", import.meta.url)',
+      ),
+      map: null,
+    };
+  },
+});
+
 export default defineConfig({
-  plugins: [react(), unusedPdfOptionalDepsPlugin()],
+  plugins: [react(), unusedPdfOptionalDepsPlugin(), stripUnusedOnnxAsyncifyWasmPlugin()],
+  worker: {
+    plugins: () => [stripUnusedOnnxAsyncifyWasmPlugin()],
+  },
   base: './', // Ensures assets are loaded relatively
   resolve: {
     dedupe: ['react', 'react-dom'],

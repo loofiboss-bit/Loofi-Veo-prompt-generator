@@ -1,6 +1,25 @@
 {
-  "title": "معالج الإعداد",
-  "welcome": "مرحباً",
-  "getStarted": "ابدأ الآن",
-  "step": "الخطوة"
+  "title": "المعالج السريع",
+  "step1Title": "ما هو الموضوع؟",
+  "step1Placeholder": "مثال: سيارة مستقبلية",
+  "step2Title": "ما هو المزاج العام؟",
+  "step3Title": "اختر نمطاً بصرياً",
+  "step4Title": "أين تدور الأحداث؟",
+  "step4Placeholder": "مثال: على طريق سريع مضاء بالنيون",
+  "back": "رجوع",
+  "next": "التالي",
+  "generating": "جارٍ الإنشاء...",
+  "magicGenerate": "توليد البرومبت",
+  "moods": {
+    "dark": "داكن",
+    "happy": "سعيد",
+    "tense": "متوتر",
+    "peaceful": "هادئ"
+  },
+  "styles": {
+    "realistic": "واقعي",
+    "anime": "أنمي",
+    "cinematic": "سينمائي",
+    "3d": "ثلاثي الأبعاد"
+  }
 }

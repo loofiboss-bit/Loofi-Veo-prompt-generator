@@ -23,7 +23,8 @@
     "musicLyricsDescription": "Prepara el estilo musical y la letra para copiarlos o revisarlos.",
     "musicLyrics": "Abrir música y letras",
     "moreTools": "Más formas de trabajar",
-    "moreToolsDescription": "Hay ejemplos sin conexión y recetas editables para empezar cuando quieras."
+    "moreToolsDescription": "Hay ejemplos sin conexión y recetas editables para empezar cuando quieras.",
+    "clipsReadyHint": "Listo para editar localmente — elige archivos de vídeo, audio o imagen abajo."
   },
   "examples": {
     "title": "Pruébalo sin conexión — sin cuenta ni clave de API",

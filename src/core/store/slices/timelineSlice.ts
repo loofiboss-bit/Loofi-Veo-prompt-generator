@@ -79,9 +79,9 @@ export interface TimelineSlice {
 
   // Maintenance Actions
   /**
-   * Garbage-collect the timeline: prune shots beyond the 50 most recent (by id),
-   * and remove any clips that reference pruned shots. Clips not tied to any shot
-   * (no matching resourceId in sbShots) are left untouched.
+   * Garbage-collect orphaned shot-linked timeline clips whose numeric `resourceId`
+   * references a deleted shot no longer in `sbShots`. All valid shots and manual/imported
+   * clips are preserved without any silent shot-count truncation.
    */
   gcTimeline: () => void;
 }
@@ -635,28 +635,14 @@ export const createTimelineSlice: StateCreator<TimelineSlice> = (set, get) => ({
 
   gcTimeline: () =>
     set((state) => {
-      const MAX_SHOTS = 50;
-      if (state.sbShots.length <= MAX_SHOTS) return state;
-
-      // Keep the 50 most recent shots (highest id values); preserve order
-      const sorted = [...state.sbShots].sort((a, b) => b.id - a.id);
-      const keptShots = sorted.slice(0, MAX_SHOTS);
-      const keptIds = new Set(keptShots.map((s) => s.id));
-
-      // Prune clips that reference a pruned shot (resourceId matches a shot id
-      // that was removed). Clips with no shot match are considered manual and kept.
-      const allShotIds = new Set(state.sbShots.map((s) => s.id));
+      const validShotIds = new Set(state.sbShots.map((s) => s.id));
       const prunedClips = state.clips.filter((c) => {
-        const refId = c.resourceId as number;
-        // If clip references a shot at all, only keep it if that shot is kept
-        if (allShotIds.has(refId)) return keptIds.has(refId);
-        // Clip references no shot (manual clip) — always keep
-        return true;
+        // Keep manual/asset-backed clips (string resourceIds) and clips linked to existing shots.
+        if (typeof c.resourceId !== 'number') return true;
+        return validShotIds.has(c.resourceId);
       });
 
-      // Restore original order for kept shots
-      const orderedKeptShots = [...keptShots].sort((a, b) => a.id - b.id);
-
-      return { sbShots: orderedKeptShots, clips: prunedClips };
+      if (prunedClips.length === state.clips.length) return state;
+      return { clips: prunedClips };
     }),
 });

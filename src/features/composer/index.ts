@@ -5,7 +5,6 @@
  * connection validation, and timeline integration.
  */
 
-export { ComposerPanel } from './ComposerPanel';
 export { ComposerCanvas } from './ComposerCanvas';
 export { BlockPalette } from './BlockPalette';
 export { BlockInspector } from './BlockInspector';

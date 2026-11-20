@@ -464,7 +464,8 @@
     "proposeMusic": "音楽の変更を提案",
     "allowDialogueRewrite": "台詞の書き換えを許可",
     "cancel": "キャンセル",
-    "cancelled": "クライアントの待機を停止しました。送信済みのGeminiリクエストには料金が発生する場合があります。"
+    "cancelled": "クライアントの待機を停止しました。送信済みのGeminiリクエストには料金が発生する場合があります。",
+    "cleanStyle": "スタイルを整えて最適化"
   },
   "metrics": {
     "tokens": "推定{{count}}トークン"
@@ -606,7 +607,8 @@
     "assistantTitle": "クリエイティブアシスタント",
     "assistantSubtitle": "カメラワーク、照明、継続性のコンテキストに応じた提案",
     "currentTurnPrompt": "このバージョンを作成した指示",
-    "iterateButton": "AIで反復調整"
+    "iterateButton": "AIで反復調整",
+    "eeaUploadNotice": "EEA・スイス・英国では、Gemini Omni の反復生成における参照動画のアップロードが制限される場合があります。テキストから動画への生成は引き続き利用できます。"
   },
   "creativeAssistant": {
     "title": "クリエイティブアシスタント",
@@ -621,6 +623,44 @@
       "deviation": "ゴールの一致",
       "iteration": "クリエイティブ指示",
       "general": "一般"
+    },
+    "heuristics": {
+      "cameraAdd": {
+        "title": "ダイナミックなカメラワークを追加",
+        "description": "滑らかなトラッキングショットやゆっくりとしたドリー前進で奥行きと躍動感を高めます。",
+        "instruction": "被写体を追従する滑らかなローアングルのトラッキングショットに変更してください。"
+      },
+      "cameraRefine": {
+        "title": "被写界深度とフォーカスを最適化",
+        "description": "浅い被写界深度により、主役の被写体を背景から明確に際立たせます。",
+        "instruction": "被写体にシャープなピントを合わせ、柔らかいボケとシネマティックな背景ボケを加えてください。"
+      },
+      "lightingEnhance": {
+        "title": "照明と空気感を強化",
+        "description": "ボリュメトリックライトと繊細なリムライトで、映画のような立体感と質感を加えます。",
+        "instruction": "暖かいボリュメトリックな逆光とほのかな霞があるゴールデンアワーの照明に調整してください。"
+      },
+      "lightingContinuity": {
+        "title": "色彩の連続性を合わせる",
+        "description": "色温度とハイライトのコントラストを揃え、前後のカットと自然につなげます。",
+        "instruction": "前後のカットと自然につながるよう、カラーパレットとメインライトの角度を維持してください。"
+      },
+      "deviation": {
+        "title": "元のアイデアからのズレの可能性",
+        "description": "元のコンセプトには夜や雨が含まれていましたが、現在のプロンプトには天候描写が不足しています。",
+        "instruction": "雨に濡れた路面とネオンの反射がある夜のシーンを追加してください。"
+      },
+      "storyboardContinuity": {
+        "title": "絵コンテとの連続性を調整",
+        "description": "隣接する絵コンテのシーン（{{neighbor}}）と映像トーンを揃えます。",
+        "instruction": "カメラのテンポ、被写体のサイズ感、照明の連続性を隣接シーン（{{neighbor}}）に合わせてください。"
+      },
+      "iterationRefine": {
+        "title": "シネマティックな微調整",
+        "description": "このクリップの次のAI反復生成向けに最適化された指示です。",
+        "instruction": "微細な空気の粒子、髪や衣装の自然な風の揺れ、控えめなフィルムグレインで映画的リアリティを高めてください。"
+      }
     }
-  }
+  },
+  "openTimeline": "タイムラインを開く"
 }

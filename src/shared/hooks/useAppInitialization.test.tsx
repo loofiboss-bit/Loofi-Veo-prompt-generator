@@ -211,7 +211,6 @@ vi.mock('@core/store/useStartupStore', () => ({
 }));
 
 describe('useAppInitialization', () => {
-  const mockSetNewProjectWizardOpen = vi.fn();
   const mockAddToast = vi.fn();
 
   const defaultOptions = {
@@ -219,7 +218,6 @@ describe('useAppInitialization', () => {
     hasSeenWelcome: true,
     currentProjectId: null,
     promptIdea: '',
-    setNewProjectWizardOpen: mockSetNewProjectWizardOpen,
     addToast: mockAddToast,
   };
 
@@ -317,7 +315,7 @@ describe('useAppInitialization', () => {
     );
 
     await waitFor(() => {
-      expect(mockSetNewProjectWizardOpen).not.toHaveBeenCalled();
+      expect(mockDatabaseInitialize).toHaveBeenCalled();
     });
   });
 
@@ -338,8 +336,6 @@ describe('useAppInitialization', () => {
     await waitFor(() => {
       expect(mockDatabaseInitialize).toHaveBeenCalled();
     });
-
-    expect(mockSetNewProjectWizardOpen).not.toHaveBeenCalled();
   });
 
   it('should defer non-critical startup services until after critical initialization', async () => {

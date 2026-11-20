@@ -33,8 +33,8 @@ of unique users or installations.
 
 Loofi Creator Studio v22.0 evolves the studio into an intelligent, coherent creative environment where creators can iterate, analyze, and refine generated videos using natural language instructions.
 
-- **AI Video Iteration:** Natural language multi-turn video edits powered by Gemini Omni 1.1 Flash via the stateful Interactions API (`previous_interaction_id`), honoring all model limits (3–10s, 360p–4K, 16:9/9:16).
-- **Smart Version Control:** Non-destructive version lineage (`v1`, `v2`, `v3`) with full instruction history, source media protection, and built-in side-by-side A/B comparison.
+- **AI Video Iteration:** Natural language multi-turn video edits powered by Gemini Omni 1.2 Flash (with legacy 1.1 compatibility) via the stateful Interactions API (`previous_interaction_id`), honoring model limits (3–15s, 360p–4K, 16:9/9:16). Reference video uploads may be restricted in EEA, Switzerland, and the UK; text-to-video turns remain available.
+- **Smart Version Control:** Non-destructive version lineage (`v1`, `v2`, `v3`) persisted in canonical project documents (SQLite WAL) and carried inside portable `.loofi-project` bundles, with instruction history, source media protection, and built-in side-by-side A/B comparison.
 - **Intelligent Creative Assistant:** Voluntary, reviewable AI suggestions for camera composition, lighting & visual continuity, goal deviation detection, and tailored next-turn instructions.
 - **Unified Creative Workflow:** Effortless 7-step cycle connecting Idea → Prompt Studio → Video Generation → AI Analysis → Version Comparison → Storyboard Timeline → Final Export.
 - **Timeline Integration & Version Badges:** Seamless version transfer to Storyboard takes and clear timeline clip version indicators (`[v2]`, `[v3]`).
@@ -162,7 +162,7 @@ Wide workspaces show editor and result side by side; narrow workspaces use **Edi
 **Copy prompt** copies the selected version; **Copy options** exposes settings and the complete
 handoff. **Templates and history** contains reusable templates, earlier packs and revisions.
 
-Current manual handoffs cover Flow/Veo 3.1 Lite/Fast/Quality, Gemini Omni 1.1 Flash, Kling 4.0,
+Current manual handoffs cover Flow/Veo 3.1 Lite/Fast/Quality, Gemini Omni 1.2 Flash, Kling 4.0,
 Runway Gen-4.5, Luma Ray3.2, Wan 3.0 and MiniMax-H3. Model profiles determine modes, duration,
 aspect ratio, writing rules, audio and negative-prompt support. Unverified features are not treated
 as supported; audio for non-audio targets stays in post-production notes. Wan's older open-weight
@@ -312,9 +312,13 @@ Useful checks:
 
 ```bash
 npm run validate
+npm run i18n:all:check
+npm run build && npm run bundle:check
 npm run validate:release
 npm run screenshots
 ```
+
+Any experimental Qt 6/QML/Rust exploration (`codex/native-m0`) is kept isolated and evaluated separately from the shipped Electron desktop application.
 
 ## Documentation
 

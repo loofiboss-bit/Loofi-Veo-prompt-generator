@@ -241,5 +241,27 @@
     "filterReference": "References",
     "filterGenerated": "Generated",
     "filters": "Filter media"
+  },
+  "contextRail": {
+    "localFirst": "Local-first",
+    "toProduction": "Production",
+    "toTimeline": "Timeline",
+    "toStudio": "Prompt Studio"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "general": "General",
+    "editing": "Editing",
+    "timeline": "Timeline Player",
+    "commandPalette": "Open Command Palette",
+    "buildPrompt": "Build Prompt in Studio",
+    "openHelp": "Open Help Panel",
+    "savePreset": "Save Preset",
+    "closeDialog": "Close Dialog",
+    "undo": "Undo",
+    "redo": "Redo",
+    "playPause": "Play / Pause",
+    "shuttle": "Reverse / Pause / Forward",
+    "stepFrame": "Step Backward / Forward"
   }
 }

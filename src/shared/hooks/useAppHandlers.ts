@@ -131,7 +131,6 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
   const store = useAppStore(
     useShallow((s) => ({
       resetAll: s.resetAll,
-      setNewProjectWizardOpen: s.setNewProjectWizardOpen,
       closeModal: s.closeModal,
       addPreset: s.addPreset,
       deletePreset: s.deletePreset,
@@ -252,7 +251,6 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     setIsEditing(false);
     resetEditHistory('');
     projectStore.clearCurrentProject();
-    store.setNewProjectWizardOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [
     store,
@@ -275,7 +273,6 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     setIsEditing(false);
     resetEditHistory('');
     projectStore.clearCurrentProject();
-    store.setNewProjectWizardOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [
     setPromptState,
@@ -287,7 +284,6 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
     resetGenerationState,
     setIsEditing,
     projectStore,
-    store,
   ]);
 
   const handleSavePrompt = useCallback(
@@ -521,7 +517,6 @@ export function useAppHandlers(opts: UseAppHandlersOptions) {
       },
       handleSelectTemplate: (template: ProjectTemplate) => {
         store.applyTemplate(template.settings);
-        store.setNewProjectWizardOpen(false);
         if (template.autoOpen) {
           openStudioSafely(template.autoOpen);
         }

@@ -23,7 +23,8 @@
     "musicLyricsDescription": "Draft music style and lyrics, then copy or review them.",
     "musicLyrics": "Open music and lyrics",
     "moreTools": "More ways to work",
-    "moreToolsDescription": "Offline examples and editable recipes are available when you want a starting point."
+    "moreToolsDescription": "Offline examples and editable recipes are available when you want a starting point.",
+    "clipsReadyHint": "Ready to edit locally — pick video, audio, or image files below."
   },
   "examples": {
     "title": "Try it offline — no account or API key",

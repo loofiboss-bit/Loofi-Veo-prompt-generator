@@ -12,7 +12,6 @@ import { useAppStore } from '@core/store/useAppStore';
 import { useAppSync } from '@shared/hooks/useAppSync';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useEditorSessionStore } from '@core/store/useEditorSessionStore';
-import { useOnboarding } from '@shared/contexts/OnboardingContext';
 import { hasApiKeyAsync } from '@core/services/apiKeyService';
 import { themeService } from '@core/services/themeService';
 
@@ -70,23 +69,19 @@ export function AppRuntime() {
   const activeStudio = useAppStore((state) => state.activeStudio);
   const setTheme = useAppStore((state) => state.setTheme);
   const theme = useAppStore((state) => state.theme);
-  const setNewProjectWizardOpen = useAppStore((state) => state.setNewProjectWizardOpen);
 
   const isHistoryOpen = useAppStore((state) => state.isHistoryOpen);
   const isTemplatesOpen = useAppStore((state) => state.isTemplatesOpen);
-  const isDNAModalOpen = useAppStore((state) => state.isDNAModalOpen);
-  const isCharacterBankOpen = useAppStore((state) => state.isCharacterBankOpen);
-  const isLocationBankOpen = useAppStore((state) => state.isLocationBankOpen);
   const isProjectManagerOpen = useAppStore((state) => state.isProjectManagerOpen);
-  const isWizardOpen = useAppStore((state) => state.isWizardOpen);
-  const isSeriesBibleOpen = useAppStore((state) => state.isSeriesBibleOpen);
+  const isShortcutsOpen = useAppStore((state) => state.isShortcutsOpen);
+  const isSearchOpen = useAppStore((state) => state.isSearchOpen);
+  const isVariablesPanelOpen = useAppStore((state) => state.isVariablesPanelOpen);
 
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const currentProjectName = useProjectStore(
     (state) => state.projects.find((p) => p.id === state.currentProjectId)?.name ?? null,
   );
-  const { restartTutorial } = useOnboarding();
-  const isSyncConnected = useAppSync();
+  useAppSync();
   const criticalBootstrapComplete = useStartupStore((state) => state.criticalBootstrapComplete);
 
   // v2.4.0 — Router & i18n integration
@@ -169,7 +164,6 @@ export function AppRuntime() {
     _hasHydrated,
     hasSeenWelcome,
     currentProjectId,
-    setNewProjectWizardOpen,
     addToast,
   });
 
@@ -290,27 +284,25 @@ export function AppRuntime() {
     () => ({
       isHistoryOpen,
       isTemplatesOpen,
-      isDNAModalOpen,
-      isCharacterBankOpen,
-      isLocationBankOpen,
       isProjectManagerOpen,
-      isWizardOpen,
-      isSeriesBibleOpen,
+      isShortcutsOpen,
+      isSearchOpen,
+      isVariablesPanelOpen,
     }),
     [
       isHistoryOpen,
       isTemplatesOpen,
-      isDNAModalOpen,
-      isCharacterBankOpen,
-      isLocationBankOpen,
       isProjectManagerOpen,
-      isWizardOpen,
-      isSeriesBibleOpen,
+      isShortcutsOpen,
+      isSearchOpen,
+      isVariablesPanelOpen,
     ],
   );
 
   useAppKeyboardShortcuts({
-    onGeneratePrompt: () => {},
+    onGeneratePrompt: () => {
+      window.dispatchEvent(new CustomEvent('loofi:primary-action'));
+    },
     isLoading: false,
     onOpenHelpPanel: openHelpPanel,
     onOpenSavePresetModal: handleOpenSavePresetModal,
@@ -446,6 +438,18 @@ export function AppRuntime() {
         action: () => openHelpPanel(),
       },
       {
+        id: 'open-shortcuts',
+        label: t('commandPalette.commands.shortcuts', 'Keyboard Shortcuts'),
+        description: t(
+          'commandPalette.commands.shortcutsDescription',
+          'View available workspace and player keyboard shortcuts',
+        ),
+        shortcut: '?',
+        group: t('commandPalette.groups.navigation', 'Navigation'),
+        keywords: ['keys', 'hotkeys', 'shortcuts'],
+        action: () => openModal('isShortcutsOpen'),
+      },
+      {
         id: 'open-batch',
         label: t('commandPalette.commands.batch', 'Open Batch Generator'),
         description: t(
@@ -457,15 +461,48 @@ export function AppRuntime() {
         action: () => setIsBatchModalOpen(true),
       },
       {
-        id: 'open-optimize',
-        label: t('commandPalette.commands.optimize', 'Open Optimize Panel'),
+        id: 'open-production',
+        label: t('commandPalette.commands.production', 'Open Production'),
         description: t(
-          'commandPalette.commands.optimizeDescription',
-          'Review project optimization suggestions',
+          'commandPalette.commands.productionDescription',
+          'Open the scene-by-scene Production workspace',
         ),
         group: t('commandPalette.groups.creation', 'Creation'),
-        keywords: ['improve', 'performance', 'suggestions'],
-        action: () => navigate(ROUTES.OPTIMIZE),
+        keywords: ['create', 'production', 'video', 'render'],
+        action: () => navigate(ROUTES.CREATE),
+      },
+      {
+        id: 'open-timeline',
+        label: t('commandPalette.commands.timeline', 'Open Timeline'),
+        description: t(
+          'commandPalette.commands.timelineDescription',
+          'Edit clips, audio, captions, and export in Timeline',
+        ),
+        group: t('commandPalette.groups.creation', 'Creation'),
+        keywords: ['edit', 'timeline', 'export', 'video'],
+        action: () => navigate(ROUTES.TIMELINE),
+      },
+      {
+        id: 'open-projects',
+        label: t('commandPalette.commands.projects', 'Open Projects'),
+        description: t(
+          'commandPalette.commands.projectsDescription',
+          'Switch, create, or export local projects',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['project', 'open', 'save', 'export'],
+        action: () => navigate(ROUTES.PROJECTS),
+      },
+      {
+        id: 'open-assets',
+        label: t('commandPalette.commands.assets', 'Open Assets'),
+        description: t(
+          'commandPalette.commands.assetsDescription',
+          'Manage project media, character sheets, and references',
+        ),
+        group: t('commandPalette.groups.workspace', 'Workspace'),
+        keywords: ['media', 'assets', 'files', 'characters'],
+        action: () => navigate(ROUTES.ASSETS),
       },
       {
         id: 'open-collaboration',
@@ -642,48 +679,6 @@ export function AppRuntime() {
     ],
   );
 
-  const headerProps = useMemo(
-    () => ({
-      onShowHistory: () => openModal('isHistoryOpen'),
-      historyButtonText: t('common:historyButton'),
-      onShowImageStudio: () => openStudioSafely('image'),
-      imageStudioButtonText: t('common:imageStudioButton'),
-      onShowSunoStudio: () => navigate(`${ROUTES.STUDIO}?mode=music`),
-      sunoStudioButtonText: t('common:sunoStudioButton'),
-      onShowVideoAnalysis: () => openStudioSafely('analysis'),
-      isSyncConnected,
-      theme,
-      onThemeToggle: handleThemeToggle,
-      onStartTutorial: restartTutorial,
-      onResetAll: modalHandlers.handleResetAll,
-      onShowSearch: () => openModal('isSearchOpen'),
-      onShowVideoStudio: () => openStudioSafely('video'),
-      onOpenWizard: () => openModal('isWizardOpen'),
-      onOpenStoryBoard: () => openStudioSafely('story'),
-      onOpenCharacterBank: () => openModal('isCharacterBankOpen'),
-      onOpenLocationBank: () => openModal('isLocationBankOpen'),
-      onOpenProjectManager: () => openModal('isProjectManagerOpen'),
-      onOpenSeriesBible: () => openModal('isSeriesBibleOpen'),
-      onOpenVariablesPanel: () => openModal('isVariablesPanelOpen'),
-      onOpenScriptStudio: () => openStudioSafely('script'),
-      onOpenWritersRoom: () => setIsWritersRoomOpen(true),
-      currentProjectName,
-    }),
-    [
-      openModal,
-      t,
-      openStudioSafely,
-      navigate,
-      isSyncConnected,
-      theme,
-      handleThemeToggle,
-      restartTutorial,
-      modalHandlers.handleResetAll,
-      setIsWritersRoomOpen,
-      currentProjectName,
-    ],
-  );
-
   // ---------- Loading gate ----------
   if (!_hasHydrated || !criticalBootstrapComplete) return <AppLoadingGate />;
 
@@ -695,7 +690,6 @@ export function AppRuntime() {
       isChildRoute={isChildRoute}
       activeSection={activeSection}
       sidebarProps={sidebarProps}
-      headerProps={headerProps}
       modalManagerProps={{ addToast, handlers: modalHandlers }}
       collaborationPanelsProps={collaborationPanelsProps}
       appPanelsProps={appPanelsProps}

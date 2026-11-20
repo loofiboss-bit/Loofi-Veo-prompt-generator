@@ -202,6 +202,21 @@ describe('geminiVisionService — integration', () => {
       const result = await analyzeVideo('videodata', 'video/mp4', 'Describe this video');
       expect(result).toContain('car chase');
     });
+
+    it('uses resilientCall with maxRetries=0 on desktop so approval-gated video analysis does not retry', async () => {
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost: vi.fn(),
+      };
+      try {
+        mockGenerateContent.mockRejectedValueOnce(new Error('429 rate limit'));
+        await expect(analyzeVideo('videodata', 'video/mp4', 'Describe')).rejects.toThrow(
+          '429 rate limit',
+        );
+        expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+      } finally {
+        delete (window as unknown as { electron?: unknown }).electron;
+      }
+    });
   });
 
   describe('analyzeImageForSFX', () => {
