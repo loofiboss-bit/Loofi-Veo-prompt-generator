@@ -7,6 +7,12 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **README & Branding Hero Banner**: Replaced the GitHub README hero banner (`2172 × 724` dark workstation artwork) and restructured `README.md` with an above-the-fold hero, `v23.0.0` screenshot showcase, prominent Fedora COPR installation, and collapsible technical contracts.
+
 ## [23.0.0] - 2026-11-20
 
 ### Added
