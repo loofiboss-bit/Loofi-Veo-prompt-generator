@@ -225,4 +225,42 @@ test('ProjectDatabase 50-scene incremental delta commit completes p95 under 15ms
   durations.sort((a, b) => a - b);
   const p95 = durations[Math.floor(durations.length * 0.95)];
   assert.ok(p95 < 15, `Expected 50-scene incremental commit p95 < 15ms, got ${p95.toFixed(2)}ms`);
+
+  // Verify videoIterationSessions persist cleanly through SQLite meta_json round-trip
+  const iterCommit = db.commitDelta({
+    projectId: 'perf-50',
+    expectedRevision: rev,
+    document: {
+      id: 'perf-50',
+      name: '50 Scene Project',
+      schemaVersion: 18,
+      videoIterationSessions: [
+        {
+          id: 'iter-1',
+          projectId: 'perf-50',
+          artifactId: 'art-1',
+          variantIndex: 0,
+          rootAssetId: 'a1',
+          activeTurnId: 't2',
+          updatedAt: 2000,
+          turns: [
+            { id: 't2', version: 2, assetId: 'a2', instruction: 'Rain', effectivePrompt: 'P' },
+          ],
+        },
+      ],
+      storyboard: {
+        shots,
+        timeline: {
+          tracks: [
+            { id: 'video_main', label: 'Video', type: 'video', trackType: 'dialogue', zIndex: 1 },
+          ],
+          clips,
+        },
+      },
+    },
+  });
+  assert.equal(iterCommit.documentRevision, rev + 1);
+  const reopened = db.openProject('perf-50');
+  assert.equal(reopened?.videoIterationSessions?.length, 1);
+  assert.equal(reopened?.videoIterationSessions?.[0]?.turns?.[0]?.assetId, 'a2');
 });

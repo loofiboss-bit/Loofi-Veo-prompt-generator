@@ -13,6 +13,16 @@ const mockSetSbShots = vi.fn();
 const mockSyncTimelineFromShots = vi.fn();
 const mockAddAsset = vi.fn();
 const mockUpdateTimelineClip = vi.fn();
+let mockClips: Array<{
+  id: string;
+  resourceId: number | string;
+  startTime: number;
+  duration: number;
+  offset: number;
+  volume?: number;
+  label?: string;
+  selectedTakeId?: string;
+}> = [];
 
 vi.mock('@core/store/useAppStore', () => ({
   useAppStore: {
@@ -21,10 +31,12 @@ vi.mock('@core/store/useAppStore', () => ({
         {
           id: 1,
           action: 'Original scene',
+          duration: 5,
           takes: [],
           selectedTakeIndex: 0,
         },
       ],
+      clips: mockClips,
       setSbShots: mockSetSbShots,
       syncTimelineFromShots: mockSyncTimelineFromShots,
       addAsset: mockAddAsset,
@@ -36,6 +48,7 @@ vi.mock('@core/store/useAppStore', () => ({
 describe('videoVersionService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockClips = [];
   });
 
   const mockSession: VideoIterationSession = {
@@ -117,7 +130,8 @@ describe('videoVersionService', () => {
     expect(updatedShots[0].takes).toHaveLength(1);
     expect(updatedShots[0].takes[0]).toBe('blob:video-2');
     expect(updatedShots[0].videoUrl).toBe('blob:video-2');
-    expect(updatedShots[0].action).toBe(turn.instruction);
+    expect(updatedShots[0].action).toBe('Original scene');
+    expect(updatedShots[0].duration).toBe(5);
     expect(mockAddAsset).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'asset-2',
@@ -129,8 +143,74 @@ describe('videoVersionService', () => {
       'video_1',
       expect.objectContaining({
         label: 'Shot 1 (v2)',
+        selectedTakeId: 'turn-2',
       }),
     );
+    expect(mockUpdateTimelineClip.mock.calls[0][1]).not.toHaveProperty('duration');
+  });
+
+  it('preserves existing trimmed timeline clip duration and edits without calling syncTimelineFromShots', () => {
+    mockClips = [
+      {
+        id: 'video_1',
+        resourceId: 1,
+        startTime: 3,
+        duration: 2.5,
+        offset: 4,
+        volume: 0.4,
+        label: 'Shot 1',
+      },
+    ];
+    const turn = mockSession.turns[1];
+    const success = videoVersionService.applyVersionToStoryboardShot(1, turn);
+
+    expect(success).toBe(true);
+    expect(mockSyncTimelineFromShots).not.toHaveBeenCalled();
+    expect(mockUpdateTimelineClip).toHaveBeenCalledWith('video_1', {
+      label: 'Shot 1 (v2)',
+      selectedTakeId: 'turn-2',
+    });
+  });
+
+  it('preserves 12s Omni duration when bridging an iteration turn into a ProductionTake', async () => {
+    const getRunSpy = vi.spyOn(productionRunService, 'getRun').mockResolvedValue({
+      id: 'run-1',
+      projectId: 'p1',
+      sourceArtifactId: 'a1',
+      sourceVariantIndex: 0,
+      shots: [
+        {
+          id: 1,
+          generationRequest: {
+            mode: 'text-to-video',
+            modelId: 'veo-3.1-fast',
+            prompt: 'Original prompt',
+            aspectRatio: '16:9',
+            resolution: '720p',
+            durationSeconds: 8,
+            referenceAssetIds: [],
+          },
+          takes: [],
+        },
+      ],
+    } as never);
+    const appendSpy = vi
+      .spyOn(productionRunService, 'appendTakeToShot')
+      .mockResolvedValue({} as never);
+
+    const take = await videoVersionService.applyVersionToProductionTake('run-1', 1, {
+      ...mockSession.turns[1],
+      settings: {
+        ...mockSession.turns[1].settings,
+        modelId: 'gemini-omni-1.2-flash',
+        durationSeconds: 12,
+      },
+    });
+
+    expect(take.request.durationSeconds).toBe(12);
+
+    getRunSpy.mockRestore();
+    appendSpy.mockRestore();
   });
 
   it('creates a new Storyboard scene automatically when shotId is -1 or sbShots is empty', () => {

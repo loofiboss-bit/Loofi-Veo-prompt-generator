@@ -24,10 +24,6 @@ vi.mock('./Sidebar', () => ({
   ),
 }));
 
-vi.mock('./Header', () => ({
-  default: () => <div data-testid="header" />,
-}));
-
 vi.mock('./ModalManager', () => ({
   default: () => <div data-testid="modal-manager" />,
 }));
@@ -80,7 +76,6 @@ function scaffold(pathname: string, activeSection = 'prompt') {
         pendingJobCount: 0,
         isApiConfigured: true,
       }}
-      headerProps={{} as never}
       modalManagerProps={{} as never}
       collaborationPanelsProps={{} as never}
       appPanelsProps={{} as never}
@@ -171,5 +166,12 @@ describe('AppScaffold', () => {
     title.textContent = 'Prompt Studio';
     content.appendChild(title);
     await waitFor(() => expect(title).toHaveFocus());
+  });
+  it('shows contextual next-step actions on Studio and preserves quick navigation', () => {
+    renderScaffold(ROUTES.STUDIO);
+    expect(screen.getByRole('button', { name: 'Production' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Timeline' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Quick navigation' })).toBeInTheDocument();
+    expect(screen.getByText('Local-first')).toBeInTheDocument();
   });
 });

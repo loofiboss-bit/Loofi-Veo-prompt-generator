@@ -1,5 +1,5 @@
 Name:           veo-prompt-generator
-Version:        22.1.1
+Version:        23.0.0
 Release:        1%{?dist}
 Summary:        Local-first Loofi Creator Studio for video creation and delivery
 License:        MIT
@@ -79,6 +79,11 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/*
 
 %changelog
+* Fri Nov 20 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 23.0.0-1
+- Release v23.0.0: Workspace Cohesion, Data Integrity & Performance Hardening.
+- Non-destructive Video Iteration lineage persisted in SQLite WAL and portable .loofi-project bundles, unified Workspace Context Rail, Ctrl+Enter build shortcut, and retired legacy shells.
+- Trim unused ONNX asyncify WASM, modularize SVG icons, enforce 100% 6-locale i18n parity across 17 namespaces, and preserve Fedora 44/45 x86_64 runtime requirements.
+
 * Mon Nov 16 2026 Loofi <loofiboss-bit@users.noreply.github.com> - 22.1.1-1
 - Release v22.1.1: Allow Create with Gemini when Core idea is blank and clarify dark-mode placeholders.
 - Preserve existing prompt generation, manual field locks, and Fedora 44/45 x86_64 runtime requirements.

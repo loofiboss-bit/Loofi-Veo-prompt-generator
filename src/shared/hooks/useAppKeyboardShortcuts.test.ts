@@ -20,12 +20,10 @@ function createBaseOptions() {
     modalState: {
       isHistoryOpen: false,
       isTemplatesOpen: false,
-      isDNAModalOpen: false,
-      isCharacterBankOpen: false,
-      isLocationBankOpen: false,
       isProjectManagerOpen: false,
-      isWizardOpen: false,
-      isSeriesBibleOpen: false,
+      isShortcutsOpen: false,
+      isSearchOpen: false,
+      isVariablesPanelOpen: false,
     },
   };
 }

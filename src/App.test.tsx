@@ -57,15 +57,12 @@ const mockAppStore = {
   activeStudio: null,
   setTheme: vi.fn(),
   theme: 'dark',
-  setNewProjectWizardOpen: vi.fn(),
   isHistoryOpen: false,
   isTemplatesOpen: false,
-  isDNAModalOpen: false,
-  isCharacterBankOpen: false,
-  isLocationBankOpen: false,
   isProjectManagerOpen: false,
-  isWizardOpen: false,
-  isSeriesBibleOpen: false,
+  isShortcutsOpen: false,
+  isSearchOpen: false,
+  isVariablesPanelOpen: false,
 };
 
 const mockStartupStore = {
@@ -251,7 +248,6 @@ vi.mock('idb-keyval', () => ({
 
 // Mock complex layout components to avoid deep dependency chains
 vi.mock('@shared/components/layout', () => ({
-  Header: () => <div data-testid="header">Header</div>,
   Sidebar: () => <div data-testid="sidebar">Sidebar</div>,
   ModalManager: () => <div data-testid="modal-manager">ModalManager</div>,
   AppOverlays: () => <div data-testid="app-overlays">AppOverlays</div>,

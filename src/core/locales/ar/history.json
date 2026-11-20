@@ -1,9 +1,10 @@
 {
   "title": "السجل",
-  "clearAll": "مسح الكل",
-  "noHistory": "لا يوجد سجل بعد",
-  "export": "تصدير",
-  "import": "استيراد",
-  "favorite": "مفضل",
-  "delete": "حذف"
+  "clear": "مسح السجل",
+  "clearConfirm": "هل أنت متأكد؟",
+  "empty": "لا يوجد سجل بعد.",
+  "use": "استخدام",
+  "delete": "حذف",
+  "deleteConfirm": "هل تريد حذف هذا الإدخال؟",
+  "searchPlaceholder": "البحث في السجل..."
 }

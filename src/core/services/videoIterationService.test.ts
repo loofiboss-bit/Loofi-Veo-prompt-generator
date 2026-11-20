@@ -3,6 +3,7 @@ import { videoIterationService } from './videoIterationService';
 import type { VideoIterationSession } from '@core/types/videoIteration';
 import { get } from 'idb-keyval';
 import { mediaAssetService } from './mediaAssetService';
+import { projectDocumentService } from './projectDocumentService';
 
 vi.mock('@core/models/catalog', () => ({
   getModel: vi.fn((id: string) => ({
@@ -253,8 +254,69 @@ describe('videoIterationService', () => {
           instruction: 'Add fog',
         }),
       ).rejects.toThrow(/Cannot compute a verifiable cost ceiling/);
+
+      // Turn-1 uploaded bytes returning empty media should surface EEA/UK restriction context
+      vi.mocked(mediaAssetService.getRecord).mockResolvedValueOnce({
+        blob: new Blob(['mp4'], { type: 'video/mp4' }),
+        mimeType: 'video/mp4',
+      } as never);
+      (window as unknown as { electron?: unknown }).electron = {
+        approveProviderCost: vi.fn().mockResolvedValue('tok-2'),
+        testProviderConnection: vi.fn(),
+        executeProvider: vi.fn(),
+        executeInteraction: vi.fn().mockResolvedValue({
+          interactionId: 'int-empty',
+          media: [],
+        }),
+      };
+      await expect(
+        videoIterationService.iterateVideo({
+          session,
+          projectId: 'proj-1',
+          artifactId: 'art-desktop',
+          variantIndex: 0,
+          instruction: 'Add fog',
+        }),
+      ).rejects.toThrow(/EEA, Switzerland, the UK/);
     } finally {
       delete (window as unknown as { electron?: unknown }).electron;
+    }
+  });
+
+  it('syncs and hydrates video iteration sessions through the canonical project document', async () => {
+    const savedSession = videoIterationService.createInitialSession({
+      projectId: 'proj-sync',
+      artifactId: 'art-sync',
+      variantIndex: 0,
+      baseAsset: { id: 'asset-orig', url: 'blob:stale-url' },
+      initialPrompt: 'Initial prompt',
+    });
+    const loadSpy = vi.spyOn(projectDocumentService, 'load').mockResolvedValue({
+      id: 'proj-sync',
+      name: 'Sync Project',
+      lastModified: 1,
+      videoIterationSessions: [savedSession],
+    } as never);
+    const updateSpy = vi
+      .spyOn(projectDocumentService, 'update')
+      .mockResolvedValue({ durable: true } as never);
+    vi.mocked(mediaAssetService.getObjectUrl).mockResolvedValueOnce('blob:project-hydrated');
+
+    try {
+      const hydrated = await videoIterationService.getOrCreateSession({
+        projectId: 'proj-sync',
+        artifactId: 'art-sync',
+        variantIndex: 0,
+        baseAsset: { id: 'asset-orig', url: 'blob:fallback' },
+        initialPrompt: 'Initial prompt',
+      });
+      expect(hydrated.turns[0].assetUrl).toBe('blob:project-hydrated');
+
+      await videoIterationService.saveSession(hydrated);
+      expect(updateSpy).toHaveBeenCalledWith('proj-sync', expect.any(Function));
+    } finally {
+      loadSpy.mockRestore();
+      updateSpy.mockRestore();
     }
   });
 });

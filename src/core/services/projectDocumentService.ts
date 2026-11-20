@@ -260,6 +260,19 @@ class ProjectDocumentService {
             }
             snapshot.studioResults = [...results.values()];
           }
+          // Video iteration turns can finish independently of editor autosaves.
+          if (existing?.videoIterationSessions || project.videoIterationSessions) {
+            const sessions = new Map(
+              (existing?.videoIterationSessions ?? []).map((session) => [session.id, session]),
+            );
+            for (const session of project.videoIterationSessions ?? []) {
+              const previous = sessions.get(session.id);
+              if (!previous || session.updatedAt > previous.updatedAt) {
+                sessions.set(session.id, session);
+              }
+            }
+            snapshot.videoIterationSessions = [...sessions.values()];
+          }
           return snapshot;
         },
         getProjectSnapshotStore(),

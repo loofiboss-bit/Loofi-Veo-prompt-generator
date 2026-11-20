@@ -1,111 +1,93 @@
 #!/usr/bin/env node
 /**
- * Translation Coverage Checker
- * Compares each language's JSON namespace files against EN (reference).
- * Reports missing keys per namespace/language.
+ * check-translations.mjs
+ * Validates 100% i18n key parity across all 17 namespaces and all 6 supported locales.
  *
  * Usage: node scripts/check-translations.mjs
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const LOCALES_DIR = join(__dirname, '..', 'public', 'locales');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const LOCALES_DIR = path.resolve(__dirname, '../src/core/locales');
+const BASE_LANG = 'en';
+const TARGET_LANGS = ['sv', 'es', 'fr', 'ja', 'ar'];
 
-const NAMESPACES = [
-  'common',
-  'prompt',
-  'history',
-  'templates',
-  'studios',
-  'wizard',
-  'tutorial',
-  'tooltips',
-  'errors',
-  'project',
-  'search',
-  'settings',
-  'toasts',
-];
-
-const LANGUAGES = ['es', 'fr', 'ja'];
-
-/**
- * Recursively collect all leaf-level key paths from a JSON object.
- * @param {Record<string, unknown>} obj
- * @param {string} prefix
- * @returns {string[]}
- */
-function getKeys(obj, prefix = '') {
+function collectLeafKeys(obj, prefix = '') {
   const keys = [];
   for (const [key, value] of Object.entries(obj)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      keys.push(...getKeys(/** @type {Record<string, unknown>} */ (value), path));
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      keys.push(...collectLeafKeys(value, fullKey));
     } else {
-      keys.push(path);
+      keys.push(fullKey);
     }
   }
   return keys;
 }
 
-/**
- * Load and parse a JSON file, returning an empty object if missing.
- * @param {string} filePath
- * @returns {Record<string, unknown>}
- */
-function loadJSON(filePath) {
-  if (!existsSync(filePath)) return {};
-  try {
-    return JSON.parse(readFileSync(filePath, 'utf-8'));
-  } catch {
-    console.error(`  ⚠ Failed to parse: ${filePath}`);
-    return {};
-  }
+const enDir = path.join(LOCALES_DIR, BASE_LANG);
+const namespaceFiles = fs
+  .readdirSync(enDir)
+  .filter((file) => file.endsWith('.json'))
+  .sort();
+
+if (namespaceFiles.length !== 17) {
+  console.error(`Expected 17 namespaces in ${BASE_LANG}, found ${namespaceFiles.length}.`);
+  process.exit(1);
 }
 
-let totalMissing = 0;
-let totalKeys = 0;
+let failures = 0;
 
-console.log('Translation Coverage Report');
-console.log('===========================\n');
+for (const lang of TARGET_LANGS) {
+  const langDir = path.join(LOCALES_DIR, lang);
+  let langMissing = 0;
+  let langExtra = 0;
 
-for (const ns of NAMESPACES) {
-  const enFile = join(LOCALES_DIR, 'en', `${ns}.json`);
-  const enData = loadJSON(enFile);
-  const enKeys = getKeys(enData);
-  totalKeys += enKeys.length;
+  for (const file of namespaceFiles) {
+    const enJson = JSON.parse(fs.readFileSync(path.join(enDir, file), 'utf8'));
+    const enKeys = new Set(collectLeafKeys(enJson));
+    const targetPath = path.join(langDir, file);
 
-  for (const lang of LANGUAGES) {
-    const langFile = join(LOCALES_DIR, lang, `${ns}.json`);
-    const langData = loadJSON(langFile);
-    const langKeys = new Set(getKeys(langData));
+    if (!fs.existsSync(targetPath)) {
+      console.error(`✗ [${lang}] Missing namespace file: ${file} (${enKeys.size} keys)`);
+      langMissing += enKeys.size;
+      failures++;
+      continue;
+    }
 
-    const missing = enKeys.filter((k) => !langKeys.has(k));
+    const targetJson = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+    const targetKeys = new Set(collectLeafKeys(targetJson));
 
-    if (missing.length > 0) {
-      totalMissing += missing.length;
-      console.log(`[${lang}/${ns}] Missing ${missing.length}/${enKeys.length} keys:`);
-      for (const key of missing.slice(0, 10)) {
-        console.log(`  - ${key}`);
-      }
-      if (missing.length > 10) {
-        console.log(`  ... and ${missing.length - 10} more`);
-      }
-      console.log();
+    const missing = [...enKeys].filter((k) => !targetKeys.has(k));
+    const extra = [...targetKeys].filter((k) => !enKeys.has(k));
+
+    if (missing.length > 0 || extra.length > 0) {
+      failures++;
+      langMissing += missing.length;
+      langExtra += extra.length;
+      console.error(
+        `✗ [${lang}/${file}] missing=${missing.length} extra=${extra.length}` +
+          (missing.length ? ` (e.g. ${missing.slice(0, 5).join(', ')})` : '') +
+          (extra.length ? ` (extra: ${extra.slice(0, 5).join(', ')})` : ''),
+      );
     }
   }
+
+  if (langMissing === 0 && langExtra === 0) {
+    console.log(
+      `✓ [${lang}] All ${namespaceFiles.length} namespaces match ${BASE_LANG} (0 missing, 0 extra)`,
+    );
+  }
 }
 
-console.log('---');
-console.log(`Total EN keys (across all namespaces): ${totalKeys}`);
-console.log(`Total missing translations: ${totalMissing}`);
+if (failures > 0) {
+  console.error(`\ni18n parity check failed across ${failures} namespace check(s).`);
+  process.exit(1);
+}
+
 console.log(
-  `Coverage: ${totalKeys > 0 ? (((totalKeys * LANGUAGES.length - totalMissing) / (totalKeys * LANGUAGES.length)) * 100).toFixed(1) : 100}%`,
+  `\nPASS: All ${TARGET_LANGS.length} locales x ${namespaceFiles.length} namespaces have 100% key parity.`,
 );
-
-if (totalMissing > 0) {
-  console.log('\nRun translations for missing keys to reach full coverage.');
-}

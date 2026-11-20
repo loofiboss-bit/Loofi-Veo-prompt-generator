@@ -61,7 +61,19 @@ export async function buildPortableProjectBundle(
   const runs = await productionRunService.getRunsForProject(project.id);
   const artifacts = await promptStudioHandoffService.listArtifacts(project.id);
   const handoffs = await promptStudioHandoffService.listDrafts(project.id);
-  const references = collectProjectAssetIds([project, runs, artifacts]);
+  const sanitizedProject: Project = project.videoIterationSessions?.length
+    ? {
+        ...project,
+        videoIterationSessions: project.videoIterationSessions.map((session) => ({
+          ...session,
+          turns: session.turns.map((turn) => ({
+            ...turn,
+            assetUrl: turn.assetUrl?.startsWith('blob:') ? undefined : turn.assetUrl,
+          })),
+        })),
+      }
+    : project;
+  const references = collectProjectAssetIds([sanitizedProject, runs, artifacts]);
   const mediaUrls = new Set<string>();
   const visitUrls = (value: unknown, field = '') => {
     if (
@@ -72,9 +84,11 @@ export async function buildPortableProjectBundle(
       mediaUrls.add(value);
     else if (Array.isArray(value)) value.forEach((item) => visitUrls(item, field));
     else if (value && typeof value === 'object')
-      Object.entries(value).forEach(([key, item]) => visitUrls(item, key));
+      Object.entries(value as Record<string, unknown>).forEach(([key, item]) =>
+        visitUrls(item, key),
+      );
   };
-  visitUrls(project);
+  visitUrls(sanitizedProject);
   const availableAssets = useAppStore.getState().assets;
   const assets = availableAssets.filter((asset) => references.has(asset.id));
   for (const url of mediaUrls) {
@@ -105,7 +119,7 @@ export async function buildPortableProjectBundle(
             data: '',
           });
       }
-  for (const studioResult of project.studioResults ?? []) {
+  for (const studioResult of sanitizedProject.studioResults ?? []) {
     if (!assets.some((asset) => asset.id === studioResult.assetId)) {
       const record = await mediaAssetService.getRecord(studioResult.assetId);
       if (record?.blob) {
@@ -121,10 +135,37 @@ export async function buildPortableProjectBundle(
       }
     }
   }
+  for (const session of sanitizedProject.videoIterationSessions ?? []) {
+    for (const turn of session.turns ?? []) {
+      if (!turn.assetId || assets.some((asset) => asset.id === turn.assetId)) continue;
+      const record = await mediaAssetService.getRecord(turn.assetId);
+      if (record?.blob) {
+        assets.push({
+          id: turn.assetId,
+          type: 'video',
+          name: `Iteration v${turn.version}.mp4`,
+          mimeType: record.mimeType || 'video/mp4',
+          storageKey: turn.assetId,
+          url: '',
+          data: '',
+        });
+      } else if (turn.assetUrl && /^(?:loofi-media:|desktop:)/.test(turn.assetUrl)) {
+        assets.push({
+          id: turn.assetId,
+          type: 'video',
+          name: `Iteration v${turn.version}.mp4`,
+          mimeType: 'video/mp4',
+          storageKey: turn.assetId,
+          url: turn.assetUrl,
+          data: '',
+        });
+      }
+    }
+  }
   const available = new Set(assets.map((asset) => asset.id));
   const missing = [...references].filter((id) => !available.has(id));
   if (missing.length) throw new Error(`Referenced local media missing: ${missing.join(', ')}`);
-  return exportProjectToZip(project, assets, {
+  return exportProjectToZip(sanitizedProject, assets, {
     productionRuns: runs,
     productionBible: project.productionBible,
     promptArtifacts: artifacts,
@@ -269,6 +310,17 @@ export async function importPortableProject(file: File): Promise<Project> {
     name: inventory.name,
     migrationHistory: imported.migrationHistory,
   };
+  if (document.videoIterationSessions?.length) {
+    const assetUrlsById = new Map(restoredAssets.map((asset) => [asset.id, asset.url]));
+    document.videoIterationSessions = document.videoIterationSessions.map((session) => ({
+      ...session,
+      projectId: inventory.id,
+      turns: session.turns.map((turn) => ({
+        ...turn,
+        assetUrl: assetUrlsById.get(turn.assetId) ?? turn.assetUrl,
+      })),
+    }));
+  }
   const remappedArtifacts = remapImportedReferences<PromptArtifactV1[]>(artifacts, ids).map(
     (artifact) => ({
       ...artifact,

@@ -18,18 +18,13 @@ import AutoBlockerModal from '../studios/modals/AutoBlockerModal';
 import { useLocationStore } from '@core/store/useLocationStore';
 import CameraPlotterModal from '../studios/modals/CameraPlotterModal';
 import WhiteboardModal from '../studios/modals/WhiteboardModal';
-import InpaintingModal from '../studios/modals/InpaintingModal';
-import GenerativeCanvasModal from '../studios/modals/GenerativeCanvasModal';
-import RecordingBoothModal from '../studios/modals/RecordingBoothModal';
 import TableReadPlayer from '@shared/components/TableReadPlayer';
 import { useCollaborativeProject } from '@shared/hooks/useCollaborativeProject';
-import ScriptImportReviewModal from '../studios/modals/ScriptImportReviewModal';
 import TitleEditorModal from '../studios/modals/TitleEditorModal';
 import { extractLastFrame } from '@core/utils/videoUtils';
 import PoseEditorModal from '../studios/modals/PoseEditorModal';
 import MotionCropEditor from '@shared/components/MotionCropEditor';
 import { upscaleVideo } from '@core/services/upscaleService';
-import DubbingModal from '../studios/modals/DubbingModal';
 import FoleyWizardModal from '../studios/modals/FoleyWizardModal';
 import MagicMaskModal from '../studios/modals/MagicMaskModal';
 import { ScreenplayImportModal } from '../studios/modals/ScreenplayImportModal';
@@ -98,12 +93,10 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Import Script State
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isScreenplayModalOpen, setIsScreenplayModalOpen] = useState(false);
   const [isAnimaticOpen, setIsAnimaticOpen] = useState(false);
 
   // Smart Import Review State
-  const [pendingImportShots] = useState<Partial<Shot>[]>([]);
   const [isReviewingImport, setIsReviewingImport] = useState(false);
 
   // Auto Blocker State
@@ -115,26 +108,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
   // Whiteboard State
   const [whiteboardShotId, setWhiteboardShotId] = useState<number | null>(null);
 
-  // Inpainting State
-  const [inpaintingShotId, setInpaintingShotId] = useState<number | null>(null);
-
-  // Outpainting (Generative Canvas) State
-  const [outpaintingShotId, setOutpaintingShotId] = useState<number | null>(null);
-
   // Pose Editor State
   const [poseEditorShotId, setPoseEditorShotId] = useState<number | null>(null);
-
-  // Recording Booth State
-  const [recordingShotId, setRecordingShotId] = useState<number | null>(null);
 
   // Text Overlay Editor State
   const [textEditorShotId, setTextEditorShotId] = useState<number | null>(null);
 
   // Motion Editor State
   const [motionEditorShotId, setMotionEditorShotId] = useState<number | null>(null);
-
-  // Dubbing State
-  const [dubbingShotId, setDubbingShotId] = useState<number | null>(null);
 
   // Foley (SFX) State
   const [foleyShotId, setFoleyShotId] = useState<number | null>(null);
@@ -220,19 +201,14 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape handling for sub-modals
       if (e.key === 'Escape') {
-        if (isImportModalOpen) setIsImportModalOpen(false);
-        else if (isReviewingImport) setIsReviewingImport(false);
+        if (isReviewingImport) setIsReviewingImport(false);
         else if (isTableReadOpen) setIsTableReadOpen(false);
         else if (isAutoBlockerOpen) setIsAutoBlockerOpen(false);
         else if (plottingShotId !== null) setPlottingShotId(null);
         else if (whiteboardShotId !== null) setWhiteboardShotId(null);
-        else if (inpaintingShotId !== null) setInpaintingShotId(null);
-        else if (outpaintingShotId !== null) setOutpaintingShotId(null);
         else if (poseEditorShotId !== null) setPoseEditorShotId(null);
-        else if (recordingShotId !== null) setRecordingShotId(null);
         else if (textEditorShotId !== null) setTextEditorShotId(null);
         else if (motionEditorShotId !== null) setMotionEditorShotId(null);
-        else if (dubbingShotId !== null) setDubbingShotId(null);
         else if (foleyShotId !== null) setFoleyShotId(null);
         else if (magicMaskShotId !== null) setMagicMaskShotId(null);
         else if (doctorShotId !== null) setDoctorShotId(null);
@@ -244,18 +220,13 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     onClose,
-    isImportModalOpen,
     isTableReadOpen,
     isAutoBlockerOpen,
     plottingShotId,
     whiteboardShotId,
-    inpaintingShotId,
-    outpaintingShotId,
     poseEditorShotId,
-    recordingShotId,
     textEditorShotId,
     motionEditorShotId,
-    dubbingShotId,
     foleyShotId,
     magicMaskShotId,
     doctorShotId,
@@ -642,11 +613,9 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
                     onFoley={setFoleyShotId}
                     onMagicMask={setMagicMaskShotId}
                     onMotionEditor={setMotionEditorShotId}
-                    onDubbing={setDubbingShotId}
                     onUpscale={handleUpscale}
                     onColorMatch={handleColorMatch}
                     onColorMatchTarget={setColorMatchTargetId}
-                    onRecording={setRecordingShotId}
                   />
                 );
               })}
@@ -699,16 +668,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           }}
         />
       )}
-      {isImportModalOpen && (
-        <ScriptImportReviewModal
-          isOpen={isImportModalOpen}
-          onClose={() => setIsImportModalOpen(false)}
-          initialShots={pendingImportShots}
-          characterOptions={savedCharacters.map((c) => ({ value: c.id, label: c.name }))}
-          locationOptions={locations.map((l) => ({ value: l.id, label: l.name }))}
-          onImport={() => {}}
-        />
-      )}
       {isTableReadOpen && (
         <TableReadPlayer
           shots={shots}
@@ -736,32 +695,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
             handleShotChange(plottingShotId!, 'camera', prompt);
           }}
           addToast={addToast}
-        />
-      )}
-      {recordingShotId !== null && (
-        <RecordingBoothModal
-          isOpen={recordingShotId !== null}
-          onClose={() => setRecordingShotId(null)}
-          scriptText={shots.find((s) => s.id === recordingShotId)?.dialogueText || ''}
-          onSave={(_blob) => {
-            /* Upload logic */
-          }}
-        />
-      )}
-      {inpaintingShotId !== null && (
-        <InpaintingModal
-          isOpen={inpaintingShotId !== null}
-          onClose={() => setInpaintingShotId(null)}
-          imageUrl={shots.find((s) => s.id === inpaintingShotId)?.conceptImageUrl || ''}
-          onGenerate={async () => {}}
-        />
-      )}
-      {outpaintingShotId !== null && (
-        <GenerativeCanvasModal
-          isOpen={outpaintingShotId !== null}
-          onClose={() => setOutpaintingShotId(null)}
-          conceptImageUrl={shots.find((s) => s.id === outpaintingShotId)?.conceptImageUrl || ''}
-          onGenerateFill={async () => {}}
         />
       )}
       {poseEditorShotId !== null && (
@@ -794,17 +727,6 @@ const StoryBoard: React.FC<StoryBoardProps> = ({ isOpen, onClose, addToast }) =>
           onClose={() => setTextEditorShotId(null)}
           shot={shots.find((s) => s.id === textEditorShotId)!}
           onSave={(overlays) => handleShotChange(textEditorShotId!, 'overlays', overlays)}
-        />
-      )}
-
-      {/* Dubbing Modal */}
-      {dubbingShotId !== null && (
-        <DubbingModal
-          isOpen={dubbingShotId !== null}
-          onClose={() => setDubbingShotId(null)}
-          shot={shots.find((s) => s.id === dubbingShotId)!}
-          onSave={() => {}}
-          addToast={addToast}
         />
       )}
 

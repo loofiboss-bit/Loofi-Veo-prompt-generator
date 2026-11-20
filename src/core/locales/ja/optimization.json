@@ -1,0 +1,87 @@
+{
+  "panel": {
+    "title": "最適化",
+    "subtitle": "プロジェクトを改善するためのAI提案",
+    "close": "最適化パネルを閉じる",
+    "openShortcut": "Ctrl+Shift+O"
+  },
+  "suggestions": {
+    "title": "プロンプト提案",
+    "empty": "利用可能な提案はありません。入力を開始するとAIからのフィードバックが表示されます。",
+    "analyzing": "プロンプトを分析しています...",
+    "accept": "提案を採用",
+    "dismiss": "提案を却下",
+    "applyAll": "すべての提案を適用",
+    "offline": "オフラインモード — ローカル分析を使用中",
+    "categories": {
+      "style": "スタイル",
+      "camera": "カメラ",
+      "lighting": "照明",
+      "specificity": "具体性",
+      "syntax": "構文"
+    }
+  },
+  "quality": {
+    "title": "品質スコア",
+    "score": "{{score}} / 10",
+    "tiers": {
+      "excellent": "優秀",
+      "good": "良好",
+      "fair": "標準",
+      "needsWork": "改善が必要"
+    },
+    "dimensions": {
+      "specificity": "具体性",
+      "style": "ビジュアルスタイル",
+      "camera": "カメラワーク",
+      "lighting": "照明",
+      "length": "プロンプト長",
+      "syntax": "構文品質"
+    }
+  },
+  "cost": {
+    "title": "コスト見積もり",
+    "estimated": "推定コスト",
+    "perGeneration": "生成あたり",
+    "model": "モデル",
+    "tradeoff": "品質とコストのバランス",
+    "optimizeBudget": "予算向けに最適化"
+  },
+  "narrative": {
+    "title": "ストーリー構成チェック",
+    "noIssues": "問題は検出されませんでした。シーケンスは良好です。",
+    "issues": {
+      "missing-transition": "トランジションの追加を検討してください",
+      "pacing": "テンポに関する提案",
+      "character-jump": "キャラクターの連続性に関するメモ",
+      "duplicate-theme": "類似のテーマが検出されました"
+    },
+    "severity": {
+      "info": "情報",
+      "warning": "提案"
+    }
+  },
+  "preset": {
+    "title": "おすすめのプリセット",
+    "confidence": "信頼度",
+    "reasoning": "推奨理由",
+    "apply": "プリセットを適用",
+    "override": "別のプリセットを使用",
+    "optimizedFor": "{{useCase}} 向けに最適化"
+  },
+  "history": {
+    "title": "最適化履歴",
+    "empty": "最適化履歴はまだありません",
+    "accepted": "採用済み",
+    "dismissed": "却下済み",
+    "modified": "変更済み"
+  },
+  "aria": {
+    "panel": "最適化の提案",
+    "suggestionList": "プロンプト改善の提案一覧",
+    "qualityScore": "品質スコア 10点中 {{score}}点",
+    "costEstimate": "推定コスト {{cost}} USD",
+    "narrativeIssue": "{{severity}} — {{description}}",
+    "presetConfidence": "プリセット推奨の信頼度 {{confidence}}%"
+  }
+}

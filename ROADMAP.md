@@ -1,4 +1,4 @@
-# Loofi Creator Studio — Engineering Roadmap (v18+)
+# Loofi Creator Studio — Product & Engineering Roadmap (v23+)
 
 > **Core Engineering Philosophy (Zero AI Slop):**
 > Loofi Creator Studio is a deterministic, local-first production environment for Google Flow, Veo, and Lyria workflows. We do not build opaque LLM "magic rewrite" buttons, implicit background API calls, or fragile UI wrappers. Every architectural change must improve state predictability, main-thread responsiveness, data integrity, or deterministic prompt/timeline compilation.
@@ -125,5 +125,61 @@ _Goal: Intuitive guided delivery, unified media library protection, complete plu
   - Fast "Continue editing" shortcut for the active project in Projects hub, routing to Timeline if clips exist or Studio otherwise.
   - Primary "Open editor & import media" action in empty timeline state.
 - [x] **5.5 Full 6-Language i18n & Scoped Zero-Warning ESLint Guard:**
-  - Translate all lingering hardcoded UI strings (Focus Mode, Magnetic, Snap, Snap Cuts) across English, Swedish, German, French, Spanish, Japanese, and Arabic.
+  - Translate all UI strings across English, Swedish, Spanish, French, Japanese, and Arabic with 100% key parity enforced across all 17 namespaces via `npm run i18n:all:check`.
   - Scoped ESLint rule (`react/jsx-no-literals`) enforcing zero raw strings in key delivery and media components while maintaining the strict 0-warning `.lint-threshold`.
+
+---
+
+## Phase 6: Release 1 — Workspace Cohesion, Data Integrity & Performance Hardening (v23.0.0 — Completed 2026-11-20)
+
+_Goal: Eliminate silent edit data loss, unify navigation/shortcuts around active workspaces, retire abandoned UI shells, and enforce strict bundle and localization gates._
+
+- [x] **6.1 Non-Destructive Bridge & Portable Video Iteration Lineage (`videoVersionService.ts`, `videoIterationService.ts`, `projectTransferService.ts`):**
+  - Preserve existing storyboard shot `action`, `duration`, and trimmed timeline clips when applying iterated video takes, and preserve 3–15s Omni durations across bridges.
+  - Persist `VideoIterationSession[]` on canonical project documents (SQLite WAL `meta_json`), rehydrate desktop media assets across sessions and `.loofi-project` bundles, and surface clear EEA/Switzerland/UK upload caveats.
+- [x] **6.2 Resilient Vision & Timeline/Render Hygiene (`geminiVisionService.ts`, `creator-render.cjs`, `timelineSlice.ts`):**
+  - Migrate vision/SFX/auto-tagging endpoints onto `resilientCall` so desktop `maxRetries=0` cost-approval boundaries apply uniformly.
+  - Extend interrupted FFmpeg render recovery to sweep orphaned `segment-*` / `concat.txt` files and remove silent 50-shot truncation in `gcTimeline`.
+- [x] **6.3 Coherent Workspace & Retired Legacy Shells (`AppScaffold.tsx`, `StartPage.tsx`, `ShortcutsModal.tsx`, `ModalManager.tsx`):**
+  - Focus/highlight local clip import when onboarding opens `/start?mode=clips`, upgrade the context row into a responsive Workspace Context Rail, wire `Ctrl+Enter` to Prompt Studio build, add 1-click `Open Timeline`, and standardize `ShortcutsModal` onto `<AppDialog>`.
+  - Remove legacy `Header`, `ActionBar`, `PromptWorkspace`, `SunoSongStudio`, `OptimizePage`, `AiCoDirectorWidget`, `NewProjectWizard`, `ComposerPanel`, and dead `StoryBoard`/`ShotCard` modals.
+- [x] **6.4 Bundle Budget, Icon Modularity & 6-Locale Parity (`vite.config.ts`, `iconRegistry.ts`, `check-bundle-budget.mjs`, `check-translations.mjs`):**
+  - Exclude unused 24 MB `ort-wasm-simd-threaded.asyncify.wasm` while preserving Whisper ASR (`npm run bundle:check` < 22 MB).
+  - Replace the 1,624-line switch in `Icon.tsx` with data-driven `iconRegistry.ts`, retire legacy `constants/translations.ts`, localize `creativeAssistantService` via i18n, and enforce 100% key parity across 6 languages x 17 namespaces.
+
+---
+
+## Phase 7: Release 2 — Creative Intelligence Loop & Next-Gen Prompt Studio (Planned)
+
+_Goal: Close the creative feedback loop between observed video results and targeted prompt refinements while modularizing Prompt Studio internals._
+
+- [ ] **7.1 Observation-to-Prompt Targeted Diffs:**
+  - Map concrete video review observations (framing, motion, continuity, timing, goal fit) directly onto the responsible scene fields with narrow diff proposals that preserve locked manual fields and dialogue.
+- [ ] **7.2 Explicit Separation of Signal Types & Project Taste Memory:**
+  - Visually distinguish deterministic readiness checks, observed rendered video metrics, and voluntary AI suggestions, and reuse explicit user quality ratings locally within a project to inform future refinements.
+- [ ] **7.3 Next-Gen Prompt Studio Authoring & Modular Decomposition:**
+  - Surface character/environment DNA reuse, visual variant comparison diffs, and clear explanations of manual-to-compiled prompt changes in-context while splitting monolithic `PromptStudioPage.tsx` into composable modules without breaking store/revision contracts.
+
+---
+
+## Phase 8: Release 3 — Visual Storyboard, Production Scale & Model Future-Proofing (Planned)
+
+_Goal: Scale editing responsiveness and missing-media recovery for larger projects and make model profile updates strictly catalog-driven._
+
+- [ ] **8.1 Storyboard-to-Timeline & Pre-Generation Clarity:**
+  - Improve visual storyboard ordering, shot dependencies, sequence previewing before paid generation, and frictionless transfer of approved takes onto the timeline.
+- [ ] **8.2 Large-Timeline Responsiveness, Audio Mix & Recovery:**
+  - Virtualize dense timeline clip/caption tracks, streamline dialogue/music/ducking/subtitle editing while keeping editing preview distinct from rendered MP4 output, and harden missing-media relinking after interrupted exports.
+- [ ] **8.3 Data-Driven Model Catalog & Deprecation Resilience:**
+  - Isolate model capabilities (duration, resolution, aspect ratio, audio, reference limits) behind catalog contracts so new video/music models onboard cleanly and deprecated targets remain safely inspectable without blocking existing projects.
+
+---
+
+## Phase 9: Accessibility, High-DPI Polish & Native Track Evaluation Gate (Planned)
+
+_Goal: Complete physical Fedora KDE/Wayland qualification and accessibility verification across themes, scaling, and assistive tools._
+
+- [ ] **9.1 Physical Fedora KDE/Wayland & Accessibility Qualification:**
+  - Execute and record physical hardware checks for fractional scaling, Wayland keyboard/screen-reader navigation, reduced motion, light/dark themes, and real OS-vault / Secret Service persistence.
+- [ ] **9.2 Experimental Native Track Boundary (`codex/native-m0`):**
+  - Keep the experimental Qt 6/QML/Rust exploration isolated and evaluated strictly against measured startup/memory/rendering evidence rather than treating it as an automatic replacement for the Electron desktop runtime.

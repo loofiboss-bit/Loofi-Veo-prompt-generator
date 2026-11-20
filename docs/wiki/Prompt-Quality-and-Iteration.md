@@ -1,12 +1,12 @@
 # Prompt Quality and Iteration
 
-The v14.1.0 Studio workflow helps you compare direction, address concrete issues and preserve
+The v23.0.0 Studio workflow helps you compare direction, address concrete issues and preserve
 useful drafts without replacing them before you are ready.
 
 ## Compare in Model Arena
 
-From Video, select **Compare in Arena**. Arena compiles the same normalized input for all eight
-Studio targets using the copy desk's compiler. Compare prompt text, settings and handoff compatibility,
+From Video, select **Compare in Arena**. Arena compiles the same normalized input for all seven
+active Studio targets using the copy desk's compiler. Compare prompt text, settings and handoff compatibility,
 then copy the package you want to try.
 
 Arena compares packages, not generated videos or provider performance. Manual target names do not

@@ -241,5 +241,27 @@
     "filterReference": "Referenser",
     "filterGenerated": "Genererade",
     "filters": "Filtrera medier"
+  },
+  "contextRail": {
+    "localFirst": "Lokalt först",
+    "toProduction": "Produktion",
+    "toTimeline": "Tidslinje",
+    "toStudio": "Prompt Studio"
+  },
+  "shortcuts": {
+    "title": "Tangentbordsgenvägar",
+    "general": "Allmänt",
+    "editing": "Redigering",
+    "timeline": "Tidslinjespelare",
+    "commandPalette": "Öppna kommandopalett",
+    "buildPrompt": "Bygg prompt i Studio",
+    "openHelp": "Öppna hjälppanelen",
+    "savePreset": "Spara förval",
+    "closeDialog": "Stäng dialog",
+    "undo": "Ångra",
+    "redo": "Gör om",
+    "playPause": "Spela / Pausa",
+    "shuttle": "Bakåt / Pausa / Framåt",
+    "stepFrame": "Stega bakåt / framåt"
   }
 }

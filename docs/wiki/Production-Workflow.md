@@ -12,8 +12,8 @@ Define the brief and organize the scenes. Add local references and bind characte
 props and looks in [Assets and Continuity](Assets-and-Continuity.md). Verify required images and
 continuity locks before preparing a request.
 
-Studio's **Generate in app** creates a local plan for **Veo API**. It does not submit or bill a
-provider. Flow, Kling, Runway, Sora and Luma retain manual handoffs; Suno uses manual Custom Mode
+Studio's **Generate in app** creates a local plan for **Veo API** (or **Gemini Omni 1.2 Flash**). It does not submit or bill a
+provider. Flow, Kling, Runway, Luma, Wan and MiniMax/Hailuo retain manual handoffs (legacy Sora artifacts remain read-only); Suno uses manual Custom Mode
 copy actions. Official Lyria music generation follows its own approved provider workflow.
 
 ## Approve a supported request

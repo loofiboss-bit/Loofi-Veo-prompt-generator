@@ -22,14 +22,7 @@ vi.mock('@core/services/pluginService', () => ({
   },
 }));
 
-vi.mock('@features/studios/ImageStudio', () => ({
-  default: () => <div data-testid="image-studio-fallback">Image Studio</div>,
-}));
-
-vi.mock('@features/studios/VideoGenerationStudio', () => ({
-  default: () => <div data-testid="video-studio-fallback">Video Studio</div>,
-}));
-
+import { pluginService } from '@core/services/pluginService';
 import { useAppStore } from '@core/store/useAppStore';
 import ModalManager from './ModalManager';
 
@@ -41,26 +34,9 @@ const createHandlers = () => ({
   handleSavePreset: vi.fn(),
   handleDeletePreset: vi.fn(),
   handleUpdatePreset: vi.fn(),
-  handleSaveDNA: vi.fn(),
-  handleApplyDNA: vi.fn(),
-  handleDeleteDNA: vi.fn(),
   handleLoadProject: vi.fn(),
   handleUpdateProjectMeta: vi.fn(),
   handleResetAll: vi.fn(),
-  handleWizardComplete: vi.fn(),
-  handleSelectTemplate: vi.fn(),
-  handleSelectCharacter: vi.fn(),
-  handleUpdateSpatialMotion: vi.fn(),
-  handleClearSpatialMotions: vi.fn(),
-  handleSelectVariation: vi.fn(),
-  handleUseAnalysis: vi.fn(),
-  handleCompareSelect: vi.fn(),
-  promptVariations: [],
-  isGeneratingVariations: false,
-  isBrainstorming: false,
-  uploadedImageUrl: null,
-  currentProjectName: null,
-  currentProjectId: null,
   generatedPrompt: null,
 });
 
@@ -70,18 +46,13 @@ const defaultProps = {
 };
 
 beforeEach(() => {
+  vi.mocked(pluginService.getStudios).mockReturnValue([]);
   useAppStore.setState({
     isHistoryOpen: false,
     isTemplatesOpen: false,
     isSavePresetModalOpen: false,
-    isDNAModalOpen: false,
-    isCharacterBankOpen: false,
-    isLocationBankOpen: false,
     isProjectManagerOpen: false,
-    isSeriesBibleOpen: false,
     isVariablesPanelOpen: false,
-    isWizardOpen: false,
-    isNewProjectWizardOpen: false,
     isSearchOpen: false,
     isVariationsOpen: false,
     isShortcutsOpen: false,
@@ -97,14 +68,12 @@ describe('ModalManager', () => {
 
   it('should render minimal content when all modals are closed', () => {
     const { container } = render(<ModalManager {...defaultProps} />);
-    // When no modals are open, lazy modal nodes should not be mounted.
     expect(container.children.length).toBe(0);
   });
 
   it('should render loading state when isHistoryOpen is true', () => {
     useAppStore.setState({ isHistoryOpen: true });
     const { container } = render(<ModalManager {...defaultProps} />);
-    // Lazy component triggers Suspense fallback (skeleton loader)
     const busyElements = container.querySelectorAll('[aria-busy="true"]');
     expect(busyElements.length).toBeGreaterThan(0);
   });
@@ -116,8 +85,8 @@ describe('ModalManager', () => {
     expect(busyElements.length).toBeGreaterThan(0);
   });
 
-  it('should render loading state when isWizardOpen is true', () => {
-    useAppStore.setState({ isWizardOpen: true });
+  it('should render loading state when isProjectManagerOpen is true', () => {
+    useAppStore.setState({ isProjectManagerOpen: true });
     const { container } = render(<ModalManager {...defaultProps} />);
     const busyElements = container.querySelectorAll('[aria-busy="true"]');
     expect(busyElements.length).toBeGreaterThan(0);
@@ -125,6 +94,13 @@ describe('ModalManager', () => {
 
   it('should render loading state when isSearchOpen is true', () => {
     useAppStore.setState({ isSearchOpen: true });
+    const { container } = render(<ModalManager {...defaultProps} />);
+    const busyElements = container.querySelectorAll('[aria-busy="true"]');
+    expect(busyElements.length).toBeGreaterThan(0);
+  });
+
+  it('should render loading state when isVariablesPanelOpen is true', () => {
+    useAppStore.setState({ isVariablesPanelOpen: true });
     const { container } = render(<ModalManager {...defaultProps} />);
     const busyElements = container.querySelectorAll('[aria-busy="true"]');
     expect(busyElements.length).toBeGreaterThan(0);
@@ -141,7 +117,6 @@ describe('ModalManager', () => {
     useAppStore.setState({ isHistoryOpen: true, isTemplatesOpen: true });
     const { container } = render(<ModalManager {...defaultProps} />);
     const busyElements = container.querySelectorAll('[aria-busy="true"]');
-    // Multiple modals = more skeleton elements
     expect(busyElements.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -149,12 +124,6 @@ describe('ModalManager', () => {
     useAppStore.setState({ isHistoryOpen: true });
     const addToast = vi.fn();
     expect(() => render(<ModalManager {...defaultProps} addToast={addToast} />)).not.toThrow();
-  });
-
-  it('should render image studio fallback when image studio is active and plugin registry is empty', async () => {
-    useAppStore.setState({ activeStudio: 'image' });
-    const { findByTestId } = render(<ModalManager {...defaultProps} />);
-    expect(await findByTestId('image-studio-fallback')).toBeTruthy();
   });
 
   it('should redirect the legacy suno studio entry point to Prompt Studio music mode', async () => {
@@ -165,9 +134,17 @@ describe('ModalManager', () => {
     window.location.hash = originalHash;
   });
 
-  it('should render video studio fallback when video studio is active and plugin registry is empty', async () => {
-    useAppStore.setState({ activeStudio: 'video' });
-    const { findByTestId } = render(<ModalManager {...defaultProps} />);
-    expect(await findByTestId('video-studio-fallback')).toBeTruthy();
+  it('should render registered active plugin studios dynamically', () => {
+    const MockPluginStudio = () => <div data-testid="active-plugin-studio">Plugin Studio</div>;
+    vi.mocked(pluginService.getStudios).mockReturnValue([
+      {
+        id: 'image',
+        name: 'Image Studio',
+        component: MockPluginStudio as never,
+      } as never,
+    ]);
+    useAppStore.setState({ activeStudio: 'image' });
+    const { getByTestId } = render(<ModalManager {...defaultProps} />);
+    expect(getByTestId('active-plugin-studio')).toBeInTheDocument();
   });
 });

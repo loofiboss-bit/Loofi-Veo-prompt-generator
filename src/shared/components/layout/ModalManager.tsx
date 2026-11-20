@@ -2,39 +2,28 @@ import React from 'react';
 import { useAppStore } from '@core/store/useAppStore';
 import { useHistoryStore } from '@core/store/useHistoryStore';
 import { performanceProfiler } from '@core/services/performanceProfiler';
-import { useLocationStore } from '@core/store/useLocationStore';
 import { pluginService } from '@core/services/pluginService';
 import TextAreaInput from '@shared/components/ui/TextAreaInput';
 import AppDialog from '@shared/components/ui/AppDialog';
 import { StudioSkeleton, ModalSkeleton, TimelineSkeleton } from '@shared/components/ui/Skeleton';
 import ErrorBoundary from '@shared/components/ErrorBoundary';
+import { getPromptTemplates } from '@core/constants/templates';
+import {
+  HistoryEntry,
+  PromptTemplate,
+  CustomPreset,
+  Project,
+  VeoPromptResponse,
+} from '@core/types';
+import { useTranslation } from 'react-i18next';
 
 const ShortcutsModal = React.lazy(() => import('@features/settings/ShortcutsModal'));
-const TutorialGuide = React.lazy(() => import('@features/onboarding/TutorialGuide'));
 const HistoryPanel = React.lazy(() => import('@features/history/HistoryPanel'));
 const TemplatesPanel = React.lazy(() => import('@features/prompt/TemplatesPanel'));
-const VariationsPanel = React.lazy(() => import('@shared/components/VariationsPanel'));
-const VisualDNAModal = React.lazy(() => import('@features/studios/modals/VisualDNAModal'));
-const WizardModal = React.lazy(() => import('@features/studios/modals/WizardModal'));
-const CharacterBankModal = React.lazy(() => import('@features/studios/modals/CharacterBankModal'));
 const ProjectManager = React.lazy(() => import('@features/project/ProjectManager'));
-const SeriesBibleModal = React.lazy(() => import('@features/studios/modals/SeriesBibleModal'));
-const LocationManagerModal = React.lazy(
-  () => import('@features/studios/modals/LocationManagerModal'),
-);
 const VariablesPanel = React.lazy(() => import('@features/project/VariablesPanel'));
-const NewProjectWizard = React.lazy(() => import('@features/onboarding/NewProjectWizard'));
 const GlobalSearchModal = React.lazy(() => import('@features/studios/modals/GlobalSearchModal'));
-const VideoAnalysisStudio = React.lazy(() => import('@features/studios/VideoAnalysisStudio'));
-const ImageStudio = React.lazy(() => import('@features/studios/ImageStudio'));
-const VideoGenerationStudio = React.lazy(() => import('@features/studios/VideoGenerationStudio'));
-
 const StoryBoard = React.lazy(() => import('@features/timeline/StoryBoard'));
-const CompareModelsModal = React.lazy(() => import('@features/studios/modals/CompareModelsModal'));
-const SpatialDirectorModal = React.lazy(
-  () => import('@features/studios/modals/SpatialDirectorModal'),
-);
-const PronunciationGuide = React.lazy(() => import('@shared/components/PronunciationGuide'));
 const ScriptBreakdown = React.lazy(() => import('@shared/components/ScriptBreakdown'));
 
 const LegacySunoRedirect = ({ onClose }: { onClose: () => void }) => {
@@ -48,28 +37,9 @@ const LegacySunoRedirect = ({ onClose }: { onClose: () => void }) => {
     </div>
   );
 };
-import { getPromptTemplates } from '@core/constants/templates';
-import { getAspectRatios } from '@core/constants';
-import { pronunciationGuides } from '@core/constants/translations';
-import {
-  HistoryEntry,
-  PromptTemplate,
-  CustomPreset,
-  VisualDNA,
-  CharacterProfile,
-  Project,
-  PromptState,
-  VeoPromptResponse,
-  PromptVariation,
-} from '@core/types';
-import type { ProjectTemplate } from '@core/config/projectTemplates';
-import { useTranslation } from 'react-i18next';
 
 interface ModalManagerProps {
   addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-  // Hooks passed down from App
-
-  // Handlers from App.tsx logic
   handlers: {
     handleUseHistoryEntry: (entry: HistoryEntry) => void;
     handleClearHistory: () => void;
@@ -78,27 +48,9 @@ interface ModalManagerProps {
     handleSavePreset: (name: string) => void;
     handleDeletePreset: (id: string) => void;
     handleUpdatePreset: (preset: CustomPreset) => void;
-    handleSaveDNA: (name: string, styleParams: Partial<PromptState>) => void;
-    handleApplyDNA: (dna: VisualDNA) => void;
-    handleDeleteDNA: (id: string) => void;
     handleLoadProject: (project: Project) => void;
     handleUpdateProjectMeta: (id: string, name: string) => void;
     handleResetAll: () => void;
-    handleWizardComplete: (newState: Partial<PromptState>) => void;
-    handleSelectTemplate: (template: ProjectTemplate) => void;
-    handleSelectCharacter: (profile: CharacterProfile) => void;
-    handleUpdateSpatialMotion: (gridId: string, motion: string) => void;
-    handleClearSpatialMotions: () => void;
-    handleSelectVariation: (variation: string) => void;
-    handleUseAnalysis: (text: string) => void;
-    handleCompareSelect: (prompt: string, model: 'flow-veo' | 'veo-api') => void;
-    // New state specific
-    promptVariations: PromptVariation[];
-    isGeneratingVariations: boolean;
-    isBrainstorming: boolean;
-    uploadedImageUrl: string | null;
-    currentProjectName: string | null;
-    currentProjectId: string | null;
     generatedPrompt: VeoPromptResponse | null;
   };
 }
@@ -161,7 +113,6 @@ const StudioMountMetric: React.FC<{ metric: string }> = ({ metric }) => {
 const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
   const store = useAppStore();
   const historyEntries = useHistoryStore((state) => state.entries);
-  const _locationStore = useLocationStore();
   const [pluginStudios, setPluginStudios] = React.useState(pluginService.getStudios());
 
   React.useEffect(() => {
@@ -222,47 +173,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
         </React.Suspense>
       )}
 
-      {store.isDNAModalOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-visual-dna">
-            <VisualDNAModal
-              isOpen={store.isDNAModalOpen}
-              onClose={() => store.closeModal('isDNAModalOpen')}
-              savedDNAs={store.visualDNA}
-              onSaveDNA={handlers.handleSaveDNA}
-              onApplyDNA={handlers.handleApplyDNA}
-              onDeleteDNA={handlers.handleDeleteDNA}
-              currentPromptState={store.promptState}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.isCharacterBankOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-character-bank">
-            <CharacterBankModal
-              isOpen={store.isCharacterBankOpen}
-              onClose={() => store.closeModal('isCharacterBankOpen')}
-              onSelectCharacter={handlers.handleSelectCharacter}
-              language={store.promptState.language}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.isLocationBankOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-location-manager">
-            <LocationManagerModal
-              isOpen={store.isLocationBankOpen}
-              onClose={() => store.closeModal('isLocationBankOpen')}
-              addToast={addToast}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
       {store.isProjectManagerOpen && (
         <React.Suspense fallback={<ModalSkeleton />}>
           <ErrorBoundary panelId="modal-project-manager">
@@ -292,32 +202,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
         </React.Suspense>
       )}
 
-      {store.isSeriesBibleOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-series-bible">
-            <SeriesBibleModal
-              isOpen={store.isSeriesBibleOpen}
-              onClose={() => store.closeModal('isSeriesBibleOpen')}
-              addToast={addToast}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.isWizardOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-wizard">
-            <WizardModal
-              isOpen={store.isWizardOpen}
-              onClose={() => store.closeModal('isWizardOpen')}
-              onComplete={handlers.handleWizardComplete}
-              language={store.promptState.language}
-              addToast={addToast}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
       {store.isSavePresetModalOpen && (
         <ErrorBoundary panelId="modal-save-preset-panel">
           <SavePresetInternal
@@ -325,23 +209,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
             onClose={() => store.closeModal('isSavePresetModalOpen')}
           />
         </ErrorBoundary>
-      )}
-
-      {store.isVariationsOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-variations-panel">
-            <VariationsPanel
-              variations={handlers.promptVariations}
-              isLoading={handlers.isGeneratingVariations || handlers.isBrainstorming}
-              onSelect={handlers.handleSelectVariation}
-              onClose={() => store.closeModal('isVariationsOpen')}
-              language={store.promptState.language}
-              model={store.promptState.model}
-              addToast={addToast}
-              targetModel={store.promptState.targetModel}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
       )}
 
       {store.activeStudio === 'story' && (
@@ -371,93 +238,11 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
         </React.Suspense>
       )}
 
-      {/* Core studio fallback when plugin registration is delayed/unavailable */}
-      {!activePluginStudio && store.activeStudio === 'image' && (
-        <React.Suspense fallback={<StudioSkeleton />}>
-          <ErrorBoundary panelId="studio-image-fallback">
-            <StudioMountMetric metric="studio.open.image" />
-            <ImageStudio
-              onClose={store.closeStudio}
-              addToast={addToast}
-              aspectRatioOptions={getAspectRatios(store.promptState.language)}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
       {!activePluginStudio && store.activeStudio === 'suno' && (
         <React.Suspense fallback={<StudioSkeleton />}>
           <ErrorBoundary panelId="studio-suno-fallback">
             <StudioMountMetric metric="studio.open.suno" />
             <LegacySunoRedirect onClose={store.closeStudio} />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {!activePluginStudio && store.activeStudio === 'video' && (
-        <React.Suspense fallback={<StudioSkeleton />}>
-          <ErrorBoundary panelId="studio-video-fallback">
-            <StudioMountMetric metric="studio.open.video" />
-            <VideoGenerationStudio
-              onClose={store.closeStudio}
-              addToast={addToast}
-              language={store.promptState.language}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.activeStudio === 'analysis' && (
-        <React.Suspense fallback={<StudioSkeleton />}>
-          <ErrorBoundary panelId="studio-video-analysis">
-            <StudioMountMetric metric="studio.open.analysis" />
-            <VideoAnalysisStudio
-              onClose={store.closeStudio}
-              addToast={addToast}
-              onUseAnalysis={handlers.handleUseAnalysis}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.activeStudio === 'pronunciation' && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="studio-pronunciation-guide">
-            <PronunciationGuide
-              guideData={pronunciationGuides[store.promptState.language]?.terms || []}
-              onClose={store.closeStudio}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.activeStudio === 'compare' && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="studio-compare-models">
-            <CompareModelsModal
-              isOpen={store.activeStudio === 'compare'}
-              onClose={store.closeStudio}
-              idea={store.promptState.idea}
-              language={store.promptState.language}
-              addToast={addToast}
-              onSelectPrompt={handlers.handleCompareSelect}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {store.activeStudio === 'spatial' && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="studio-spatial-director">
-            <StudioMountMetric metric="studio.open.spatial" />
-            <SpatialDirectorModal
-              isOpen={store.activeStudio === 'spatial'}
-              onClose={store.closeStudio}
-              uploadedImageUrl={handlers.uploadedImageUrl}
-              spatialMotions={store.promptState.spatialMotions}
-              onUpdateMotion={handlers.handleUpdateSpatialMotion}
-              onClearAll={handlers.handleClearSpatialMotions}
-            />
           </ErrorBoundary>
         </React.Suspense>
       )}
@@ -471,26 +256,13 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
               addToast={addToast}
               onGenerateShot={(prompt) => {
                 store.setPromptState({ idea: prompt });
-                handlers.generatedPrompt = { prompt: prompt }; // Optimistic
+                handlers.generatedPrompt = { prompt };
                 store.openStudio('video');
               }}
             />
           </ErrorBoundary>
         </React.Suspense>
       )}
-
-      <React.Suspense fallback={null}>
-        <ErrorBoundary panelId="modal-tutorial-guide-panel">
-          <TutorialGuide
-            isActive={false} // Tutorial logic needs to be connected to store later if moved completely
-            steps={[]}
-            currentStepIndex={0}
-            onNext={() => {}}
-            onPrev={() => {}}
-            onFinish={() => {}}
-          />
-        </ErrorBoundary>
-      </React.Suspense>
 
       {store.isSearchOpen && (
         <React.Suspense fallback={<ModalSkeleton />}>
@@ -505,7 +277,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
               onSelectPreset={handlers.handleUsePresetOrTemplate}
               onSelectTemplate={handlers.handleUsePresetOrTemplate}
               language={store.promptState.language}
-              // Add PanelErrorBoundary here if needed, but ErrorBoundary is fine
             />
           </ErrorBoundary>
         </React.Suspense>
@@ -518,19 +289,6 @@ const ModalManager: React.FC<ModalManagerProps> = ({ addToast, handlers }) => {
             <VariablesPanel
               isOpen={store.isVariablesPanelOpen}
               onClose={() => store.closeModal('isVariablesPanelOpen')}
-            />
-          </ErrorBoundary>
-        </React.Suspense>
-      )}
-
-      {/* New Project Wizard Overlay */}
-      {store.isNewProjectWizardOpen && (
-        <React.Suspense fallback={<ModalSkeleton />}>
-          <ErrorBoundary panelId="modal-new-project-wizard">
-            <NewProjectWizard
-              isOpen={store.isNewProjectWizardOpen}
-              onClose={() => store.setNewProjectWizardOpen(false)}
-              onSelectTemplate={handlers.handleSelectTemplate}
             />
           </ErrorBoundary>
         </React.Suspense>

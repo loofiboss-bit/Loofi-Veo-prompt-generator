@@ -1,6 +1,9 @@
 {
   "placeholder": "بحث...",
-  "noResults": "لا توجد نتائج",
-  "results": "النتائج",
-  "filter": "تصفية"
+  "title": "البحث الشامل",
+  "historySection": "السجل",
+  "presetsSection": "الإعدادات المسبقة",
+  "templatesSection": "القوالب",
+  "noResults": "لم يتم العثور على نتائج.",
+  "recentHistory": "السجل الأخير"
 }

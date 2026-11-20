@@ -1,5 +1,5 @@
 import React from 'react';
-import { videoGenerationStages } from '@core/constants/translations';
+import { videoGenerationStages } from '@core/constants/videoGenerationStages';
 import Icon from '@shared/components/ui/Icon';
 import { useTranslation } from 'react-i18next';
 
@@ -7,19 +7,22 @@ interface VideoGenerationProgressProps {
   currentStatus: string;
   generatedVideoUrl: string | null;
   onClose: () => void;
-  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
+  language: string;
 }
 
 const ProgressStepper: React.FC<{
   currentStatus: string;
-  language: 'en' | 'sv' | 'es' | 'fr' | 'de';
+  language: string;
 }> = ({ currentStatus, language }) => {
   const STAGES = [
     { key: 'init', statuses: ['Init'] },
     { key: 'render', statuses: ['Processing', 'Polling'] },
     { key: 'finalize', statuses: ['Fetching'] },
   ];
-  const stageLabels = videoGenerationStages[language];
+  const normalized = language.toLowerCase().slice(0, 2);
+  const stageLabels =
+    videoGenerationStages[normalized as keyof typeof videoGenerationStages] ??
+    videoGenerationStages.en;
 
   const getStageIndex = (status: string) => {
     if (!status) return -1;

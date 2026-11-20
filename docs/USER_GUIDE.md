@@ -1,19 +1,35 @@
 # Loofi Creator Studio User Guide
 
-This guide describes the v14 workspace. The application ID and existing local data remain
+This guide describes the current Loofi Creator Studio workspace. The application ID and existing local data remain
 unchanged.
 
 ## Start locally
 
-On first launch, choose Video or Music, choose one of the registered interface languages, then
-select **Start creating**. Provider credentials are only needed when you choose an AI function.
+On first launch, choose **Use my own clips**, **Open video prompts**, or **Open music and lyrics**, pick one of the six full interface languages (English, Swedish, Spanish, French, Japanese, or Arabic), then
+select **Start creating**. Choosing **Use my own clips** navigates directly to **Start** with local clip import highlighted and focused; provider credentials are only needed when you choose an optional cloud AI function.
 
-In Prompt Studio, enter an idea and select **Build copy-ready pack**. Local compilation needs no
+From the Workspace Context Rail at the top of the workspace, monitor the active project (`Saving`, `Saved`, `Conflict`, or `Not saved`), jump between **Prompt Studio**, **Production**, and **Timeline**, or press **Ctrl/Cmd+K** to open Quick navigation. In Prompt Studio, click **Open Timeline** directly from a built pack to move straight into timeline assembly.
+
+In Prompt Studio, enter an idea and select **Build copy-ready pack** (or press **Ctrl/Cmd+Enter**). Local compilation needs no
 network. Choose one of the three variants, edit its text directly and use its copy actions. Expand
 **Scene details** for video direction or **Advanced handoff notes** for music details. History and
 saved templates are available in the same workspace. Brief changes mark the previous pack as
 outdated and identify changed fields. Rebuild it, or explicitly choose the earlier result when copying
 or opening it in Suno. An outdated video pack cannot be sent to internal generation.
+
+### Keyboard shortcuts
+
+- **Ctrl/Cmd+K**: Open Command Palette (`Quick navigation`)
+- **Ctrl/Cmd+Enter**: Build copy-ready pack in Prompt Studio
+- **? / F1**: Open Help Panel
+- **Ctrl/Cmd+Shift+S**: Save Preset
+- **Ctrl/Cmd+Z / Ctrl/Cmd+Shift+Z**: Undo / Redo
+- **Space** & **J / K / L** & **← / →**: Play/Pause, Shuttle, and Step Navigation in Timeline Player
+- **Esc**: Close open dialog or modal
+
+### Gemini Omni regional upload note
+
+For AI Video Iteration with **Gemini Omni 1.2 Flash** (3–15s), uploaded reference videos may be restricted in the EEA, Switzerland, and the UK; text-to-video turns remain available.
 
 The status beside your project reports **Saving**, **Saved**, or **Not saved**. Draft input, variants,
 selection and lyric locks save after 500 ms. Project changes wait for pending writes. If saving fails,
@@ -22,7 +38,7 @@ keep the window open and retry; a temporary memory copy is not persistent storag
 ## Video prompts
 
 Choose target, recipe, duration and aspect ratio before building the pack. Flow, Kling, Runway,
-Sora and Luma use manual handoffs. Copy the selected variant and follow the destination's own
+Luma, Wan and MiniMax/Hailuo use manual handoffs (legacy Sora artifacts remain read-only for history and export). Copy the selected variant and follow the destination's own
 submission controls. The app does not silently convert those targets to Veo API.
 
 For image-based recipes, import a local PNG, JPEG or WebP image or select an existing local image.
@@ -72,14 +88,14 @@ collaboration and Foley generation are unavailable because their integrations ar
 Enabling Labs does not activate those disabled actions.
 
 Both themes use the same workspace controls. Keyboard focus is visible; use Tab to navigate and
-Enter or Space to activate actions. Interface languages match the registered English, Spanish,
-French, Japanese and Arabic catalogs; lyrics language is a separate creative setting.
+Enter or Space to activate actions. Interface languages match the registered English, Swedish, Spanish,
+French, Japanese and Arabic catalogs with 100% key parity; lyrics language is a separate creative setting.
 
 For implementation contracts and qualification limits, see [V14_IMPLEMENTATION.md](V14_IMPLEMENTATION.md).
 
-## Studio iteration in v14.1.0
+## Studio iteration and Arena
 
-Use **Compare in Arena** to compare local prompt packages for the eight Studio video targets.
+Use **Compare in Arena** to compare local prompt packages for the seven active Studio video targets.
 The preview and copy action use the same compiler as **Build copy-ready pack**. Confirm the actual
 model version, supported controls and duration in each manual destination. Only Veo API supports an
 internal production handoff, and paid generation still requires cost approval in Production.

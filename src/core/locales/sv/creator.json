@@ -23,7 +23,8 @@
     "musicLyricsDescription": "Skapa musikstil och låttext som du sedan kan kopiera eller granska.",
     "musicLyrics": "Öppna musik och låttext",
     "moreTools": "Fler sätt att arbeta",
-    "moreToolsDescription": "Offlineexempel och redigerbara recept finns som startpunkter när du vill ha dem."
+    "moreToolsDescription": "Offlineexempel och redigerbara recept finns som startpunkter när du vill ha dem.",
+    "clipsReadyHint": "Redo att redigera lokalt — välj video-, ljud- eller bildfiler nedan."
   },
   "examples": {
     "title": "Prova offline — inget konto eller API-nyckel behövs",

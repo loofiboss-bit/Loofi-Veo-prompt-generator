@@ -464,7 +464,8 @@
     "proposeMusic": "Proposer des modifications musicales",
     "allowDialogueRewrite": "Autoriser la réécriture du dialogue",
     "cancel": "Annuler",
-    "cancelled": "L’attente du client est arrêtée. Une requête Gemini déjà envoyée peut encore être facturée."
+    "cancelled": "L’attente du client est arrêtée. Une requête Gemini déjà envoyée peut encore être facturée.",
+    "cleanStyle": "Nettoyer et resserrer le style"
   },
   "metrics": {
     "tokens": "~{{count}} jetons estimés"
@@ -606,7 +607,8 @@
     "assistantTitle": "Assistant créatif",
     "assistantSubtitle": "Suggestions contextuelles pour la caméra, l'éclairage et la continuité",
     "currentTurnPrompt": "Instruction à l'origine de cette version",
-    "iterateButton": "Itérer avec l'IA"
+    "iterateButton": "Itérer avec l'IA",
+    "eeaUploadNotice": "Les vidéos de référence importées peuvent être limitées dans l’EEE, en Suisse et au Royaume-Uni pour l’itération Gemini Omni. Les itérations texte-vers-vidéo restent disponibles."
   },
   "creativeAssistant": {
     "title": "Assistant créatif",
@@ -621,6 +623,44 @@
       "deviation": "Alignement sur l'objectif",
       "iteration": "Direction créative",
       "general": "Général"
+    },
+    "heuristics": {
+      "cameraAdd": {
+        "title": "Ajouter un mouvement de caméra dynamique",
+        "description": "Un travelling fluide ou un lent dolly avant renforce la profondeur et le dynamisme.",
+        "instruction": "Passez à un travelling fluide en contre-plongée suivant le sujet principal."
+      },
+      "cameraRefine": {
+        "title": "Affiner la profondeur de champ et la mise au point",
+        "description": "Une faible profondeur de champ détache nettement le sujet principal de l’arrière-plan.",
+        "instruction": "Faites une mise au point nette sur le sujet avec un bokeh doux et un flou d’arrière-plan cinématographique."
+      },
+      "lightingEnhance": {
+        "title": "Renforcer l’éclairage et l’atmosphère",
+        "description": "Une lumière volumétrique et un contre-jour subtil donnent de la texture et une présence cinématographique.",
+        "instruction": "Réglez l’éclairage sur l’heure dorée avec des rayons volumétriques chauds et une légère brume."
+      },
+      "lightingContinuity": {
+        "title": "Harmoniser la continuité colorimétrique",
+        "description": "Conservez une température de couleur et un contraste homogènes pour raccorder avec les plans voisins.",
+        "instruction": "Préservez exactement la palette et l’angle de lumière principale pour garantir un raccord fluide."
+      },
+      "deviation": {
+        "title": "Écart potentiel par rapport à l’idée d’origine",
+        "description": "Votre concept d’origine mentionnait la nuit ou la pluie, absentes du prompt actuel.",
+        "instruction": "Ajoutez une ambiance nocturne avec des rues mouillées par la pluie et des reflets néon."
+      },
+      "storyboardContinuity": {
+        "title": "Continuité avec le Storyboard",
+        "description": "Aligne la tonalité visuelle avec les scènes adjacentes du Storyboard ({{neighbor}}).",
+        "instruction": "Alignez le rythme de caméra, l’échelle du sujet et la lumière sur la scène adjacente : {{neighbor}}."
+      },
+      "iterationRefine": {
+        "title": "Micro-ajustement cinématographique",
+        "description": "Instruction optimisée pour la prochaine itération IA de ce clip.",
+        "instruction": "Renforcez le réalisme cinématographique avec de fines particules, un souffle naturel et un léger grain argentique."
+      }
     }
-  }
+  },
+  "openTimeline": "Ouvrir la timeline"
 }

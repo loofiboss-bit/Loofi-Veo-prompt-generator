@@ -1,5 +1,9 @@
 import type { VideoIterationSession, VideoIterationTurn } from '@core/types/videoIteration';
-import type { ProductionTake, VeoDuration, VeoResolution } from '@core/types/production';
+import type {
+  ProductionRequestDuration,
+  ProductionTake,
+  VeoResolution,
+} from '@core/types/production';
 import type { VideoComparisonResult } from '@shared/components/VideoResultCompare';
 import { videoIterationService } from './videoIterationService';
 import { productionRunService } from './productionRunService';
@@ -132,7 +136,7 @@ export class VideoVersionService {
       appStore.syncTimelineFromShots();
       appStore.updateTimelineClip?.(`video_${nextShotId}`, {
         label: `Shot ${nextShotId} (v${turn.version})`,
-        duration: turn.settings.durationSeconds || 8,
+        selectedTakeId: turn.id,
       });
       logger.info(`Created new storyboard shot ${nextShotId} from version ${turn.version}`);
       return true;
@@ -154,19 +158,31 @@ export class VideoVersionService {
             generatedVideoUrl: newTakeUrl || s.generatedVideoUrl,
             takes: updatedTakes,
             selectedTakeIndex: Math.max(0, updatedTakes.length - 1),
-            duration: turn.settings.durationSeconds || s.duration,
-            action: turn.instruction || s.action,
+            duration: s.duration > 0 ? s.duration : turn.settings.durationSeconds || 8,
+            action: s.action.trim() ? s.action : turn.instruction || s.action,
           }
         : s,
     );
 
     registerIterationAsset();
+    const clips = appStore.clips ?? [];
+    const existingClip = clips.find(
+      (clip) => clip.id === `video_${shotId}` || clip.resourceId === shotId,
+    );
     appStore.setSbShots(updatedShots);
-    appStore.syncTimelineFromShots();
-    appStore.updateTimelineClip?.(`video_${shotId}`, {
-      label: `Shot ${shotId} (v${turn.version})`,
-      duration: turn.settings.durationSeconds || targetShot.duration,
-    });
+    if (existingClip) {
+      // Preserve existing clip geometry (startTime, duration, offset), volume, and linked captions.
+      appStore.updateTimelineClip?.(existingClip.id, {
+        label: `Shot ${shotId} (v${turn.version})`,
+        selectedTakeId: turn.id,
+      });
+    } else {
+      appStore.syncTimelineFromShots();
+      appStore.updateTimelineClip?.(`video_${shotId}`, {
+        label: `Shot ${shotId} (v${turn.version})`,
+        selectedTakeId: turn.id,
+      });
+    }
     logger.info(`Transferred version ${turn.version} to storyboard shot ${shotId}`);
     return true;
   }
@@ -205,8 +221,11 @@ export class VideoVersionService {
       });
     }
 
-    const durationSeconds: VeoDuration =
-      turn.settings.durationSeconds <= 4 ? 4 : turn.settings.durationSeconds <= 6 ? 6 : 8;
+    const clampedDuration = Math.min(
+      15,
+      Math.max(3, Math.round(turn.settings.durationSeconds || 8)),
+    );
+    const durationSeconds = clampedDuration as ProductionRequestDuration;
     const resolution: VeoResolution =
       turn.settings.resolution === '1080p' || turn.settings.resolution === '4k'
         ? turn.settings.resolution

@@ -647,4 +647,72 @@ describe('portable project transfer', () => {
       'Timeline has no exportable media clips',
     );
   });
+
+  it('packages and remaps videoIterationSessions and iteration video assets in portable archives', async () => {
+    state.blobs.set('iter-turn-2', new Blob(['iterated-video'], { type: 'video/mp4' }));
+    const document = {
+      ...project,
+      videoIterationSessions: [
+        {
+          id: 'iter-session-1',
+          projectId: 'a',
+          artifactId: 'art-1',
+          variantIndex: 0,
+          rootAssetId: 'a-video',
+          activeTurnId: 'turn-2',
+          updatedAt: 2000,
+          turns: [
+            {
+              id: 'turn-1',
+              version: 1,
+              parentId: null,
+              instruction: 'Initial',
+              effectivePrompt: 'Prompt 1',
+              assetId: 'a-video',
+              assetUrl: 'blob:stale',
+              settings: {
+                durationSeconds: 8,
+                resolution: '720p',
+                aspectRatio: '16:9',
+                modelId: 'gemini-omni-1.2-flash',
+              },
+              costEstimateUsd: 0,
+              createdAt: 1000,
+            },
+            {
+              id: 'turn-2',
+              version: 2,
+              parentId: 'turn-1',
+              instruction: 'Add rain',
+              effectivePrompt: 'Prompt 1 -> Add rain',
+              assetId: 'iter-turn-2',
+              assetUrl: 'blob:ephemeral-iter-2',
+              settings: {
+                durationSeconds: 10,
+                resolution: '720p',
+                aspectRatio: '16:9',
+                modelId: 'gemini-omni-1.2-flash',
+              },
+              costEstimateUsd: 0.8,
+              createdAt: 2000,
+            },
+          ],
+        },
+      ],
+    } as unknown as Project;
+
+    const blob = await buildPortableProjectBundle(document);
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    expect(zip.file('assets/iter-turn-2.mp4')).not.toBeNull();
+
+    state.assets = [];
+    state.blobs.clear();
+    const restored = await importPortableProject(
+      new File([blob], 'iteration.loofi-project', { type: 'application/zip' }),
+    );
+    expect(restored.videoIterationSessions).toHaveLength(1);
+    expect(restored.videoIterationSessions![0].projectId).toBe(restored.id);
+    expect(restored.videoIterationSessions![0].turns[1].assetId).not.toBe('iter-turn-2');
+    expect(restored.videoIterationSessions![0].turns[1].assetUrl).toMatch(/^blob:/);
+  });
 });

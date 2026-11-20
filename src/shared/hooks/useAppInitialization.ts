@@ -90,7 +90,6 @@ interface UseAppInitializationOptions {
   hasSeenWelcome: boolean;
   currentProjectId: string | null;
   promptIdea?: string;
-  setNewProjectWizardOpen: (open: boolean) => void;
   addToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 

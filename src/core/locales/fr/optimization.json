@@ -1,0 +1,87 @@
+{
+  "panel": {
+    "title": "Optimiser",
+    "subtitle": "Suggestions alimentées par l'IA pour améliorer votre projet",
+    "close": "Fermer le panneau d'optimisation",
+    "openShortcut": "Ctrl+Shift+O"
+  },
+  "suggestions": {
+    "title": "Suggestions de prompt",
+    "empty": "Aucune suggestion disponible. Commencez à saisir du texte pour obtenir des conseils d'IA.",
+    "analyzing": "Analyse de votre prompt...",
+    "accept": "Accepter la suggestion",
+    "dismiss": "Ignorer la suggestion",
+    "applyAll": "Tout appliquer",
+    "offline": "Mode hors ligne — analyse locale utilisée",
+    "categories": {
+      "style": "Style",
+      "camera": "Caméra",
+      "lighting": "Éclairage",
+      "specificity": "Précision",
+      "syntax": "Syntaxe"
+    }
+  },
+  "quality": {
+    "title": "Score de qualité",
+    "score": "{{score}} / 10",
+    "tiers": {
+      "excellent": "Excellent",
+      "good": "Bon",
+      "fair": "Correct",
+      "needsWork": "À améliorer"
+    },
+    "dimensions": {
+      "specificity": "Précision",
+      "style": "Style visuel",
+      "camera": "Mouvement caméra",
+      "lighting": "Éclairage",
+      "length": "Longueur du prompt",
+      "syntax": "Qualité syntaxique"
+    }
+  },
+  "cost": {
+    "title": "Estimation du coût",
+    "estimated": "Coût estimé",
+    "perGeneration": "par génération",
+    "model": "Modèle",
+    "tradeoff": "Qualité vs Coût",
+    "optimizeBudget": "Optimiser le budget"
+  },
+  "narrative": {
+    "title": "Cohérence narrative",
+    "noIssues": "Aucun problème détecté — votre séquence est cohérente.",
+    "issues": {
+      "missing-transition": "Envisagez d'ajouter une transition",
+      "pacing": "Suggestion de rythme",
+      "character-jump": "Note de continuité du personnage",
+      "duplicate-theme": "Thème similaire détecté"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Suggestion"
+    }
+  },
+  "preset": {
+    "title": "Préréglage recommandé",
+    "confidence": "Confiance",
+    "reasoning": "Pourquoi ce préréglage",
+    "apply": "Appliquer le préréglage",
+    "override": "Utiliser un autre préréglage",
+    "optimizedFor": "Optimisé pour {{useCase}}"
+  },
+  "history": {
+    "title": "Historique d'optimisation",
+    "empty": "Aucun historique d'optimisation pour le moment",
+    "accepted": "Acceptée",
+    "dismissed": "Ignorée",
+    "modified": "Modifiée"
+  },
+  "aria": {
+    "panel": "Suggestions d'optimisation",
+    "suggestionList": "Suggestions d'amélioration du prompt",
+    "qualityScore": "Score de qualité {{score}} sur 10",
+    "costEstimate": "Coût estimé {{cost}} USD",
+    "narrativeIssue": "{{severity}} — {{description}}",
+    "presetConfidence": "Confiance de la recommandation {{confidence}} pour cent"
+  }
+}

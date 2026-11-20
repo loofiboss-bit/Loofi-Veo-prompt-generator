@@ -232,8 +232,11 @@ const allShots = [
     route: '/create',
     action: async (page) => {
       await createLocalRun(page, 'Export');
-      await page.getByRole('button', { name: /copy creative pack v2/i }).click();
-      await page.getByLabel('Creative Pack v2 preview').waitFor({ state: 'visible' });
+      const copyButton = page.getByRole('button', { name: /copy creative pack v2/i });
+      await copyButton.click();
+      const preview = page.getByLabel('Creative Pack v2 preview');
+      await preview.waitFor({ state: 'visible' });
+      await preview.scrollIntoViewIfNeeded();
     },
   },
   {
@@ -247,6 +250,36 @@ const allShots = [
         .waitFor({ state: 'visible' });
       await page.getByRole('button', { name: 'Run Analysis' }).click();
       await page.getByRole('button', { name: /Issues \(\d+\)/ }).waitFor({ state: 'visible' });
+    },
+  },
+  {
+    fileName: '10-prompt-studio.png',
+    route: '/studio',
+    expected: /handoff/i,
+    action: async (page) => {
+      const idea = page.getByLabel(/^Core idea/);
+      await idea.waitFor({ state: 'visible', timeout: 10_000 });
+      await idea.fill(
+        'A rain-soaked neon street chase at dusk with locked character continuity, slow 35mm dolly push-in, reflective pavement, and subtle synth tension.',
+      );
+      await page.getByRole('button', { name: 'Build copy-ready pack', exact: true }).click();
+      await page
+        .getByLabel('Primary prompt', { exact: true })
+        .waitFor({ state: 'visible', timeout: 10_000 });
+      await page.waitForTimeout(700);
+    },
+  },
+  {
+    fileName: '15-creator-start.png',
+    route: '/start',
+    expected: /Your next creative moment/i,
+    action: async (page) => {
+      await page
+        .getByRole('heading', { name: /Your next creative moment/i })
+        .waitFor({ state: 'visible', timeout: 10_000 });
+      await page
+        .getByRole('group', { name: /Choose how to begin/i })
+        .waitFor({ state: 'visible', timeout: 10_000 });
     },
   },
 ];
@@ -399,15 +432,17 @@ await mkdir(outDir, { recursive: true });
 
 const server = await startServer();
 const browser = await chromium.launch();
-const page = await browser.newPage({
+const context = await browser.newContext({
   viewport: { width: 1440, height: 900 },
   deviceScaleFactor: 1,
   colorScheme: 'dark',
   locale: 'en-US',
+  permissions: ['clipboard-read', 'clipboard-write'],
 });
+const page = await context.newPage();
 
 try {
-  await page.addInitScript(() => {
+  await context.addInitScript(() => {
     window.localStorage.setItem('veo-studio-language', 'en');
     window.localStorage.setItem('i18nextLng', 'en');
     window.localStorage.setItem('hasSeenWelcome', 'true');
@@ -434,6 +469,16 @@ try {
       await action(page);
       await page.waitForTimeout(500);
     }
+    const saveButton = page.getByRole('button', { name: 'Save project', exact: true });
+    if (await saveButton.isVisible().catch(() => false)) {
+      await saveButton.click().catch(() => {});
+    }
+    await page
+      .locator('[data-tour-id="workspace-context-rail"]')
+      .getByRole('status')
+      .filter({ hasText: /^Saved$/ })
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .catch(() => {});
     if (expected) {
       await page.getByText(expected).first().waitFor({ state: 'visible', timeout: 10_000 });
     }
@@ -463,6 +508,8 @@ These images are captured from the actual Vite app with deterministic local UI s
 | \`07-timeline.png\` | Timeline workspace |
 | \`08-export.png\` | Populated Creative Pack v2 preview |
 | \`09-diagnostics.png\` | Project diagnostics opened from Settings |
+| \`10-prompt-studio.png\` | Prompt Studio compiling a multi-variant video pack locally |
+| \`15-creator-start.png\` | Start workspace with quick destinations and offline recipes |
 `,
   );
 } finally {

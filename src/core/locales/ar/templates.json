@@ -1,6 +1,23 @@
 {
   "title": "القوالب",
-  "create": "إنشاء قالب",
-  "apply": "تطبيق",
-  "noTemplates": "لا توجد قوالب"
+  "use": "استخدام القالب",
+  "searchPlaceholder": "البحث في القوالب...",
+  "noResults": "لم يتم العثور على قوالب.",
+  "yourPresetsTitle": "إعداداتك المسبقة",
+  "builtInTitle": "القوالب المدمجة",
+  "deletePreset": "حذف",
+  "deletePresetConfirm": "هل تريد حذف الإعداد المسبق؟",
+  "edit": "تحرير",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "updateSettings": "تحديث",
+  "updateSettingsConfirm": "تحديث الإعداد المسبق بالإعدادات الحالية؟",
+  "renamePlaceholder": "الاسم الجديد...",
+  "savePresetModal": {
+    "title": "حفظ الإعداد المسبق",
+    "label": "اسم الإعداد المسبق",
+    "placeholder": "مثال: أسلوبي في الخيال العلمي",
+    "cancel": "إلغاء",
+    "save": "حفظ"
+  }
 }

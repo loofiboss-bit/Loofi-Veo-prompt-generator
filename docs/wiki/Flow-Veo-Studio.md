@@ -5,9 +5,9 @@ editable, model-tailored variants locally: **Recommended Primary**, **Cinematic*
 
 ## Choose a destination
 
-Select the target before building. Flow, Kling, Runway, Sora and Luma are manual destinations:
+Select the target before building. Flow, Kling 4.0, Runway Gen-4.5, Luma Ray3.2, Wan 3.0 and MiniMax-H3 (Hailuo) are manual destinations:
 copy a package and use the destination's own submission controls. Check its concrete model version,
-limits and supported settings; broad target labels are not provider compatibility guarantees.
+limits and supported settings; broad target labels are not provider compatibility guarantees. (Retired Sora artifacts remain readable in history/exports only.)
 
 **Veo API** is the internal production target. **Generate in app** prepares a plan with the selected
 variant and references. Production must validate it and receive explicit cost approval before submission.
@@ -30,8 +30,8 @@ prompt; they do not guarantee that a destination will reproduce an exact optical
 
 ## Build and refine
 
-Select **Build copy-ready pack**, edit a variant and inspect **Readiness checks**. Use
-**Compare in Arena** to inspect packages for all eight Studio targets. AI enhancement and scene detail expansion remain explicit provider actions with proposal review
+Select **Build copy-ready pack** (or **Ctrl/Cmd+Enter**), edit a variant and inspect **Readiness checks**. Use
+**Compare in Arena** to inspect packages for all seven active Studio targets. AI enhancement and scene detail expansion remain explicit provider actions with proposal review
 before acceptance. When the brief changes after a build, review the changed fields and rebuild the
 pack, or explicitly choose the earlier result for a manual copy.
 

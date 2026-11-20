@@ -18,53 +18,48 @@ Veo excels at naturalistic cinematic descriptions, optical framing, and temporal
 
 ---
 
-## 2. Kling 1.5 / 2.0
+## 2. Kling 4.0
 
-Kling responds optimally to structured bracket directives for motion and camera trajectories.
+Kling 4.0 works best with concrete subjects, actions, camera motion, reference roles, and native audio cues.
 
 ### Syntax Rules:
 
-- **Camera Brackets**: Prepend or append bracketed camera operators:
-  `[camera: slow pan left, subtle tilt up, 50mm lens]`
-- **Motion Dynamics**: Describe motion weightings (e.g. _smooth fluid movement, slow-motion splash_).
-- **Atmospheric Keywords**: Include volumetric depth keywords like _cinematic mist, ray tracing reflections_.
+- **Concrete Actions & Timing**: Describe clear subject movement and physical transitions directly in plain language rather than inventing bracket tags.
+- **Reference Roles**: Name how each reference image anchors character identity, wardrobe, or environment.
+- **Atmospheric & Audio Cues**: Include natural sound textures and lighting cues where native audio is supported.
 
 ---
 
-## 3. Runway Gen-3 / Gen-4
+## 3. Runway Gen-4.5
 
-Runway prioritizes action-first, imperative descriptors with explicit directional motion vectors.
+Runway Gen-4.5 prioritizes positive, action-first descriptions and explicit motion-first animation for image inputs.
 
 ### Syntax Rules:
 
 - **Action-First Phrasing**: Lead with the active verb:
   `Dolly push-in on an astronaut walking across red dunes towards a glowing monolith.`
-- **Directional Vectors**: Use explicit coordinate language (_moving screen-left to screen-right_, _descending from upper-third_).
+- **Positive Phrasing**: Describe what should appear cleanly; avoid relying on negative-prompt parameters.
 - **Subject Locking**: Keep subject descriptions concise to maintain structural coherence.
 
 ---
 
-## 4. OpenAI Sora
+## 4. Gemini Omni 1.2 Flash
 
-Sora demonstrates high comprehension of continuous narrative realism and physical lighting physics.
+Gemini Omni 1.2 Flash supports natural multi-turn video direction, frame/reference continuity, 3–15s clips, and synchronized native audio (with `gemini-omni-1.1-flash` compatibility for existing iterations). Note: reference video uploads may be restricted in the EEA, Switzerland, and the UK; text-to-video turns remain available.
 
-### Syntax Rules:
-
-- **Narrative Continuity**: Write in continuous, descriptive prose describing cause-and-effect motion.
-- **Physical Realism**: Mention physical materials and lighting interaction (e.g., _refracting water droplets, subsurface scattering on skin, authentic photochemical 35mm film grain_).
-- **Avoid Tag Soups**: Do not use comma-separated buzzwords like "8k, photorealistic". Use descriptive visual context instead.
+_(Historical OpenAI Sora artifacts remain readable in existing projects and exports only; Sora is retired and unavailable for new packs.)_
 
 ---
 
-## 5. Luma Dream Machine Ray-2
+## 5. Luma Ray3.2
 
-Luma excels at dynamic perspective shifts and keyframe trajectory anchors.
+Luma Ray3.2 excels at clear scene/motion/camera direction across 5s and 10s generations with frame-anchor constraints.
 
 ### Syntax Rules:
 
 - **Trajectory Anchors**: Explicitly define starting perspective and ending perspective:
   `Starts as a wide drone establishing shot of the coastline, rapidly swooping down to ground level to track alongside a vintage sports car.`
-- **Transition Clarity**: State motion speed and transitional landmarks clearly.
+- **Direct Scene Controls**: Keep audio and negative directives inside positive visual prose rather than separate parameters.
 
 ---
 

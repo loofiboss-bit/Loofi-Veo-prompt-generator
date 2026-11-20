@@ -464,7 +464,8 @@
     "proposeMusic": "Föreslå musikändringar",
     "allowDialogueRewrite": "Tillåt omskrivning av dialog",
     "cancel": "Avbryt",
-    "cancelled": "Väntan stoppades. En Gemini-begäran som redan skickats kan fortfarande debiteras."
+    "cancelled": "Väntan stoppades. En Gemini-begäran som redan skickats kan fortfarande debiteras.",
+    "cleanStyle": "Rensa och strama upp stil"
   },
   "metrics": {
     "tokens": "Cirka {{count}} uppskattade token"
@@ -606,7 +607,8 @@
     "assistantTitle": "Kreativ assistent",
     "assistantSubtitle": "Kontextanpassade förslag för kamera, ljus och kontinuitet",
     "currentTurnPrompt": "Instruktion som skapade denna version",
-    "iterateButton": "Iterera med AI"
+    "iterateButton": "Iterera med AI",
+    "eeaUploadNotice": "Uppladdade referensvideor kan vara begränsade i EES, Schweiz och Storbritannien för Gemini Omni-iteration. Text-till-video-steg fungerar som vanligt."
   },
   "creativeAssistant": {
     "title": "Kreativ assistent",
@@ -621,6 +623,44 @@
       "deviation": "Målanpassning",
       "iteration": "Kreativ riktning",
       "general": "Allmänt"
+    },
+    "heuristics": {
+      "cameraAdd": {
+        "title": "Lägg till dynamisk kamerarörelse",
+        "description": "En mjuk tracking-shot eller långsam dolly framåt förhöjer djupkänslan och rörelsen.",
+        "instruction": "Gör om kamerarörelsen till en mjuk low-angle tracking shot som följer huvudmotivet."
+      },
+      "cameraRefine": {
+        "title": "Förfina skärpedjup och fokus",
+        "description": "Ett grundare skärpedjup (shallow depth of field) separerar motivet från bakgrunden.",
+        "instruction": "Fokusera skarpt på motivet med mjuk bokeh och cinematisk bakgrundsoskärpa."
+      },
+      "lightingEnhance": {
+        "title": "Förstärk ljussättning och stämning",
+        "description": "Volymetriskt ljus och sidoljus (rim lighting) ger scenen filmisk närvaro och textur.",
+        "instruction": "Justera ljussättningen till gyllene timmen med varma motljusstrålar och mjuk rök i luften."
+      },
+      "lightingContinuity": {
+        "title": "Matcha visuell färgkontinuitet",
+        "description": "Säkerställ jämn färgton och kontrast i högdagrar så klippet binder sömlöst till nästa scen.",
+        "instruction": "Behåll samma färgpalett och ljusvinkel för att säkerställa perfekt klippkontinuitet."
+      },
+      "deviation": {
+        "title": "Möjlig avvikelse från grundidén",
+        "description": "Din ursprungliga idé nämnde natt/regn, men prompten saknar explicit atmosfäriskt väder.",
+        "instruction": "Lägg till nattmiljö med regnvåta gator och reflekterande ljuskällor."
+      },
+      "storyboardContinuity": {
+        "title": "Kontinuitet mot Storyboard-scener",
+        "description": "Matchar visuell ton mot intilliggande Storyboard-scener ({{neighbor}}).",
+        "instruction": "Matcha kameratempo, motivskala och ljuskontinuitet med intilliggande scen: {{neighbor}}."
+      },
+      "iterationRefine": {
+        "title": "Cinematisk finjustering",
+        "description": "Optimerad instruktion för nästa AI-iteration av detta klipp.",
+        "instruction": "Förstärk den cinematiska realismen med finare partiklar, naturlig vind i hår/kläder och subtil filmkornighet."
+      }
     }
-  }
+  },
+  "openTimeline": "Öppna Tidslinje"
 }

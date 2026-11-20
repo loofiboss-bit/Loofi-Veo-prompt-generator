@@ -464,7 +464,8 @@
     "proposeMusic": "Propose music changes",
     "allowDialogueRewrite": "Allow dialogue rewriting",
     "cancel": "Cancel",
-    "cancelled": "Client waiting stopped. A Gemini request already sent may still be billed."
+    "cancelled": "Client waiting stopped. A Gemini request already sent may still be billed.",
+    "cleanStyle": "Clean & Tighten Style"
   },
   "metrics": {
     "tokens": "~{{count}} estimated tokens"
@@ -606,7 +607,8 @@
     "assistantTitle": "Creative Assistant",
     "assistantSubtitle": "Contextual suggestions for camera, lighting, and continuity",
     "currentTurnPrompt": "Instruction that created this version",
-    "iterateButton": "Iterate with AI"
+    "iterateButton": "Iterate with AI",
+    "eeaUploadNotice": "Uploaded reference videos may be restricted in EEA, Switzerland, and the UK for Gemini Omni iteration. Text-to-video turns remain available."
   },
   "creativeAssistant": {
     "title": "Creative Assistant",
@@ -621,6 +623,44 @@
       "deviation": "Goal Alignment",
       "iteration": "Creative Direction",
       "general": "General"
+    },
+    "heuristics": {
+      "cameraAdd": {
+        "title": "Add dynamic camera movement",
+        "description": "A smooth tracking shot or slow dolly push enhances depth perception and kinetic flow.",
+        "instruction": "Change the camera movement to a smooth low-angle tracking shot following the main subject."
+      },
+      "cameraRefine": {
+        "title": "Refine depth of field and focus",
+        "description": "A shallower depth of field separates the hero subject cleanly from the background.",
+        "instruction": "Pull sharp focus on the subject with creamy bokeh and cinematic background blur."
+      },
+      "lightingEnhance": {
+        "title": "Enhance lighting and atmosphere",
+        "description": "Volumetric lighting and subtle rim light give the scene cinematic presence and texture.",
+        "instruction": "Adjust lighting to golden hour with warm volumetric backlight rays and subtle atmospheric haze."
+      },
+      "lightingContinuity": {
+        "title": "Match visual color continuity",
+        "description": "Keep color temperature and highlight contrast consistent so the clip cuts seamlessly into neighboring shots.",
+        "instruction": "Preserve the exact color palette and key-light angle to ensure seamless cut continuity."
+      },
+      "deviation": {
+        "title": "Potential deviation from core idea",
+        "description": "Your original concept mentioned night/rain, but the current prompt omits explicit weather atmosphere.",
+        "instruction": "Add a night setting with rain-slicked streets and reflective neon light sources."
+      },
+      "storyboardContinuity": {
+        "title": "Storyboard continuity alignment",
+        "description": "Aligns visual tone with adjacent Storyboard scenes ({{neighbor}}).",
+        "instruction": "Match camera pacing, subject scale, and lighting continuity with adjacent scene: {{neighbor}}."
+      },
+      "iterationRefine": {
+        "title": "Cinematic micro-refinement",
+        "description": "Optimized instruction for the next AI iteration of this clip.",
+        "instruction": "Enhance cinematic realism with finer atmospheric particles, natural wind movement in hair/fabric, and subtle film grain."
+      }
     }
-  }
+  },
+  "openTimeline": "Open Timeline"
 }

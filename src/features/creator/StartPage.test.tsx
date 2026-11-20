@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@/test-utils';
+import { render as rawRender } from '@testing-library/react';
+import { I18nextProvider } from 'react-i18next';
 import { i18n } from '@core/config/i18n';
-import { useLocation } from 'react-router';
+import { MemoryRouter, useLocation } from 'react-router';
 import { StartPage } from './StartPage';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { useProjectSaveStore } from '@core/store/useProjectSaveStore';
@@ -161,5 +163,20 @@ describe('creator start', () => {
     expect(screen.getByRole('button', { name: 'Relink missing media' })).toBeInTheDocument();
     act(() => useAppStore.setState({ clips: [...app.clips] }));
     expect(screen.queryByRole('button', { name: 'Relink missing media' })).not.toBeInTheDocument();
+  });
+  it('highlights and focuses local clips import when navigated with ?mode=clips', () => {
+    rawRender(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter initialEntries={['/start?mode=clips']}>
+          <StartPage />
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+    const ownClipsBtn = screen.getByRole('button', { name: 'Use my own clips' });
+    expect(ownClipsBtn).toHaveFocus();
+    expect(ownClipsBtn.closest('article')).toHaveAttribute('data-highlighted', 'true');
+    expect(
+      screen.getByText('Ready to edit locally — pick video, audio, or image files below.'),
+    ).toBeInTheDocument();
   });
 });

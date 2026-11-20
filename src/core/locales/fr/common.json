@@ -102,7 +102,8 @@
     "closeNavigation": "Fermer la navigation",
     "focusMode": "Mode concentration",
     "exitFocus": "Quitter le mode concentration",
-    "start": "Accueil"
+    "start": "Accueil",
+    "director": "Mode Réalisateur"
   },
   "activity": {
     "queueEyebrow": "Travail durable",
@@ -149,7 +150,9 @@
       "optimize": "Ouvrir le panneau d'optimisation",
       "optimizeDescription": "Examiner les suggestions d'optimisation",
       "collaborate": "Ouvrir la collaboration",
-      "collaborateDescription": "Partager et collaborer sur le projet actuel"
+      "collaborateDescription": "Partager et collaborer sur le projet actuel",
+      "director": "Ouvrir le Mode Réalisateur",
+      "directorDescription": "Planifier, approuver, générer, réviser et exporter une production"
     }
   },
   "closeModal": "Fermer la fenêtre",
@@ -171,7 +174,30 @@
     "remoteChange": "Une autre fenêtre a modifié ce projet.",
     "loadLatest": "Charger la dernière version",
     "saveCopy": "Enregistrer une copie",
-    "backupWarning": "Projet enregistré ; échec de la sauvegarde automatique :"
+    "backupWarning": "Projet enregistré ; échec de la sauvegarde automatique :",
+    "libraryEyebrow": "Bibliothèque de projets",
+    "consolidatedDescription": "Ouvrez des projets locaux. L’historique et les modèles réutilisables restent liés à leur contexte de projet.",
+    "search": "Rechercher des projets",
+    "sort": "Trier les projets",
+    "modified": "Modifiés récemment",
+    "byName": "Nom",
+    "showArchived": "Afficher archivés",
+    "backups": "Sauvegardes automatiques",
+    "backupVerification": "Les sommes de contrôle sont vérifiées lors de la restauration. La récupération crée un nouveau projet.",
+    "noBackups": "Aucune sauvegarde automatique disponible.",
+    "corruptBackup": "Sauvegarde corrompue",
+    "restoreCopy": "Restaurer comme copie",
+    "closeBackups": "Fermer les sauvegardes",
+    "empty": "Aucun projet local pour l’instant. Commencez dans Créer pour en ajouter un.",
+    "current": "Projet actuel",
+    "open": "Ouvrir le projet",
+    "newName": "Nouveau nom du projet",
+    "saveName": "Enregistrer le nom",
+    "cancel": "Annuler",
+    "rename": "Renommer",
+    "duplicate": "Dupliquer",
+    "unarchive": "Désarchiver",
+    "archive": "Archiver"
   },
   "assets": {
     "continuityProfiles": "Profils de continuité",
@@ -194,7 +220,13 @@
     "splitPlayhead": "Scinder à la tête de lecture",
     "trimStart": "Rogner le début à la tête de lecture",
     "trimEnd": "Rogner la fin à la tête de lecture",
-    "remove": "Supprimer le clip"
+    "remove": "Supprimer le clip",
+    "deliveryControls": "Ces contrôles sont pris en charge par l’export vidéo.",
+    "start": "Début (secondes)",
+    "duration": "Durée (secondes)",
+    "sourceOffset": "Décalage source (secondes)",
+    "volume": "Volume",
+    "caption": "Sous-titre"
   },
   "focusMode": {
     "activeTitle": "Le mode concentration est activé",
@@ -209,5 +241,27 @@
     "filterReference": "Références",
     "filterGenerated": "Générés",
     "filters": "Filtrer les médias"
+  },
+  "contextRail": {
+    "localFirst": "Local-first",
+    "toProduction": "Production",
+    "toTimeline": "Timeline",
+    "toStudio": "Prompt Studio"
+  },
+  "shortcuts": {
+    "title": "Raccourcis clavier",
+    "general": "Général",
+    "editing": "Édition",
+    "timeline": "Lecteur timeline",
+    "commandPalette": "Ouvrir la palette de commandes",
+    "buildPrompt": "Assembler le prompt dans Studio",
+    "openHelp": "Ouvrir l’aide",
+    "savePreset": "Enregistrer le préréglage",
+    "closeDialog": "Fermer la boîte de dialogue",
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "playPause": "Lecture / Pause",
+    "shuttle": "Reculer / Pause / Avancer",
+    "stepFrame": "Image précédente / suivante"
   }
 }

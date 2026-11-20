@@ -46,6 +46,8 @@ export type VeoModelId = 'veo-3.1-quality' | 'veo-3.1-fast' | 'veo-3.1-lite';
 
 export type VeoResolution = '720p' | '1080p' | '4k';
 export type VeoDuration = 4 | 6 | 8;
+export type OmniDuration = 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
+export type ProductionRequestDuration = VeoDuration | OmniDuration;
 
 export type { VeoProviderArtifact } from './providerArtifact';
 
@@ -62,7 +64,7 @@ export interface VeoGenerationRequest {
   negativePrompt?: string;
   aspectRatio: '16:9' | '9:16';
   resolution: VeoResolution;
-  durationSeconds: VeoDuration;
+  durationSeconds: ProductionRequestDuration;
   seed?: number;
   firstFrameAssetId?: string;
   lastFrameAssetId?: string;

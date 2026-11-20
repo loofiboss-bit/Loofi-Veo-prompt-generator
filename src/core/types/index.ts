@@ -26,6 +26,7 @@ import type { CreatorDeliveryV1 } from './creatorDelivery';
 import type { ExternalStudioResultV1 } from './externalStudioResult';
 import type { StudioRevisionV1 } from './studioRevision';
 import type { PromptStudioDraftV1 } from './promptStudioDraft';
+import type { VideoIterationSession } from './videoIteration';
 import type { Asset } from './projectPrompt';
 export * from './production';
 export * from './suno';
@@ -319,6 +320,7 @@ export interface Project {
   studioDraft?: PromptStudioDraftV1;
   studioRevisions?: StudioRevisionV1[];
   studioResults?: ExternalStudioResultV1[];
+  videoIterationSessions?: VideoIterationSession[];
   id: string;
   name: string;
   lastModified: number;

@@ -1,7 +1,7 @@
 # Quick Start
 
-Creator Studio v21 provides a local path from your own clips to verified video delivery,
-with guided checks, coordinated saves and clear recovery actions.
+Creator Studio v23 provides a local-first path from your own clips and structured ideas to verified
+video delivery, with the unified Workspace Context Rail, coordinated SQLite WAL saves, and clear recovery actions.
 
 ## Finish a local video
 
@@ -32,13 +32,13 @@ the [repository development instructions](../../README.md).
 
 4. Choose a target, recipe, duration and aspect ratio. Expand **Scene details** for camera,
    lighting and other direction.
-5. Select **Build copy-ready pack**.
+5. Select **Build copy-ready pack** (or press **Ctrl/Cmd+Enter**).
 6. Select one of the three variants: **Recommended Primary**, **Cinematic** or **Control-focused**.
-   Edit its text if needed and inspect **Readiness checks**.
+   Edit its text if needed and inspect **Readiness checks**, or use **Open Timeline** to move straight to timeline editing.
 7. Copy the selected package and paste it into the destination generator. Confirm the actual
    model version and supported settings there.
 
-Use **Compare in Arena** to inspect all eight video targets before choosing a package. This compares
+Use **Compare in Arena** to inspect all seven active video targets before choosing a package. This compares
 local prompt compilation; it does not run or bill the generators.
 
 ## 2. Build a lyrics pack

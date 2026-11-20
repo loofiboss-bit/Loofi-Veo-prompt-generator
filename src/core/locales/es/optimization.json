@@ -1,0 +1,87 @@
+{
+  "panel": {
+    "title": "Optimizar",
+    "subtitle": "Sugerencias impulsadas por IA para mejorar tu proyecto",
+    "close": "Cerrar panel de optimización",
+    "openShortcut": "Ctrl+Shift+O"
+  },
+  "suggestions": {
+    "title": "Sugerencias de prompt",
+    "empty": "No hay sugerencias disponibles. Empieza a escribir para recibir recomendaciones de IA.",
+    "analyzing": "Analizando tu prompt...",
+    "accept": "Aceptar sugerencia",
+    "dismiss": "Descartar sugerencia",
+    "applyAll": "Aplicar todas las sugerencias",
+    "offline": "Modo sin conexión — usando análisis local",
+    "categories": {
+      "style": "Estilo",
+      "camera": "Cámara",
+      "lighting": "Iluminación",
+      "specificity": "Especificidad",
+      "syntax": "Sintaxis"
+    }
+  },
+  "quality": {
+    "title": "Puntuación de calidad",
+    "score": "{{score}} / 10",
+    "tiers": {
+      "excellent": "Excelente",
+      "good": "Bueno",
+      "fair": "Aceptable",
+      "needsWork": "Necesita mejoras"
+    },
+    "dimensions": {
+      "specificity": "Especificidad",
+      "style": "Estilo visual",
+      "camera": "Trabajo de cámara",
+      "lighting": "Iluminación",
+      "length": "Longitud del prompt",
+      "syntax": "Calidad de sintaxis"
+    }
+  },
+  "cost": {
+    "title": "Estimación de coste",
+    "estimated": "Coste estimado",
+    "perGeneration": "por generación",
+    "model": "Modelo",
+    "tradeoff": "Calidad frente a coste",
+    "optimizeBudget": "Optimizar presupuesto"
+  },
+  "narrative": {
+    "title": "Salud narrativa",
+    "noIssues": "No se detectaron problemas: tu secuencia se ve genial.",
+    "issues": {
+      "missing-transition": "Considera añadir una transición",
+      "pacing": "Sugerencia de ritmo",
+      "character-jump": "Nota de continuidad del personaje",
+      "duplicate-theme": "Se detectó un tema similar"
+    },
+    "severity": {
+      "info": "Información",
+      "warning": "Sugerencia"
+    }
+  },
+  "preset": {
+    "title": "Ajuste preestablecido recomendado",
+    "confidence": "Confianza",
+    "reasoning": "Por qué este ajuste",
+    "apply": "Aplicar ajuste",
+    "override": "Usar otro ajuste",
+    "optimizedFor": "Optimizado para {{useCase}}"
+  },
+  "history": {
+    "title": "Historial de optimización",
+    "empty": "Aún no hay historial de optimización",
+    "accepted": "Aceptada",
+    "dismissed": "Descartada",
+    "modified": "Modificada"
+  },
+  "aria": {
+    "panel": "Sugerencias de optimización",
+    "suggestionList": "Sugerencias para mejorar el prompt",
+    "qualityScore": "Puntuación de calidad {{score}} de 10",
+    "costEstimate": "Coste estimado {{cost}} USD",
+    "narrativeIssue": "{{severity}} — {{description}}",
+    "presetConfidence": "Confianza de recomendación {{confidence}} por ciento"
+  }
+}

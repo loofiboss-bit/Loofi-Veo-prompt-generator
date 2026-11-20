@@ -8,8 +8,9 @@ Prompt Studio and Production remain separate: local compilation never implies a 
 - **Create:** Prompt Studio, Production, Timeline.
 - **Library:** Projects, Assets.
 - **Follow-up:** Activity. Settings sits in the sidebar footer.
-- A compact context row identifies the active project and opens Quick navigation (Ctrl/Cmd+K).
-- The typed navigation registry supplies the same seven destinations to the sidebar and palette.
+- A responsive Workspace Context Rail (`[data-tour-id="workspace-context-rail"]`, replacing any legacy header bar) identifies the active project (`[data-tour-id="project-indicator"]`), displays a local-first indicator on wide viewports, exposes contextual Next Action links (such as Studio ↔ Production ↔ Timeline) at `>= md`, and opens Quick navigation (`Ctrl/Cmd+K`) with zero horizontal overflow at `320 px` or `200%` zoom.
+- Onboarding via `WelcomeModal` routes cleanly into Prompt Studio or `/start?mode=clips` (focusing and highlighting the local clip import goal); workspace dialogs (such as `ShortcutsModal` and `CommandPalette`) standardize on `<AppDialog>`, and `ModalManager` renders only active modals and plugin studios.
+- The typed navigation registry supplies the same destinations to the sidebar and palette.
 - The shell owns the single main landmark, skip target, route-heading focus and content offset.
 
 At 1200 CSS pixels and above, the sidebar starts expanded at 256 px. At 640–1199 px,

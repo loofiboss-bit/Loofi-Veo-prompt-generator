@@ -17,8 +17,10 @@ export function StartPage() {
   const { t } = useTranslation('creator');
   const navigate = useNavigate();
   const localFiles = useRef<HTMLInputElement>(null);
+  const ownClipsButtonRef = useRef<HTMLButtonElement>(null);
   const recipesDetails = useRef<HTMLDetailsElement>(null);
   const [searchParams] = useSearchParams();
+  const clipsMode = searchParams.get('mode') === 'clips';
   const state = useCreatorStore();
   const [recipeId, setRecipeId] = useState(
     searchParams.get('mode') === 'music' ? 'ambient-visual' : CREATOR_RECIPES[0].id,
@@ -69,6 +71,11 @@ export function StartPage() {
   useEffect(() => {
     void useCreatorStore.getState().initialize();
   }, []);
+  useEffect(() => {
+    if (clipsMode) {
+      ownClipsButtonRef.current?.focus();
+    }
+  }, [clipsMode]);
   const create = async (offline = false, selected = recipe) => {
     if (await state.create(selected, idea, name, offline))
       navigate(offline ? ROUTES.TIMELINE : ROUTES.STUDIO);
@@ -181,8 +188,9 @@ export function StartPage() {
             className="creator-grid"
             role="group"
             aria-label={t('start.goals', 'Choose how to begin')}
+            data-tour-id="start-goals"
           >
-            <article>
+            <article data-highlighted={clipsMode ? 'true' : undefined}>
               <h2>{t('start.ownClipsTitle', 'My clips')}</h2>
               <p>
                 {t(
@@ -190,7 +198,16 @@ export function StartPage() {
                   'Import a video, audio, or image and edit locally.',
                 )}
               </p>
+              {clipsMode && (
+                <p className="text-xs text-slate-400">
+                  {t(
+                    'start.clipsReadyHint',
+                    'Ready to edit locally — pick video, audio, or image files below.',
+                  )}
+                </p>
+              )}
               <button
+                ref={ownClipsButtonRef}
                 className="studio-primary"
                 disabled={state.busy}
                 onClick={() => localFiles.current?.click()}

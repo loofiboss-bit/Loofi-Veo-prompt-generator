@@ -11,14 +11,8 @@ export interface UiSlice {
   isHistoryOpen: boolean;
   isTemplatesOpen: boolean;
   isSavePresetModalOpen: boolean;
-  isDNAModalOpen: boolean;
-  isCharacterBankOpen: boolean;
-  isLocationBankOpen: boolean;
   isProjectManagerOpen: boolean;
-  isSeriesBibleOpen: boolean;
   isVariablesPanelOpen: boolean;
-  isWizardOpen: boolean;
-  isNewProjectWizardOpen: boolean;
   isSearchOpen: boolean;
   isVariationsOpen: boolean;
   isShortcutsOpen: boolean;
@@ -33,9 +27,6 @@ export interface UiSlice {
 
   openStudio: (studio: StudioType) => void;
   closeStudio: () => void;
-
-  // Specific Setters for complex toggles if needed
-  setNewProjectWizardOpen: (isOpen: boolean) => void;
 }
 
 export const createUiSlice: StateCreator<UiSlice> = (set, _get) => ({
@@ -43,14 +34,8 @@ export const createUiSlice: StateCreator<UiSlice> = (set, _get) => ({
   isHistoryOpen: false,
   isTemplatesOpen: false,
   isSavePresetModalOpen: false,
-  isDNAModalOpen: false,
-  isCharacterBankOpen: false,
-  isLocationBankOpen: false,
   isProjectManagerOpen: false,
-  isSeriesBibleOpen: false,
   isVariablesPanelOpen: false,
-  isWizardOpen: false,
-  isNewProjectWizardOpen: false,
   isSearchOpen: false,
   isVariationsOpen: false,
   isShortcutsOpen: false,
@@ -67,21 +52,13 @@ export const createUiSlice: StateCreator<UiSlice> = (set, _get) => ({
   openModal: (modal) => set({ [modal]: true } as Partial<UiSlice>),
   closeModal: (modal) => set({ [modal]: false } as Partial<UiSlice>),
 
-  setNewProjectWizardOpen: (isOpen) => set({ isNewProjectWizardOpen: isOpen }),
-
   closeAllModals: () =>
     set({
       isHistoryOpen: false,
       isTemplatesOpen: false,
       isSavePresetModalOpen: false,
-      isDNAModalOpen: false,
-      isCharacterBankOpen: false,
-      isLocationBankOpen: false,
       isProjectManagerOpen: false,
-      isSeriesBibleOpen: false,
       isVariablesPanelOpen: false,
-      isWizardOpen: false,
-      isNewProjectWizardOpen: false,
       isSearchOpen: false,
       isVariationsOpen: false,
       isShortcutsOpen: false,

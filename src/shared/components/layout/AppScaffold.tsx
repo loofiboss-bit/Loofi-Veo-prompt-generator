@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { useViewport } from '@shared/hooks/useViewport';
 import { useProjectStore } from '@core/store/useProjectStore';
 import { getNavigationDestination } from '@core/config/navigation';
+import { ROUTES } from '@core/config/routes';
 import Icon from '@shared/components/ui/Icon';
-import { Outlet } from 'react-router';
+import { Outlet, useNavigate } from 'react-router';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary';
-import Header from './Header';
 import { Sidebar } from './Sidebar';
 import ModalManager from './ModalManager';
 import { AppOverlays } from './AppOverlays';
@@ -24,7 +24,6 @@ export interface AppScaffoldProps {
   isChildRoute: boolean;
   activeSection: string;
   sidebarProps: React.ComponentProps<typeof Sidebar>;
-  headerProps: React.ComponentProps<typeof Header>;
   modalManagerProps: React.ComponentProps<typeof ModalManager>;
   collaborationPanelsProps: React.ComponentProps<typeof AppCollaborationPanels>;
   appPanelsProps: React.ComponentProps<typeof AppPanels>;
@@ -43,6 +42,7 @@ export function AppScaffold({
   appOverlaysProps,
 }: AppScaffoldProps) {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
   const { isMobile, isCompact } = useViewport();
   const category = isMobile ? 'mobile' : isCompact ? 'compact' : 'wide';
   const [menuState, setMenuState] = useState<{
@@ -183,7 +183,10 @@ export function AppScaffold({
         style={{ marginInlineStart: sidebarWidth }}
         className="relative z-10 h-full overflow-y-auto overflow-x-hidden "
       >
-        <div className="creator-context-row flex items-center gap-3 px-4 py-2 border-b border-slate-800/60 bg-slate-950">
+        <div
+          data-tour-id="workspace-context-rail"
+          className="creator-context-row flex items-center gap-3 px-4 py-2 border-b border-slate-800/60 bg-slate-950"
+        >
           {isMobile && (
             <button
               type="button"
@@ -195,7 +198,7 @@ export function AppScaffold({
               <Icon name="menu" className="w-5 h-5" />
             </button>
           )}
-          <div className="flex-1 flex items-center gap-3 min-w-0">
+          <div data-tour-id="project-indicator" className="flex-1 flex items-center gap-3 min-w-0">
             <span className="truncate text-sm text-slate-400">
               {t('sidebar.currentProject')}:{' '}
               <span className="font-medium text-slate-200">
@@ -203,7 +206,57 @@ export function AppScaffold({
               </span>
             </span>
             {currentProject && <ProjectStatusChip project={currentProject} />}
+            <span className="hidden lg:inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300 shrink-0">
+              {t('contextRail.localFirst', 'Local-first')}
+            </span>
           </div>
+          {(pathname.startsWith(ROUTES.STUDIO) ||
+            pathname.startsWith(ROUTES.CREATE) ||
+            pathname.startsWith(ROUTES.DIRECTOR) ||
+            pathname.startsWith(ROUTES.TIMELINE) ||
+            pathname.startsWith(ROUTES.PROJECTS) ||
+            pathname.startsWith(ROUTES.ASSETS)) && (
+            <div className="hidden md:inline-flex items-center gap-1.5 shrink-0">
+              {pathname.startsWith(ROUTES.STUDIO) && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.CREATE)}
+                    className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                  >
+                    {t('contextRail.toProduction', 'Production')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(ROUTES.TIMELINE)}
+                    className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                  >
+                    {t('contextRail.toTimeline', 'Timeline')}
+                  </button>
+                </>
+              )}
+              {(pathname.startsWith(ROUTES.CREATE) || pathname.startsWith(ROUTES.DIRECTOR)) && (
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.TIMELINE)}
+                  className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                >
+                  {t('contextRail.toTimeline', 'Timeline')}
+                </button>
+              )}
+              {(pathname.startsWith(ROUTES.TIMELINE) ||
+                pathname.startsWith(ROUTES.PROJECTS) ||
+                pathname.startsWith(ROUTES.ASSETS)) && (
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.STUDIO)}
+                  className="rounded-lg border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                >
+                  {t('contextRail.toStudio', 'Prompt Studio')}
+                </button>
+              )}
+            </div>
+          )}
           <CostBadge className="hidden sm:inline-flex" />
           <button
             type="button"

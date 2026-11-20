@@ -464,7 +464,8 @@
     "proposeMusic": "Proponer cambios musicales",
     "allowDialogueRewrite": "Permitir reescribir el diálogo",
     "cancel": "Cancelar",
-    "cancelled": "Se detuvo la espera. Una solicitud de Gemini ya enviada aún podría generar cargos."
+    "cancelled": "Se detuvo la espera. Una solicitud de Gemini ya enviada aún podría generar cargos.",
+    "cleanStyle": "Limpiar y ajustar estilo"
   },
   "metrics": {
     "tokens": "~{{count}} tokens estimados"
@@ -606,7 +607,8 @@
     "assistantTitle": "Asistente creativo",
     "assistantSubtitle": "Sugerencias contextuales de cámara, iluminación y continuidad",
     "currentTurnPrompt": "Instrucción que creó esta versión",
-    "iterateButton": "Iterar con IA"
+    "iterateButton": "Iterar con IA",
+    "eeaUploadNotice": "Los vídeos de referencia subidos pueden estar restringidos en el EEE, Suiza y el Reino Unido para la iteración con Gemini Omni. Los turnos de texto a vídeo siguen disponibles."
   },
   "creativeAssistant": {
     "title": "Asistente creativo",
@@ -621,6 +623,44 @@
       "deviation": "Alineación de objetivos",
       "iteration": "Dirección creativa",
       "general": "General"
+    },
+    "heuristics": {
+      "cameraAdd": {
+        "title": "Añadir movimiento de cámara dinámico",
+        "description": "Un plano de seguimiento fluido o dolly lento mejora la percepción de profundidad y el dinamismo.",
+        "instruction": "Cambia el movimiento de cámara a un plano de seguimiento en ángulo bajo siguiendo al sujeto principal."
+      },
+      "cameraRefine": {
+        "title": "Refinar profundidad de campo y enfoque",
+        "description": "Una menor profundidad de campo separa limpiamente al sujeto principal del fondo.",
+        "instruction": "Enfoca con nitidez al sujeto con bokeh suave y desenfoque cinematográfico de fondo."
+      },
+      "lightingEnhance": {
+        "title": "Realzar iluminación y atmósfera",
+        "description": "La luz volumétrica y un contorno sutil aportan presencia cinematográfica y textura.",
+        "instruction": "Ajusta la iluminación a hora dorada con contraluz volumétrico cálido y bruma sutil."
+      },
+      "lightingContinuity": {
+        "title": "Ajustar continuidad visual de color",
+        "description": "Mantén coherente la temperatura de color y el contraste para enlazar sin cortes con planos vecinos.",
+        "instruction": "Conserva la misma paleta cromática y ángulo de luz clave para asegurar continuidad en el montaje."
+      },
+      "deviation": {
+        "title": "Posible desviación de la idea central",
+        "description": "Tu concepto original mencionaba noche o lluvia, pero el prompt actual omite la atmósfera climática.",
+        "instruction": "Añade un entorno nocturno con calles mojadas por la lluvia y reflejos de neón."
+      },
+      "storyboardContinuity": {
+        "title": "Alineación de continuidad con el Storyboard",
+        "description": "Alinea el tono visual con las escenas contiguas del Storyboard ({{neighbor}}).",
+        "instruction": "Iguala el ritmo de cámara, la escala del sujeto y la continuidad lumínica con la escena adyacente: {{neighbor}}."
+      },
+      "iterationRefine": {
+        "title": "Microajuste cinematográfico",
+        "description": "Instrucción optimizada para la próxima iteración de IA de este clip.",
+        "instruction": "Mejora el realismo cinematográfico con partículas atmosféricas finas, movimiento natural del viento y grano fílmico sutil."
+      }
     }
-  }
+  },
+  "openTimeline": "Abrir línea de tiempo"
 }

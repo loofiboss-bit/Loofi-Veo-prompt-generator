@@ -1311,3 +1311,30 @@ test('supports 200+ clip timelines, extended 10-minute duration, baked effect fi
   assert.match(filterStr, /rotate=/);
   assert.match(filterStr, /colorchannelmixer=aa=0\.500/);
 });
+
+test('init cleans up orphaned chunk segment files and concat.txt on interrupted job recovery', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'creator-chunk-cleanup-'));
+  try {
+    const jobId = '11111111-1111-4111-8111-111111111111';
+    const jobDir = path.join(root, jobId);
+    await fs.mkdir(jobDir, { recursive: true });
+    await fs.writeFile(
+      path.join(jobDir, 'job.json'),
+      JSON.stringify({ id: jobId, status: 'rendering', projectId: 'p1' }),
+    );
+    await fs.writeFile(path.join(jobDir, 'segment-0.mp4'), 'seg0');
+    await fs.writeFile(path.join(jobDir, 'segment-1.mp4'), 'seg1');
+    await fs.writeFile(path.join(jobDir, 'concat.txt'), "file 'segment-0.mp4'\n");
+    await fs.writeFile(path.join(jobDir, 'input-0.mp4'), 'inp');
+
+    const engine = new CreatorRenderEngine({ root, runtimeRoot: '/unused' });
+    await engine.initialize();
+
+    const remaining = await fs.readdir(jobDir);
+    assert.deepEqual(remaining, ['job.json']);
+    const updatedJob = JSON.parse(await fs.readFile(path.join(jobDir, 'job.json'), 'utf8'));
+    assert.equal(updatedJob.status, 'failed');
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { changeAppLanguage } from '@core/config/i18n';
 import { creativeAssistantService } from './creativeAssistantService';
 
 vi.mock('./gemini/aiClient', () => ({
@@ -9,8 +10,13 @@ vi.mock('./gemini/aiClient', () => ({
 }));
 
 describe('creativeAssistantService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await changeAppLanguage('en');
+  });
+
+  afterEach(async () => {
+    await changeAppLanguage('en');
   });
 
   it('generates heuristic suggestions covering camera, lighting and iteration instructions offline', async () => {
@@ -36,6 +42,7 @@ describe('creativeAssistantService', () => {
     const suggestions = await creativeAssistantService.generateSuggestions({
       idea: 'En man som springer i kraftigt regn under natten',
       currentPrompt: 'En man som springer längs en solig strandväg.',
+      language: 'sv',
     });
 
     const dev = suggestions.find((s) => s.category === 'deviation');
@@ -48,6 +55,7 @@ describe('creativeAssistantService', () => {
     const suggestions = await creativeAssistantService.generateSuggestions({
       idea: 'A sports car chase',
       currentPrompt: 'A red sports car accelerates with a fast tracking camera and wide angle.',
+      language: 'sv',
     });
 
     const cam = suggestions.find((s) => s.category === 'camera');
@@ -66,5 +74,18 @@ describe('creativeAssistantService', () => {
     expect(suggestions.some((s) => s.title.includes('Add dynamic camera movement'))).toBe(true);
     expect(suggestions.some((s) => s.title.includes('Storyboard continuity alignment'))).toBe(true);
     expect(suggestions.some((s) => s.category === 'deviation')).toBe(true);
+  });
+
+  it('supports localized heuristic suggestions in Spanish and other non-English locales', async () => {
+    await changeAppLanguage('es');
+    const suggestions = await creativeAssistantService.generateSuggestions({
+      idea: 'Un corredor en la niebla',
+      currentPrompt: 'A runner moves down the street.',
+      language: 'es',
+    });
+
+    expect(suggestions.some((s) => s.title.includes('Añadir movimiento de cámara dinámico'))).toBe(
+      true,
+    );
   });
 });

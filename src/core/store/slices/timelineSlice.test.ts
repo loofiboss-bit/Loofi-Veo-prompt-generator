@@ -188,8 +188,7 @@ describe('timelineSlice — gcTimeline', () => {
     expect(useAppStore.getState().sbShots).toHaveLength(1);
   });
 
-  it('prunes to 50 most recent shots and associated clips', () => {
-    // Add 55 shots
+  it('preserves 55+ shots and prunes only orphaned shot-linked clips while keeping manual clips', () => {
     const shots = Array.from({ length: 55 }, (_, i) => ({
       id: i + 1,
       type: 'video' as const,
@@ -202,22 +201,28 @@ describe('timelineSlice — gcTimeline', () => {
       duration: 5,
       transition: { type: 'cut' as const, duration: 0 },
     }));
-    // Add clips for shots 1–5 (to be pruned) and 6–55 (to be kept)
-    const clips = shots
+    const validClips = shots
       .map((s) => makeClip(`cl_${s.id}`, 'video_main', s.id * 5, 5))
       .map((c, i) => ({ ...c, resourceId: shots[i].id }));
+    const orphanedShotClip = { ...makeClip('orphan_999', 'video_main', 300, 4), resourceId: 999 };
+    const manualClip = {
+      ...makeClip('manual_1', 'video_main', 305, 4),
+      resourceId: 'asset-manual-1',
+    };
 
-    useAppStore.setState({ sbShots: shots, clips });
+    useAppStore.setState({
+      sbShots: shots,
+      clips: [...validClips, orphanedShotClip, manualClip],
+    });
     useAppStore.getState().gcTimeline();
 
     const { sbShots, clips: remainingClips } = useAppStore.getState();
-    expect(sbShots).toHaveLength(50);
-    // Shot 1-5 should be pruned (lowest IDs)
-    expect(sbShots.find((s) => s.id === 1)).toBeUndefined();
+    expect(sbShots).toHaveLength(55);
+    expect(sbShots.find((s) => s.id === 1)).toBeDefined();
     expect(sbShots.find((s) => s.id === 55)).toBeDefined();
-    // Clips referencing pruned shots should also be pruned
-    expect(remainingClips.find((c) => c.resourceId === 1)).toBeUndefined();
-    expect(remainingClips.find((c) => c.resourceId === 55)).toBeDefined();
+    expect(remainingClips.find((c) => c.id === 'orphan_999')).toBeUndefined();
+    expect(remainingClips.find((c) => c.id === 'manual_1')).toBeDefined();
+    expect(remainingClips.find((c) => c.resourceId === 1)).toBeDefined();
   });
 });
 

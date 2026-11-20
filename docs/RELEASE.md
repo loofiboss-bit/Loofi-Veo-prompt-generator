@@ -4,21 +4,19 @@ This is the public release runbook for Loofi Creator Studio. GitHub Actions is t
 for qualified desktop artifacts; Fedora COPR is a separate community packaging channel built from
 the matching GitHub RPM.
 
-## v21.0.0 Polish & Trust
+## v23.0.0 Workspace Cohesion & Hardening
 
-v21 adds a guided four-step delivery workflow, coordinated project saves, recoverable save conflicts,
-media-library filtering and deletion guards, optional caption suggestions, and clearer navigation.
-Render completion and confirmed file saves are shown separately. Updated translations and keyboard
-focus handling cover all six app languages. Existing project and archive formats remain supported.
+v23 delivers Release 1 of the Creator Workstation evolution: a unified Workspace Context Rail across Start, Prompt Studio, Production, and Timeline, `Ctrl/Cmd+Enter` local compilation, 1-click Timeline jump, non-destructive `videoVersionService` timeline preservation, SQLite WAL & `.loofi-project` persistence for `VideoIterationSession[]`, uniform `resilientCall` paid retry boundaries across vision endpoints, orphaned FFmpeg segment cleanup, trimmed ONNX WASM bundle (`< 22 MB`), modular `iconRegistry.ts`, and 100% i18n parity across all six UI languages × 17 namespaces.
 
-See [v21 release notes](releases/RELEASE-NOTES-v21.0.0.md),
+See [v23 release notes](releases/RELEASE-NOTES-v23.0.0.md),
+[v21 release notes](releases/RELEASE-NOTES-v21.0.0.md),
 [v16 workflow](CREATOR_V16.md), and [timeline editing](V16_TIMELINE_EDITING.md).
 Historical v17 publication evidence remains in [release verification](V17_0_0_RELEASE.md).
 
 ### Publication and qualification
 
 The canonical tag workflow publishes
-[v22.1.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1)
+[v23.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v23.0.0)
 after Linux builds and packaged smoke tests succeed. Tag existence alone does not
 establish publication. Fedora COPR is verified independently after GitHub publication.
 
@@ -26,9 +24,9 @@ Expected official release assets:
 
 | Target         | Asset                                                | Status                       |
 | -------------- | ---------------------------------------------------- | ---------------------------- |
-| Fedora RPM     | `Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.rpm`      | Primary (CI Built & Tested)  |
-| Linux AppImage | `Loofi-Flow-Veo-Studio-22.1.1-linux-x86_64.AppImage` | Primary (CI Built & Tested)  |
-| Windows x64    | `Loofi-Flow-Veo-Studio-22.1.1-win-x64-setup.exe`     | Optional (Manual Build Only) |
+| Fedora RPM     | `Loofi-Flow-Veo-Studio-23.0.0-linux-x86_64.rpm`      | Primary (CI Built & Tested)  |
+| Linux AppImage | `Loofi-Flow-Veo-Studio-23.0.0-linux-x86_64.AppImage` | Primary (CI Built & Tested)  |
+| Windows x64    | `Loofi-Flow-Veo-Studio-23.0.0-win-x64-setup.exe`     | Optional (Manual Build Only) |
 
 Windows packages are not built in CI; users or contributors build them manually if needed (`npm run build && npx electron-builder --win`).
 The release includes `SHA256SUMS.txt`, `sbom.cdx.json`, `provenance.intoto.json`, and `release-manifest.json`.
@@ -133,6 +131,15 @@ Automated release evidence does not imply physical desktop qualification. Keep t
 
 ## Historical releases
 
+- [v22.1.1 Prompt Studio Dark-Mode & Blank-Idea Gemini Fix](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1)
+- [v22.1.0 SQLite WAL Persistence & Streaming ZIP Export](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.0)
+- [v22.0.0 AI Video Iteration & Creative Loop](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.0.0)
+- [v21.1.0 Prompt Studio AI Scene & Music Expansion](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.1.0)
+- [v21.0.0 Polish & Trust](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.0.0)
+- [v20.0.0 Project-Safe Editing & Reviewed Delivery](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v20.0.0)
+- [v19.0.0 Reviewable Video Production & Deterministic Workbench](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v19.0.0)
+- [v17.0.0 Smart Local Editing](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v17.0.0)
+- [v16.0.0 Local Creator Editing](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v16.0.0)
 - [v15.0.0 Creator Delivery](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v15.0.0)
 
 - [v14.2.1 Connected Creator Flow](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v14.2.1)
