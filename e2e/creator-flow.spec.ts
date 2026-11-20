@@ -28,10 +28,13 @@ for (const [language, label, strings, common] of [
     await page.emulateMedia({ colorScheme: language === 'en' ? 'light' : 'dark' });
     await page.goto('/');
     await dismissModals(page);
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.locator('aside').getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: label, exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('lang', language);
-    await page.getByRole('button', { name: common.sidebar.promptStudio, exact: true }).click();
+    await page
+      .locator('aside')
+      .getByRole('button', { name: common.sidebar.promptStudio, exact: true })
+      .click();
     await page.locator('[data-studio-field="idea"]').fill('A blue boat crossing a quiet lake');
     await page.getByRole('button', { name: strings.build, exact: true }).click();
     const original = await page.getByLabel('Primary prompt', { exact: true }).inputValue();
@@ -100,7 +103,10 @@ for (const [language, label, strings, common] of [
       path: testInfo.outputPath(`creator-flow-${language}.png`),
       fullPage: true,
     });
-    await page.getByRole('button', { name: common.sidebar.timeline, exact: true }).click();
+    await page
+      .locator('aside')
+      .getByRole('button', { name: common.sidebar.timeline, exact: true })
+      .click();
     await expect(
       page.getByRole('heading', { name: common.timeline.title, exact: true, level: 1 }),
     ).toBeVisible();

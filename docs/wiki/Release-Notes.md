@@ -1,5 +1,43 @@
 # Release Notes
 
+## v23.0.0 — Workspace Cohesion, Data Integrity & Performance Hardening
+
+- Unify navigation around the new **Workspace Context Rail** (`ProjectStatusChip`, Local-first pill, contextual workspace links, and `Ctrl/Cmd+K` Quick navigation).
+- Speed up Studio flow with `Ctrl/Cmd+Enter` local pack compilation, 1-click **Open Timeline**, `/start?mode=clips` clip import focus, `<AppDialog>` `ShortcutsModal`, and **Clean & Tighten Style**.
+- Keep storyboard `action`/`duration`, trimmed timeline clips, and 3–15s Gemini Omni durations intact when applying iterated video takes (`videoVersionService`).
+- Persist `VideoIterationSession[]` in SQLite WAL project documents and portable `.loofi-project` bundles, and surface clear EEA/Switzerland/UK video upload notices.
+- Enforce `resilientCall` (`maxRetries=0`) across `geminiVisionService`, clean orphaned FFmpeg segments on render recovery, remove the 50-shot cap in `gcTimeline()`, and trim the unused 24 MB ONNX `asyncify` WASM (`npm run bundle:check` < 22 MB).
+- Modularize UI icons into `iconRegistry.ts`, retire 18 legacy shell/modal files, and enforce 100% key parity across all 6 locales × 17 namespaces (`npm run i18n:all:check`).
+
+[Download v23.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v23.0.0).
+See [release notes](../releases/RELEASE-NOTES-v23.0.0.md) and the [release process](../RELEASE.md).
+
+## v22.1.1 — Prompt Studio Blank-Idea & Placeholder Fixes
+
+- Allow **Create with Gemini** to propose an initial premise, scene details, and 3 variants even when **Core idea** is blank (`origins.idea = 'ai'`).
+- Dim dark-mode placeholder text and add localized example prefixes across all 6 Studio languages.
+
+[Download v22.1.1](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.1).
+
+## v22.1.0 — SQLite WAL Persistence & Streaming ZIP Export
+
+- Add `node:sqlite` WAL project storage (`ProjectDatabase` with CAS conflict detection and `VACUUM INTO` backups), streaming main-process ZIP archiving, isolated `usePlaybackStore` playhead state, and 1800s chunked FFmpeg segmentation with OTIO caption markers.
+
+[Download v22.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.1.0).
+
+## v22.0.0 — AI Video Iteration & Creative Loop
+
+- Add multi-turn conversational video edits and clip extensions powered by Gemini Omni 1.2 Flash (3–15s, Interactions API), version lineage trees, local + on-demand Creative Assistant, and Fedora KDE/Wayland performance optimizations.
+
+[Download v22.0.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v22.0.0).
+
+## v21.1.0 — Prompt Studio Gemini AI & Target Profile Refresh
+
+- Add Prompt Studio Gemini scene and music expansion proposals, `StudioAiControlBar`, and updated active video/music target profiles (Flow/Veo 3.1, Omni, Kling, Runway, Luma, Wan, MiniMax, Suno).
+
+[Download v21.1.0](https://github.com/loofiboss-bit/Loofi-Veo-prompt-generator/releases/tag/v21.1.0).
+See [v21.1.0 notes](../releases/RELEASE-NOTES-v21.1.0.md).
+
 ## v21.0.0 — Polish & Trust
 
 - Follow four delivery steps with explicit checks, review, export and confirmed file saves.

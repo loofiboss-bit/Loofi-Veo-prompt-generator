@@ -158,6 +158,9 @@ test('one mock Gemini request creates editable details and three prompts, preser
     /subject position/,
   );
   await page.getByRole('button', { name: 'Primary', exact: true }).click();
+  await expect(
+    page.locator('[data-tour-id="workspace-context-rail"]').getByRole('status'),
+  ).toHaveText('Saved');
   await page.reload();
   await expect(page.getByLabel('Camera', { exact: true })).toHaveValue(manualCamera);
   await expect(page.getByLabel('Primary prompt', { exact: true })).toHaveValue(primary);

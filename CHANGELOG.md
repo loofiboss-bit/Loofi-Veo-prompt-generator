@@ -7,6 +7,32 @@ All notable changes to Loofi Creator Studio will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [23.0.0] - 2026-11-20
+
+### Added
+
+- **Unified Workspace Context Rail & Navigation Shortcuts**: Upgraded `AppScaffold` with a responsive `Workspace Context Rail` surfacing `ProjectStatusChip`, a **Local-first** boundary pill, contextual **Production** / **Timeline** / **Prompt Studio** quick jumps, and **Quick navigation** (`Ctrl/Cmd+K`).
+- **Prompt Studio Acceleration & Flow**: Wired `Ctrl/Cmd+Enter` (`loofi:primary-action`) to trigger **Build copy-ready pack**, added a 1-click **Open Timeline** button in the Studio handoff header, highlighted local clip import when onboarding opens `/start?mode=clips`, and added the **Clean & Tighten Style** local transform in Music & Lyrics mode.
+- **Portable Video Iteration Lineage**: Persisted `VideoIterationSession[]` history directly inside canonical project documents (SQLite WAL `meta_json`) and portable `.loofi-project` archives with epoch/migration rehydration and explicit EEA/Switzerland/UK reference video upload notices.
+- **Automated Bundle & Locale Parity Gates**: Added `npm run bundle:check` (`< 22 MB` total `dist/assets/` budget with zero unused `*asyncify*.wasm`) and upgraded `scripts/check-translations.mjs` (`npm run i18n:all:check`) inside `npm run validate` to enforce 100% key parity across all 6 languages × 17 namespaces.
+- **Modular Icon Registry**: Extracted 90 inline SVG paths from `Icon.tsx` into data-driven [`src/shared/components/ui/iconRegistry.ts`](src/shared/components/ui/iconRegistry.ts) with unit coverage.
+
+### Changed
+
+- **Non-Destructive Timeline & Storyboard Bridge**: Updated `videoVersionService` so applying iterated video takes preserves existing storyboard shot `action`/`duration`, trimmed timeline clips (`trimEnd`), and 3–15s Gemini Omni durations without clamping.
+- **Standardized Shortcuts Dialog & Light Theme Polish**: Migrated `ShortcutsModal` onto `<AppDialog>` for consistent focus trapping and Escape dismissal, and fixed light-theme contrast classes in `CommandPalette`.
+- **100% Six-Locale i18n Parity**: Created missing `optimization.json` translations for Spanish (`es`), French (`fr`), and Japanese (`ja`), reconciled Arabic (`ar`) across 13 namespaces, and localized `creativeAssistantService` offline suggestions through `i18next` across `en`, `sv`, `es`, `fr`, `ja`, and `ar`.
+- **Documentation, Roadmap & Screenshots Refresh**: Refreshed deterministic v23.0.0 screenshots across Start, Prompt Studio, Production, Timeline, and Diagnostics, updated the GitHub/Wiki/User docs to reflect the current 7 active video targets + Suno handoffs, and updated `ROADMAP.md` for Phase 7–9.
+
+### Fixed
+
+- **Paid Vision Retry Boundary & Render Cleanup**: Migrated `geminiVisionService` calls onto `resilientCall` so desktop `maxRetries=0` cost-approval boundaries apply uniformly across all vision endpoints; extended interrupted FFmpeg render cleanup in `electron/creator-render.cjs` to sweep orphaned `segment-*` and `concat.txt` files; removed the silent 50-shot cap in `gcTimeline()`.
+- **ONNX Bundle Trimming Without Breaking Local Whisper**: Added `stripUnusedOnnxAsyncifyWasmPlugin` in `vite.config.ts` (`plugins` and `worker.plugins`) to exclude the unused 24 MB `ort-wasm-simd-threaded.asyncify.wasm` binary while preserving `ort-wasm-simd-threaded.wasm` for local Whisper ASR.
+
+### Removed
+
+- **Retired Legacy UI Shells & Dead Constants**: Removed dead legacy shell and modal files (`Header`, `ActionBar`, `PromptWorkspace`, `prompt/sections/*`, `NewProjectWizard`, `SunoSongStudio`, `OptimizePage`, `AiCoDirectorWidget`, `ComposerPanel`), five no-op Storyboard modals, and the legacy `src/core/constants/translations.ts` table.
+
 ## [22.1.1] - 2026-11-16
 
 ### Fixed

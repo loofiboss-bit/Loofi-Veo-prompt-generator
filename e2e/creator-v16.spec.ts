@@ -156,7 +156,7 @@ for (const language of ['sv', 'ar']) {
     );
     await page.goto('/#/settings');
     await page
-      .getByRole('button', { name: language === 'sv' ? 'Mörkt' : 'الوضع الداكن', exact: true })
+      .getByRole('button', { name: language === 'sv' ? 'Mörkt' : 'داكن', exact: true })
       .click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.goto('/#/timeline');
@@ -164,7 +164,7 @@ for (const language of ['sv', 'ar']) {
     await page.screenshot({ path: `/tmp/creator-v16-${language}-dark.png`, fullPage: true });
     await page.goto('/#/settings');
     await page
-      .getByRole('button', { name: language === 'sv' ? 'Ljust' : 'الوضع الفاتح', exact: true })
+      .getByRole('button', { name: language === 'sv' ? 'Ljust' : 'فاتح', exact: true })
       .click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await page.goto('/#/timeline');

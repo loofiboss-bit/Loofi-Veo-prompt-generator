@@ -5,7 +5,7 @@ Use this index to navigate stable Loofi Creator Studio documentation and unrelea
 The source workspace version can differ from the published installers. Use the installation guide
 for package availability and the implementation records for qualification evidence.
 
-Current stable publication: [v17.0.0 verification](V17_0_0_RELEASE.md).
+Current release target: [v23.0.0 release notes](releases/RELEASE-NOTES-v23.0.0.md) (historical verification baseline: [v17.0.0 verification](V17_0_0_RELEASE.md)).
 
 ## Start here
 
@@ -13,7 +13,7 @@ Current stable publication: [v17.0.0 verification](V17_0_0_RELEASE.md).
 - [User Guide](./USER_GUIDE.md) — Canonical guide for local packs, reviewed proposals, project versions, templates, paid approval and Labs boundaries
 - [Quick Start](./wiki/Quick-Start.md) — First multi-model prompt or lyrics pack in minutes
 - [Prompt Quality and Iteration](./wiki/Prompt-Quality-and-Iteration.md) — Arena, actionable checks, versions, templates and reviewed AI proposals
-- [Prompting Guide](./wiki/Prompting-Guide.md) — Model syntax recipes (Veo 3.1, Kling, Runway, Sora, Luma) and Suno rules
+- [Prompting Guide](./wiki/Prompting-Guide.md) — Model syntax recipes (Flow/Veo 3.1, Omni 1.2, Kling 4.0, Runway Gen-4.5, Luma Ray3.2) and Suno rules
 
 ## Product references
 

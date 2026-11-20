@@ -123,7 +123,7 @@ Legacy routes (`/composer`, `/optimize`) redirect cleanly to `/create`. Shared U
   - `compileVeoPrompt`: Naturalistic cinema wording, lens language, restrained negative tokens.
   - `compileKlingPrompt`: Bracket camera directives (`[camera: ...]`), dynamic motion weights, atmospheric tokens.
   - `compileRunwayPrompt`: Action-first imperative syntax, directional motion vectors, subject anchors.
-  - `compileSoraPrompt`: Continuous narrative cadence, photochemical realism, optical texture descriptors.
+  - `compileSoraPrompt`: Retained as a read-only legacy compiler/adapter for historical Sora artifacts; Sora is excluded from active Studio and Arena target selection.
   - `compileLumaPrompt`: Keyframe trajectory anchors, perspective shifts, transition continuity.
 - **Contract**: Produces `PromptArtifactV1` preserving normalized input, primary variant, two complete alternatives, validation results, and byte-identical copy fields.
 

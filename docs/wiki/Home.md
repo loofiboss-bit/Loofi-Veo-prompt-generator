@@ -8,15 +8,16 @@ Loofi Creator Studio is the local-first workspace behind the **Loofi Veo Prompt 
 repository. Draft video direction, compare model-tailored packages, refine lyrics and preserve your
 iterations before handing work to your chosen generator.
 
-This wiki covers **v21.0.0**. Download the desktop app through
+This wiki covers **v23.0.0**. Download the desktop app through
 [Installation and Updates](Installation-and-Updates.md), then follow the Quick Start below.
 
 Start also offers local recipes and offline example projects. Add captions and a saved style, then
 export verified MP4 video and a publication ZIP without a provider key. See the
 [first offline video guide](../guides/FIRST_OFFLINE_VIDEO.md).
 
-v21 adds guided delivery, clearer save and render status, media deletion guards, optional caption
-suggestions and recovery actions when continuing a project. See the
+v23 strengthens the workspace into a unified Creator Workstation with a top **Workspace Context Rail**,
+`Ctrl/Cmd+Enter` prompt building, non-destructive Video Iteration lineage in SQLite WAL and
+`.loofi-project` bundles, and 100% 6-locale parity. See the
 [release notes](Release-Notes.md) for the full scope and upgrade boundaries.
 
 ## Choose your next step
@@ -35,12 +36,12 @@ suggestions and recovery actions when continuing a project. See the
 ## Create, compare, keep
 
 1. **Create locally:** build three editable variants without an API key.
-2. **Compare deliberately:** inspect the same idea across eight video targets in Model Arena.
+2. **Compare deliberately:** inspect the same idea across seven active video targets in Model Arena.
 3. **Keep your progress:** save durable versions, review AI proposals and reuse complete templates.
-4. **Hand off clearly:** copy manual packages, or prepare a Veo API plan for explicit cost approval.
+4. **Hand off clearly:** copy manual packages, or prepare a Veo API / Gemini Omni plan for explicit cost approval.
 
-Local compilation does not generate video. Flow, Kling, Runway, Sora, Luma and Suno use manual
-handoffs. Internal paid generation has a separate approval workflow.
+Local compilation does not generate video. Flow, Kling, Runway, Luma, Wan, MiniMax/Hailuo and Suno use manual
+handoffs (retired Sora projects remain read-only for inspection). Internal paid generation has a separate approval workflow.
 
 ## Explore the workspace
 

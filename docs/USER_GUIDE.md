@@ -38,7 +38,7 @@ keep the window open and retry; a temporary memory copy is not persistent storag
 ## Video prompts
 
 Choose target, recipe, duration and aspect ratio before building the pack. Flow, Kling, Runway,
-Sora and Luma use manual handoffs. Copy the selected variant and follow the destination's own
+Luma, Wan and MiniMax/Hailuo use manual handoffs (legacy Sora artifacts remain read-only for history and export). Copy the selected variant and follow the destination's own
 submission controls. The app does not silently convert those targets to Veo API.
 
 For image-based recipes, import a local PNG, JPEG or WebP image or select an existing local image.
@@ -93,9 +93,9 @@ French, Japanese and Arabic catalogs with 100% key parity; lyrics language is a 
 
 For implementation contracts and qualification limits, see [V14_IMPLEMENTATION.md](V14_IMPLEMENTATION.md).
 
-## Studio iteration in v14.1.0
+## Studio iteration and Arena
 
-Use **Compare in Arena** to compare local prompt packages for the eight Studio video targets.
+Use **Compare in Arena** to compare local prompt packages for the seven active Studio video targets.
 The preview and copy action use the same compiler as **Build copy-ready pack**. Confirm the actual
 model version, supported controls and duration in each manual destination. Only Veo API supports an
 internal production handoff, and paid generation still requires cost approval in Production.

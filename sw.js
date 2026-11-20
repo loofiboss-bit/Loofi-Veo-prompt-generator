@@ -1,4 +1,4 @@
-const CACHE_NAME = 'veo-prompt-generator-v22.1.1';
+const CACHE_NAME = 'veo-prompt-generator-v23.0.0';
 const urlsToCache = [
   './',
   './index.html',
